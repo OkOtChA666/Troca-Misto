@@ -795,6 +795,8 @@
   }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <canvas id="bg-network" class="bg-fx" aria-hidden="true"></canvas>
@@ -2173,21 +2175,36 @@ let FLAGS = {};
 let flagsReady = false;
 let flagsSyncOk = true;
 
-// ---------- db capability helpers (published-artifact storage — window.storage has no
-// equivalent on a published page at all, so every persisted piece of data in this app goes
-// through these instead) ----------
+// ---------- Firebase Firestore helpers (this app's actual shared storage — hosted as a
+// regular website now, not a Claude artifact, so a real external database finally works) ----------
 let cachedDb = null;
 async function getDb(){
   if(cachedDb) return cachedDb;
-  cachedDb = await claude.use('db'); // memoized by the platform itself — free to call again, but caching locally too avoids re-awaiting a promise every single call
+  const app = firebase.initializeApp({
+    apiKey: "AIzaSyDVJE3FwFC7mYuygtvZXPAzf6xYWgkLTMM",
+    authDomain: "troca-misto.firebaseapp.com",
+    projectId: "troca-misto",
+    storageBucket: "troca-misto.firebasestorage.app",
+    messagingSenderId: "418787038493",
+    appId: "1:418787038493:web:cb451df73d8433bbf47df4",
+    measurementId: "G-FGXSXVX4QV"
+  });
+  cachedDb = firebase.firestore();
   return cachedDb;
 }
+// No login system in this app, so there's no real "who is this person" the way Claude's own
+// user capability provided — instead, each device/browser gets its own random, persistent ID
+// the first time it's needed, stored locally, matching the same "this device remembers who
+// you picked" pattern the app already uses for the remembered name itself.
 let cachedUserId = null;
 async function getUserId(){
   if(cachedUserId) return cachedUserId;
-  const user = await claude.use('user');
-  if(!user) return null;
-  cachedUserId = await user.id();
+  let id = localStorage.getItem('trocaMistoDeviceId');
+  if(!id){
+    id = 'device-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    localStorage.setItem('trocaMistoDeviceId', id);
+  }
+  cachedUserId = id;
   return cachedUserId;
 }
 // Shared document body must be a plain object (never an array or scalar at the top level) —
@@ -2197,14 +2214,11 @@ async function dbGetShared(key, fallback){
   try{
     const db = await getDb();
     if(!db) return fallback;
-    const snap = await db.doc('data/'+key).get();
-    // .data() can return a frozen/immutable snapshot object — deep-cloning it into a fresh,
-    // plain object guarantees callers can freely mutate what they get back (add/delete keys,
-    // reassign fields) without those mutations silently doing nothing. This was a real,
-    // serious bug: an in-place delete or new-key assignment on a frozen snapshot fails
-    // silently in non-strict mode — no error, just no effect — which is exactly what made
-    // favorites (and potentially anything else loaded this way) appear to "not work" after
-    // the very first save, once a real snapshot started coming back instead of the fallback.
+    const snap = await db.collection('data').doc(key).get();
+    // Deep-cloning guarantees callers can freely mutate what they get back (add/delete keys,
+    // reassign fields) — see the note this comment used to carry about a frozen-snapshot bug
+    // elsewhere; kept here defensively even though Firestore's compat SDK returns plain
+    // objects, since it costs nothing and protects against ever regressing on this again.
     return snap.exists ? JSON.parse(JSON.stringify(snap.data())) : fallback;
   } catch(e){
     return fallback; // keep whatever the caller already has rather than losing it to a transient failure
@@ -2214,7 +2228,7 @@ async function dbSetShared(key, data){
   try{
     const db = await getDb();
     if(!db) return false;
-    await db.doc('data/'+key).set(data);
+    await db.collection('data').doc(key).set(data);
     return true;
   } catch(e){
     return false;
@@ -2226,9 +2240,7 @@ async function dbGetPrivate(key, fallback){
     if(!uid) return fallback;
     const db = await getDb();
     if(!db) return fallback;
-    const snap = await db.doc('data/users/'+uid+'/'+key).get();
-    // Deep-cloned for the same reason as dbGetShared above — never hand back a possibly-frozen
-    // snapshot object that would silently ignore mutations.
+    const snap = await db.collection('data').doc('users').collection(uid).doc(key).get();
     return snap.exists ? JSON.parse(JSON.stringify(snap.data())) : fallback;
   } catch(e){
     return fallback;
@@ -2240,7 +2252,7 @@ async function dbSetPrivate(key, data){
     if(!uid) return false;
     const db = await getDb();
     if(!db) return false;
-    await db.doc('data/users/'+uid+'/'+key).set(data);
+    await db.collection('data').doc('users').collection(uid).doc(key).set(data);
     return true;
   } catch(e){
     return false;
@@ -2260,8 +2272,7 @@ async function dbLoadCollection(collectionName, fallback){
     if(!db) return fallback;
     const snap = await db.collection(collectionName).get();
     const result = {};
-    // Deep-cloned per-entry for the same reason as dbGetShared/dbGetPrivate above.
-    snap.docs.forEach(d => { result[d.id] = JSON.parse(JSON.stringify(d.data())); });
+    snap.forEach(d => { result[d.id] = JSON.parse(JSON.stringify(d.data())); });
     return result;
   } catch(e){
     return fallback; // keep whatever was already loaded — see dbGetShared for the reasoning
