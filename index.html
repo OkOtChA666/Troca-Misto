@@ -824,9 +824,12 @@
     <h1 class="access-title">TROCA-MISTO™</h1>
     <p class="access-sub">Acesso restrito a membros do grupo</p>
     <div class="access-field">
+      <input type="text" id="access-portal-staffnum" placeholder="Número de colaborador" autocomplete="off" inputmode="numeric">
+    </div>
+    <div class="access-field">
       <input type="password" id="access-portal-input" placeholder="Password" autocomplete="off">
     </div>
-    <div class="access-error hidden" id="access-portal-error">Password incorreta.</div>
+    <div class="access-error hidden" id="access-portal-error">Número ou password incorretos.</div>
     <button type="button" class="access-btn hidden" id="access-portal-btn">ENTRAR</button>
   </div>
 </div>
@@ -950,6 +953,14 @@
       <span id="extra-hours-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Horas Extra">
         <span style="color:var(--text-dim); font-size:14px; font-weight:700; line-height:1; width:14px; text-align:center;">€</span>
         HORAS EXTRA
+      </span>
+      <span id="logout-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--nogo);" title="Terminar sessão">
+        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="16 17 21 12 16 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        SAIR
       </span>
     </div>
     <div id="end-of-month-warning" class="hidden" style="position:relative; background:#000; border-radius:6px; height:44px; margin-top:12px; overflow:hidden; box-shadow: inset 0 0 16px rgba(0,0,0,0.8);">
@@ -2898,14 +2909,37 @@ document.getElementById('text-modal').addEventListener('click', (e) => {
   if(e.target.id === 'text-modal') hideTextPrompt();
 });
 
-// ---------- access portal — password gate before the board itself loads ----------
+// ---------- access portal — now a real per-staff login (staff number + password) instead of
+// a single shared password gate. Successfully logging in both grants access AND identifies
+// who's using the app — replacing the old separate "pick your name from a dropdown" step
+// entirely, since impersonating someone else now requires actually knowing their password.
+let isAdminSession = false;
+const ADMIN_STAFF_ID = '2020013';
+const ADMIN_PASSWORD = 'Portway2027!!';
+const STAFF_DEFAULT_PASSWORD = 'Portway2026%';
 async function checkAccessPassword(){
+  const staffInput = document.getElementById('access-portal-staffnum');
   const input = document.getElementById('access-portal-input');
   const error = document.getElementById('access-portal-error');
-  if(input.value === 'Portway2026%'){
+  const staffId = staffInput.value.trim();
+  const worker = DATA.workers.find(w => w.id === staffId);
+  const isAdmin = staffId === ADMIN_STAFF_ID;
+  // For now everyone (except admin) shares one default password — a real per-person password
+  // (settable after first login) is a planned next step, not built yet.
+  const expectedPassword = isAdmin ? ADMIN_PASSWORD : STAFF_DEFAULT_PASSWORD;
+  if(worker && input.value === expectedPassword){
+    isAdminSession = isAdmin;
+    await saveRememberedName(worker.name);
+    applyRememberedName('cover-name-input', onPickCoverWorker);
+    applyRememberedName('trade-a-input', onPickTradeA);
+    applyRememberedName('extra-name-input', onPickExtraWorker);
+    applyRememberedName('request-name-input', onPickRequestPoster);
+    localStorage.setItem('trocaMistoLoginStaffId', staffId);
+    localStorage.setItem('trocaMistoLoginIsAdmin', String(isAdmin));
     document.getElementById('access-portal').classList.add('hidden');
+    applyAdminVisibility();
     await loadMaintenanceConfig(); // always check the freshest state, never a possibly-stale cached one
-    if(maintenanceConfig.enabled){
+    if(maintenanceConfig.enabled && !isAdminSession){
       document.getElementById('maintenance-screen-reason').textContent = maintenanceConfig.reason || 'Em manutenção';
       document.getElementById('maintenance-screen-text').textContent = maintenanceConfig.text || '';
       document.getElementById('maintenance-screen').classList.remove('hidden');
@@ -2918,12 +2952,80 @@ async function checkAccessPassword(){
     input.focus();
   }
 }
+// Hides the ADMIN header link entirely for non-admin sessions, and leaves the AGENTES count
+// visible but not clickable — admin (Gonçalo) sees everything exactly as before.
+function applyAdminVisibility(){
+  const adminLink = document.getElementById('schedule-override-link');
+  if(adminLink) adminLink.style.display = isAdminSession ? '' : 'none';
+  const agentesLink = document.getElementById('stat-workers-link');
+  if(agentesLink){
+    if(isAdminSession){
+      agentesLink.style.cursor = '';
+      agentesLink.style.pointerEvents = '';
+      agentesLink.style.opacity = '';
+    } else {
+      agentesLink.style.cursor = 'default';
+      agentesLink.style.pointerEvents = 'none';
+      agentesLink.style.opacity = '0.6';
+    }
+  }
+}
 document.getElementById('access-portal-btn').addEventListener('click', checkAccessPassword);
 document.getElementById('access-portal-input').addEventListener('keydown', (e) => {
   if(e.key === 'Enter'){ e.preventDefault(); checkAccessPassword(); }
 });
-document.getElementById('access-portal-input').addEventListener('input', (e) => {
-  document.getElementById('access-portal-btn').classList.toggle('hidden', e.target.value !== 'Portway2026%');
+document.getElementById('access-portal-staffnum').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('access-portal-input').focus(); }
+});
+function updateAccessBtnVisibility(){
+  const staffId = document.getElementById('access-portal-staffnum').value.trim();
+  const pw = document.getElementById('access-portal-input').value;
+  document.getElementById('access-portal-btn').classList.toggle('hidden', !staffId || !pw);
+}
+document.getElementById('access-portal-input').addEventListener('input', updateAccessBtnVisibility);
+document.getElementById('access-portal-staffnum').addEventListener('input', updateAccessBtnVisibility);
+// Skip the login screen entirely if this device already logged in before — checked
+// synchronously against localStorage (not the async, Firestore-backed rememberedName) so
+// there's no flash of the login screen while waiting on a network read.
+(function restoreLoginIfPresent(){
+  const savedStaffId = localStorage.getItem('trocaMistoLoginStaffId');
+  if(!savedStaffId) return;
+  const worker = DATA.workers.find(w => w.id === savedStaffId);
+  if(!worker) return; // roster changed since this device last logged in — fall back to a real login
+  isAdminSession = localStorage.getItem('trocaMistoLoginIsAdmin') === 'true';
+  document.getElementById('access-portal').classList.add('hidden');
+  applyAdminVisibility();
+  saveRememberedName(worker.name); // keep the existing rememberedName mechanism in sync
+  // Deferred with setTimeout(0) — this whole IIFE runs immediately, inline, at this exact
+  // point in the script, which is BEFORE the "let coverWorker/tradeA/..." declarations
+  // further down even exist yet. Calling straight into onPickCoverWorker etc. from here hits
+  // them mid-declaration ("temporal dead zone"), throwing "Cannot access before
+  // initialization" — deferring to the next tick lets the rest of the script finish running
+  // first, so every one of those variables is safely initialized by the time this runs.
+  setTimeout(() => {
+    applyRememberedName('cover-name-input', onPickCoverWorker);
+    applyRememberedName('trade-a-input', onPickTradeA);
+    applyRememberedName('extra-name-input', onPickExtraWorker);
+    applyRememberedName('request-name-input', onPickRequestPoster);
+  }, 0);
+  loadMaintenanceConfig().then(() => {
+    if(maintenanceConfig.enabled && !isAdminSession){
+      document.getElementById('maintenance-screen-reason').textContent = maintenanceConfig.reason || 'Em manutenção';
+      document.getElementById('maintenance-screen-text').textContent = maintenanceConfig.text || '';
+      document.getElementById('maintenance-screen').classList.remove('hidden');
+    } else {
+      document.getElementById('main-wrap').classList.remove('hidden');
+    }
+  });
+})();
+
+// ---------- logout ----------
+document.getElementById('logout-link').addEventListener('click', () => {
+  showConfirmDialog('Terminar sessão? Vais precisar do teu número de colaborador e password para entrar novamente.', () => {
+    localStorage.removeItem('trocaMistoLoginStaffId');
+    localStorage.removeItem('trocaMistoLoginIsAdmin');
+    location.reload();
+  }, false, 'SAIR', false, null, 'CANCELAR');
 });
 
 // ---------- Trocas recentes (last swaps marked, board-wide) ----------
@@ -3299,6 +3401,13 @@ document.getElementById('skills-filter').addEventListener('input', (e) => render
 loadAltea();
 
 // ---------- combobox helper ----------
+// A non-admin session can only ever act as themselves — used to restrict every "who am I"
+// name picker (Procurar Troca, Troca de Turno, Horas Extra, PEDIDOS, the claim modal) down to
+// just the logged-in person. Admin (Gonçalo) is exempt, same as before, since nothing about
+// this login system changes what admin can already do.
+function isSelfOrAdmin(w){
+  return isAdminSession || w.name === rememberedName;
+}
 function setupCombo(inputId, listId, onPick, filterFn){
   const input = document.getElementById(inputId);
   const list = document.getElementById(listId);
@@ -3584,7 +3693,7 @@ function onPickCoverWorker(w){
   }
   updateCoverContext();
 }
-const coverCombo = setupCombo('cover-name-input','cover-name-list', onPickCoverWorker, (w) => !isBlocked(w.id));
+const coverCombo = setupCombo('cover-name-input','cover-name-list', onPickCoverWorker, (w) => !isBlocked(w.id) && isSelfOrAdmin(w));
 document.getElementById('cover-date').addEventListener('change', updateCoverContext);
 // Manually toggling a Carga Horária box after picking a name should also refresh the day's
 // difficulty indicator right away — otherwise it keeps showing whatever was true before the
@@ -3951,7 +4060,7 @@ function onPickTradeA(w){
     });
   }
 }
-setupCombo('trade-a-input','trade-a-list', onPickTradeA, (w) => !isBlocked(w.id));
+setupCombo('trade-a-input','trade-a-list', onPickTradeA, (w) => !isBlocked(w.id) && isSelfOrAdmin(w));
 document.getElementById('trade-a-date').addEventListener('change', updateTurnoContext);
 document.getElementById('turno-slider').addEventListener('input', updateSliderReadout);
 function fmtMinAsTime(mins){
@@ -4355,7 +4464,7 @@ function renderTradeResults(){
 // ---------- HORAS EXTRA panel ----------
 let extraWorker = null;
 function onPickExtraWorker(w){ extraWorker = w; updateExtraContext(); if(w) saveRememberedName(w.name); }
-setupCombo('extra-name-input','extra-name-list', onPickExtraWorker, (w) => !isBlocked(w.id));
+setupCombo('extra-name-input','extra-name-list', onPickExtraWorker, (w) => !isBlocked(w.id) && isSelfOrAdmin(w));
 document.getElementById('extra-date').addEventListener('change', updateExtraContext);
 
 function updateExtraContext(){
@@ -4440,7 +4549,7 @@ function onPickRequestPoster(w){
   if(document.getElementById('request-multiday-toggle').checked) renderMultiDayCalendar();
   if(w) saveRememberedName(w.name);
 }
-setupCombo('request-name-input', 'request-name-list', onPickRequestPoster, (w) => !isBlocked(w.id));
+setupCombo('request-name-input', 'request-name-list', onPickRequestPoster, (w) => !isBlocked(w.id) && isSelfOrAdmin(w));
 document.getElementById('requests-hide-ineligible-btn').addEventListener('click', async () => {
   hideIneligibleRequests = !hideIneligibleRequests;
   updateHideIneligibleIcon();
@@ -5024,7 +5133,7 @@ function onPickWhoAreYou(w){
   document.getElementById('whoareyou-confirm').disabled = !w;
   if(w) saveRememberedName(w.name);
 }
-setupCombo('whoareyou-input', 'whoareyou-list', onPickWhoAreYou, (w) => whoAreYouEligibilityFilter(w));
+setupCombo('whoareyou-input', 'whoareyou-list', onPickWhoAreYou, (w) => whoAreYouEligibilityFilter(w) && isSelfOrAdmin(w));
 // Skips the "quem és tu?" modal entirely when we already know — if the remembered person
 // on this device is a genuinely eligible candidate for this specific request (the same
 // check that greys the button out otherwise), there's no reason to ask them to re-identify
@@ -5186,12 +5295,12 @@ async function processClaim(key, volunteer){
 }
 loadRequests();
 loadHideIneligibleRequests().then(() => { updateHideIneligibleIcon(); renderOpenRequests(); });
-loadRememberedName().then(() => {
-  applyRememberedName('cover-name-input', onPickCoverWorker);
-  applyRememberedName('trade-a-input', onPickTradeA);
-  applyRememberedName('extra-name-input', onPickExtraWorker);
-  applyRememberedName('request-name-input', onPickRequestPoster);
-});
+// Login (checkAccessPassword / restoreLoginIfPresent) is now the authoritative source of
+// rememberedName — deliberately NOT re-loading it here anymore. That used to race against
+// login's own save, and if this fetch resolved with stale/empty data (likely on a device's
+// very first login) after login had already set the correct value, it would silently wipe
+// rememberedName back out — which is exactly why the "who am I" combos below wouldn't
+// pre-fill even though login had genuinely succeeded moments earlier.
 loadFavorites();
 loadFavoriteCounts();
 
