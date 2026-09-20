@@ -916,6 +916,17 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="notifications-modal">
+  <div class="modal-box" style="max-width:420px; text-align:left;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <span style="font-family:var(--mono); font-size:13px; letter-spacing:1px; color:var(--text-dim);">NOTIFICAÇÕES</span>
+      <button type="button" id="notifications-modal-close" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1; padding:0;">&times;</button>
+    </div>
+    <div id="notifications-modal-list" style="max-height:400px; overflow-y:auto;"></div>
+    <div id="notifications-modal-empty" class="hidden" style="text-align:center; color:var(--text-dim); font-size:13px; padding:20px 0;">Sem notificações.</div>
+  </div>
+</div>
+
 <div class="wrap hidden" id="main-wrap">
 
   <div class="board-header">
@@ -971,6 +982,13 @@
           <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <span id="logged-in-as-display"></span>
+      </span>
+      <span id="notifications-bell-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); position:relative; cursor:pointer;" title="Notificações">
+        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
+          <path d="M4 19l1.5-2V11a6.5 6.5 0 0 1 13 0v6L20 19H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 19a3 3 0 0 0 6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span id="notifications-badge" class="hidden" style="position:absolute; top:-6px; right:-8px; background:var(--nogo); color:#fff; font-size:9px; font-weight:700; line-height:1; min-width:14px; height:14px; border-radius:7px; display:flex; align-items:center; justify-content:center; padding:0 3px;">0</span>
       </span>
       <span id="logout-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--nogo);" title="Terminar sessão">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
@@ -3015,6 +3033,7 @@ async function checkAccessPassword(){
     document.getElementById('access-portal').classList.add('hidden');
     applyAdminVisibility();
     updateLoggedInDisplay(staffId, worker.name);
+    setupNotificationsListener(staffId);
     await loadMaintenanceConfig(); // always check the freshest state, never a possibly-stale cached one
     if(maintenanceConfig.enabled && !isAdminSession){
       document.getElementById('maintenance-screen-reason').textContent = maintenanceConfig.reason || 'Em manutenção';
@@ -3131,6 +3150,7 @@ document.getElementById('access-portal-staffnum').addEventListener('input', upda
     applyRememberedName('trade-a-input', onPickTradeA);
     applyRememberedName('extra-name-input', onPickExtraWorker);
     applyRememberedName('request-name-input', onPickRequestPoster);
+    setupNotificationsListener(savedStaffId);
   }, 0);
   loadMaintenanceConfig().then(() => {
     if(maintenanceConfig.enabled && !isAdminSession){
@@ -5484,6 +5504,59 @@ getDb().then(db => {
     const requestsPanel = document.getElementById('panel-requests');
     if(requestsPanel && !requestsPanel.classList.contains('hidden')) renderMultiDayCalendar();
   });
+});
+// ---------- notification history (the in-app list, separate from the push itself) ----------
+let NOTIFICATIONS = {}; // keyed by document id, only ever holds this logged-in person's own notifications
+let notificationsListenerUnsubscribe = null;
+function renderNotificationsBadge(){
+  const badge = document.getElementById('notifications-badge');
+  if(!badge) return;
+  const unreadCount = Object.values(NOTIFICATIONS).filter(n => !n.read).length;
+  badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+  badge.classList.toggle('hidden', unreadCount === 0);
+}
+function renderNotificationsList(){
+  const list = document.getElementById('notifications-modal-list');
+  const empty = document.getElementById('notifications-modal-empty');
+  if(!list) return;
+  const entries = Object.entries(NOTIFICATIONS).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+  empty.classList.toggle('hidden', entries.length > 0);
+  list.innerHTML = entries.map(([id, n]) => {
+    const when = n.createdAt ? new Date(n.createdAt).toLocaleString('pt-PT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
+    return '<div style="padding:10px 0; border-bottom:1px solid var(--border-soft);'+(n.read ? '' : ' background:rgba(95,224,255,0.04);')+'">'+
+      '<div style="font-size:13px; color:var(--text);">'+escapeHtml(n.body || '')+'</div>'+
+      '<div style="font-size:10.5px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);">'+escapeHtml(when)+'</div>'+
+    '</div>';
+  }).join('');
+}
+// Live listener, scoped to one specific person's own notifications — set up fresh on every
+// login (both a new one and a restored session), since it needs to know who's logged in to
+// filter correctly, and the previous person's listener (if any) needs to stop first so a
+// shared device never keeps showing the wrong person's notifications after switching users.
+function setupNotificationsListener(staffId){
+  if(notificationsListenerUnsubscribe) notificationsListenerUnsubscribe();
+  getDb().then(db => {
+    if(!db) return;
+    notificationsListenerUnsubscribe = db.collection('notifications').where('staffId', '==', staffId).onSnapshot(snapshot => {
+      const updated = {};
+      snapshot.forEach(d => { updated[d.id] = JSON.parse(JSON.stringify(d.data())); });
+      NOTIFICATIONS = updated;
+      renderNotificationsBadge();
+      const modal = document.getElementById('notifications-modal');
+      if(modal && !modal.classList.contains('hidden')) renderNotificationsList();
+    });
+  });
+}
+function openNotificationsModal(){
+  renderNotificationsList();
+  document.getElementById('notifications-modal').classList.remove('hidden');
+  // Opening the list is what counts as "seen" — mark every currently-unread entry as read.
+  const unreadIds = Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id);
+  unreadIds.forEach(id => { dbSetCollectionEntry('notifications', id, Object.assign({}, NOTIFICATIONS[id], { read: true })); });
+}
+document.getElementById('notifications-bell-link').addEventListener('click', openNotificationsModal);
+document.getElementById('notifications-modal-close').addEventListener('click', () => {
+  document.getElementById('notifications-modal').classList.add('hidden');
 });
 loadHideIneligibleRequests().then(() => { updateHideIneligibleIcon(); renderOpenRequests(); });
 // Login (checkAccessPassword / restoreLoginIfPresent) is now the authoritative source of
