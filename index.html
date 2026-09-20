@@ -110,13 +110,10 @@
     background: linear-gradient(180deg, #10182B 0%, #0A1120 100%);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 18px 20px 46px;
+    padding: 18px 20px;
     margin-bottom: 16px;
     position: relative;
     overflow: hidden;
-  }
-  #planeamento-turnaround-row{
-    position:absolute; right:20px; bottom:14px; margin-top:0;
   }
   .board-header::after{
     content:"";
@@ -165,6 +162,18 @@
   .board-stats b{ color: var(--cyan); font-weight:600; }
   .stat-link{ cursor:pointer; }
   .stat-link:hover{ color: var(--cyan); }
+  /* Explicit divider elements (not CSS ::before tricks) — these sit as real flex items, so
+     they space correctly with justify-content:space-between's variable gaps, unlike a fixed
+     -8px offset pseudo-element would. */
+  .header-divider{ color: rgba(95, 224, 255, 0.35); }
+  /* Removing the icons earlier freed up enough room that everything now fits on one line even
+     on a narrow phone screen, so the same space-evenly spread works consistently everywhere —
+     no more separate narrow-screen override needed. */
+  .nav-tabs-row{ justify-content: space-evenly; }
+  .board-stats-top{
+    border-top: 1px solid rgba(95, 224, 255, 0.12); border-bottom: 1px solid rgba(95, 224, 255, 0.12);
+    padding: 10px 0; justify-content: space-between;
+  }
 
   /* ---- Tabs ---- */
   .tabs{ display:flex; gap:8px; margin-bottom:16px; }
@@ -797,6 +806,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js"></script>
 </head>
 <body>
 <canvas id="bg-network" class="bg-fx" aria-hidden="true"></canvas>
@@ -928,12 +938,16 @@
     </div>
     <p class="eyebrow">TTAE GRUPO · FAO · PAX</p>
     <h1>TROCA-MISTO™</h1>
-    <div class="board-stats">
+    <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link">AGENTES <b id="stat-workers">—</b></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
       <span>VERSÃO <b id="stat-rules">2026.09.1</b></span>
     </div>
-    <div class="board-stats" id="planeamento-turnaround-row">
+    <div class="board-stats nav-tabs-row" id="planeamento-turnaround-row" style="border:1px solid var(--border); border-radius:8px 8px 0 0; padding:10px 16px; margin-top:12px; background: rgba(95, 224, 255, 0.05); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+      <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="As minhas trocas">
+        AS MINHAS TROCAS
+      </span>
+      <span class="header-divider">|</span>
       <span id="schedule-override-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Atualizar Horário (beta)">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -941,18 +955,22 @@
         </svg>
         ADMIN
       </span>
+      <span class="header-divider" id="admin-turnaround-divider">|</span>
       <span id="turnaround-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Registo de Turnaround">
-        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
-          <circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
-          <line x1="12" y1="12" x2="12" y2="6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          <line x1="12" y1="12" x2="16" y2="13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="1" fill="currentColor"/>
-        </svg>
         TURNAROUND
       </span>
+      <span class="header-divider">|</span>
       <span id="extra-hours-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Horas Extra">
-        <span style="color:var(--text-dim); font-size:14px; font-weight:700; line-height:1; width:14px; text-align:center;">€</span>
         HORAS EXTRA
+      </span>
+    </div>
+    <div id="logged-in-tab-row" style="display:flex; align-items:center; justify-content:space-between; gap:16px; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; padding:10px 16px; font-size:11px; font-family:var(--mono); width:80%; margin:-1px auto 0; background:#080D18; position:relative; z-index:1; box-shadow: inset 0 3px 6px rgba(0,0,0,0.4);">
+      <span style="display:inline-flex; align-items:center; gap:6px; color:var(--text-dim);">
+        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
+          <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span id="logged-in-as-display"></span>
       </span>
       <span id="logout-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--nogo);" title="Terminar sessão">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
@@ -1188,6 +1206,26 @@
     </div>
   </div>
 
+  <!-- AS MINHAS TROCAS PANEL — every swap involving just the logged-in person, both kinds
+       (Dia de Folga and Troca de Turno) combined into one place, instead of having to hunt
+       through TROCAS RECENTES which shows everyone's. -->
+  <div class="panel hidden" id="panel-my-swaps">
+    <button type="button" class="back-btn" id="my-swaps-back-btn" style="margin-bottom:16px;">← Voltar</button>
+    <p class="hint" style="margin-bottom:14px;">Todas as trocas em que estiveste envolvido — tanto Dia de Folga como Troca de Turno, como requerente ou como quem ajudou.</p>
+    <div class="recent-swaps-section">
+      <div class="results-head" id="my-swaps-title-head"><span id="my-swaps-title">AS MINHAS TROCAS</span></div>
+      <div class="swap-sort-toggle">
+        <div class="swap-sort-tab active" id="mine-sort-recentes"><span>RECENTES</span><div class="dash"></div></div>
+        <div class="swap-sort-tab" id="mine-sort-proximas"><span>PRÓXIMAS</span><div class="dash"></div></div>
+        <div class="swap-sort-tab" id="mine-sort-passadas"><span>PASSADAS</span><div class="dash"></div></div>
+      </div>
+      <div id="my-swaps-list"></div>
+      <div style="text-align:center;">
+        <button type="button" class="flag-btn" id="my-swaps-more-btn" style="display:none; margin-top:10px;">VER MAIS</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PEDIDOS PANEL ("I need a swap" request board) -->
   <div class="panel hidden" id="panel-requests">
 
@@ -1373,6 +1411,13 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Formulário Mod. 625 pré-preenchido</span>
       </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="notifications-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Notificações push</span>
+      </label>
     </div>
 
     <div id="stats-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
@@ -1452,6 +1497,17 @@ async function loadTrocaFormFeatureEnabled(){
 // leaving the UI showing something that never persisted.
 async function saveTrocaFormFeatureEnabled(){
   return await dbSetShared('trocaFormFeatureEnabled', { value: trocaFormFeatureEnabled });
+}
+// Master on/off switch for push notifications, controlled from RULES — shared across
+// everyone, same pattern as the other toggles there. When off, this device neither asks for
+// notification permission nor registers for a push token at all.
+let notificationsEnabled = false;
+async function loadNotificationsEnabled(){
+  const doc = await dbGetShared('notificationsEnabled', null);
+  notificationsEnabled = doc ? !!doc.value : false;
+}
+async function saveNotificationsEnabled(){
+  return await dbSetShared('notificationsEnabled', { value: notificationsEnabled });
 }
 const TROCA_FORM_TEMPLATE_B64 = "JVBERi0xLjQKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSIC9GMiAzIDAgUiAvRjMgNCAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL0Jhc2VGb250IC9IZWx2ZXRpY2EgL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcgL05hbWUgL0YxIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKMyAwIG9iago8PAovQmFzZUZvbnQgL0hlbHZldGljYS1PYmxpcXVlIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nIC9OYW1lIC9GMiAvU3VidHlwZSAvVHlwZTEgL1R5cGUgL0ZvbnQKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL0Jhc2VGb250IC9IZWx2ZXRpY2EtQm9sZCAvRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZyAvTmFtZSAvRjMgL1N1YnR5cGUgL1R5cGUxIC9UeXBlIC9Gb250Cj4+CmVuZG9iago1IDAgb2JqCjw8L1R5cGUgL0VuY29kaW5nIC9EaWZmZXJlbmNlcyBbMjQgL2JyZXZlIC9jYXJvbiAvY2lyY3VtZmxleCAvZG90YWNjZW50IC9odW5nYXJ1bWxhdXQgL29nb25layAvcmluZyAvdGlsZGUgMzkgL3F1b3Rlc2luZ2xlIDk2IC9ncmF2ZSAxMjggL2J1bGxldCAvZGFnZ2VyIC9kYWdnZXJkYmwgL2VsbGlwc2lzIC9lbWRhc2ggL2VuZGFzaCAvZmxvcmluIC9mcmFjdGlvbiAvZ3VpbHNpbmdsbGVmdCAvZ3VpbHNpbmdscmlnaHQgL21pbnVzIC9wZXJ0aG91c2FuZCAvcXVvdGVkYmxiYXNlIC9xdW90ZWRibGxlZnQgL3F1b3RlZGJscmlnaHQgL3F1b3RlbGVmdCAvcXVvdGVyaWdodCAvcXVvdGVzaW5nbGJhc2UgL3RyYWRlbWFyayAvZmkgL2ZsIC9Mc2xhc2ggL09FIC9TY2Fyb24gL1lkaWVyZXNpcyAvWmNhcm9uIC9kb3RsZXNzaSAvbHNsYXNoIC9vZSAvc2Nhcm9uIC96Y2Fyb24gMTYwIC9FdXJvIDE2NCAvY3VycmVuY3kgMTY2IC9icm9rZW5iYXIgMTY4IC9kaWVyZXNpcyAvY29weXJpZ2h0IC9vcmRmZW1pbmluZSAxNzIgL2xvZ2ljYWxub3QgLy5ub3RkZWYgL3JlZ2lzdGVyZWQgL21hY3JvbiAvZGVncmVlIC9wbHVzbWludXMgL3R3b3N1cGVyaW9yIC90aHJlZXN1cGVyaW9yIC9hY3V0ZSAvbXUgMTgzIC9wZXJpb2RjZW50ZXJlZCAvY2VkaWxsYSAvb25lc3VwZXJpb3IgL29yZG1hc2N1bGluZSAxODggL29uZXF1YXJ0ZXIgL29uZWhhbGYgL3RocmVlcXVhcnRlcnMgMTkyIC9BZ3JhdmUgL0FhY3V0ZSAvQWNpcmN1bWZsZXggL0F0aWxkZSAvQWRpZXJlc2lzIC9BcmluZyAvQUUgL0NjZWRpbGxhIC9FZ3JhdmUgL0VhY3V0ZSAvRWNpcmN1bWZsZXggL0VkaWVyZXNpcyAvSWdyYXZlIC9JYWN1dGUgL0ljaXJjdW1mbGV4IC9JZGllcmVzaXMgL0V0aCAvTnRpbGRlIC9PZ3JhdmUgL09hY3V0ZSAvT2NpcmN1bWZsZXggL090aWxkZSAvT2RpZXJlc2lzIC9tdWx0aXBseSAvT3NsYXNoIC9VZ3JhdmUgL1VhY3V0ZSAvVWNpcmN1bWZsZXggL1VkaWVyZXNpcyAvWWFjdXRlIC9UaG9ybiAvZ2VybWFuZGJscyAvYWdyYXZlIC9hYWN1dGUgL2FjaXJjdW1mbGV4IC9hdGlsZGUgL2FkaWVyZXNpcyAvYXJpbmcgL2FlIC9jY2VkaWxsYSAvZWdyYXZlIC9lYWN1dGUgL2VjaXJjdW1mbGV4IC9lZGllcmVzaXMgL2lncmF2ZSAvaWFjdXRlIC9pY2lyY3VtZmxleCAvaWRpZXJlc2lzIC9ldGggL250aWxkZSAvb2dyYXZlIC9vYWN1dGUgL29jaXJjdW1mbGV4IC9vdGlsZGUgL29kaWVyZXNpcyAvZGl2aWRlIC9vc2xhc2ggL3VncmF2ZSAvdWFjdXRlIC91Y2lyY3VtZmxleCAvdWRpZXJlc2lzIC95YWN1dGUgL3Rob3JuIC95ZGllcmVzaXNdPj4KZW5kb2JqCjYgMCBvYmoKPDwgL0Jhc2VGb250IC9IZWx2ZXRpY2Eg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NzMyIDE4MS44OTYyIDY3My4xNzMyIF0gL1N1YnR5cGUgL1dpZGdldCAKICAvVCAodHVybm9fYXR1YWwpIC9UVSAodHVybm9fYXR1YWwpIC9UeXBlIC9Bbm5vdCAvViAoKQo+PgplbmRvYmoKMjEgMCBvYmoKPDwgL0Jhc2VGb250IC9IZWx2ZXRpY2EgL1N1YnR5cGUgL1R5cGUxIC9OYW1lIC9IZWx2IC9UeXBlIC9Gb250IC9FbmNvZGluZyA1IDAgUiA+PgplbmRvYmoKMjIgMCBvYmoKPDwKL0JCb3ggWyAwIDAgNjguMDMxNSAxNCBdIC9GaWx0ZXIgWyAvRmxhdGVEZWNvZGUgXSAvRm9ybVR5cGUgMSAvTGVuZ3RoIDk3IC9NYXRyaXggWyAxIDAgMCAxIDAgMCBdIC9SZXNvdXJjZXMgPDwgL1Byb2NTZXQgWy9QREYgL1RleHRdIC9Gb250IDw8L0hlbHYgMjEgMCBSPj4gPj4gCiAgL1N1YnR5cGUgL0Zvcm0gL1R5cGUgL1hPYmplY3QKPj4Kc3RyZWFtCnicM1AwAMIgdwUDPXNThXIQT88YyMpVMLPQMzA2NLE0MzAzsrQ0MjSGyuQoFHPph1QoOPk6K3AVchnqmSqAsJkpunJDQz0DhaJUrnCuPC4DhXQgducK5HL1deYCAHTSF55lbmRzdHJlYW0KZW5kb2JqCjIzIDAgb2JqCjw8Ci9BUCA8PAovTiAyMiAwIFIKPj4gL0JTIDw8Ci9TIC9VIC9XIC43NQo+PiAvREEgKC9IZWx2IDAgVGYgLjEgLjEgLjEgcmcpIC9EViAoKSAvRiA0IC9GVCAvVHggCiAgL0ZmIDAgL01LIDw8Ci9CQyBbIDAgMCAwIF0gL0JHIFsgIF0KPj4gL01heExlbiAxMDAgL1AgNDUgMCBSIC9SZWN0IFsgMjE3Ljc5NDEgNjU5LjE3MzIgMjg1LjgyNTYgNjczLjE3MzIgXSAvU3VidHlwZSAvV2lkZ2V0IAogIC9UIChkaWFfYXR1YWwpIC9UVSAoZGlhX2F0dWFsKSAvVHlwZSAvQW5ub3QgL1YgKCkKPj4KZW5kb2JqCjI0IDAgb2JqCjw8IC9CYXNlRm9udCAvSGVsdmV0aWNhIC9TdWJ0eXBlIC9UeXBlMSAvTmFtZSAvSGVsdiAvVHlwZSAvRm9udCAvRW5jb2RpbmcgNSAwIFIgPj4KZW5kb2JqCjI1IDAgb2JqCjw8Ci9CQm94IFsgMCAwIDY4LjAzMTUgMTQgXSAvRmlsdGVyIFsgL0ZsYXRlRGVjb2RlIF0gL0Zvcm1UeXBlIDEgL0xlbmd0aCAxMzggL01hdHJpeCBbIDEgMCAwIDEgMCAwIF0gL1Jlc291cmNlcyA8PCAvUHJvY1NldCBbL1BERiAvVGV4dF0gL0ZvbnQgPDwvSGVsdiAyNCAwIFI+PiA+PiAKICAvU3VidHlwZSAvRm9ybSAvVHlwZSAvWE9iamVjdAo+PgpzdHJlYW0KeJxdTkEKwjAQvM8r5qiXdDcx0VxbSr0UUQK+oC1IK1hBfb6pepLdgRlmd3aFkuvUUMzW87ko4zKbGHZGnG5ikGBjtOp+zsg7ivRi2VbEDWo8FwT/P65qhHOHM64QDhkNyoRi342PfCf1MMpvzwP084jS5SW1OTBNWB36fs10QZ1wRN1WeANJ5CQrZW5kc3RyZWFtCmVuZG9iagoyNiAwIG9iago8PAovQVAgPDwKL04gMjUgMCBSCj4+IC9CUyA8PAovUyAvVSAvVyAuNzUKPj4gL0RBICgvSGVsdiAwIFRmIC4xIC4xIC4xIHJnKSAvRFYgKE9mZikgL0YgNCAvRlQgL1R4IAogIC9GZiAwIC9NSyA8PAovQkMgWyAwIDAgMCBdIC9CRyBbICBdCj4+IC9NYXhMZW4gMTAwIC9QIDQ1IDAgUiAvUmVjdCBbIDM3NC4xNzg1IDY1OS4xNzMyIDQ0Mi4yMSA2NzMuMTczMiBdIC9TdWJ0eXBlIC9XaWRnZXQgCiAgL1QgKHR1cm5vX25vdm8pIC9UVSAodHVybm9fbm92bykgL1R5cGUgL0Fubm90IC9WIChPZmYpCj4+CmVuZG9iagoyNyAwIG9iago8PCAvQmFzZUZvbnQgL0hlbHZldGljYSAvU3VidHlwZSAvVHlwZTEgL05hbWUgL0hlbHYgL1R5cGUgL0ZvbnQgL0VuY29kaW5nIDUgMCBSID4+CmVuZG9iagoyOCAwIG9iago8PAovQkJveCBbIDAgMCA1MS45NzA4NyAxNCBdIC9GaWx0ZXIgWyAvRmxhdGVEZWNvZGUgXSAvRm9ybVR5cGUgMSAvTGVuZ3RoIDk2IC9NYXRyaXggWyAxIDAgMCAx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IDAgUiAvUHJvY1NldCBbIC9QREYgL1RleHQgL0ltYWdlQiAvSW1hZ2VDIC9JbWFnZUkgXQo+PiAvUm90YXRlIDAgCiAgL1RyYW5zIDw8Cgo+PiAvVHlwZSAvUGFnZQo+PgplbmRvYmoKNDYgMCBvYmoKPDwKL0Fjcm9Gb3JtIDUwIDAgUiAvUGFnZU1vZGUgL1VzZU5vbmUgL1BhZ2VzIDQ4IDAgUiAvVHlwZSAvQ2F0YWxvZwo+PgplbmRvYmoKNDcgMCBvYmoKPDwKL0F1dGhvciAoYW5vbnltb3VzKSAvQ3JlYXRpb25EYXRlIChEOjIwMjYwOTAxMjAxOTEyKzAwJzAwJykgL0NyZWF0b3IgKGFub255bW91cykgL0tleXdvcmRzICgpIC9Nb2REYXRlIChEOjIwMjYwOTAxMjAxOTEyKzAwJzAwJykgL1Byb2R1Y2VyIChSZXBvcnRMYWIgUERGIExpYnJhcnkgLSBcKG9wZW5zb3VyY2VcKSkgCiAgL1N1YmplY3QgKHVuc3BlY2lmaWVkKSAvVGl0bGUgKHVudGl0bGVkKSAvVHJhcHBlZCAvRmFsc2UKPj4KZW5kb2JqCjQ4IDAgb2JqCjw8Ci9Db3VudCAxIC9LaWRzIFsgNDUgMCBSIF0gL1R5cGUgL1BhZ2VzCj4+CmVuZG9iago0OSAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAxMTAyCj4+CnN0cmVhbQpHYiEjWzlsZ3Q+JSkpTz5rU1E7I1hdQnI+Jk9PIkNaS3E7TGJFK1FzPDlzcC4pbGlWYFVSbEhmU21ZSTlSOEAralw9Qi0za3QrXCFsUiNJIVUjdTVlIVVzaDJpc1BxOjBgOyxiZChvOG9dVT1jY141blJmKlAvMkU0PTxULjJMbCplK2lGQDUtdEtXRiczcFJFcDojQWZkMDBtY1lUMiFvbTw7NDRaQComIUdSV0daTyxSREUrP09kP0hRMkckVzxTcE1AVCphNEhyRCo4MkJITG5AWDY1cUxmU2otZGZsN0llOVM9MFNbImtOWUAjKjskVlhua1puVDVAJWlxPVBKOD88SSwvO2JLRE9hQ0FJOHJTSEpdbDxZZVUic2RiZi05QjVIYHNLWkJPamdCJyVWRSNYXCY3RUJiKTBPbUtAYWkkSXBAUitWMV8/WEckO0QkTWlgJCdqWDJHRV9aOV4xc0JlVUBCJ1M2bThAPT8tdD0tbydjK24qZ1E7OTkxQU5ZXSk+bD5mLDVxImxSKGAjPmM1PUhcYlxAdTJxPj8nNmktUUVvPyNhKWo3bTZXRFBjOSctIlRfSCteJ3MwQi1bQUosRVQsQTgvbVdwZDdsUjRIOShpcjJaYVJBa2UsT0c1W0lPWEZBcUBKMiZwY2FTT2Y+Z0xIUThSZWlLPVtdZCNmaSNJRXQxcEBFUSk+bUg+STRQYSJfPnFMX2VvJ19NUGpdJyg4QXBIODtRZHRKQitfcDJmVydWI1dOInRZaURMKGtaSVtqIytGO1YpN3I9SyIjQmpraF1nJzRAcEhaW1IuL2RBQFJFRSlBajFxQCNKP3FMay1qS3FaVCksU1RVM1pQc2I1K0lvb0EpNms9LTg0WmNnSjtPQktqUTJHQDgyaVwkMFpLWU8mTCplLCFfU2traTRpS1pMS2JDajEyW1Q+MDllTGwsM1tzTnRPTlQsLSI3IiEuQHIzVmZCZC9bO01eZjxZIWUlWnJZLTxRdSFgR2dLNihfZ2JWaUFVcztYT1I2L2NdOmhwZUArIlVeOFlcbTMxNTctIUBFRk0oQSNLWytRVGxeaHI8NmM5XEYlJE5CJj9vSWBjUkU2YG0pJy1zLDtEZGBJajg+ckgnRl5dVWsmLClyIkIuP01kXFJHWlo9Y19nIUwvWlYjIyJWYUtBXFUnNWk3X0plJ2xeLSdLbkA9R1xfcFVtK0hvUHNuPlJyaShIX0xFdUhBZW1II0JUIkdTY2hkM2BeZGQsIz9HQVs0cFxTVlluNTU5I3RdbCV0QVBVJXBlZShdNWFbV2diaCU8T1ZhKld0N2llV1BkVl8+XFJfa05mS2stSjQqY1BjTTVfYGc8MSxFWTJMSlFRTmJBKiE4TFpeYlgvXCNYNkpYPGpOVj5gQj86VVo/IiU8Pz5AVy0kJlY7UFVCQDkyYGNaJzYpTChWXFhoLS5YW19oNTVLakpGdX4+ZW5kc3RyZWFtCmVuZG9iago1MCAwIG9iago8PAovREEgKC9IZWx2IDAgVGYgMCBnKSAvRFIgPDwgL0VuY29kaW5nCjw8Ci9STEFGZW5jb2RpbmcKNSAwIFIKPj4KL0ZvbnQgPDwgL0hlbHYgNiAwIFIgPj4KPj4gL0ZpZWxkcyBbIDggMCBSIDExIDAgUiAxNCAwIFIgMTcgMCBSIDIwIDAgUiAyMyAwIFIgMjYgMCBSIDI5IDAgUiAzMiAwIFIgMzUgMCBSIAogIDM4IDAgUiA0MSAwIFIgNDQgMCBSIF0KPj4KZW5kb2JqCnhyZWYKMCA1MQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwNjEgMDAwMDAgbiAKMDAwMDAwMDExMiAwMDAwMCBuIAowMDAwMDAwMjE5IDAwMDAwIG4gCjAwMDAwMDAzMzQgMDAwMDAgbiAKMDAwMDAwMDQ0NiAwMDAwMCBuIAowMDAwMDAxNzY4IDAwMDAwIG4gCjAwMDAwMDE4NjYgMDAwMDAgbiAKMDAwMDAwMjE5MyAwMDAwMCBuIAowMDAwMDAyNDk3IDAwMDAwIG4gCjAwMDAwMDI1OTUgMDAwMDAgbiAKMDAwMDAwMjkyMyAwMDAwMCBuIAowMDAwMDAzMjM5IDAwMDAwIG4gCjAwMDAwMDMzMzggMDAwMDAgbiAKMDAwMDAwMzcxNSAwMDAwMCBuIAowMDAwMDA0MDQ1IDAwMDAwIG4gCjAwMDAwMDQxNDQgMDAwMDAgbiAKMDAwMDAwNDQ3NCAwMDAwMCBuIAowMDAwMDA0Nzg0IDAwMDAwIG4gCjAwMDAwMDQ4ODMgMDAwMDAgbiAKMDAwMDAwNTIxMCAwMDAwMCBuIAowMDAwMDA1NTA4IDAwMDAwIG4gCjAwMDAwMDU2MDcgMDAwMDAgbiAKMDAwMDAwNTkzNSAwMDAwMCBuIAowMDAwMDA2MjI5IDAwMDAwIG4gCjAwMDAwMDYzMjggMDAwMDAgbiAKMDAwMDAwNjY5OCAwMDAwMCBuIAowMDAwMDA2OTk4IDAwMDAwIG4gCjAwMDAwMDcwOTcgMDAwMDAgbiAKMDAwMDAwNzQyNSAwMDAwMCBuIAowMDAwMDA3NzE3IDAwMDAwIG4gCjAwMDAwMDc4MTYgMDAwMDAgbiAKMDAwMDAwODE0NiAwMDAwMCBuIAowMDAwMDA4NDUyIDAwMDAwIG4gCjAwMDAwMDg1NTEgMDAwMDAgbiAKMDAwMDAwODg4MCAwMDAwMCBuIAowMDAwMDA5MTk2IDAwMDAwIG4gCjAwMDAwMDkyOTUgMDAwMDAgbiAKMDAwMDAwOTY3MiAwMDAwMCBuIAowMDAwMDEwMDAyIDAwMDAwIG4gCjAwMDAwMTAxMDEgMDAwMDAgbiAKMDAwMDAxMDQzMSAwMDAwMCBuIAowMDAwMDEwNzQxIDAwMDAwIG4gCjAwMDAwMTA4NDAgMDAwMDAgbiAKMDAwMDAxMTE3MSAwMDAwMCBuIAowMDAwMDExNDU4IDAwMDAwIG4gCjAwMDAwMTE4MDUgMDAwMDAgbiAKMDAwMDAxMTg5MiAwMDAwMCBuIAowMDAwMDEyMTU0IDAwMDAwIG4gCjAwMDAwMTIyMTUgMDAwMDAgbiAKMDAwMDAxMzQwOSAwMDAwMCBuIAp0cmFpbGVyCjw8Ci9JRCAKWzw4ZTYyZjYyOTE3OTlhMzIwZWY4ZmFiMTQ2OTc1ZGFhOD48OGU2MmY2MjkxNzk5YTMyMGVmOGZhYjE0Njk3NWRhYTg+XQolIFJlcG9ydExhYiBnZW5lcmF0ZWQgUERGIGRvY3VtZW50IC0tIGRpZ2VzdCAob3BlbnNvdXJjZSkKCi9JbmZvIDQ3IDAgUgovUm9vdCA0NiAwIFIKL1NpemUgNTEKPj4Kc3RhcnR4cmVmCjEzNjI3CiUlRU9GCg==";
 
@@ -2752,6 +2808,26 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
   return wrap;
 }
 loadSwaps().then(() => refreshRecentSwapsLists());
+// ---------- live updates ----------
+// Instead of only ever refreshing SWAPS when something explicitly asks for it, this keeps a
+// standing connection open to Firestore — the callback below fires automatically the instant
+// ANYONE (this device, or literally anyone else's) creates, changes, or deletes a swap. No
+// refresh, no waiting on the periodic background check — the board just stays live for
+// everyone at once, which is the entire point of a shared tool like this.
+getDb().then(db => {
+  if(!db) return;
+  db.collection('swaps').onSnapshot(snapshot => {
+    const updated = {};
+    snapshot.forEach(d => { updated[d.id] = JSON.parse(JSON.stringify(d.data())); });
+    SWAPS = updated;
+    refreshRecentSwapsLists();
+    // Only worth re-rendering the multi-day calendar if it's actually the visible panel right
+    // now — a live swap elsewhere could affect the SWAP/PENDENTE status shown there for
+    // whoever the calendar is currently displaying.
+    const requestsPanel = document.getElementById('panel-requests');
+    if(requestsPanel && !requestsPanel.classList.contains('hidden')) renderMultiDayCalendar();
+  });
+});
 
 // ---------- Horas Extra — staff working a day they're normally off (shared) ----------
 let EXTRA_HOURS = {};
@@ -2938,6 +3014,7 @@ async function checkAccessPassword(){
     localStorage.setItem('trocaMistoLoginIsAdmin', String(isAdmin));
     document.getElementById('access-portal').classList.add('hidden');
     applyAdminVisibility();
+    updateLoggedInDisplay(staffId, worker.name);
     await loadMaintenanceConfig(); // always check the freshest state, never a possibly-stale cached one
     if(maintenanceConfig.enabled && !isAdminSession){
       document.getElementById('maintenance-screen-reason').textContent = maintenanceConfig.reason || 'Em manutenção';
@@ -2957,6 +3034,10 @@ async function checkAccessPassword(){
 function applyAdminVisibility(){
   const adminLink = document.getElementById('schedule-override-link');
   if(adminLink) adminLink.style.display = isAdminSession ? '' : 'none';
+  // The divider right after ADMIN needs to hide along with it — otherwise a non-admin
+  // session would show a stray "|" with nothing before it.
+  const adminDivider = document.getElementById('admin-turnaround-divider');
+  if(adminDivider) adminDivider.style.display = isAdminSession ? '' : 'none';
   const agentesLink = document.getElementById('stat-workers-link');
   if(agentesLink){
     if(isAdminSession){
@@ -2968,6 +3049,41 @@ function applyAdminVisibility(){
       agentesLink.style.pointerEvents = 'none';
       agentesLink.style.opacity = '0.6';
     }
+  }
+}
+// Shows who's currently logged in on this device, in the small tab row under the main links —
+// name first (highlighted), then staff number, so it's clear at a glance whose session this is.
+function updateLoggedInDisplay(staffId, name){
+  const el = document.getElementById('logged-in-as-display');
+  if(el) el.innerHTML = '<span style="color:var(--cyan);">' + escapeHtml(name) + '</span> - ' + escapeHtml(staffId);
+}
+// ---------- push notifications ----------
+// The VAPID key is a public identifier for this Firebase project (not a secret) — it's what
+// lets FCM authorize this specific app to request a push subscription on a visitor's behalf.
+const FCM_VAPID_KEY = 'BMsieXuop7EUqttZtVWdEVp32M4nxoiH9eHfanMC08A4jlaheOIbKUA3YQBW0kGPZvw8X5jfR5B4eHSVItiuSrk';
+// Called whenever notifications are (or already were) turned on for this device — asks for
+// browser permission if needed, registers the service worker, gets this device's own unique
+// push address from FCM, and saves it to Firestore linked to whoever's logged in right now.
+// Safe to call repeatedly (e.g. on every login) — a device already granted/registered just
+// gets its token refreshed, which is harmless and keeps it from ever going stale.
+async function setupPushNotificationsForThisDevice(staffId){
+  if(!('Notification' in window) || !('serviceWorker' in navigator)){
+    return; // this browser doesn't support web push at all — nothing to do
+  }
+  try{
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted') return; // person declined — respect that silently, no error shown
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const messaging = firebase.messaging();
+    const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
+    if(!token) return;
+    // Each device gets its own document, keyed by its own token (tokens are unique per
+    // device/browser) — this way, if the same person logs in on their phone AND their
+    // computer, both get notified independently, rather than one overwriting the other.
+    await dbSetCollectionEntry('pushTokens', token, { staffId: staffId, updatedAt: Date.now() });
+  } catch(e){
+    // Silent failure by design — a notification setup problem shouldn't interrupt or block
+    // anyone from using the actual app underneath it.
   }
 }
 document.getElementById('access-portal-btn').addEventListener('click', checkAccessPassword);
@@ -2995,6 +3111,7 @@ document.getElementById('access-portal-staffnum').addEventListener('input', upda
   isAdminSession = localStorage.getItem('trocaMistoLoginIsAdmin') === 'true';
   document.getElementById('access-portal').classList.add('hidden');
   applyAdminVisibility();
+  updateLoggedInDisplay(savedStaffId, worker.name);
   saveRememberedName(worker.name); // keep the existing rememberedName mechanism in sync
   // Deferred with setTimeout(0) — this whole IIFE runs immediately, inline, at this exact
   // point in the script, which is BEFORE the "let coverWorker/tradeA/..." declarations
@@ -3068,7 +3185,12 @@ function renderSwapsListGeneric(showAll, cfg){
     const worker = DATA.workers.find(w => w.id === workerId);
     return { key, workerId, idx, worker, s: SWAPS[key] };
   }).filter(e => e.worker)
-    .filter(e => classifySwapType(e.workerId, e.idx, e.s.type) === cfg.wantedType);
+    // wantedType is optional — when omitted (e.g. "as minhas trocas", which combines both
+    // kinds), every type passes through instead of being filtered down to just one.
+    .filter(e => !cfg.wantedType || classifySwapType(e.workerId, e.idx, e.s.type) === cfg.wantedType)
+    // personFilter is likewise optional — only "as minhas trocas" actually sets one, to show
+    // just the entries a specific person is genuinely part of (either side of the swap).
+    .filter(e => !cfg.personFilter || cfg.personFilter(e));
 
   const sortMode = cfg.sortModeGetter ? cfg.sortModeGetter() : 'recentes';
   if(sortMode === 'passadas'){
@@ -3110,9 +3232,13 @@ function renderSwapsListGeneric(showAll, cfg){
     // e.worker's actual current schedule — may since have been corrected via a schedule
     // override on top of the swap, so this is what should show as their real "now" time.
     const ownEffective = getEffectiveEntry(e.worker, e.idx);
+    // This entry's OWN actual type — not cfg.wantedType, which is only set when a list is
+    // restricted to one kind. "As minhas trocas" mixes both kinds in one list, so each row
+    // needs to render itself correctly regardless of what (if anything) the config filtered by.
+    const actualType = classifySwapType(e.workerId, e.idx, e.s.type);
     let rowSubHtml;
 
-    if(cfg.wantedType === 'cover'){
+    if(actualType === 'cover'){
       // asymmetric: e.worker was off, took over partner's shift; partner is now off instead
       const ownCode = ownOriginal.status === 'off' ? (ownOriginal.codes[0] || 'off') : (ownOriginal.status === 'work' ? fmtHHMM(ownOriginal.start)+'-'+fmtHHMM(ownOriginal.end) : '—');
       const partnerOriginal = partnerWorker ? getEntry(partnerWorker, e.idx) : null;
@@ -3171,10 +3297,24 @@ function renderSwapsListGeneric(showAll, cfg){
 }
 let recentTurnoSwapsExpanded = false;
 let turnoSwapsSortMode = 'recentes';
+let myTrocasExpanded = false;
+let myTrocasSortMode = 'recentes';
 const COVER_SWAPS_CFG = { listId:'recent-swaps-list', moreBtnId:'recent-swaps-more-btn', titleId:'recent-swaps-title', wantedType:'cover', expandedGetter: () => recentSwapsExpanded, sortModeGetter: () => coverSwapsSortMode };
 const TURNO_SWAPS_CFG = { listId:'recent-swaps-turno-list', moreBtnId:'recent-swaps-turno-more-btn', titleId:'recent-swaps-turno-title', wantedType:'timeswap', expandedGetter: () => recentTurnoSwapsExpanded, sortModeGetter: () => turnoSwapsSortMode };
+// No wantedType — combines Dia de Folga and Troca de Turno together, since "as minhas
+// trocas" means everything the logged-in person is part of, not one kind specifically.
+const MY_SWAPS_CFG = {
+  listId:'my-swaps-list', moreBtnId:'my-swaps-more-btn', titleId:'my-swaps-title',
+  expandedGetter: () => myTrocasExpanded, sortModeGetter: () => myTrocasSortMode,
+  personFilter: (e) => {
+    const me = DATA.workers.find(w => w.name === rememberedName);
+    if(!me) return false;
+    return e.workerId === me.id || e.s.withId === me.id;
+  }
+};
 function renderCoverSwapsList(showAll){ renderSwapsListGeneric(showAll, COVER_SWAPS_CFG); }
 function renderTurnoSwapsList(showAll){ renderSwapsListGeneric(showAll, TURNO_SWAPS_CFG); }
+function renderMySwapsList(showAll){ renderSwapsListGeneric(showAll, MY_SWAPS_CFG); }
 function setupSwapSortTabs(prefix, setMode, renderFn, expandedGetter){
   ['recentes','proximas','passadas'].forEach(mode => {
     document.getElementById(prefix+'-sort-'+mode).addEventListener('click', () => {
@@ -3188,9 +3328,31 @@ function setupSwapSortTabs(prefix, setMode, renderFn, expandedGetter){
 }
 setupSwapSortTabs('cover', (m) => { coverSwapsSortMode = m; }, renderCoverSwapsList, () => recentSwapsExpanded);
 setupSwapSortTabs('turno', (m) => { turnoSwapsSortMode = m; }, renderTurnoSwapsList, () => recentTurnoSwapsExpanded);
+setupSwapSortTabs('mine', (m) => { myTrocasSortMode = m; }, renderMySwapsList, () => myTrocasExpanded);
+document.getElementById('my-swaps-more-btn').addEventListener('click', () => {
+  myTrocasExpanded = !myTrocasExpanded;
+  renderMySwapsList(myTrocasExpanded);
+});
+function openMySwaps(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector('.tabs').classList.add('hidden');
+  document.getElementById('panel-my-swaps').classList.remove('hidden');
+  renderMySwapsList(myTrocasExpanded);
+}
+function closeMySwaps(){
+  document.querySelector('.tabs').classList.remove('hidden');
+  document.getElementById('panel-my-swaps').classList.add('hidden');
+  switchTab('cover');
+}
+document.getElementById('my-swaps-link').addEventListener('click', openMySwaps);
+document.getElementById('my-swaps-back-btn').addEventListener('click', closeMySwaps);
 function refreshRecentSwapsLists(){
   renderCoverSwapsList(recentSwapsExpanded);
   renderTurnoSwapsList(recentTurnoSwapsExpanded);
+  // Only worth re-rendering if the panel is actually the one currently visible — same
+  // reasoning as the multi-day calendar check in the live-update listener.
+  const mySwapsPanel = document.getElementById('panel-my-swaps');
+  if(mySwapsPanel && !mySwapsPanel.classList.contains('hidden')) renderMySwapsList(myTrocasExpanded);
 }
 document.getElementById('recent-swaps-more-btn').addEventListener('click', () => {
   recentSwapsExpanded = !recentSwapsExpanded;
@@ -3730,6 +3892,7 @@ function countCleanCoverCandidates(myEntry, excludeWorkerId, idx){
     if(isSandwichedInVacation(w, idx)) continue;
     if(isExtraHours(w.id, idx)) continue;
     if(trocaSobreTrocaEnabled && findSwapRecordFor(w, idx)) continue;
+    if(hasMedAppointment(w.id, idx)) continue; // fixed appointment that day — not actually a clean, available candidate
     if(hourFilters.length > 0 && !hourFilters.includes(TYPICAL_HOURS[w.id])) continue;
     const overrides = {};
     overrides[idx] = {status:'work', start: myEntry.start, end: myEntry.end};
@@ -4846,6 +5009,13 @@ function findReciprocalSwapHintDay(requesterWorker, viewerWorker){
     if(isBookingBlocked(d)) continue; // today-or-earlier isn't a real, actionable suggestion
     const reqEntry = getEffectiveEntry(requesterWorker, d);
     if(reqEntry.status === 'work') continue; // requester needs to be off this day to reciprocate
+    // Being off because of an already-existing swap (someone else covering them, or them
+    // covering someone else) isn't the same as a genuine, available day off — a second swap
+    // stacked onto the same day is exactly what "troca sobre troca" blocks, so suggesting
+    // this day as a reciprocal opportunity would point at something that can't actually be
+    // acted on. Only applies while that rule is actually active — if it's been turned off,
+    // stacking is genuinely allowed, so the day is a real opportunity again.
+    if(trocaSobreTrocaEnabled && findSwapRecordFor(requesterWorker, d)) continue;
     const viewerEntry = getEffectiveEntry(viewerWorker, d);
     if(viewerEntry.status !== 'work') continue; // has to be a day the viewer would actually need covering
     const dayBeforeOff = d > 0 && getEffectiveEntry(viewerWorker, d-1).status !== 'work';
@@ -5161,6 +5331,7 @@ function startClaimFlow(key){
     if(isBlocked(w.id)) return false;
     if(w.id === req.requesterId) return false;
     if(trocaSobreTrocaEnabled && findSwapRecordFor(w, req.idx)) return false;
+    if(hasMedAppointment(w.id, req.idx)) return false; // matches computeClaimIssues' own med check — see the comment above
     if(req.type === 'cover'){
       const e = getEntry(w, req.idx);
       return isEligibleOffDay(e) && !isSandwichedInVacation(w, req.idx) && !isExtraHours(w.id, req.idx);
@@ -5294,6 +5465,19 @@ async function processClaim(key, volunteer){
   }, hasMedIssue, 'CONFIRMAR');
 }
 loadRequests();
+// Same live-update pattern as swaps above — every PEDIDOS post, claim, or deletion from
+// anyone updates this device's view automatically, no refresh needed.
+getDb().then(db => {
+  if(!db) return;
+  db.collection('requests').onSnapshot(snapshot => {
+    const updated = {};
+    snapshot.forEach(d => { updated[d.id] = JSON.parse(JSON.stringify(d.data())); });
+    REQUESTS = updated;
+    renderOpenRequests();
+    const requestsPanel = document.getElementById('panel-requests');
+    if(requestsPanel && !requestsPanel.classList.contains('hidden')) renderMultiDayCalendar();
+  });
+});
 loadHideIneligibleRequests().then(() => { updateHideIneligibleIcon(); renderOpenRequests(); });
 // Login (checkAccessPassword / restoreLoginIfPresent) is now the authoritative source of
 // rememberedName — deliberately NOT re-loading it here anymore. That used to race against
@@ -5975,6 +6159,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('pedidos-deadline-enabled-toggle').checked = pedidosDeadlineEnabled;
   document.getElementById('troca-sobre-troca-enabled-toggle').checked = trocaSobreTrocaEnabled;
   document.getElementById('troca-form-feature-enabled-toggle').checked = trocaFormFeatureEnabled;
+  document.getElementById('notifications-enabled-toggle').checked = notificationsEnabled;
 });
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
@@ -5997,6 +6182,21 @@ document.getElementById('troca-form-feature-enabled-toggle').addEventListener('c
     trocaFormFeatureEnabled = !newValue;
     e.target.checked = trocaFormFeatureEnabled;
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
+  }
+});
+document.getElementById('notifications-enabled-toggle').addEventListener('change', async (e) => {
+  const newValue = e.target.checked;
+  notificationsEnabled = newValue;
+  const ok = await saveNotificationsEnabled();
+  if(!ok){
+    notificationsEnabled = !newValue;
+    e.target.checked = notificationsEnabled;
+    showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
+    return;
+  }
+  if(newValue){
+    const staffId = localStorage.getItem('trocaMistoLoginStaffId');
+    if(staffId) setupPushNotificationsForThisDevice(staffId);
   }
 });
 document.getElementById('custom1-toggle-btn').addEventListener('click', () => {
@@ -6206,8 +6406,12 @@ setInterval(async () => {
 // actually syncing anything across devices while silently looking like it still does. This
 // keeps that one real read (needed for cross-device sync) while dropping the unrelated,
 // unnecessary one, roughly halving what this timer costs every 30 seconds.
-setInterval(async () => {
-  await loadRequests();
+// The live onSnapshot listener above already keeps REQUESTS fresh the instant anything
+// actually changes — this interval's own job now is purely time-based: making the deadline
+// badges (e.g. "A EXPIRAR") visually update as the clock passes 13:00/17:00, even if nobody's
+// data has changed at all. No longer needs its own loadRequests() call — that would just be a
+// second, redundant storage read on top of what the live listener already handles.
+setInterval(() => {
   renderOpenRequests();
 }, 30000);
 
@@ -6216,11 +6420,19 @@ Promise.all([
   loadPedidosDeadlineEnabled(),
   loadTrocaSobreTrocaEnabled(),
   loadTrocaFormFeatureEnabled(),
+  loadNotificationsEnabled(),
   loadMilestoneState(),
   loadTempMessage(),
 ]).then(() => {
   checkAndTriggerMilestones(); // in case SWAPS already crossed a threshold before this session opened
   renderEndOfMonthWarning();
+  // If notifications were already turned on in an earlier session, re-register this device's
+  // token now that both login and the toggle's real value have finished loading — keeps the
+  // token fresh without needing the person to toggle it again themselves.
+  if(notificationsEnabled){
+    const staffId = localStorage.getItem('trocaMistoLoginStaffId');
+    if(staffId) setupPushNotificationsForThisDevice(staffId);
+  }
 });
 </script>
 </body>
