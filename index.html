@@ -3068,22 +3068,23 @@ const FCM_VAPID_KEY = 'BMsieXuop7EUqttZtVWdEVp32M4nxoiH9eHfanMC08A4jlaheOIbKUA3Y
 // gets its token refreshed, which is harmless and keeps it from ever going stale.
 async function setupPushNotificationsForThisDevice(staffId){
   if(!('Notification' in window) || !('serviceWorker' in navigator)){
-    return; // this browser doesn't support web push at all — nothing to do
+    alert('FCM DEBUG: this browser does not support Notification or serviceWorker at all.');
+    return;
   }
   try{
     const permission = await Notification.requestPermission();
-    if(permission !== 'granted') return; // person declined — respect that silently, no error shown
+    alert('FCM DEBUG: permission result = ' + permission);
+    if(permission !== 'granted') return;
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    alert('FCM DEBUG: service worker registered OK. Scope: ' + registration.scope);
     const messaging = firebase.messaging();
     const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registration });
+    alert('FCM DEBUG: token = ' + (token ? token.slice(0, 20) + '...' : 'EMPTY/NULL'));
     if(!token) return;
-    // Each device gets its own document, keyed by its own token (tokens are unique per
-    // device/browser) — this way, if the same person logs in on their phone AND their
-    // computer, both get notified independently, rather than one overwriting the other.
-    await dbSetCollectionEntry('pushTokens', token, { staffId: staffId, updatedAt: Date.now() });
+    const saveOk = await dbSetCollectionEntry('pushTokens', token, { staffId: staffId, updatedAt: Date.now() });
+    alert('FCM DEBUG: save to pushTokens returned ' + saveOk);
   } catch(e){
-    // Silent failure by design — a notification setup problem shouldn't interrupt or block
-    // anyone from using the actual app underneath it.
+    alert('FCM DEBUG: THREW AN ERROR: ' + e.name + ': ' + e.message);
   }
 }
 document.getElementById('access-portal-btn').addEventListener('click', checkAccessPassword);
