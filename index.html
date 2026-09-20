@@ -2621,7 +2621,11 @@ function isSwapped(workerId, idx){ return !!SWAPS[swapKey(workerId, idx)]; }
 async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, fromRequest){
   const key = swapKey(workerId, idx);
   const previousValue = SWAPS[key]; // kept so a failed save can be reverted to exactly what was there before, not just deleted
-  const newValue = partner ? { withId: partner.id, withName: partner.name, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
+  // workerName is stored alongside withName so anything reading this document later (like the
+  // Cloud Function that sends notifications) can tell who actually did the covering/helping,
+  // not just who they helped — withName alone only ever names the OTHER side of the swap.
+  const worker = DATA.workers.find(w => w.id === workerId);
+  const newValue = partner ? { withId: partner.id, withName: partner.name, workerName: worker ? worker.name : null, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
   if(newValue) SWAPS[key] = newValue; else delete SWAPS[key];
   // This entry has its own document now — writing or deleting it can never collide with or
   // overwrite a different swap the way one shared document holding everything used to.
@@ -5485,7 +5489,7 @@ async function processClaim(key, volunteer){
   showConfirmDialog('Confirmar que vais cobrir <b>'+escapeHtml(req.requesterName)+'</b>'+issuesHtml+previewHtml, async () => {
     delete REQUESTS[key];
     await deleteRequestEntry(key);
-    const fromRequest = { requesterId: req.requesterId, requesterName: req.requesterName, idx: req.idx, type: req.type, note: req.note, batchId: req.batchId || null };
+    const fromRequest = { requesterId: req.requesterId, requesterName: req.requesterName, idx: req.idx, dayNumber: DATA.days[req.idx], type: req.type, note: req.note, batchId: req.batchId || null };
     await setSwapPartner(volunteer.id, req.idx, {id: req.requesterId, name: req.requesterName}, () => { renderOpenRequests(); }, req.type, false, fromRequest);
     offerWhatsAppMessage(req.requesterName, showSwapSuccessMessage);
     renderMultiDayCalendar(); // in case the poster's own calendar is open and showing this day as PENDENTE
