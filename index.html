@@ -3834,7 +3834,7 @@ document.getElementById('tab-cover').addEventListener('click', () => switchTab('
 document.getElementById('tab-trade').addEventListener('click', () => switchTab('trade'));
 document.getElementById('tab-requests').addEventListener('click', () => switchTab('requests'));
 document.getElementById('stat-workers-link').addEventListener('click', () => {
-  showPasswordPrompt(() => switchTab('skills'), 'Bambies2026', false);
+  switchTab('skills');
 });
 function switchTab(name){
   document.getElementById('tab-cover').classList.toggle('active', name==='cover');
@@ -6200,7 +6200,7 @@ function closeScheduleOverride(){
   switchTab('cover');
 }
 document.getElementById('schedule-override-link').addEventListener('click', () => {
-  showPasswordPrompt(() => openScheduleOverride(), 'Tavares2026', false);
+  openScheduleOverride();
 });
 // "← Voltar" is context-aware: if any message sub-view is open, it just closes that (back to
 // the normal PLANEAMENTO content) rather than leaving PLANEAMENTO entirely.
