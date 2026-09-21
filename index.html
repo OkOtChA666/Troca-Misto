@@ -2625,7 +2625,12 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
   // Cloud Function that sends notifications) can tell who actually did the covering/helping,
   // not just who they helped — withName alone only ever names the OTHER side of the swap.
   const worker = DATA.workers.find(w => w.id === workerId);
-  const newValue = partner ? { withId: partner.id, withName: partner.name, workerName: worker ? worker.name : null, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
+  // Captured before the swap actually changes anything — this is workerId's ORIGINAL shift
+  // that's being covered/traded away, which is exactly the time a notification to the other
+  // person should reference ("thanks for covering me at 08:00-16:00"), not their own schedule.
+  const originalEntry = getEntry(worker, idx);
+  const shiftTimeText = originalEntry.status === 'work' ? (fmtHHMM(originalEntry.start)+'-'+fmtHHMM(originalEntry.end)) : null;
+  const newValue = partner ? { withId: partner.id, withName: partner.name, workerName: worker ? worker.name : null, dayNumber: DATA.days[idx], shiftTimeText: shiftTimeText, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
   if(newValue) SWAPS[key] = newValue; else delete SWAPS[key];
   // This entry has its own document now — writing or deleting it can never collide with or
   // overwrite a different swap the way one shared document holding everything used to.
