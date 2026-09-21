@@ -25,6 +25,6 @@ messaging.onBackgroundMessage((payload) => {
   const body = (payload.notification && payload.notification.body) || '';
   self.registration.showNotification(title, {
     body: body,
-    icon: undefined, // no shared icon file to point to yet — the browser falls back to a default
+    icon: '/main_icon_circle_transparent.png',
   });
 });
