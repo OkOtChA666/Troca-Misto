@@ -3350,30 +3350,39 @@ function renderSwapsListGeneric(showAll, cfg){
     const nameLineHtml = e.s.anonymous
       ? '<span style="color:var(--text);">TROCA ANÓNIMA</span>'
       : '<span class="swap-partner">'+escapeHtml(e.s.withName)+'</span> &nbsp;⇄&nbsp; '+escapeHtml(e.worker.name);
+    // TROCAS RECENTES (cover/turno) only shows a delete button for admin — even the swap's
+    // own owner can't delete it from here anymore, since As Minhas Trocas is now the one
+    // place a regular person deletes their own swaps. As Minhas Trocas itself (useReasonConfirm)
+    // always shows it, since that list is already filtered to just the logged-in person's own.
+    const canDeleteFromHere = cfg.useReasonConfirm || isAdminSession;
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameLineHtml+'</div>'+
       '<div class="row-sub">'+fmtDateLabel(e.idx)+'<br>'+rowSubHtml+
       '</div></div>'+
-      '<button type="button" class="recent-swap-delete" title="Eliminar troca">✕</button>';
-    row.querySelector('.recent-swap-delete').addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const doTheDelete = async (reason) => {
-        // reason is captured and validated here, but not yet stored or acted on anywhere —
-        // that's Step 3's job (notifying the other person), deliberately not built yet.
-        await deleteSwapRecordFor(e.worker, e.idx, () => {
-          renderSwapsListGeneric(cfg.expandedGetter(), cfg);
-          if(coverWorker) updateCoverContext();
-          if(tradeA) updateTurnoContext();
-        });
-      };
-      if(cfg.useReasonConfirm){
-        // As Minhas Trocas — the swap's own owner deleting their own entry doesn't need a
-        // password (login already proves who they are), but does need a deliberate,
-        // explained confirmation rather than a single accidental tap.
-        showCancelSwapModal(doTheDelete);
-      } else {
-        showPasswordPrompt(doTheDelete, 'Delete2026', true);
-      }
-    });
+      (canDeleteFromHere ? '<button type="button" class="recent-swap-delete" title="Eliminar troca">✕</button>' : '');
+    if(canDeleteFromHere){
+      row.querySelector('.recent-swap-delete').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const doTheDelete = async (reason) => {
+          // reason is captured and validated here, but not yet stored or acted on anywhere —
+          // that's Step 3's job (notifying the other person), deliberately not built yet.
+          await deleteSwapRecordFor(e.worker, e.idx, () => {
+            renderSwapsListGeneric(cfg.expandedGetter(), cfg);
+            if(coverWorker) updateCoverContext();
+            if(tradeA) updateTurnoContext();
+          });
+        };
+        if(cfg.useReasonConfirm){
+          // As Minhas Trocas — the swap's own owner deleting their own entry doesn't need a
+          // password (login already proves who they are), but does need a deliberate,
+          // explained confirmation rather than a single accidental tap.
+          showCancelSwapModal(doTheDelete);
+        } else {
+          // Admin, deleting from TROCAS RECENTES — still password-gated, exactly as it
+          // always worked for admin specifically.
+          showPasswordPrompt(doTheDelete, 'Delete2026', true);
+        }
+      });
+    }
     list.appendChild(row);
   });
   if(entries.length > 5){
