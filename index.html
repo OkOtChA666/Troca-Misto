@@ -1250,8 +1250,11 @@
         <div class="swap-sort-tab active" id="mine-sort-recentes"><span>RECENTES</span><div class="dash"></div></div>
         <div class="swap-sort-tab" id="mine-sort-proximas"><span>PRÓXIMAS</span><div class="dash"></div></div>
         <div class="swap-sort-tab" id="mine-sort-passadas"><span>PASSADAS</span><div class="dash"></div></div>
+        <div class="swap-sort-tab" id="mine-sort-canceladas"><span>CANCELADAS</span><div class="dash"></div></div>
       </div>
       <div id="my-swaps-list"></div>
+      <div id="my-swaps-cancelled-list" class="hidden"></div>
+      <div id="my-swaps-cancelled-empty" class="hidden" style="text-align:center; color:var(--text-dim); font-size:13px; padding:16px 0;">Sem trocas canceladas.</div>
       <div style="text-align:center;">
         <button type="button" class="flag-btn" id="my-swaps-more-btn" style="display:none; margin-top:10px;">VER MAIS</button>
       </div>
@@ -3091,6 +3094,7 @@ async function checkAccessPassword(){
     applyAdminVisibility();
     updateLoggedInDisplay(staffId, worker.name);
     setupNotificationsListener(staffId);
+    setupCancelledSwapsListener(staffId);
     await loadMaintenanceConfig(); // always check the freshest state, never a possibly-stale cached one
     if(maintenanceConfig.enabled && !isAdminSession){
       document.getElementById('maintenance-screen-reason').textContent = maintenanceConfig.reason || 'Em manutenção';
@@ -3208,6 +3212,7 @@ document.getElementById('access-portal-staffnum').addEventListener('input', upda
     applyRememberedName('extra-name-input', onPickExtraWorker);
     applyRememberedName('request-name-input', onPickRequestPoster);
     setupNotificationsListener(savedStaffId);
+    setupCancelledSwapsListener(savedStaffId);
   }, 0);
   loadMaintenanceConfig().then(() => {
     if(maintenanceConfig.enabled && !isAdminSession){
@@ -3363,8 +3368,20 @@ function renderSwapsListGeneric(showAll, cfg){
       row.querySelector('.recent-swap-delete').addEventListener('click', (ev) => {
         ev.stopPropagation();
         const doTheDelete = async (reason) => {
-          // reason is captured and validated here, but not yet stored or acted on anywhere —
-          // that's Step 3's job (notifying the other person), deliberately not built yet.
+          // As Minhas Trocas cancellations get a permanent, separate record before the swap
+          // itself is removed — deliberately a NEW, dedicated collection rather than just
+          // marking the existing swap document, since the "swaps" collection is read by a lot
+          // of other logic (eligibility checks, effective-schedule lookups, "troca sobre
+          // troca" checks) that all assumes every document there represents a genuinely
+          // active swap. Keeping cancelled ones fully separate means none of that logic needs
+          // to change at all to account for them.
+          if(reason){
+            await dbSetCollectionEntry('cancelledSwaps', swapKey(e.worker.id, e.idx) + ':' + Date.now(), {
+              workerId: e.worker.id, withId: e.s.withId, withName: e.s.withName, workerName: e.s.workerName || e.worker.name,
+              dayNumber: e.s.dayNumber, shiftTimeText: e.s.shiftTimeText, type: e.s.type,
+              reason: reason, cancelledBy: rememberedName, cancelledAt: Date.now(),
+            });
+          }
           await deleteSwapRecordFor(e.worker, e.idx, () => {
             renderSwapsListGeneric(cfg.expandedGetter(), cfg);
             if(coverWorker) updateCoverContext();
@@ -3378,7 +3395,9 @@ function renderSwapsListGeneric(showAll, cfg){
           showCancelSwapModal(doTheDelete);
         } else {
           // Admin, deleting from TROCAS RECENTES — still password-gated, exactly as it
-          // always worked for admin specifically.
+          // always worked for admin specifically. This is treated as a genuine data
+          // correction/removal, not a "cancellation" — no reason is collected, and nothing
+          // gets added to the cancelledSwaps history.
           showPasswordPrompt(doTheDelete, 'Delete2026', true);
         }
       });
@@ -3430,6 +3449,65 @@ setupSwapSortTabs('mine', (m) => { myTrocasSortMode = m; }, renderMySwapsList, (
 document.getElementById('my-swaps-more-btn').addEventListener('click', () => {
   myTrocasExpanded = !myTrocasExpanded;
   renderMySwapsList(myTrocasExpanded);
+});
+// ---------- CANCELADAS — a separate, permanent history of As Minhas Trocas cancellations,
+// kept in its own collection entirely apart from "swaps" itself (see the write site for why).
+let CANCELLED_SWAPS = {};
+function renderCancelledSwapsList(){
+  const list = document.getElementById('my-swaps-cancelled-list');
+  const empty = document.getElementById('my-swaps-cancelled-empty');
+  if(!list) return;
+  const entries = Object.values(CANCELLED_SWAPS).sort((a,b) => (b.cancelledAt||0) - (a.cancelledAt||0));
+  empty.classList.toggle('hidden', entries.length > 0);
+  list.innerHTML = entries.map(c => {
+    const dateLabel = c.dayNumber ? ('Dia ' + c.dayNumber) : '';
+    const timeLabel = c.shiftTimeText ? (' — ' + c.shiftTimeText) : '';
+    const when = c.cancelledAt ? new Date(c.cancelledAt).toLocaleDateString('pt-PT', {day:'2-digit', month:'2-digit', year:'numeric'}) : '';
+    return '<div class="row" style="opacity:0.75;">'+
+      '<div class="row-main"><div class="row-name" style="text-decoration:line-through; text-decoration-color:var(--nogo);">'+
+        '<span class="swap-partner">'+escapeHtml(c.withName||'')+'</span> &nbsp;⇄&nbsp; '+escapeHtml(c.workerName||'')+
+      '</div>'+
+      '<div class="row-sub" style="text-decoration:line-through; text-decoration-color:var(--nogo);">'+escapeHtml(dateLabel+timeLabel)+'</div>'+
+      '<div style="font-size:11.5px; color:var(--text); margin-top:5px;"><b>Razão:</b> '+escapeHtml(c.reason||'')+' <span style="color:var(--text-dim);">('+escapeHtml(when)+')</span></div>'+
+      '</div></div>';
+  }).join('');
+}
+// Same live-update pattern as swaps/requests/notifications above — filtered to entries where
+// the logged-in person was on either side, matching how As Minhas Trocas itself already works.
+let cancelledSwapsListenerUnsubscribe = null;
+function setupCancelledSwapsListener(staffId){
+  if(cancelledSwapsListenerUnsubscribe) cancelledSwapsListenerUnsubscribe();
+  getDb().then(db => {
+    if(!db) return;
+    cancelledSwapsListenerUnsubscribe = db.collection('cancelledSwaps').onSnapshot(snapshot => {
+      const updated = {};
+      snapshot.forEach(d => {
+        const data = JSON.parse(JSON.stringify(d.data()));
+        if(data.workerId === staffId || data.withId === staffId) updated[d.id] = data;
+      });
+      CANCELLED_SWAPS = updated;
+      const cancelledTab = document.getElementById('mine-sort-canceladas');
+      if(cancelledTab && cancelledTab.classList.contains('active')) renderCancelledSwapsList();
+    });
+  });
+}
+document.getElementById('mine-sort-canceladas').addEventListener('click', () => {
+  ['recentes','proximas','passadas'].forEach(m => document.getElementById('mine-sort-'+m).classList.remove('active'));
+  document.getElementById('mine-sort-canceladas').classList.add('active');
+  document.getElementById('my-swaps-list').classList.add('hidden');
+  document.getElementById('my-swaps-more-btn').style.display = 'none';
+  document.getElementById('my-swaps-cancelled-list').classList.remove('hidden');
+  renderCancelledSwapsList();
+});
+// The other three tabs need to switch back away from CANCELADAS too, on top of whatever
+// setupSwapSortTabs('mine', ...) above already does for their own recentes/proximas/passadas
+// switching — this is a second, additional listener on each, not a replacement for it.
+['recentes','proximas','passadas'].forEach(m => {
+  document.getElementById('mine-sort-'+m).addEventListener('click', () => {
+    document.getElementById('mine-sort-canceladas').classList.remove('active');
+    document.getElementById('my-swaps-cancelled-list').classList.add('hidden');
+    document.getElementById('my-swaps-list').classList.remove('hidden');
+  });
 });
 function openMySwaps(){
   document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
