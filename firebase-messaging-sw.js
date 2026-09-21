@@ -31,10 +31,13 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fires when a notification arrives while the app tab is closed or in the background — this
-// is the actual "show a popup on the phone" step.
+// is the actual "show a popup on the phone" step. Reading from payload.data (not
+// payload.notification) is deliberate — see the matching comment in the Cloud Function for
+// why: a "notification" field there would make the browser display its own automatic,
+// generic-icon notification in addition to this explicit one.
 messaging.onBackgroundMessage((payload) => {
-  const title = (payload.notification && payload.notification.title) || 'TROCA-MISTO';
-  const body = (payload.notification && payload.notification.body) || '';
+  const title = (payload.data && payload.data.title) || 'TROCA-MISTO';
+  const body = (payload.data && payload.data.body) || '';
   self.registration.showNotification(title, {
     body: body,
     icon: '/main_icon_circle_transparent.png',
