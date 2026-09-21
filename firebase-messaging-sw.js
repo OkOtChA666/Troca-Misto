@@ -18,6 +18,18 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Without these two, a genuinely updated service worker file sits idle in a "waiting" state
+// until every open tab of the site is fully closed — which is exactly why this update (and
+// any future one) might not seem to take effect right away just from a normal refresh.
+// skipWaiting activates the new version immediately after installing, and clients.claim takes
+// over any already-open tabs right away too, instead of only affecting tabs opened afterward.
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
+});
+
 // Fires when a notification arrives while the app tab is closed or in the background — this
 // is the actual "show a popup on the phone" step.
 messaging.onBackgroundMessage((payload) => {
