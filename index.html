@@ -927,7 +927,21 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="cancel-swap-modal">
+  <div class="modal-box">
+    <p style="margin-bottom:14px;">De certeza que desejas eliminar esta troca?</p>
+    <label style="font-size:11px; color:var(--text-dim); display:block; margin-bottom:6px;">Razão</label>
+    <input type="text" id="cancel-swap-reason-input" autocomplete="off" placeholder="Explica porque estás a cancelar...">
+    <div id="cancel-swap-reason-error" class="hidden" style="color:var(--nogo); font-size:11px; margin-top:6px;">É necessário indicar uma razão.</div>
+    <div class="modal-actions">
+      <button type="button" class="flag-btn" id="cancel-swap-modal-back" style="padding:10px 14px; font-size:11.5px; margin-top:0;">Voltar</button>
+      <button type="button" class="confirm-btn" id="cancel-swap-modal-confirm" style="padding:10px 14px; font-size:11.5px;">Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <div class="wrap hidden" id="main-wrap">
+
 
   <div class="board-header">
     <div class="board-logo" aria-hidden="true">
@@ -3012,6 +3026,40 @@ document.getElementById('text-modal').addEventListener('click', (e) => {
   if(e.target.id === 'text-modal') hideTextPrompt();
 });
 
+// ---------- swap cancellation confirmation, with a required reason ----------
+let cancelSwapModalCallback = null;
+function showCancelSwapModal(onConfirm){
+  cancelSwapModalCallback = onConfirm;
+  document.getElementById('cancel-swap-reason-input').value = '';
+  document.getElementById('cancel-swap-reason-error').classList.add('hidden');
+  document.getElementById('cancel-swap-modal').classList.remove('hidden');
+  document.getElementById('cancel-swap-reason-input').focus();
+}
+function hideCancelSwapModal(){
+  document.getElementById('cancel-swap-modal').classList.add('hidden');
+  cancelSwapModalCallback = null;
+}
+document.getElementById('cancel-swap-modal-back').addEventListener('click', hideCancelSwapModal);
+document.getElementById('cancel-swap-modal-confirm').addEventListener('click', async () => {
+  const reason = document.getElementById('cancel-swap-reason-input').value.trim();
+  if(!reason){
+    // A reason is required, not optional — this is specifically what distinguishes this from
+    // the generic showTextPrompt (which allows skipping), since a swap cancellation without
+    // any explanation would leave the other person with nothing to go on.
+    document.getElementById('cancel-swap-reason-error').classList.remove('hidden');
+    return;
+  }
+  const cb = cancelSwapModalCallback;
+  hideCancelSwapModal();
+  if(cb) await cb(reason);
+});
+document.getElementById('cancel-swap-reason-input').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('cancel-swap-modal-confirm').click(); }
+});
+document.getElementById('cancel-swap-modal').addEventListener('click', (e) => {
+  if(e.target.id === 'cancel-swap-modal') hideCancelSwapModal();
+});
+
 // ---------- access portal — now a real per-staff login (staff number + password) instead of
 // a single shared password gate. Successfully logging in both grants access AND identifies
 // who's using the app — replacing the old separate "pick your name from a dropdown" step
@@ -3308,19 +3356,23 @@ function renderSwapsListGeneric(showAll, cfg){
       '<button type="button" class="recent-swap-delete" title="Eliminar troca">✕</button>';
     row.querySelector('.recent-swap-delete').addEventListener('click', (ev) => {
       ev.stopPropagation();
-      showPasswordPrompt(async () => {
-        // Goes through the shared deleteSwapRecordFor rather than deleting directly — that's
-        // what actually restores the original PEDIDOS request (if this swap came from
-        // claiming one) instead of just silently losing it.
+      const doTheDelete = async (reason) => {
+        // reason is captured and validated here, but not yet stored or acted on anywhere —
+        // that's Step 3's job (notifying the other person), deliberately not built yet.
         await deleteSwapRecordFor(e.worker, e.idx, () => {
           renderSwapsListGeneric(cfg.expandedGetter(), cfg);
-          // Deleting here doesn't just affect this list — if either tab's context box happens
-          // to be showing this exact person/day, it needs to know too, or it keeps showing a
-          // swap that no longer exists until something else happens to trigger a re-check.
           if(coverWorker) updateCoverContext();
           if(tradeA) updateTurnoContext();
         });
-      }, 'Delete2026', true);
+      };
+      if(cfg.useReasonConfirm){
+        // As Minhas Trocas — the swap's own owner deleting their own entry doesn't need a
+        // password (login already proves who they are), but does need a deliberate,
+        // explained confirmation rather than a single accidental tap.
+        showCancelSwapModal(doTheDelete);
+      } else {
+        showPasswordPrompt(doTheDelete, 'Delete2026', true);
+      }
     });
     list.appendChild(row);
   });
@@ -3342,6 +3394,7 @@ const TURNO_SWAPS_CFG = { listId:'recent-swaps-turno-list', moreBtnId:'recent-sw
 const MY_SWAPS_CFG = {
   listId:'my-swaps-list', moreBtnId:'my-swaps-more-btn', titleId:'my-swaps-title',
   expandedGetter: () => myTrocasExpanded, sortModeGetter: () => myTrocasSortMode,
+  useReasonConfirm: true, // this list uses the confirmation+reason modal instead of a password — see renderSwapsListGeneric's delete button logic
   personFilter: (e) => {
     const me = DATA.workers.find(w => w.name === rememberedName);
     if(!me) return false;
