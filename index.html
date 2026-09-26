@@ -1835,6 +1835,23 @@ document.getElementById('stat-range').textContent = MONTH_FULL[(DATA.month||'202
 function fmtDateLabel(i){
   return WEEKDAYS[i] + ' ' + String(DATA.days[i]).padStart(2,'0') + ' ' + MONTH_ABBR;
 }
+// A swap's idx is only ever a position within WHATEVER month is currently loaded — it means
+// nothing on its own once a different month's schedule replaces the one it was created under.
+// calendarDate (added when this swap was created) is the actual, permanent anchor: if it
+// doesn't match the currently-loaded month, this swap is from a past month, and re-deriving
+// its date from idx against today's DATA would silently produce the wrong day (exactly the
+// bug that happened switching from September to October). Older swaps saved before
+// calendarDate existed fall back to the old idx-based label, same as always.
+function fmtSwapDateRobust(swapData, idx){
+  if(swapData && swapData.calendarDate){
+    const [y, m, d] = swapData.calendarDate.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return weekdayNames[dateObj.getDay()] + ' ' + String(d).padStart(2,'0') + ' ' + monthNames[m-1];
+  }
+  return fmtDateLabel(idx);
+}
 
 // ---------- parsing ----------
 function parseEntry(raw){
@@ -2644,7 +2661,14 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
   // person should reference ("thanks for covering me at 08:00-16:00"), not their own schedule.
   const originalEntry = getEntry(worker, idx);
   const shiftTimeText = originalEntry.status === 'work' ? (fmtHHMM(originalEntry.start)+'-'+fmtHHMM(originalEntry.end)) : null;
-  const newValue = partner ? { withId: partner.id, withName: partner.name, workerName: worker ? worker.name : null, dayNumber: DATA.days[idx], shiftTimeText: shiftTimeText, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
+  // calendarDate is the real, month-independent anchor for this swap (e.g. "2026-09-16") — idx
+  // alone is just a position within WHATEVER month happens to be loaded at the time something
+  // reads it, so once a new month's schedule replaces this one, every old swap's idx would
+  // silently point at a different real day. calendarDate is what lets the app still recognize
+  // a September swap as September, even after October's data is loaded in its place.
+  const d = realDateForIdx(idx);
+  const calendarDate = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const newValue = partner ? { withId: partner.id, withName: partner.name, workerName: worker ? worker.name : null, dayNumber: DATA.days[idx], calendarDate: calendarDate, shiftTimeText: shiftTimeText, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
   if(newValue) SWAPS[key] = newValue; else delete SWAPS[key];
   // This entry has its own document now — writing or deleting it can never collide with or
   // overwrite a different swap the way one shared document holding everything used to.
@@ -3356,7 +3380,7 @@ function renderSwapsListGeneric(showAll, cfg){
     // always shows it, since that list is already filtered to just the logged-in person's own.
     const canDeleteFromHere = cfg.useReasonConfirm || isAdminSession;
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameLineHtml+'</div>'+
-      '<div class="row-sub">'+fmtDateLabel(e.idx)+'<br>'+rowSubHtml+
+      '<div class="row-sub">'+fmtSwapDateRobust(e.s, e.idx)+'<br>'+rowSubHtml+
       '</div></div>'+
       (canDeleteFromHere ? '<button type="button" class="recent-swap-delete" title="Eliminar troca">✕</button>' : '');
     if(canDeleteFromHere){
