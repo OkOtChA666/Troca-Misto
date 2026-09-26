@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shift Swap Board</title>
+<title>Troca-Misto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -966,11 +966,11 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link">AGENTES <b id="stat-workers">—</b></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span>VERSÃO <b id="stat-rules">2026.09.1</b></span>
+      <span>VERSÃO <b id="stat-rules">2026.10.01</b></span>
     </div>
     <div class="board-stats nav-tabs-row" id="planeamento-turnaround-row" style="border:1px solid var(--border); border-radius:8px 8px 0 0; padding:10px 16px; margin-top:12px; background: rgba(95, 224, 255, 0.05); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
       <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="As minhas trocas">
-        AS MINHAS TROCAS
+        MINHAS TROCAS
       </span>
       <span class="header-divider">|</span>
       <span id="schedule-override-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Atualizar Horário (beta)">
@@ -1570,6 +1570,16 @@ function hasMedAppointment(workerId, idx){
 }
 function getMedAppointmentTime(workerId, idx){
   return MED_DAYS[workerId+':'+idx] || null;
+}
+// "LOST" marks a day someone is working Lost & Found rather than PAX/check-in (e.g. Martins
+// Elisabeth, Franck David) — unlike a MED appointment, this is already right there in the
+// PDF's own data as a suffix code on the entry, not something that needs a separate,
+// manually-maintained table. Someone on Lost & Found duty that day isn't actually available
+// for a PAX swap, the same way someone with a fixed appointment isn't.
+function hasLostAndFoundDuty(workerId, idx){
+  const worker = DATA.workers.find(w => w.id === workerId);
+  const entry = worker ? getEntry(worker, idx) : null;
+  return !!(entry && entry.codes && entry.codes.includes('LOST'));
 }
 // Declared here (very early) rather than near its load/save functions further down, because
 // getEntry() reads it and getEntry() gets called synchronously during initial page setup —
@@ -4024,6 +4034,7 @@ function countCleanCoverCandidates(myEntry, excludeWorkerId, idx){
     if(isExtraHours(w.id, idx)) continue;
     if(trocaSobreTrocaEnabled && findSwapRecordFor(w, idx)) continue;
     if(hasMedAppointment(w.id, idx)) continue; // fixed appointment that day — not actually a clean, available candidate
+    if(hasLostAndFoundDuty(w.id, idx)) continue; // Lost & Found duty that day — not a PAX candidate
     if(hourFilters.length > 0 && !hourFilters.includes(TYPICAL_HOURS[w.id])) continue;
     const overrides = {};
     overrides[idx] = {status:'work', start: myEntry.start, end: myEntry.end};
@@ -4133,6 +4144,7 @@ function runCoverSearch(){
     if(isSandwichedInVacation(w, idx)) continue; // DC/DS/FO landing between two F50 days is still vacation, not a real day off
     if(isExtraHours(w.id, idx)) continue; // already announced they're doing horas extra this day — not actually available
     if(trocaSobreTrocaEnabled && findSwapRecordFor(w, idx)) continue; // already committed to a different swap this exact day — can't be offered again
+    if(hasLostAndFoundDuty(w.id, idx)) continue; // working Lost & Found that day — not a PAX candidate at all, name shouldn't appear here
     if(hourFilters.length > 0 && !hourFilters.includes(TYPICAL_HOURS[w.id])) continue;
     const overrides = {};
     overrides[idx] = {status:'work', start: myEntry.start, end: myEntry.end};
@@ -4485,6 +4497,7 @@ function runTradeSearch(){
     if(theirEntry.status !== 'work') continue; // need an actual shift that day to swap into
     if(theirEntry.codes && theirEntry.codes.includes('F50')) continue; // still F50/vacation-tagged that day — not a genuine normal shift to swap into
     if(trocaSobreTrocaEnabled && findSwapRecordFor(w, idx)) continue; // already committed to a different swap this exact day — can't be offered again
+    if(hasLostAndFoundDuty(w.id, idx)) continue; // working Lost & Found that day — not a PAX candidate at all, name shouldn't appear here
     if(hourFilters.length > 0 && !hourFilters.includes(TYPICAL_HOURS[w.id])) continue;
     const theirStart = timeToMin(theirEntry.start);
     if(theirStart < desiredMin) continue; // only shifts starting at or after the time you picked
@@ -5198,6 +5211,7 @@ function getPossoAjudarState(req){
   if(!me || isBlocked(me.id)) return { disabled: false };
   if(me.id === req.requesterId) return { disabled: false }; // handled separately — this is your own request
   if(trocaSobreTrocaEnabled && findSwapRecordFor(me, req.idx)) return { disabled: true, reason: 'Já tens uma troca marcada para este dia.' };
+  if(hasLostAndFoundDuty(me.id, req.idx)) return { disabled: true, reason: 'Estás escalado(a) para o Lost & Found nesse dia — não disponível para trocas de PAX.' };
   const { hardBlockMsg, issues } = computeClaimIssues(me, req);
   if(hardBlockMsg) return { disabled: true, reason: hardBlockMsg };
   if(issues.some(i => i.type === 'med')) return { disabled: true, reason: 'Consulta médica marcada nesse dia — não é possível fazer esta troca.' };
@@ -5463,6 +5477,7 @@ function startClaimFlow(key){
     if(w.id === req.requesterId) return false;
     if(trocaSobreTrocaEnabled && findSwapRecordFor(w, req.idx)) return false;
     if(hasMedAppointment(w.id, req.idx)) return false; // matches computeClaimIssues' own med check — see the comment above
+    if(hasLostAndFoundDuty(w.id, req.idx)) return false; // working Lost & Found that day, not actually a PAX candidate — see the comment on hasLostAndFoundDuty
     if(req.type === 'cover'){
       const e = getEntry(w, req.idx);
       return isEligibleOffDay(e) && !isSandwichedInVacation(w, req.idx) && !isExtraHours(w.id, req.idx);
@@ -5504,6 +5519,12 @@ function computeClaimIssues(volunteer, req){
 
   let issues = [];
   let hardBlockMsg = null;
+  if(hasLostAndFoundDuty(volunteer.id, req.idx)){
+    // Defensive, final-confirm-time check — the search results and the "who are you" picker
+    // already exclude this person earlier, but this is the actual source of truth both of
+    // those defer to, so it needs its own guard rather than relying only on upstream filters.
+    return { hardBlockMsg: 'Estás escalado(a) para o Lost & Found nesse dia — não disponível para trocas de PAX.', issues: [] };
+  }
   const requesterEntry = getEffectiveEntry(requester, req.idx);
 
   if(req.type === 'cover'){
