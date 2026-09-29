@@ -5661,9 +5661,14 @@ function getNotificationEventDate(n){
 }
 function isNotificationEventPast(n){
   const eventDate = getNotificationEventDate(n);
-  if(!eventDate) return false; // can't tell — never hide something we're not sure about
   const today = new Date(); today.setHours(0,0,0,0);
-  return eventDate < today;
+  if(eventDate) return eventDate < today;
+  // No day number to parse at all — an older notification from before that was included in
+  // the message text. Can't know the exact day, but a week-old-plus notification is safe to
+  // treat as stale regardless, rather than leaving it stuck visible forever.
+  if(!n.createdAt) return false;
+  const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+  return (Date.now() - n.createdAt) > oneWeekMs;
 }
 function renderNotificationsList(){
   const list = document.getElementById('notifications-modal-list');
