@@ -4949,7 +4949,7 @@ async function renderMultiDayCalendar(){
     // that already has a pending request isn't selectable either — posting another one for
     // the exact same day doesn't make sense while the first is still open (this naturally
     // also covers an expired request that's now disabled but still sitting there unclaimed).
-    const selectable = isWorking && !hasPendingRequest && !isTodayDay(idx) && !isPedidosDayTooLateToRequest(idx) && !hasMedAppointment(requestPosterWorker.id, idx); // same-day is too last-minute; tomorrow-past-17:00 would be born already expired; a fixed medical appointment can't move for a swap
+    const selectable = isWorking && !hasPendingRequest && !isTodayDay(idx) && !isPedidosDayTooLateToRequest(idx) && !hasMedAppointment(requestPosterWorker.id, idx) && !(trocaSobreTrocaEnabled && hasSwap); // same-day is too last-minute; tomorrow-past-17:00 would be born already expired; a fixed medical appointment can't move for a swap; already having a swap this day (while the rule is on) shouldn't have been clickable at all — matches every other search/claim path's own trocaSobreTroca check
     const selected = selectedMultiDays.has(idx);
     const past = isPastDay(idx);
     const clickable = selectable && !past;
@@ -5018,6 +5018,12 @@ async function renderMultiDayCalendar(){
       // A fixed medical appointment — same idea, worth a quick explanation rather than the
       // tap doing nothing at all.
       cell.addEventListener('click', () => showMedGlimpse());
+    } else if(isWorking && !isTodayDay(idx) && (trocaSobreTrocaEnabled && hasSwap)){
+      // Working, but already has a swap committed this exact day (while the rule is on) —
+      // not selectable for a new request either, same reasoning as the off-day case below,
+      // just reached from the opposite starting status. Matches every other search/claim
+      // path's own trocaSobreTroca check.
+      cell.addEventListener('click', () => showSwapGlimpse(idx));
     } else if(isWorking && !isTodayDay(idx)){
       cell.addEventListener('click', () => {
         if(selectedMultiDays.has(idx)) selectedMultiDays.delete(idx);
