@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Troca-Misto</title>
+<title>Shift Swap Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -859,6 +859,8 @@
   .mt-ch-row.new{ color:var(--text); font-weight:600; }
   .mt-ch-time{ font-family:var(--mono); color:var(--swap); min-width:40px; }
   #my-tasks-badge{ display:none; background:var(--nogo); color:#fff; font-family:var(--mono); font-size:10px; font-weight:700; border-radius:9px; padding:1px 6px; margin-left:2px; }
+  .mt-refresh{ float:right; margin-top:-30px; font-family:var(--mono); font-size:10.5px; letter-spacing:0.08em; font-weight:700; color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.4); border-radius:6px; padding:5px 9px; cursor:pointer; }
+  .mt-refresh:disabled{ opacity:0.5; cursor:default; }
   .mt-row.now{ border-color:rgba(51,214,139,0.55); }
   .mt-row.past{ opacity:0.45; }
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
@@ -1045,7 +1047,7 @@
     </div>
     <div class="board-stats nav-tabs-row" id="planeamento-turnaround-row" style="border:1px solid var(--border); border-radius:8px 8px 0 0; padding:10px 16px; margin-top:12px; background: rgba(95, 224, 255, 0.05); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
       <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="As minhas trocas">
-        MINHAS TROCAS
+        AS MINHAS TROCAS
       </span>
       <span class="header-divider">|</span>
       <span id="schedule-override-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Atualizar Horário (beta)">
@@ -7279,6 +7281,17 @@ setInterval(() => {
 }, 10000);
 const MT_COLORS = {"#249255":[1,2,3,625,627,659],"#dbffaa":[4,55,100,101,102,119,120],"#0099ff":[6,7,8,9,10,11,12,13,14,15,56,110,111,112,113,114,115,116,117,118,172,173,175,176,177,179,219,220,221,222,547,616,621,623,634,640,643,644,645,652,675,687,701,702,740,761,777,835,838,841,853,869],"#0066cc":[16,17,18,19,20,21,22,23,24,25,27,57,121,122,123,124,125,126,127,128,129,174,180,181,182,183,223,224,225,226,548,622,624,635,641,642,646,653,676,688,741,762,778,836,839,842,854,870],"#0092aa":[26,28,29,30,31,32,33,34,549,628,686,699,764,780,786,791,793,795,801,811,817,843,844,845,856],"#a1acff":[49,50,132,133,186,187,228,629,673],"#246dff":[60],"#f71010":[61,819],"#ffff00":[63,135,195,231,649,677,681],"#ffcc00":[64,319,321],"#948a54":[65,137],"#f79646":[66,139,196,799],"#fabf8e":[67,140,197,804],"#494529":[68],"#bfbfbf":[70],"#808080":[71,142,198,232],"#ffffff":[72,73,143,199,233],"#f2dcdb":[74],"#b8cce4":[75],"#6dffff":[76,145,202,236,678],"#c5d9f1":[77,146],"#538dd5":[78],"#8db4e2":[79,147],"#6d0000":[80,637],"#669900":[81,148,204,237],"#993300":[83,84,151,152],"#1d51ff":[85],"#ff7e2c":[86],"#ccc0da":[87,155,208],"#924955":[88,156,209],"#60497a":[89,157,210,242],"#6d00ff":[94,95,96,97],"#ff0000":[134,189,230],"#996633":[141],"#e6b8b7":[144,200,234,685],"#99cc00":[149],"#fabf8f":[153,206,239],"#f09e57":[154,207,240],"#ff6600":[190],"#ff24ff":[191,192,193,201,235],"#0d0d0d":[203],"#808000":[241],"#963634":[262,263],"#88c000":[326,327],"#9ee000":[340,729,758,760],"#a8ff61":[357,369,736,737],"#ffeaa1":[365,739],"#2b6000":[434,753],"#20a8a8":[446],"#e3cf60":[447,448,449,450,451,452,453,454,456,457,458,459,460,461,462,463,877,878],"#f5a914":[464,465,466,467,468,469,470,471,472,473,474,475,476,477,478,479,480,481,672],"#33a85b":[483,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,534,655,674],"#0f4ef0":[501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,876,880],"#ffff55":[614,704,767],"#dbff55":[617],"#00db00":[626,690],"#008fa0":[639],"#ffffaa":[648,651],"#c4bd97":[650],"#b66d55":[682],"#0d0101":[700],"#41baff":[705,744],"#0066a0":[706,743],"#001ae0":[707,746],"#000f80":[708,745],"#a061ff":[709,710,711,712,713,714,742,747],"#7a21ff":[715,716,717,718,719,720,748,749],"#540080":[721,722,723,724,725,726,750,751],"#000000":[727,733,734,738,752,757],"#ffcc66":[730,759],"#398000":[731,755],"#ff9900":[732,754],"#030000":[735],"#ff5a21":[782,783],"#ff9421":[796,803,832],"#a6d4e6":[805,812],"#eda72a":[818],"#db49aa":[826,828,829,833],"#249200":[872,873,881,882,883,884,885,886,887,888,889,890,891,892,893,894,895,896,897,898,899,900,901,902,903,904,905,906,907,908,909,910,911,915,919,920],"#49ff55":[912,913,914,916,917,918]};
 const MT_KINDS = {'#0099ff':['CHECK-IN','#fff'], '#0066cc':['PARTIDA','#fff'], '#dbffaa':['ACOLHIMENTO','#111']};
+function mtMyReq(){ try{ return parseInt(localStorage.getItem('trocaMistoMtReq') || '0', 10) || 0; } catch(e){ return 0; } }
+async function mtRequestRefresh(){
+  const now = Date.now();
+  try{ localStorage.setItem('trocaMistoMtReq', String(now)); } catch(e){}
+  renderMyTasks();
+  try{ const db = await getDb(); if(db) await db.collection('data').doc('taskreq').set({ t: now }); } catch(e){}
+}
+document.getElementById('my-tasks-body').addEventListener('click', ev => {
+  const b = ev.target.closest && ev.target.closest('#mt-refresh-btn');
+  if(b && !b.disabled) mtRequestRefresh();
+});
 function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
 function renderMyTasks(){
   const body = document.getElementById('my-tasks-body');
@@ -7297,6 +7310,12 @@ function renderMyTasks(){
   const upd = MT_DOC.updatedAt ? new Date(MT_DOC.updatedAt) : null;
   html += '<div class="mt-upd">Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
           (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '') + '</div>';
+  { const upAt = MT_DOC.updatedAt || 0, myReq = mtMyReq();
+    let label = 'ATUALIZAR', dis = false;
+    if(Date.now() - upAt < 60000){ label = 'ATUALIZADO'; dis = true; }
+    else if(myReq > upAt && Date.now() - myReq < 180000){ label = 'PEDIDO ENVIADO…'; dis = true; }
+    html += '<button type="button" id="mt-refresh-btn" class="mt-refresh"' + (dis ? ' disabled' : '') + '>' + label + '</button>';
+  }
   if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
   else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
   const sameDay = MT_DOC.date === todayIso;
