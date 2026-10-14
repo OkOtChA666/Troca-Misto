@@ -2,7 +2,7 @@
 // (column names, number of rows, a few sample rows). It saves nothing.
 import { chromium } from 'playwright';
 
-const URL = 'https://flights4staff.ana.pt/Flights4Staff/Login.aspx';
+const LOGIN_URL = 'https://flights4staff.ana.pt/Flights4Staff/Login.aspx';
 const USER = process.env.F4S_USER, PASS = process.env.F4S_PASS;
 if (!USER || !PASS) { console.log('STOP: secrets F4S_USER / F4S_PASS are missing'); process.exit(1); }
 const clip = (s, n = 60) => String(s || '').replace(/\s+/g, ' ').trim().slice(0, n);
@@ -11,7 +11,7 @@ const browser = await chromium.launch();
 const page = await (await browser.newContext({ viewport: { width: 1400, height: 900 }, locale: 'pt-PT' })).newPage();
 try {
   console.log('1. opening the login page');
-  await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
   await page.waitForTimeout(1500);
   const inputs = await page.$$eval('input', els => els.map(e => ({ type: e.type, name: e.name, id: e.id, vis: !!(e.offsetWidth || e.offsetHeight) })));
   console.log('   inputs: ' + inputs.filter(i => i.vis).map(i => i.type + ':' + (i.id || i.name)).join(', '));
