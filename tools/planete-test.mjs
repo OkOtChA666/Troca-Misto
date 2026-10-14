@@ -19,10 +19,38 @@ try {
   console.log('1. login page opened: yes');
 
   step = 'log in';
+  // Diagnostics only: URL paths and status codes, never content.
+  page.on('response', async (r) => {
+    try {
+      const u = new URL(r.url());
+      if (/authentication|login|saml|realms/i.test(u.pathname)) {
+        let extra = '';
+        if (/authentication\/login/i.test(u.pathname)) {
+          try { const j = await r.json(); extra = ' isSso=' + String(j && j.isSso) + ' hasUser=' + String(!!(j && j.user)); } catch (e) {}
+        }
+        console.log('   [net] ' + r.request().method() + ' ' + u.pathname + ' -> ' + r.status() + extra);
+      }
+    } catch (e) {}
+  });
+  page.on('framenavigated', (f) => { if (f === page.mainFrame()) { try { console.log('   [nav] ' + new URL(f.url()).pathname); } catch (e) {} } });
   await page.fill('input[name="username"]', USER);
   await page.fill('input[name="current-password"]', PASS);
-  await page.locator('button[type="submit"]', { hasText: /connection|connexion|ligação|entrar/i }).first().click();
-  await page.waitForURL(/\/planete-online\/app\//, { timeout: 45000 });
+  // the plain "Connection" button is the purple primary one (not the black SSO one)
+  const loginBtn = page.locator('button[type="submit"].primary');
+  console.log('   login buttons found: ' + (await loginBtn.count()));
+  await loginBtn.first().click();
+  await Promise.race([
+    page.waitForURL(/\/planete-online\/app\//, { timeout: 30000 }).catch(() => null),
+    page.waitForURL(/saml|realms/, { timeout: 30000 }).catch(() => null),
+  ]);
+  await page.waitForTimeout(3000);
+  const nowPath = new URL(page.url()).pathname;
+  if (!/\/planete-online\/app\//.test(nowPath)) {
+    const txt = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300);
+    console.log('2. logged in: NO — ended on ' + nowPath);
+    console.log('   page text: ' + txt);
+    process.exit(2);
+  }
   if (/double-authentification/.test(page.url())) { console.log('2. logged in: NO — two-step verification is required'); process.exit(2); }
   console.log('2. logged in: yes');
 
