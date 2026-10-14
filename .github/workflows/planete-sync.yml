@@ -1,11 +1,12 @@
 name: Planete sync
 on:
   schedule:
-    # starts a long run every 30 minutes; each run loops by itself (read every 5 min) for ~50 min, runs queue up and hand over
-    - cron: '*/30 * * * *'
+    # GitHub often skips or delays runs at :00 and :30, so ask at odd minutes, 4 times an hour.
+    # Each run loops by itself (read every 5 min) for ~50 min; extra requests just wait in line and hand over.
+    - cron: '11,26,41,56 * * * *'
   workflow_dispatch:
 concurrency:
-  group: ${{ github.event_name == 'schedule' && 'planete-sync' || 'planete-manual' }}
+  group: planete-sync
   cancel-in-progress: false
 jobs:
   sync:
@@ -22,4 +23,4 @@ jobs:
         env:
           PLANETE_USER: ${{ secrets.PLANETE_USER }}
           PLANETE_PASS: ${{ secrets.PLANETE_PASS }}
-          LOOP_MINUTES: ${{ github.event_name == 'schedule' && '50' || '3' }}
+          LOOP_MINUTES: '50'
