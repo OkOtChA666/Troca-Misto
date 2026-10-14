@@ -1,0 +1,69 @@
+// Login test for planete-online. Prints ONLY yes/no steps and a count — never names or tasks
+// (the log of a public repo can be read by anyone).
+import { chromium } from 'playwright';
+
+const USER = process.env.PLANETE_USER;
+const PASS = process.env.PLANETE_PASS;
+const BASE = 'https://portway.planete-online.fr';
+if (!USER || !PASS) { console.log('STOP: secrets PLANETE_USER / PLANETE_PASS are missing'); process.exit(1); }
+
+const browser = await chromium.launch();
+const context = await browser.newContext({ locale: 'pt-PT', viewport: { width: 1280, height: 900 } });
+const page = await context.newPage();
+page.setDefaultTimeout(45000);
+let step = 'start';
+try {
+  step = 'open login page';
+  await page.goto(BASE + '/planete-online/login', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('input[name="username"]');
+  console.log('1. login page opened: yes');
+
+  step = 'log in';
+  await page.fill('input[name="username"]', USER);
+  await page.fill('input[name="current-password"]', PASS);
+  await page.locator('button[type="submit"]', { hasText: /connection|connexion|ligação|entrar/i }).first().click();
+  await page.waitForURL(/\/planete-online\/app\//, { timeout: 45000 });
+  if (/double-authentification/.test(page.url())) { console.log('2. logged in: NO — two-step verification is required'); process.exit(2); }
+  console.log('2. logged in: yes');
+
+  step = 'open modules';
+  await page.goto(BASE + '/planete-online/app/modules', { waitUntil: 'domcontentloaded' });
+  const tile = page.getByText('Horário', { exact: true }).first();
+  await tile.waitFor();
+  await tile.hover();
+  console.log('3. modules page, "Horário" tile found: yes');
+
+  step = 'click tempo real';
+  const entry = page.getByText(/tempo real/i).first();
+  await entry.waitFor();
+  const [popup] = await Promise.all([
+    context.waitForEvent('page', { timeout: 45000 }).catch(() => null),
+    entry.click(),
+  ]);
+  const target = popup || page;
+  await target.waitForLoadState('domcontentloaded');
+  console.log('4. tasks window opened: ' + (popup ? 'yes (new window)' : 'yes (same tab)'));
+
+  step = 'wait for tasks';
+  // The tasks page marks every agent row with .trigInfo (the staff number).
+  const deadline = Date.now() + 90000;
+  let n = 0;
+  while (Date.now() < deadline) {
+    for (const p of context.pages()) {
+      try { n = Math.max(n, await p.locator('.trigInfo').count()); } catch (e) {}
+    }
+    if (n > 0) break;
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  console.log('5. agents found on the tasks page: ' + n);
+  console.log(n > 0 ? 'RESULT: WORKS' : 'RESULT: opened but no agents found');
+  process.exit(n > 0 ? 0 : 3);
+} catch (e) {
+  let where = '';
+  try { where = new URL(page.url()).pathname; } catch (_) {}
+  console.log('FAILED at step: ' + step + (where ? ' (page: ' + where + ')' : ''));
+  console.log('reason: ' + String(e && e.message ? e.message : e).split('\n')[0].slice(0, 200));
+  process.exit(1);
+} finally {
+  await browser.close();
+}
