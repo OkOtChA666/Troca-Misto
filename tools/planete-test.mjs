@@ -60,8 +60,28 @@ try {
 
   step = 'open modules';
   await page.goto(BASE + '/planete-online/app/modules', { waitUntil: 'domcontentloaded' });
-  const tile = page.getByText('Horário', { exact: true }).first();
-  await tile.waitFor();
+  await page.getByText('Horário', { exact: true }).first().waitFor();
+  await page.waitForTimeout(1500);
+  // There can be several "Horário" labels (sidebar, tooltips...). List them and mark the one in the main area.
+  const found = await page.evaluate(() => {
+    document.querySelectorAll('[data-pt-tile]').forEach(e => e.removeAttribute('data-pt-tile'));
+    const leaves = [...document.querySelectorAll('*')].filter(e => e.children.length === 0 && e.textContent.trim() === 'Horário');
+    const info = leaves.map((e, i) => {
+      const r = e.getBoundingClientRect();
+      const chain = []; let n = e;
+      for (let k = 0; k < 7 && n && n.tagName; k++, n = n.parentElement) chain.push(n.tagName.toLowerCase() + '.' + String(n.className).split(/\s+/)[0]);
+      const visible = r.width > 0 && r.height > 0;
+      const inChrome = chain.some(c => /navigation-drawer|app-bar|toolbar|tooltip|v-menu|sidebar/i.test(c));
+      return { i, visible, inChrome, x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), chain: chain.join(' < ') };
+    });
+    const pick = info.find(o => o.visible && !o.inChrome) || info.find(o => o.visible) || info[0];
+    if (pick) leaves[pick.i].setAttribute('data-pt-tile', '1');
+    return { info, picked: pick ? pick.i : -1 };
+  });
+  console.log('   "Horário" labels found: ' + found.info.length + ', picked #' + found.picked);
+  found.info.forEach(o => console.log('     #' + o.i + ' visible=' + o.visible + ' inChrome=' + o.inChrome + ' at ' + o.x + ',' + o.y + ' w=' + o.w + ' : ' + o.chain));
+  const tile = page.locator('[data-pt-tile]').first();
+  await tile.waitFor({ timeout: 10000 });
   console.log('3. modules page, "Horário" tile found: yes');
 
   step = 'open the tile menu';
@@ -69,7 +89,7 @@ try {
   const menuTexts = async () => (await page.locator('.v-menu__content, .menuable__content__active, [role="menu"], [role="listbox"]').allInnerTexts().catch(() => [])).map(t => t.replace(/\s+/g, ' ').slice(0, 120));
   // 1) Something may be covering the page (news pop-up, cookie bar...). Look, then try to close it.
   const probe = async () => page.evaluate(() => {
-    const el = [...document.querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === 'Horário');
+    const el = document.querySelector('[data-pt-tile]');
     if (!el) return 'tile element not found';
     const r = el.getBoundingClientRect();
     const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
