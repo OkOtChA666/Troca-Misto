@@ -1,6 +1,7 @@
 // Reads today's tasks from planete-online and saves them to the TROCA-MISTO database (data/tasks).
 // Prints only counts and status. If anything goes wrong it keeps the previous copy untouched.
 import { fetchTasks } from './planete-fetch.mjs';
+import { fetchFlights, buildFlightMap } from './f4s-fetch.mjs';
 
 
 const PROJECT = 'troca-misto';
@@ -58,14 +59,14 @@ export function readPrev(json) {
   try {
     const f = json.fields || {};
     const mapStr = (m) => { const o = {}; const ff = (m && m.mapValue && m.mapValue.fields) || {}; Object.keys(ff).forEach((k) => { o[k] = ff[k].stringValue; }); return o; };
-    return { date: f.date && f.date.stringValue, a: mapStr(f.a), ch: mapStr(f.ch) };
+    return { date: f.date && f.date.stringValue, a: mapStr(f.a), ch: mapStr(f.ch), flights: f.flights && f.flights.stringValue, flightsAt: f.flightsAt && parseInt(f.flightsAt.integerValue, 10) };
   } catch (e) { return null; }
 }
 
-export function buildDoc(parsed, now = Date.now(), changes = {}) {
+export function buildDoc(parsed, now = Date.now(), changes = {}, fl = null) {
   const a = {};
   parsed.agents.forEach((ag) => {
-    a[ag.id] = sv(JSON.stringify({ n: ag.name, t: ag.tasks.map(t => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0]) }));
+    a[ag.id] = sv(JSON.stringify({ n: ag.name, t: ag.tasks.map(t => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0, t.fkey || '']) }));
   });
   return {
     fields: {
@@ -75,6 +76,7 @@ export function buildDoc(parsed, now = Date.now(), changes = {}) {
       agentCount: iv(parsed.agents.length),
       taskCount: iv(parsed.taskCount),
       a: { mapValue: { fields: a } },
+      ...(fl ? { flights: sv(fl.json), flightsAt: iv(fl.at) } : {}),
       ch: { mapValue: { fields: Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, sv(JSON.stringify(v))])) } },
     },
   };
@@ -104,9 +106,23 @@ async function syncOnce(USER, PASS) {
     if (g.ok) prev = readPrev(await g.json());
   } catch (e) {}
   const now = Date.now();
+  // gates / check-in desks / stands from Flights4Staff (if it fails, the last copy is kept)
+  let fl = prev && prev.flights ? { json: prev.flights, at: prev.flightsAt || 0 } : null;
+  const FU = process.env.F4S_USER, FP = process.env.F4S_PASS;
+  if (FU && FP) {
+    try {
+      const f = await fetchFlights({ user: FU, pass: FP });
+      const keys = []; parsed.agents.forEach((ag) => ag.tasks.forEach((t) => keys.push(t.fkey)));
+      const r = buildFlightMap(keys, f);
+      fl = { json: JSON.stringify(r.map), at: now };
+      console.log('FLIGHTS: dep=' + f.dep.length + ' arr=' + f.arr.length + ' wanted=' + r.wanted + ' matched=' + r.matched);
+    } catch (e) {
+      console.log('FLIGHTS SKIPPED: ' + String(e && e.message ? e.message : e).split('\n')[0].slice(0, 160) + ' — keeping the previous copy');
+    }
+  }
   const changes = buildChanges(parsed, prev, now);
   const nChanges = Object.values(changes).reduce((n, h) => n + h.filter((x) => x[0] === now).length, 0);
-  const body = JSON.stringify(buildDoc(parsed, now, changes));
+  const body = JSON.stringify(buildDoc(parsed, now, changes, fl));
   const res = await fetch(URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body });
   if (!res.ok) {
     const t = (await res.text()).replace(/\s+/g, ' ').slice(0, 300);

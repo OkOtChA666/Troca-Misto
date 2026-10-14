@@ -37,7 +37,9 @@ export function parseRegulation(html) {
     const label = dec(m[3]).trim();
     const a = agents.get(agentId);
     if (!a) { orphan++; continue; }
-    a.tasks.push({ label, start, end, post: m[2], changed: /\bis-edit\b/.test(attrs) || label.startsWith('<') });
+    const fm = /^([A-Z0-9]{2,3})_([0-9]{1,4}[A-Z]?)_(\d{1,2}:\d{2}):\d{2}_/.exec(rest);     // e.g. EW_9643_17:50:00_15:50_17:10
+    const fkey = fm ? fm[1] + fm[2] + '@' + hhmm(fm[3]) : '';
+    a.tasks.push({ label, start, end, post: m[2], changed: /\bis-edit\b/.test(attrs) || label.startsWith('<'), fkey });
     taskCount++;
   }
   agents.forEach((a) => a.tasks.sort((x, y) => String(x.start).localeCompare(String(y.start))));
