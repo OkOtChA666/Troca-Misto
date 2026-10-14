@@ -37,9 +37,11 @@ export function parseRegulation(html) {
     const label = dec(m[3]).trim();
     const a = agents.get(agentId);
     if (!a) { orphan++; continue; }
-    const fm = /^([A-Z0-9]{2,3})_([0-9]{1,4}[A-Z]?)_(\d{1,2}:\d{2}):\d{2}_/.exec(rest);     // e.g. EW_9643_17:50:00_15:50_17:10
-    const fkey = fm ? fm[1] + fm[2] + '@' + hhmm(fm[3]) : '';
-    a.tasks.push({ label, start, end, post: m[2], changed: /\bis-edit\b/.test(attrs) || label.startsWith('<'), fkey });
+    // e.g. EW_9643_17:50:00_15:50_17:10  or, for a turnaround, U2_8539_3426_20:35:00_18:05_19:35 (arrives as 8539, departs as 3426)
+    const fm = /^([A-Z0-9]{2,3})_([0-9]{1,4}[A-Z]?)(?:_([0-9]{1,4}[A-Z]?))?_(\d{1,2}:\d{2}):\d{2}_/.exec(rest);
+    const fkey = fm ? fm[1] + fm[2] + (fm[3] ? '/' + fm[3] : '') + '@' + hhmm(fm[4]) : '';
+    const fparts = fm ? { car: fm[1], n1: fm[2], n2: fm[3] || '', tm: hhmm(fm[4]) } : null;
+    a.tasks.push({ label, start, end, post: m[2], changed: /\bis-edit\b/.test(attrs) || label.startsWith('<'), fkey, fparts });
     taskCount++;
   }
   agents.forEach((a) => a.tasks.sort((x, y) => String(x.start).localeCompare(String(y.start))));
