@@ -73,12 +73,37 @@ try {
   await page.getByText(dep.t, { exact: true }).first().click().catch(async () => { await page.goto(new URL(dep.h, page.url()).href).catch(() => {}); });
   await page.waitForTimeout(4000);
   console.log('7. now on: ' + new URL(page.url()).pathname + '   title: ' + clip(await page.title()));
+  // load more rows (button "Get more records") until it stops growing
+  const rowCount = async () => page.$$eval('table tr', r => r.length);
+  let n0 = await rowCount();
+  for (let i = 0; i < 12; i++) {
+    const more = page.getByText('Get more records', { exact: true }).first();
+    if (!(await more.count())) break;
+    await more.click().catch(() => {});
+    await page.waitForTimeout(2500);
+    const n1 = await rowCount();
+    if (n1 <= n0) break;
+    n0 = n1;
+  }
+  console.log('   rows after loading more: ' + n0);
   const t2 = await page.$$eval('table', ts => ts.map(t => ({ rows: [...t.querySelectorAll('tr')].map(r => [...r.children].map(c => c.innerText.replace(/\s+/g, ' ').trim())).filter(r => r.length > 1) })));
-  const big2 = t2.filter(t => t.rows.length >= 3).sort((a, b) => b.rows.length - a.rows.length).slice(0, 2);
-  big2.forEach((t, i) => {
-    console.log('   table ' + (i + 1) + ': ' + t.rows.length + ' rows');
-    t.rows.slice(0, 5).forEach((r, k) => console.log('     ' + (k === 0 ? 'HEADER ' : 'row ' + k + ' ') + r.map(c => clip(c, 24)).join(' | ')));
-  });
+  const main = t2.filter(t => t.rows.length >= 3).sort((a, b) => b.rows.length - a.rows.length)[0];
+  const big2 = main ? [main] : [];
+  if (main) {
+    const H = main.rows[0];
+    const flights = main.rows.slice(1).filter(r => r.length >= 15 && r[1]);
+    console.log('   flights: ' + flights.length + '  first STD: ' + flights[0][4] + '  last STD: ' + flights[flights.length - 1][4]);
+    const ix = (n) => H.findIndex(h => h.replace(/\s+/g, '') === n);
+    const iC = ix('CKI1'), iG = ix('GT');
+    console.log('   column positions: CKI1=' + iC + ' GT=' + iG + ' POS=' + ix('POS') + ' CHT=' + ix('CHT') + ' GREM=' + ix('GREM') + ' Remarks=' + ix('Remarks'));
+    const withData = flights.filter(r => (iC >= 0 && r[iC]) || (iG >= 0 && r[iG]));
+    console.log('   flights with a check-in or gate value: ' + withData.length);
+    console.log('   sample rows with data (flight | STD | ETD | POS | CKI1 | CHT | GT | GREM | Remarks):');
+    withData.slice(0, 8).forEach(r => console.log('     ' + [r[1], r[4], r[6], r[ix('POS')], r[iC], r[ix('CHT')], r[iG], r[ix('GREM')], r[ix('Remarks')]].join(' | ')));
+    const odd = main.rows.filter(r => r.length === 1 || !r[1]).slice(0, 3);
+    console.log('   in-between rows (' + main.rows.filter(r => r.length < 15 || !r[1]).length + '): ' + JSON.stringify(odd).slice(0, 300));
+    console.log('   distinct Remarks: ' + [...new Set(flights.map(r => r[ix('Remarks')]))].join(', '));
+  }
   console.log('RESULT: ' + (big2.length ? 'DEPARTURES TABLE FOUND' : 'departures page opened but no table found'));
 } catch (e) {
   console.log('ERROR: ' + clip(e && e.message, 300));
