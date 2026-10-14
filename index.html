@@ -7366,7 +7366,7 @@ function renderMyTasks(){
       const bdg = badges[nk] ? '<span class="mt-chip chg">' + badges[nk] + '</span>' : '';
       html += '<div class="mt-row' + cls + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
-              '<div class="mt-label">' + kindHtml + mtEsc(nk) + '</div></div>' +
+              '<div class="mt-label">' + kindHtml + mtEsc(nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk) + '</div></div>' +
               '<div class="mt-side">' + chip + bdg + '</div></div>';
     });
   }
