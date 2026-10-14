@@ -63,9 +63,10 @@ export async function fetchFlights({ user, pass }) {
   } finally { await browser.close(); }
 }
 
-// Matches the flights the agents have tasks on (key like "EW9643@17:50") with the flight lists.
-// Returns { map: { key: {c,g,p,x,xt,e} }, wanted, matched }
-export function buildFlightMap(taskKeys, { dep, arr }) {
+// Matches the flights the agents have tasks on with the flight lists.
+// items: [{ key, car, n1, n2, tm }]  (n2 = the departure number when the aircraft turns around: arrives as n1, leaves as n2)
+// Returns { map: { key: {c,g,p,pa,x,xt,e} }, wanted, matched }
+export function buildFlightMap(items, { dep, arr }) {
   const bare = (t) => String(t || '').replace(/\+\d+$/, '');
   const pick = (list, n, tm, timeOf) => {
     const c = list.filter((f) => f.n === n);
@@ -75,22 +76,24 @@ export function buildFlightMap(taskKeys, { dep, arr }) {
     return c.length === 1 ? c[0] : null;
   };
   const map = {}; let wanted = 0, matched = 0;
-  [...new Set(taskKeys.filter(Boolean))].forEach((k) => {
+  const seen = new Set();
+  items.filter((it) => it && it.key && !seen.has(it.key) && seen.add(it.key)).forEach((it) => {
     wanted++;
-    const [n, tm] = k.split('@');
-    const f = pick(dep, n, tm, (x) => x.std);
-    if (f) {
-      const o = {};
-      if (f.cki) o.c = f.cki;
-      if (f.gt) o.g = f.gt;
-      if (f.pos) o.p = f.pos;
-      if (/cancel/i.test(f.rem)) o.x = 'C';
-      else if (/gate closed/i.test(f.rem)) { o.x = 'G'; const m = /(\d{1,2}:\d{2})/.exec(f.grem); if (m) o.xt = m[1]; }
-      if (f.etd && bare(f.etd) !== bare(f.std)) o.e = bare(f.etd);
-      map[k] = o; matched++; return;
+    const first = it.car + it.n1, second = it.n2 ? it.car + it.n2 : '';
+    const d = pick(dep, second || first, it.tm, (x) => x.std);
+    const a = it.n2 || !d ? pick(arr, first, it.tm, (x) => x.sta) : null;
+    if (!d && !a) return;
+    const o = {};
+    if (d) {
+      if (d.cki) o.c = d.cki;
+      if (d.gt) o.g = d.gt;
+      if (d.pos) o.p = d.pos;
+      if (/cancel/i.test(d.rem)) o.x = 'C';
+      else if (/gate closed/i.test(d.rem)) { o.x = 'G'; const m = /(\d{1,2}:\d{2})/.exec(d.grem); if (m) o.xt = m[1]; }
+      if (d.etd && bare(d.etd) !== bare(d.std)) o.e = bare(d.etd);
     }
-    const a = pick(arr, n, tm, (x) => x.sta);
-    if (a) { map[k] = a.pos ? { p: a.pos } : {}; matched++; }
+    if (a && a.pos) { o.pa = a.pos; if (!o.p) o.p = a.pos; }
+    map[it.key] = o; matched++;
   });
   return { map, wanted, matched };
 }
