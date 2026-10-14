@@ -31,6 +31,15 @@ try {
   console.log('3. now on: ' + path + '   title: ' + clip(await page.title()));
   if (/login/i.test(path)) { console.log('RESULT: LOGIN DID NOT WORK (still on the login page)'); process.exit(0); }
 
+  if (/\/Enterprise\//i.test(path)) {
+    console.log('   landed on the management page, going back to the Flights4Staff address and refreshing');
+    await page.goto(LOGIN_URL, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
+    await page.waitForTimeout(3000);
+    path = new URL(page.url()).pathname;
+    if (/\/Enterprise\//i.test(path) || /login/i.test(path)) { await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {}); await page.waitForTimeout(3000); path = new URL(page.url()).pathname; }
+    console.log('   now on: ' + path + '   title: ' + clip(await page.title()));
+    if (/\/Enterprise\//i.test(path)) { console.log('RESULT: STILL ON THE MANAGEMENT PAGE — I need the real flight page address from you'); process.exit(0); }
+  }
   console.log('4. menu / buttons on the page:');
   const nav = await page.$$eval('a:not([href^="javascript"]), a[href^="javascript"], input[type=submit], input[type=button], button', els =>
     els.filter(e => e.offsetWidth || e.offsetHeight).map(e => (e.innerText || e.value || '').replace(/\s+/g, ' ').trim()).filter(Boolean));
