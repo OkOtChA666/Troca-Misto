@@ -830,6 +830,26 @@
   .su-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:14px; }
   #su-save:disabled{ opacity:0.4; cursor:not-allowed; }
   @media (max-width:520px){ .su-grid{ grid-template-columns:1fr; } }
+  /* ---- AS MINHAS TAREFAS ---- */
+  .mt-box{ background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px; width:520px; max-width:100%; margin:10px auto; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+  .mt-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; }
+  .mt-title{ font-family:var(--mono); font-size:13px; letter-spacing:0.12em; color:var(--amber); font-weight:700; }
+  .mt-who{ font-size:13px; color:var(--text); margin-bottom:4px; }
+  .mt-upd{ font-family:var(--mono); font-size:11.5px; color:var(--text-dim); margin-bottom:10px; }
+  .mt-warn{ font-size:12.5px; line-height:1.45; border-radius:8px; padding:8px 10px; margin-bottom:10px; }
+  .mt-warn.amber{ color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.35); }
+  .mt-warn.red{ color:var(--nogo); background:var(--nogo-dim); border:1px solid rgba(255,92,108,0.35); }
+  .mt-row{ display:flex; gap:12px; align-items:center; border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:8px; background:var(--panel-2); }
+  .mt-time{ font-family:var(--mono); font-weight:700; font-size:14px; color:var(--text); min-width:98px; white-space:nowrap; }
+  .mt-label{ flex:1; font-size:14px; color:var(--text); word-break:break-word; }
+  .mt-chip{ font-family:var(--mono); font-size:10px; letter-spacing:0.08em; padding:3px 7px; border-radius:5px; white-space:nowrap; }
+  .mt-chip.now{ color:var(--go); background:var(--go-dim); border:1px solid rgba(51,214,139,0.35); }
+  .mt-chip.next{ color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.35); }
+  .mt-chip.chg{ color:var(--swap); background:var(--swap-dim); border:1px solid rgba(185,140,255,0.35); }
+  .mt-row.now{ border-color:rgba(51,214,139,0.55); }
+  .mt-row.past{ opacity:0.45; }
+  .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
+  .mt-foot{ font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-top:12px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -907,6 +927,13 @@
   <div class="su-box">
     <div class="su-top"><span class="su-title">CARREGAR NOVO HORÁRIO</span><button type="button" class="flag-btn" id="schedule-upload-close" style="margin:0; padding:7px 12px;">Fechar</button></div>
     <div id="schedule-upload-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="my-tasks-overlay" style="align-items:flex-start; overflow-y:auto; z-index:150;">
+  <div class="mt-box">
+    <div class="mt-top"><span class="mt-title">AS MINHAS TAREFAS</span><button type="button" class="flag-btn" id="my-tasks-close" style="margin:0; padding:7px 12px;">Fechar</button></div>
+    <div id="my-tasks-body"></div>
   </div>
 </div>
 
@@ -1031,6 +1058,13 @@
           <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <span id="logged-in-as-display"></span>
+      </span>
+      <span id="my-tasks-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber); cursor:pointer;" title="As minhas tarefas de hoje">
+        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
+          <rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M9 4.5h6M9 10h6M9 14h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        TAREFAS
       </span>
       <span id="notifications-bell-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); position:relative; cursor:pointer;" title="Notificações">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
@@ -1556,7 +1590,8 @@ const EMBEDDED_DATA = {"month":"2026-10","days":[1,2,3,4,5,6,7,8,9,10,11,12,13,1
 const DATA = (function(){
   try{
     const c = JSON.parse(localStorage.getItem('trocaMistoScheduleCache') || 'null');
-    if(c && c.workers && c.workers.length && c.days && c.month && c.month >= EMBEDDED_DATA.month) return c;
+    if(c && c.month && c.month >= EMBEDDED_DATA.month && c.days && c.days.length && c.workers && c.workers.length
+       && c.workers.every(w => w && w.id && w.name && Array.isArray(w.s) && w.s.length === c.days.length)) return c;
   } catch(e){}
   return EMBEDDED_DATA;
 })();
@@ -7154,7 +7189,9 @@ document.getElementById('schedule-upload-close').addEventListener('click', close
 (async function syncScheduleFromCloud(){
   try{
     const remote = await dbGetShared('schedule', null);
-    if(!remote || !remote.workers || !remote.workers.length || !remote.month || !remote.uploadedAt) return;
+    if(!remote || !remote.month || !remote.uploadedAt || !remote.days || !remote.days.length || !remote.workers || !remote.workers.length) return;
+    // a damaged schedule document must never replace a working one
+    if(!remote.workers.every(w => w && w.id && w.name && Array.isArray(w.s) && w.s.length === remote.days.length)) return;
     if(remote.month < EMBEDDED_DATA.month) return;
     if(DATA.uploadedAt === remote.uploadedAt) return;
     if(sessionStorage.getItem('schedReloaded') === String(remote.uploadedAt)) return; // never loop
@@ -7165,6 +7202,89 @@ document.getElementById('schedule-upload-close').addEventListener('click', close
     location.reload();
   } catch(e){}
 })();
+
+// ===================== AS MINHAS TAREFAS =====================
+// Shows the logged-in agent's own tasks for today, read from the copy that the scheduled job
+// (tools/planete-sync.mjs on GitHub) saves in the database every few minutes.
+let MT_UNSUB = null, MT_TICK = null, MT_DOC = null, MT_ERR = false;
+function mtEsc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function mtToMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+function mtPad(n){ return String(n).padStart(2, '0'); }
+function openMyTasks(){
+  document.getElementById('my-tasks-overlay').classList.remove('hidden');
+  MT_DOC = null; MT_ERR = false;
+  renderMyTasks();
+  (async () => {
+    try{
+      const db = await getDb();
+      if(!db){ MT_ERR = true; renderMyTasks(); return; }
+      MT_UNSUB = db.collection('data').doc('tasks').onSnapshot(
+        snap => { MT_DOC = snap.exists ? snap.data() : false; MT_ERR = false; renderMyTasks(); },
+        () => { MT_ERR = true; renderMyTasks(); }
+      );
+    } catch(e){ MT_ERR = true; renderMyTasks(); }
+  })();
+  MT_TICK = setInterval(renderMyTasks, 30000);   // keeps "há X min" and the current task up to date
+}
+function closeMyTasks(){
+  document.getElementById('my-tasks-overlay').classList.add('hidden');
+  if(MT_UNSUB){ try{ MT_UNSUB(); } catch(e){} MT_UNSUB = null; }
+  if(MT_TICK){ clearInterval(MT_TICK); MT_TICK = null; }
+}
+function renderMyTasks(){
+  const body = document.getElementById('my-tasks-body');
+  if(!body || document.getElementById('my-tasks-overlay').classList.contains('hidden')) return;
+  let staffId = null;
+  try{ staffId = localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){}
+  const me = staffId ? DATA.workers.find(w => w.id === staffId) : null;
+  let html = '<div class="mt-who">' + mtEsc(me ? me.name : '') + '</div>';
+  if(MT_ERR){ body.innerHTML = html + '<div class="mt-warn red">Não consegui ligar à base de dados. Vê as tuas tarefas na plataforma oficial.</div>'; return; }
+  if(MT_DOC === null){ body.innerHTML = html + '<div class="mt-empty">A carregar…</div>'; return; }
+  if(MT_DOC === false || !MT_DOC.a){ body.innerHTML = html + '<div class="mt-warn amber">Ainda não há tarefas guardadas. Vê as tuas tarefas na plataforma oficial.</div>'; return; }
+
+  const now = new Date();
+  const todayIso = now.getFullYear() + '-' + mtPad(now.getMonth() + 1) + '-' + mtPad(now.getDate());
+  const ageMin = MT_DOC.updatedAt ? Math.max(0, Math.round((Date.now() - MT_DOC.updatedAt) / 60000)) : null;
+  const upd = MT_DOC.updatedAt ? new Date(MT_DOC.updatedAt) : null;
+  html += '<div class="mt-upd">Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
+          (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '') + '</div>';
+  if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
+  else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
+  const sameDay = MT_DOC.date === todayIso;
+  if(!sameDay){
+    const dd = MT_DOC.date ? MT_DOC.date.split('-').reverse().join('/') : '?';
+    html += '<div class="mt-warn amber">Os dados guardados são do dia ' + mtEsc(dd) + ' — ainda não foram atualizados para hoje.</div>';
+  }
+
+  let rec = null;
+  try{ rec = MT_DOC.a[staffId] ? JSON.parse(MT_DOC.a[staffId]) : null; } catch(e){}
+  if(!rec){
+    html += '<div class="mt-empty">Não apareces na lista da plataforma para este dia.</div>';
+  } else if(!rec.t || !rec.t.length){
+    html += '<div class="mt-empty">Sem tarefas atribuídas para ti neste dia.</div>';
+  } else {
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    let nextMarked = false;
+    rec.t.forEach(t => {
+      const label = String(t[0] || ''), start = t[1], end = t[2], changed = !!t[4] || label.startsWith('<');
+      const s = mtToMin(start); let e = mtToMin(end);
+      if(s !== null && e !== null && e <= s) e += 1440;               // crosses midnight
+      let cls = '', chip = '';
+      if(sameDay && s !== null && e !== null){
+        if(nowMin >= e) cls = ' past';
+        else if(nowMin >= s){ cls = ' now'; chip = '<span class="mt-chip now">A DECORRER</span>'; }
+        else if(!nextMarked){ nextMarked = true; chip = '<span class="mt-chip next">A SEGUIR</span>'; }
+      }
+      html += '<div class="mt-row' + cls + '"><div class="mt-time">' + mtEsc(start || '?') + '–' + mtEsc(end || '?') + '</div>' +
+              '<div class="mt-label">' + mtEsc(label.replace(/^<\s*/, '')) + '</div>' + chip +
+              (changed ? '<span class="mt-chip chg">ALTERADO</span>' : '') + '</div>';
+    });
+  }
+  html += '<div class="mt-foot">Dados lidos da plataforma planete-online, atualizados a cada poucos minutos. Podem ter algum atraso — em caso de dúvida, confirma sempre na plataforma oficial.</div>';
+  body.innerHTML = html;
+}
+document.getElementById('my-tasks-link').addEventListener('click', openMyTasks);
+document.getElementById('my-tasks-close').addEventListener('click', closeMyTasks);
 </script>
 </body>
 </html>
