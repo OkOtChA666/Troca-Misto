@@ -3365,10 +3365,6 @@ function renderSwapsListGeneric(showAll, cfg){
     const actualType = classifySwapType(e.workerId, e.idx, e.s.type);
     let rowSubHtml;
 
-    // The AH badge needs checking on BOTH sides of the swap, not just e.worker's own side —
-    // whichever of the two people got a schedule override afterward should show it, regardless
-    // of which one happens to be this document's own "worker" vs. its "partner".
-    const partnerEffective = partnerWorker ? getEffectiveEntry(partnerWorker, e.idx) : null;
     if(actualType === 'cover'){
       // asymmetric: e.worker was off, took over partner's shift; partner is now off instead
       const ownCode = ownOriginal.status === 'off' ? (ownOriginal.codes[0] || 'off') : (ownOriginal.status === 'work' ? fmtHHMM(ownOriginal.start)+'-'+fmtHHMM(ownOriginal.end) : '—');
@@ -3376,13 +3372,10 @@ function renderSwapsListGeneric(showAll, cfg){
       const partnerHadShift = partnerOriginal && partnerOriginal.status === 'work';
       const partnerBeforeTime = partnerHadShift ? fmtHHMM(partnerOriginal.start)+'-'+fmtHHMM(partnerOriginal.end) : '—';
       const partnerNow = ownCode;
-      const partnerNowDisplay = (partnerEffective && partnerEffective.overridden)
-        ? '<span class="old-time-strike">'+nowDisplay(partnerNow)+'</span> → '+fmtHHMM(partnerEffective.start)+'-'+fmtHHMM(partnerEffective.end)+' <span class="ah-badge">AH</span>'
-        : nowDisplay(partnerNow);
       const ownNowDisplay = ownEffective.overridden
         ? '<span class="old-time-strike">'+partnerBeforeTime+'</span> → '+fmtHHMM(ownEffective.start)+'-'+fmtHHMM(ownEffective.end)+' <span class="ah-badge">AH</span>'
         : partnerBeforeTime;
-      rowSubHtml = '<span class="dot dot-purple"></span>'+partnerBeforeTime+' → '+partnerNowDisplay+
+      rowSubHtml = '<span class="dot dot-purple"></span>'+partnerBeforeTime+' → '+nowDisplay(partnerNow)+
         '<br><span class="dot dot-white"></span>'+ownCode+' → '+ownNowDisplay;
     } else {
       // symmetric: both were originally working, they simply trade times with each other
@@ -3390,14 +3383,10 @@ function renderSwapsListGeneric(showAll, cfg){
       const partnerOriginal = partnerWorker ? getEntry(partnerWorker, e.idx) : null;
       const partnerOrigTime = (partnerOriginal && partnerOriginal.status === 'work') ? fmtHHMM(partnerOriginal.start)+'-'+fmtHHMM(partnerOriginal.end) : '—';
       const ownNowPlain = partnerOrigTime; // e.worker's new time = partner's original time
-      const partnerNowPlain = ownOrigTime; // partner's new time = e.worker's original time
-      const partnerNowDisplay = (partnerEffective && partnerEffective.overridden)
-        ? '<span class="old-time-strike">'+partnerNowPlain+'</span> → '+fmtHHMM(partnerEffective.start)+'-'+fmtHHMM(partnerEffective.end)+' <span class="ah-badge">AH</span>'
-        : partnerNowPlain;
       const ownNowDisplay = ownEffective.overridden
         ? '<span class="old-time-strike">'+ownNowPlain+'</span> → '+fmtHHMM(ownEffective.start)+'-'+fmtHHMM(ownEffective.end)+' <span class="ah-badge">AH</span>'
         : ownNowPlain;
-      rowSubHtml = '<span class="dot dot-purple"></span>'+partnerOrigTime+' → '+partnerNowDisplay+
+      rowSubHtml = '<span class="dot dot-purple"></span>'+partnerOrigTime+' → '+ownOrigTime+
         '<br><span class="dot dot-white"></span>'+ownOrigTime+' → '+ownNowDisplay;
     }
 
