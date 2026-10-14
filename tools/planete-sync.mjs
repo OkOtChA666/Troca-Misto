@@ -112,7 +112,7 @@ async function syncOnce(USER, PASS) {
   if (FU && FP) {
     try {
       const f = await fetchFlights({ user: FU, pass: FP });
-      const keys = []; parsed.agents.forEach((ag) => ag.tasks.forEach((t) => keys.push(t.fkey)));
+      const keys = []; parsed.agents.forEach((ag) => ag.tasks.forEach((t) => { if (t.fparts) keys.push({ key: t.fkey, ...t.fparts }); }));
       const r = buildFlightMap(keys, f);
       fl = { json: JSON.stringify(r.map), at: now };
       console.log('FLIGHTS: dep=' + f.dep.length + ' arr=' + f.arr.length + ' wanted=' + r.wanted + ' matched=' + r.matched);
