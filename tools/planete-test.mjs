@@ -67,17 +67,42 @@ try {
   step = 'open the tile menu';
   const REAL = /tempo\s*real|temps\s*r[ée]el|real.?time|realtime/i;
   const menuTexts = async () => (await page.locator('.v-menu__content, .menuable__content__active, [role="menu"], [role="listbox"]').allInnerTexts().catch(() => [])).map(t => t.replace(/\s+/g, ' ').slice(0, 120));
+  // 1) Something may be covering the page (news pop-up, cookie bar...). Look, then try to close it.
+  const probe = async () => page.evaluate(() => {
+    const el = [...document.querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === 'Horário');
+    if (!el) return 'tile element not found';
+    const r = el.getBoundingClientRect();
+    const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    const desc = (n) => n ? (n.tagName + '.' + String(n.className).replace(/\s+/g, '.').slice(0, 80)) : 'none';
+    const dlg = [...document.querySelectorAll('.v-dialog--active, [role="dialog"], .v-overlay--active')].map(d => desc(d) + ' "' + d.innerText.replace(/\s+/g, ' ').slice(0, 80) + '"');
+    return 'on top of tile: ' + desc(top) + (el.contains(top) || top.contains(el) ? ' (same area, ok)' : ' (DIFFERENT element)') + ' | dialogs: ' + JSON.stringify(dlg);
+  });
+  console.log('   ' + await probe());
+  await page.keyboard.press('Escape').catch(() => {});
+  for (const label of [/^(fechar|close|fermer|sluiten)$/i, /^(ok|entendido|aceitar|accept|compris)$/i]) {
+    const b = page.getByRole('button', { name: label }).first();
+    if (await b.isVisible().catch(() => false)) { await b.click({ timeout: 3000 }).catch(() => {}); console.log('   closed a pop-up button'); }
+  }
+  await page.waitForTimeout(1500);
+  console.log('   ' + await probe());
+
+  // 2) Open the menu: real mouse move first, forced hover/click as fallbacks (short timeouts).
   const box = await tile.boundingBox();
   if (box) await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 8 });
-  await tile.hover();
   await page.waitForTimeout(2000);
   let m = await menuTexts();
-  console.log('   after hover, menu texts: ' + JSON.stringify(m));
+  console.log('   after mouse move, menu texts: ' + JSON.stringify(m));
   if (!(await page.getByText(REAL).count())) {
-    await tile.click();
+    await tile.hover({ force: true, timeout: 8000 }).catch((e) => console.log('   forced hover failed'));
     await page.waitForTimeout(2000);
     m = await menuTexts();
-    console.log('   after click, menu texts: ' + JSON.stringify(m));
+    console.log('   after forced hover, menu texts: ' + JSON.stringify(m));
+  }
+  if (!(await page.getByText(REAL).count())) {
+    await tile.click({ force: true, timeout: 8000 }).catch((e) => console.log('   forced click failed'));
+    await page.waitForTimeout(2000);
+    m = await menuTexts();
+    console.log('   after forced click, menu texts: ' + JSON.stringify(m));
   }
   const entry = page.getByText(REAL).first();
   await entry.waitFor({ timeout: 20000 });
