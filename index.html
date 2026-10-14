@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Troca-Misto: A tua plataforma para procurar trocas</title>
+<title>Troca-Misto: A tua plataforma de procura de trocas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -7318,7 +7318,8 @@ function mtInfoHtml(f, colr){
   const isCheckin = colr === '#0099ff', isDep = colr === '#0066cc', isArr = colr === '#dbffaa';
   if(f.c && (isCheckin || !isDep)) bits.push('<span>CKIN <b>' + sp(f.c) + '</b></span>');
   if(f.g && (isDep || !isCheckin)) bits.push('<span>PORTA <b>' + sp(f.g) + '</b></span>');
-  if(f.p && !isCheckin) bits.push('<span>STAND <b>' + mtEsc(f.p) + '</b></span>');
+  const stand = isArr ? (f.pa || f.p) : f.p;
+  if(stand && !isCheckin) bits.push('<span>STAND <b>' + mtEsc(stand) + '</b></span>');
   const flags = [];
   if(f.x === 'C') flags.push('<span class="mt-flag red">CANCELADO</span>');
   else if(f.x === 'G') flags.push('<span class="mt-flag amber">PORTA FECHADA' + (f.xt ? ' ' + mtEsc(f.xt) : '') + '</span>');
