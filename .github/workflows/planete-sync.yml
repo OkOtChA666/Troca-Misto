@@ -23,4 +23,6 @@ jobs:
         env:
           PLANETE_USER: ${{ secrets.PLANETE_USER }}
           PLANETE_PASS: ${{ secrets.PLANETE_PASS }}
+          F4S_USER: ${{ secrets.F4S_USER }}
+          F4S_PASS: ${{ secrets.F4S_PASS }}
           LOOP_MINUTES: '50'
