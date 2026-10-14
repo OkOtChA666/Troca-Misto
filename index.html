@@ -853,6 +853,12 @@
   .mt-row{ padding:12px 14px; }
   .mt-time{ min-width:0; font-size:15px; }
   .mt-label{ display:flex; align-items:center; flex-wrap:wrap; gap:4px 0; }
+  .mt-changes{ border:1px solid rgba(185,140,255,0.35); background:rgba(185,140,255,0.07); border-radius:10px; padding:10px 12px; margin-bottom:12px; }
+  .mt-ch-title{ font-family:var(--mono); font-size:11px; letter-spacing:0.12em; color:var(--swap); font-weight:700; margin-bottom:6px; }
+  .mt-ch-row{ display:flex; gap:10px; font-size:13px; color:var(--text-dim); padding:3px 0; line-height:1.4; }
+  .mt-ch-row.new{ color:var(--text); font-weight:600; }
+  .mt-ch-time{ font-family:var(--mono); color:var(--swap); min-width:40px; }
+  #my-tasks-badge{ display:none; background:var(--nogo); color:#fff; font-family:var(--mono); font-size:10px; font-weight:700; border-radius:9px; padding:1px 6px; margin-left:2px; }
   .mt-row.now{ border-color:rgba(51,214,139,0.55); }
   .mt-row.past{ opacity:0.45; }
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
@@ -1071,7 +1077,7 @@
           <rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
           <path d="M9 4.5h6M9 10h6M9 14h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
-        TAREFAS
+        TAREFAS<span id="my-tasks-badge"></span>
       </span>
       <span id="notifications-bell-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); position:relative; cursor:pointer;" title="Notificações">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
@@ -7213,31 +7219,64 @@ document.getElementById('schedule-upload-close').addEventListener('click', close
 // ===================== AS MINHAS TAREFAS =====================
 // Shows the logged-in agent's own tasks for today, read from the copy that the scheduled job
 // (tools/planete-sync.mjs on GitHub) saves in the database every few minutes.
-let MT_UNSUB = null, MT_TICK = null, MT_DOC = null, MT_ERR = false;
+let MT_UNSUB = null, MT_LISTENING = false, MT_TICK = null, MT_DOC = null, MT_ERR = false;
 function mtEsc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function mtToMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
 function mtPad(n){ return String(n).padStart(2, '0'); }
-function openMyTasks(){
-  document.getElementById('my-tasks-overlay').classList.remove('hidden');
-  MT_DOC = null; MT_ERR = false;
-  renderMyTasks();
+function mtStaffId(){ try{ return localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){ return null; } }
+function mtChanges(){
+  const id = mtStaffId(); if(!id || !MT_DOC || !MT_DOC.a || !MT_DOC.ch || !MT_DOC.ch[id]) return [];
+  try{ const l = JSON.parse(MT_DOC.ch[id]); return Array.isArray(l) ? l : []; } catch(e){ return []; }
+}
+function mtSeenKey(){ return 'trocaMistoMtSeen:' + (MT_DOC && MT_DOC.date || '') + ':' + mtStaffId(); }
+function mtSeen(){ try{ return parseInt(localStorage.getItem(mtSeenKey()) || '0', 10) || 0; } catch(e){ return 0; } }
+function mtMarkSeen(){
+  const l = mtChanges(); if(!l.length) return;
+  try{ localStorage.setItem(mtSeenKey(), String(Math.max.apply(null, l.map(x => x[0])))); } catch(e){}
+  mtUpdateBadge();
+}
+function mtUpdateBadge(){
+  const el = document.getElementById('my-tasks-badge'); if(!el) return;
+  const seen = mtSeen(), n = mtChanges().filter(x => x[0] > seen).length;
+  el.style.display = n ? 'inline-block' : 'none'; el.textContent = n > 9 ? '9+' : String(n);
+}
+function mtOpenOverlay(){ return !document.getElementById('my-tasks-overlay').classList.contains('hidden'); }
+function mtListen(){
+  if(MT_UNSUB || MT_LISTENING) return;
+  MT_LISTENING = true;
   (async () => {
     try{
       const db = await getDb();
-      if(!db){ MT_ERR = true; renderMyTasks(); return; }
+      if(!db){ MT_ERR = true; MT_LISTENING = false; renderMyTasks(); return; }
       MT_UNSUB = db.collection('data').doc('tasks').onSnapshot(
-        snap => { MT_DOC = snap.exists ? snap.data() : false; MT_ERR = false; renderMyTasks(); },
-        () => { MT_ERR = true; renderMyTasks(); }
+        snap => { MT_DOC = snap.exists ? snap.data() : false; MT_ERR = false; mtUpdateBadge(); if(mtOpenOverlay()) renderMyTasks(); },
+        () => { MT_ERR = true; if(mtOpenOverlay()) renderMyTasks(); }
       );
-    } catch(e){ MT_ERR = true; renderMyTasks(); }
+      MT_LISTENING = false;
+    } catch(e){ MT_ERR = true; MT_LISTENING = false; renderMyTasks(); }
   })();
+}
+function mtUnlisten(){ if(MT_UNSUB){ try{ MT_UNSUB(); } catch(e){} MT_UNSUB = null; } }
+function openMyTasks(){
+  document.getElementById('my-tasks-overlay').classList.remove('hidden');
+  MT_ERR = false;
+  if(MT_DOC === null) MT_DOC = null;
+  renderMyTasks();
+  mtListen();
+  if(MT_TICK) clearInterval(MT_TICK);
   MT_TICK = setInterval(renderMyTasks, 30000);   // keeps "há X min" and the current task up to date
+  if(MT_DOC) mtMarkSeen();
 }
 function closeMyTasks(){
+  mtMarkSeen();
   document.getElementById('my-tasks-overlay').classList.add('hidden');
-  if(MT_UNSUB){ try{ MT_UNSUB(); } catch(e){} MT_UNSUB = null; }
   if(MT_TICK){ clearInterval(MT_TICK); MT_TICK = null; }
 }
+// Background: while the page is visible and someone is logged in, keep the listener on so the badge shows new changes.
+setInterval(() => {
+  if(document.hidden || !mtStaffId()){ if(!mtOpenOverlay()) mtUnlisten(); return; }
+  mtListen();
+}, 10000);
 const MT_COLORS = {"#249255":[1,2,3,625,627,659],"#dbffaa":[4,55,100,101,102,119,120],"#0099ff":[6,7,8,9,10,11,12,13,14,15,56,110,111,112,113,114,115,116,117,118,172,173,175,176,177,179,219,220,221,222,547,616,621,623,634,640,643,644,645,652,675,687,701,702,740,761,777,835,838,841,853,869],"#0066cc":[16,17,18,19,20,21,22,23,24,25,27,57,121,122,123,124,125,126,127,128,129,174,180,181,182,183,223,224,225,226,548,622,624,635,641,642,646,653,676,688,741,762,778,836,839,842,854,870],"#0092aa":[26,28,29,30,31,32,33,34,549,628,686,699,764,780,786,791,793,795,801,811,817,843,844,845,856],"#a1acff":[49,50,132,133,186,187,228,629,673],"#246dff":[60],"#f71010":[61,819],"#ffff00":[63,135,195,231,649,677,681],"#ffcc00":[64,319,321],"#948a54":[65,137],"#f79646":[66,139,196,799],"#fabf8e":[67,140,197,804],"#494529":[68],"#bfbfbf":[70],"#808080":[71,142,198,232],"#ffffff":[72,73,143,199,233],"#f2dcdb":[74],"#b8cce4":[75],"#6dffff":[76,145,202,236,678],"#c5d9f1":[77,146],"#538dd5":[78],"#8db4e2":[79,147],"#6d0000":[80,637],"#669900":[81,148,204,237],"#993300":[83,84,151,152],"#1d51ff":[85],"#ff7e2c":[86],"#ccc0da":[87,155,208],"#924955":[88,156,209],"#60497a":[89,157,210,242],"#6d00ff":[94,95,96,97],"#ff0000":[134,189,230],"#996633":[141],"#e6b8b7":[144,200,234,685],"#99cc00":[149],"#fabf8f":[153,206,239],"#f09e57":[154,207,240],"#ff6600":[190],"#ff24ff":[191,192,193,201,235],"#0d0d0d":[203],"#808000":[241],"#963634":[262,263],"#88c000":[326,327],"#9ee000":[340,729,758,760],"#a8ff61":[357,369,736,737],"#ffeaa1":[365,739],"#2b6000":[434,753],"#20a8a8":[446],"#e3cf60":[447,448,449,450,451,452,453,454,456,457,458,459,460,461,462,463,877,878],"#f5a914":[464,465,466,467,468,469,470,471,472,473,474,475,476,477,478,479,480,481,672],"#33a85b":[483,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,534,655,674],"#0f4ef0":[501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,876,880],"#ffff55":[614,704,767],"#dbff55":[617],"#00db00":[626,690],"#008fa0":[639],"#ffffaa":[648,651],"#c4bd97":[650],"#b66d55":[682],"#0d0101":[700],"#41baff":[705,744],"#0066a0":[706,743],"#001ae0":[707,746],"#000f80":[708,745],"#a061ff":[709,710,711,712,713,714,742,747],"#7a21ff":[715,716,717,718,719,720,748,749],"#540080":[721,722,723,724,725,726,750,751],"#000000":[727,733,734,738,752,757],"#ffcc66":[730,759],"#398000":[731,755],"#ff9900":[732,754],"#030000":[735],"#ff5a21":[782,783],"#ff9421":[796,803,832],"#a6d4e6":[805,812],"#eda72a":[818],"#db49aa":[826,828,829,833],"#249200":[872,873,881,882,883,884,885,886,887,888,889,890,891,892,893,894,895,896,897,898,899,900,901,902,903,904,905,906,907,908,909,910,911,915,919,920],"#49ff55":[912,913,914,916,917,918]};
 const MT_KINDS = {'#0099ff':['CHECK-IN','#fff'], '#0066cc':['PARTIDA','#fff'], '#dbffaa':['ACOLHIMENTO','#111']};
 function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
@@ -7266,6 +7305,15 @@ function renderMyTasks(){
     html += '<div class="mt-warn amber">Os dados guardados são do dia ' + mtEsc(dd) + ' — ainda não foram atualizados para hoje.</div>';
   }
 
+  { const chs = mtChanges();
+    if(chs.length){
+      const seen = mtSeen();
+      html += '<div class="mt-changes"><div class="mt-ch-title">ALTERAÇÕES</div>' +
+        chs.slice().reverse().map(x => { const d = new Date(x[0]);
+          return '<div class="mt-ch-row' + (x[0] > seen ? ' new' : '') + '"><span class="mt-ch-time">' + mtPad(d.getHours()) + ':' + mtPad(d.getMinutes()) + '</span><span>' + mtEsc(x[1]).replace(/(\d)–(\d)/g, '$1 – $2') + '</span></div>'; }).join('') +
+        '</div>';
+    }
+  }
   let rec = null;
   try{ rec = MT_DOC.a[staffId] ? JSON.parse(MT_DOC.a[staffId]) : null; } catch(e){}
   if(!rec){
@@ -7289,7 +7337,7 @@ function renderMyTasks(){
       const kind = MT_KINDS[colr] || null;
       const kindHtml = kind ? '<span class="mt-kind" style="background:' + colr + ';color:' + kind[1] + '">' + kind[0] + '</span>' : '';
       html += '<div class="mt-row' + cls + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
-              '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + '–' + mtEsc(end || '?') + '</div>' +
+              '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
               '<div class="mt-label">' + kindHtml + mtEsc(label.replace(/^<\s*/, '')) + '</div></div>' +
               '<div class="mt-side">' + chip + (changed ? '<span class="mt-chip chg">ALTERADO</span>' : '') + '</div></div>';
     });
