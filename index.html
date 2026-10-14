@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Troca-Misto: A tua plataforma de procura de trocas</title>
+<title>Troca-Misto: A tua plataforma para procurar trocas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -869,6 +869,11 @@
   .mt-kind{ display:inline-block; box-sizing:border-box; width:96px; text-align:center; flex:none; }
   .mt-kind-empty{ background:none !important; }
   .mt-label{ flex-wrap:nowrap !important; }
+  .mt-info{ display:flex; flex-wrap:wrap; gap:4px 14px; font-family:var(--mono); font-size:12px; color:var(--text-dim); margin-top:2px; }
+  .mt-info b{ color:var(--text); font-weight:700; letter-spacing:0.02em; }
+  .mt-flag{ font-size:10px; font-weight:700; letter-spacing:0.08em; padding:2px 6px; border-radius:4px; }
+  .mt-flag.red{ color:var(--nogo); background:var(--nogo-dim); border:1px solid rgba(255,92,108,0.35); }
+  .mt-flag.amber{ color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.35); }
   .mt-row.now{ border-color:rgba(51,214,139,0.55); }
   .mt-row.past{ opacity:0.45; }
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
@@ -7300,6 +7305,27 @@ document.getElementById('my-tasks-body').addEventListener('click', ev => {
   const b = ev.target.closest && ev.target.closest('#mt-refresh-btn');
   if(b && !b.disabled) mtRequestRefresh();
 });
+let MT_FL_AT = -1, MT_FL = {};
+function mtFlightInfo(key){
+  if(!key || !MT_DOC || !MT_DOC.flights) return null;
+  if(MT_FL_AT !== MT_DOC.flightsAt){ MT_FL_AT = MT_DOC.flightsAt; try{ MT_FL = JSON.parse(MT_DOC.flights) || {}; } catch(e){ MT_FL = {}; } }
+  return MT_FL[key] || null;
+}
+function mtInfoHtml(f, colr){
+  if(!f || typeof f !== 'object') return '';
+  const sp = v => mtEsc(String(v).replace(/_/g, ' / ').replace(/\s*-\s*/g, ' – '));
+  const bits = [];
+  const isCheckin = colr === '#0099ff', isDep = colr === '#0066cc', isArr = colr === '#dbffaa';
+  if(f.c && (isCheckin || !isDep)) bits.push('<span>CKIN <b>' + sp(f.c) + '</b></span>');
+  if(f.g && (isDep || !isCheckin)) bits.push('<span>PORTA <b>' + sp(f.g) + '</b></span>');
+  if(f.p && !isCheckin) bits.push('<span>STAND <b>' + mtEsc(f.p) + '</b></span>');
+  const flags = [];
+  if(f.x === 'C') flags.push('<span class="mt-flag red">CANCELADO</span>');
+  else if(f.x === 'G') flags.push('<span class="mt-flag amber">PORTA FECHADA' + (f.xt ? ' ' + mtEsc(f.xt) : '') + '</span>');
+  if(f.e) flags.push('<span class="mt-flag amber">ETD ' + mtEsc(f.e) + '</span>');
+  if(!bits.length && !flags.length) return '';
+  return '<div class="mt-info">' + bits.join('') + flags.join('') + '</div>';
+}
 function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
 function renderMyTasks(){
   const body = document.getElementById('my-tasks-body');
@@ -7369,7 +7395,7 @@ function renderMyTasks(){
       const bdg = badges[nk] ? '<span class="mt-chip chg">' + badges[nk] + '</span>' : '';
       html += '<div class="mt-row' + cls + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
-              '<div class="mt-label">' + kindHtml + mtEsc(nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk) + '</div></div>' +
+              '<div class="mt-label">' + kindHtml + mtEsc(nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
               '<div class="mt-side">' + chip + bdg + '</div></div>';
     });
   }
