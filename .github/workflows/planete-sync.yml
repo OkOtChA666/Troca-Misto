@@ -1,16 +1,16 @@
 name: Planete sync
 on:
   schedule:
-    # every 5 minutes, all day except one hour in the night (UTC 01:00-01:59, when nobody is working)
-    - cron: '*/5 0,2-23 * * *'
+    # starts a long run every 30 minutes; each run loops by itself (read every 5 min) for ~50 min, runs queue up and hand over
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 concurrency:
-  group: planete-sync
+  group: ${{ github.event_name == 'schedule' && 'planete-sync' || 'planete-manual' }}
   cancel-in-progress: false
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 58
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,3 +22,4 @@ jobs:
         env:
           PLANETE_USER: ${{ secrets.PLANETE_USER }}
           PLANETE_PASS: ${{ secrets.PLANETE_PASS }}
+          LOOP_MINUTES: ${{ github.event_name == 'schedule' && '50' || '3' }}
