@@ -20,9 +20,6 @@ try {
 
   step = 'log in';
   // Diagnostics only: URL paths, status codes and lengths — never content.
-  page.on('request', (r) => {
-    try { const u = new URL(r.url()); if (/planete-online-server|saml|realms/i.test(u.pathname)) console.log('   [req] ' + r.method() + ' ' + u.pathname); } catch (e) {}
-  });
   page.on('response', async (r) => {
     try {
       const u = new URL(r.url());
@@ -31,7 +28,7 @@ try {
         if (/authentication\/login/i.test(u.pathname)) {
           try { const j = await r.json(); extra = ' isSso=' + String(j && j.isSso) + ' hasUser=' + String(!!(j && j.user)) + ' keys=' + Object.keys(j || {}).join(','); } catch (e) {}
         }
-        console.log('   [res] ' + u.pathname + ' -> ' + r.status() + extra);
+        if (/authentication\/login|saml|realms/i.test(u.pathname)) console.log('   [res] ' + u.pathname + ' -> ' + r.status() + extra);
       }
     } catch (e) {}
   });
@@ -40,13 +37,11 @@ try {
   await page.fill('input[name="username"]', USER);
   await page.fill('input[name="current-password"]', PASS);
   console.log('   typed lengths: user=' + (await page.inputValue('input[name="username"]')).length + ' pass=' + (await page.inputValue('input[name="current-password"]')).length);
-  const loginBtn = page.locator('button[type="submit"].primary');
-  console.log('   login buttons found: ' + (await loginBtn.count()));
-  await loginBtn.first().click();
+  await page.press('input[name="current-password"]', 'Enter');
   await page.waitForTimeout(6000);
   if (/\/planete-online\/login/.test(page.url())) {
-    console.log('   still on login page after click — pressing Enter as well');
-    await page.press('input[name="current-password"]', 'Enter');
+    console.log('   still on login page after Enter — clicking the button');
+    await page.locator('button[type="submit"].primary').first().click();
   }
   await Promise.race([
     page.waitForURL(/\/planete-online\/app\//, { timeout: 30000 }).catch(() => null),
@@ -67,12 +62,28 @@ try {
   await page.goto(BASE + '/planete-online/app/modules', { waitUntil: 'domcontentloaded' });
   const tile = page.getByText('Horário', { exact: true }).first();
   await tile.waitFor();
-  await tile.hover();
   console.log('3. modules page, "Horário" tile found: yes');
 
+  step = 'open the tile menu';
+  const REAL = /tempo\s*real|temps\s*r[ée]el|real.?time|realtime/i;
+  const menuTexts = async () => (await page.locator('.v-menu__content, .menuable__content__active, [role="menu"], [role="listbox"]').allInnerTexts().catch(() => [])).map(t => t.replace(/\s+/g, ' ').slice(0, 120));
+  const box = await tile.boundingBox();
+  if (box) await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 8 });
+  await tile.hover();
+  await page.waitForTimeout(2000);
+  let m = await menuTexts();
+  console.log('   after hover, menu texts: ' + JSON.stringify(m));
+  if (!(await page.getByText(REAL).count())) {
+    await tile.click();
+    await page.waitForTimeout(2000);
+    m = await menuTexts();
+    console.log('   after click, menu texts: ' + JSON.stringify(m));
+  }
+  const entry = page.getByText(REAL).first();
+  await entry.waitFor({ timeout: 20000 });
+  console.log('   found the "tempo real" entry');
+
   step = 'click tempo real';
-  const entry = page.getByText(/tempo real/i).first();
-  await entry.waitFor();
   const [popup] = await Promise.all([
     context.waitForEvent('page', { timeout: 45000 }).catch(() => null),
     entry.click(),
