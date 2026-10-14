@@ -19,26 +19,35 @@ try {
   console.log('1. login page opened: yes');
 
   step = 'log in';
-  // Diagnostics only: URL paths and status codes, never content.
+  // Diagnostics only: URL paths, status codes and lengths — never content.
+  page.on('request', (r) => {
+    try { const u = new URL(r.url()); if (/planete-online-server|saml|realms/i.test(u.pathname)) console.log('   [req] ' + r.method() + ' ' + u.pathname); } catch (e) {}
+  });
   page.on('response', async (r) => {
     try {
       const u = new URL(r.url());
-      if (/authentication|login|saml|realms/i.test(u.pathname)) {
+      if (/planete-online-server|saml|realms/i.test(u.pathname)) {
         let extra = '';
         if (/authentication\/login/i.test(u.pathname)) {
-          try { const j = await r.json(); extra = ' isSso=' + String(j && j.isSso) + ' hasUser=' + String(!!(j && j.user)); } catch (e) {}
+          try { const j = await r.json(); extra = ' isSso=' + String(j && j.isSso) + ' hasUser=' + String(!!(j && j.user)) + ' keys=' + Object.keys(j || {}).join(','); } catch (e) {}
         }
-        console.log('   [net] ' + r.request().method() + ' ' + u.pathname + ' -> ' + r.status() + extra);
+        console.log('   [res] ' + u.pathname + ' -> ' + r.status() + extra);
       }
     } catch (e) {}
   });
   page.on('framenavigated', (f) => { if (f === page.mainFrame()) { try { console.log('   [nav] ' + new URL(f.url()).pathname); } catch (e) {} } });
+  console.log('   secret lengths: user=' + USER.length + ' pass=' + PASS.length);
   await page.fill('input[name="username"]', USER);
   await page.fill('input[name="current-password"]', PASS);
-  // the plain "Connection" button is the purple primary one (not the black SSO one)
+  console.log('   typed lengths: user=' + (await page.inputValue('input[name="username"]')).length + ' pass=' + (await page.inputValue('input[name="current-password"]')).length);
   const loginBtn = page.locator('button[type="submit"].primary');
   console.log('   login buttons found: ' + (await loginBtn.count()));
   await loginBtn.first().click();
+  await page.waitForTimeout(6000);
+  if (/\/planete-online\/login/.test(page.url())) {
+    console.log('   still on login page after click — pressing Enter as well');
+    await page.press('input[name="current-password"]', 'Enter');
+  }
   await Promise.race([
     page.waitForURL(/\/planete-online\/app\//, { timeout: 30000 }).catch(() => null),
     page.waitForURL(/saml|realms/, { timeout: 30000 }).catch(() => null),
@@ -46,9 +55,9 @@ try {
   await page.waitForTimeout(3000);
   const nowPath = new URL(page.url()).pathname;
   if (!/\/planete-online\/app\//.test(nowPath)) {
-    const txt = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300);
+    const msgs = await page.locator('.v-messages__message, .v-alert, .notification, [role="alert"], .snotify-item, .v-snack__content').allInnerTexts().catch(() => []);
     console.log('2. logged in: NO — ended on ' + nowPath);
-    console.log('   page text: ' + txt);
+    console.log('   messages on page: ' + JSON.stringify(msgs.map(m => m.replace(/\s+/g, ' ').slice(0, 150))));
     process.exit(2);
   }
   if (/double-authentification/.test(page.url())) { console.log('2. logged in: NO — two-step verification is required'); process.exit(2); }
