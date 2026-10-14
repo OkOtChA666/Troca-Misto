@@ -85,57 +85,66 @@ try {
   console.log('3. modules page, "Horário" tile found: yes');
 
   step = 'open the tile menu';
-  const REAL = /tempo\s*real|temps\s*r[ée]el|real.?time|realtime/i;
-  const menuTexts = async () => (await page.locator('.v-menu__content, .menuable__content__active, [role="menu"], [role="listbox"]').allInnerTexts().catch(() => [])).map(t => t.replace(/\s+/g, ' ').slice(0, 120));
-  // 1) Something may be covering the page (news pop-up, cookie bar...). Look, then try to close it.
-  const probe = async () => page.evaluate(() => {
-    const el = document.querySelector('[data-pt-tile]');
-    if (!el) return 'tile element not found';
+  const REAL_SRC = 'tempo\\s*real|temps\\s*r[ée]el|real.?time|realtime';
+  const REAL = new RegExp(REAL_SRC, 'i');
+  // Any element (visible or not) whose own text says "tempo real": where is it, is it visible?
+  const realProbe = () => page.evaluate((src) => {
+    const re = new RegExp(src, 'i');
+    const out = [];
+    [...document.querySelectorAll('*')].filter(e => e.children.length === 0 && re.test(e.textContent)).forEach((e, i) => {
+      const r = e.getBoundingClientRect(); const cs = getComputedStyle(e);
+      const chain = []; let n = e;
+      for (let k = 0; k < 6 && n && n.tagName; k++, n = n.parentElement) chain.push(n.tagName.toLowerCase() + '.' + String(n.className).split(/\s+/)[0]);
+      e.setAttribute('data-pt-real', String(i));
+      out.push({ i, visible: r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none', x: Math.round(r.x), y: Math.round(r.y), chain: chain.join(' < ') });
+    });
+    return out;
+  }, REAL_SRC);
+  const coverInfo = () => page.evaluate(() => {
+    const el = document.querySelector('[data-pt-tile]'); if (!el) return 'no tile';
     const r = el.getBoundingClientRect();
     const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
-    const desc = (n) => n ? (n.tagName + '.' + String(n.className).replace(/\s+/g, '.').slice(0, 80)) : 'none';
-    const dlg = [...document.querySelectorAll('.v-dialog--active, [role="dialog"], .v-overlay--active')].map(d => desc(d) + ' "' + d.innerText.replace(/\s+/g, ' ').slice(0, 80) + '"');
-    return 'on top of tile: ' + desc(top) + (el.contains(top) || top.contains(el) ? ' (same area, ok)' : ' (DIFFERENT element)') + ' | dialogs: ' + JSON.stringify(dlg);
+    const chain = []; let n = top;
+    for (let k = 0; k < 8 && n && n.tagName; k++, n = n.parentElement) chain.push(n.tagName.toLowerCase() + '.' + String(n.className).split(/\s+/).slice(0, 2).join('.'));
+    return 'cover chain: ' + chain.join(' < ') + ' | cover text: "' + String(top && top.innerText || '').replace(/\s+/g, ' ').slice(0, 60) + '" | viewport ' + innerWidth + 'x' + innerHeight;
   });
-  console.log('   ' + await probe());
-  await page.keyboard.press('Escape').catch(() => {});
-  for (const label of [/^(fechar|close|fermer|sluiten)$/i, /^(ok|entendido|aceitar|accept|compris)$/i]) {
-    const b = page.getByRole('button', { name: label }).first();
-    if (await b.isVisible().catch(() => false)) { await b.click({ timeout: 3000 }).catch(() => {}); console.log('   closed a pop-up button'); }
-  }
-  await page.waitForTimeout(1500);
-  console.log('   ' + await probe());
+  console.log('   ' + await coverInfo());
+  let reals = await realProbe();
+  console.log('   "tempo real" elements before opening: ' + JSON.stringify(reals));
 
-  // 2) Open the menu: real mouse move first, forced hover/click as fallbacks (short timeouts).
-  const box = await tile.boundingBox();
-  if (box) await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 8 });
-  await page.waitForTimeout(2000);
-  let m = await menuTexts();
-  console.log('   after mouse move, menu texts: ' + JSON.stringify(m));
-  if (!(await page.getByText(REAL).count())) {
-    await tile.hover({ force: true, timeout: 8000 }).catch((e) => console.log('   forced hover failed'));
+  // Trigger the tile's hover/click behaviour straight from the page (works even if something covers it).
+  const fire = (types) => page.evaluate((types) => {
+    let n = document.querySelector('[data-pt-tile]');
+    for (let k = 0; k < 6 && n; k++, n = n.parentElement) {
+      for (const t of types) n.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, view: window }));
+    }
+  }, types);
+  if (!reals.some(r => r.visible)) {
+    await fire(['pointerover', 'mouseover', 'pointerenter', 'mouseenter', 'mousemove']);
     await page.waitForTimeout(2000);
-    m = await menuTexts();
-    console.log('   after forced hover, menu texts: ' + JSON.stringify(m));
+    reals = await realProbe();
+    console.log('   after hover events: ' + JSON.stringify(reals));
   }
-  if (!(await page.getByText(REAL).count())) {
-    await tile.click({ force: true, timeout: 8000 }).catch((e) => console.log('   forced click failed'));
+  if (!reals.some(r => r.visible)) {
+    await fire(['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']);
     await page.waitForTimeout(2000);
-    m = await menuTexts();
-    console.log('   after forced click, menu texts: ' + JSON.stringify(m));
+    reals = await realProbe();
+    console.log('   after click events: ' + JSON.stringify(reals));
   }
-  const entry = page.getByText(REAL).first();
-  await entry.waitFor({ timeout: 20000 });
+  if (!reals.length) { console.log('   no "tempo real" element appeared'); process.exit(4); }
   console.log('   found the "tempo real" entry');
 
   step = 'click tempo real';
-  const [popup] = await Promise.all([
-    context.waitForEvent('page', { timeout: 45000 }).catch(() => null),
-    entry.click(),
-  ]);
+  const pageEvent = context.waitForEvent('page', { timeout: 45000 }).catch(() => null);
+  await page.evaluate(() => {
+    const el = document.querySelector('[data-pt-real]');
+    const target = el.closest('.v-list-item, a, button, [role="menuitem"]') || el;
+    for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) target.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, view: window }));
+  });
+  const popup = await pageEvent;
   const target = popup || page;
-  await target.waitForLoadState('domcontentloaded');
-  console.log('4. tasks window opened: ' + (popup ? 'yes (new window)' : 'yes (same tab)'));
+  await target.waitForLoadState('domcontentloaded').catch(() => {});
+  console.log('4. tasks window opened: ' + (popup ? 'yes (new window)' : 'no new window — same tab'));
 
   step = 'wait for tasks';
   // The tasks page marks every agent row with .trigInfo (the staff number).
