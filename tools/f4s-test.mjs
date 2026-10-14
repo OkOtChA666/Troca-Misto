@@ -58,7 +58,28 @@ try {
     console.log('   table ' + (i + 1) + ': ' + t.rows.length + ' rows');
     t.rows.slice(0, 4).forEach((r, k) => console.log('     ' + (k === 0 ? 'HEADER ' : 'row ' + k + ' ') + r.map(c => clip(c, 24)).join(' | ')));
   });
-  console.log('RESULT: ' + (big.length ? 'LOGIN WORKS, flight table found' : 'LOGIN WORKS, but I need to find the flight table'));
+  console.log('RESULT (arrivals): ' + (big.length ? 'LOGIN WORKS, flight table found' : 'LOGIN WORKS, but I need to find the flight table'));
+
+  // ---- step 6: find the departures page (gates, check-in) ----
+  console.log('6. looking for the Departures page');
+  const links = async () => page.$$eval('a', els => els.filter(e => e.offsetWidth || e.offsetHeight).map(e => ({ t: (e.innerText || '').replace(/\s+/g, ' ').trim(), h: e.getAttribute('href') || '' })).filter(x => x.t && x.t.length < 40));
+  await page.getByText('Flights', { exact: true }).first().hover().catch(() => {});
+  await page.getByText('Flights', { exact: true }).first().click().catch(() => {});
+  await page.waitForTimeout(2000);
+  const ls = await links();
+  console.log('   links: ' + ls.filter(l => !/^[A-Z]{2,3} ?\d/.test(l.t)).slice(0, 25).map(l => l.t + ' -> ' + l.h.replace(/\?.*$/, '').slice(0, 50)).join(' | '));
+  const dep = ls.find(l => /depart|partida/i.test(l.t) || /depart/i.test(l.h));
+  if (!dep) { console.log('RESULT: could not find a Departures link — send me a screenshot of the Flights menu'); process.exit(0); }
+  await page.getByText(dep.t, { exact: true }).first().click().catch(async () => { await page.goto(new URL(dep.h, page.url()).href).catch(() => {}); });
+  await page.waitForTimeout(4000);
+  console.log('7. now on: ' + new URL(page.url()).pathname + '   title: ' + clip(await page.title()));
+  const t2 = await page.$$eval('table', ts => ts.map(t => ({ rows: [...t.querySelectorAll('tr')].map(r => [...r.children].map(c => c.innerText.replace(/\s+/g, ' ').trim())).filter(r => r.length > 1) })));
+  const big2 = t2.filter(t => t.rows.length >= 3).sort((a, b) => b.rows.length - a.rows.length).slice(0, 2);
+  big2.forEach((t, i) => {
+    console.log('   table ' + (i + 1) + ': ' + t.rows.length + ' rows');
+    t.rows.slice(0, 5).forEach((r, k) => console.log('     ' + (k === 0 ? 'HEADER ' : 'row ' + k + ' ') + r.map(c => clip(c, 24)).join(' | ')));
+  });
+  console.log('RESULT: ' + (big2.length ? 'DEPARTURES TABLE FOUND' : 'departures page opened but no table found'));
 } catch (e) {
   console.log('ERROR: ' + clip(e && e.message, 300));
 } finally { await browser.close(); }
