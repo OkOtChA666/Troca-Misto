@@ -1,0 +1,24 @@
+name: Planete sync
+on:
+  schedule:
+    # every 5 minutes, all day except one hour in the night (UTC 01:00-01:59, when nobody is working)
+    - cron: '*/5 0,2-23 * * *'
+  workflow_dispatch:
+concurrency:
+  group: planete-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install playwright@1.48.0
+      - run: npx playwright install --with-deps chromium
+      - run: node tools/planete-sync.mjs
+        env:
+          PLANETE_USER: ${{ secrets.PLANETE_USER }}
+          PLANETE_PASS: ${{ secrets.PLANETE_PASS }}
