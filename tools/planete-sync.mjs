@@ -114,8 +114,12 @@ async function syncOnce(USER, PASS) {
       const f = await fetchFlights({ user: FU, pass: FP });
       const keys = []; parsed.agents.forEach((ag) => ag.tasks.forEach((t) => { if (t.fparts) keys.push({ key: t.fkey, ...t.fparts }); }));
       const r = buildFlightMap(keys, f);
-      fl = { json: JSON.stringify(r.map), at: now };
-      console.log('FLIGHTS: dep=' + f.dep.length + ' arr=' + f.arr.length + ' wanted=' + r.wanted + ' matched=' + r.matched);
+      // keep what was already known earlier today (flights leave the Flights4Staff list after a while); new readings win
+      let old = {};
+      try { if (prev && prev.date === parsed.date && prev.flights) old = JSON.parse(prev.flights) || {}; } catch (e) { old = {}; }
+      const merged = { ...old, ...r.map };
+      fl = { json: JSON.stringify(merged), at: now };
+      console.log('FLIGHTS: dep=' + f.dep.length + ' arr=' + f.arr.length + ' wanted=' + r.wanted + ' matched=' + r.matched + ' kept=' + Object.keys(merged).length);
     } catch (e) {
       console.log('FLIGHTS SKIPPED: ' + String(e && e.message ? e.message : e).split('\n')[0].slice(0, 160) + ' — keeping the previous copy');
     }
