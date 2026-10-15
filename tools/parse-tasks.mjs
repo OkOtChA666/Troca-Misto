@@ -3,7 +3,7 @@
 const dec = (s) => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&amp;/g, '&');
 const hhmm = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t); return m ? String(m[1]).padStart(2, '0') + ':' + m[2] : null; };
 const fromPct = (left, width) => {                 // timeline is a 24h axis
-  const f = (p) => { const mins = Math.round((parseFloat(p) / 100) * 1440); return String(Math.floor(mins / 60) % 24).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0'); };
+  const f = (p) => { const mins = Math.round((parseFloat(p) / 100) * 1440 / 5) * 5; return String(Math.floor(mins / 60) % 24).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0'); };
   return [f(left), f(parseFloat(left) + parseFloat(width))];
 };
 
