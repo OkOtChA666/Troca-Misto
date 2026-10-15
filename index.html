@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Troca-Misto: A tua plataforma para procura de trocas</title>
+<title>Troca-Misto: A tua plataforma para procurar trocas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -878,6 +878,12 @@
   .mt-corner{ position:absolute; right:18px; bottom:-1px; display:flex; align-items:flex-end; gap:6px; }
   .mt-corner > span{ height:26px; box-sizing:border-box; padding:0 14px; display:flex; align-items:center; font-family:var(--mono); font-size:13px; letter-spacing:0.04em; color:#46526b; background:#e8eefc; border-radius:10px 10px 0 0; white-space:nowrap; }
   .mt-corner b{ color:#0b1220; font-weight:700; margin-left:6px; }
+  .mt-row.mt-break{ position:relative; display:block; text-align:center; border-left-color:var(--line,#3a4a6b); background:repeating-linear-gradient(135deg,#101b30 0 14px,#13223d 14px 28px); }
+  .mt-break .mt-time{ font-size:13px; color:#c8d3ea; }
+  .mt-break-word{ font-family:var(--mono); font-weight:700; font-size:22px; letter-spacing:.3em; padding-left:.3em; color:#fff; margin-top:4px; }
+  .mt-break .mt-side{ position:absolute; right:10px; top:10px; }
+  .mt-row{ min-height:115px; box-sizing:border-box; align-items:flex-start; }
+  .mt-row.mt-break{ display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2px; }
   .mt-name{ display:inline-block; min-width:78px; flex:none; }
   .mt-dest{ font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:0.06em; color:var(--amber); margin-left:10px; flex:none; align-self:baseline; font-size:14px; }
   .mt-row.has-tab{ padding-bottom:36px; }
@@ -7415,6 +7421,11 @@ function renderMyTasks(){
       const nk = label.replace(/^<\s*/, '').trim();
       const bdg = badges[nk] ? '<span class="mt-chip chg">' + badges[nk] + '</span>' : '';
       const tabHtml = mtCornerHtml(mtFlightInfo(t[5]), colr);
+      if(/^(break|pausa|pause)$/i.test(nk)){
+        html += '<div class="mt-row mt-break' + cls + '"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
+                '<div class="mt-break-word">BREAK</div><div class="mt-side">' + chip + bdg + '</div></div>';
+        return;
+      }
       html += '<div class="mt-row' + cls + (tabHtml ? ' has-tab' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
               '<div class="mt-label">' + kindHtml + '<span class="mt-name">' + mtEsc(nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk) + '</span>' + mtDestHtml(mtFlightInfo(t[5]), colr) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
