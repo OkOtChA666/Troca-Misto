@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Troca-Misto: A tua plataforma de procura de trocas</title>
+<title>Troca-Misto: A tua plataforma para procura de trocas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -874,6 +874,14 @@
   .mt-flag{ font-size:10px; font-weight:700; letter-spacing:0.08em; padding:2px 6px; border-radius:4px; }
   .mt-flag.red{ color:var(--nogo); background:var(--nogo-dim); border:1px solid rgba(255,92,108,0.35); }
   .mt-flag.amber{ color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.35); }
+  .mt-row{ position:relative; }
+  .mt-corner{ position:absolute; right:18px; bottom:-1px; display:flex; align-items:flex-end; gap:6px; }
+  .mt-corner > span{ height:26px; box-sizing:border-box; padding:0 14px; display:flex; align-items:center; font-family:var(--mono); font-size:13px; letter-spacing:0.04em; color:#46526b; background:#e8eefc; border-radius:10px 10px 0 0; white-space:nowrap; }
+  .mt-corner b{ color:#0b1220; font-weight:700; margin-left:6px; }
+  .mt-name{ display:inline-block; min-width:78px; flex:none; }
+  .mt-dest{ font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:0.06em; color:var(--amber); margin-left:10px; flex:none; align-self:baseline; font-size:14px; }
+  .mt-row.has-tab{ padding-bottom:36px; }
+  .mt-row.has-tab .mt-side{ align-self:flex-start; }
   .mt-row.now{ border-color:rgba(51,214,139,0.55); }
   .mt-row.past{ opacity:0.45; }
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
@@ -7311,21 +7319,33 @@ function mtFlightInfo(key){
   if(MT_FL_AT !== MT_DOC.flightsAt){ MT_FL_AT = MT_DOC.flightsAt; try{ MT_FL = JSON.parse(MT_DOC.flights) || {}; } catch(e){ MT_FL = {}; } }
   return MT_FL[key] || null;
 }
-function mtInfoHtml(f, colr){
+function mtDestHtml(f, colr){
+  if(!f || typeof f !== 'object') return '';
+  const code = colr === '#dbffaa' ? (f.o || f.d) : f.d;       // arrivals: where it came from; others: where it goes
+  return code ? '<span class="mt-dest">' + mtEsc(String(code).slice(0, 4)) + '</span>' : '';
+}
+function mtTabInfo(f, colr){
+  // text that goes in the white tab at the bottom right of the task; warnings stay on the left
   if(!f || typeof f !== 'object') return '';
   const sp = v => mtEsc(String(v).replace(/_/g, ' / ').replace(/\s*-\s*/g, ' – '));
-  const bits = [];
   const isCheckin = colr === '#0099ff', isDep = colr === '#0066cc', isArr = colr === '#dbffaa';
-  if(f.c && (isCheckin || !isDep)) bits.push('<span>CKIN <b>' + sp(f.c) + '</b></span>');
-  if(f.g && (isDep || !isCheckin)) bits.push('<span>PORTA <b>' + sp(f.g) + '</b></span>');
+  const bits = [];
+  if(f.c && !isDep && !isArr) bits.push('<span>CKIN <b>' + sp(f.c) + '</b></span>');
+  if(f.g && !isCheckin && !isArr) bits.push('<span>PORTA <b>' + sp(f.g) + '</b></span>');
   const stand = isArr ? (f.pa || f.p) : f.p;
   if(stand && !isCheckin) bits.push('<span>STAND <b>' + mtEsc(stand) + '</b></span>');
+  return bits.join('');
+}
+function mtCornerHtml(f, colr){
+  const t = mtTabInfo(f, colr);
+  return t ? '<div class="mt-corner">' + t + '</div>' : '';
+}
+function mtInfoHtml(f, colr){
+  if(!f || typeof f !== 'object') return '';
   const flags = [];
   if(f.x === 'C') flags.push('<span class="mt-flag red">CANCELADO</span>');
-  else if(f.x === 'G') flags.push('<span class="mt-flag amber">PORTA FECHADA' + (f.xt ? ' ' + mtEsc(f.xt) : '') + '</span>');
-  if(f.e) flags.push('<span class="mt-flag amber">ETD ' + mtEsc(f.e) + '</span>');
-  if(!bits.length && !flags.length) return '';
-  return '<div class="mt-info">' + bits.join('') + flags.join('') + '</div>';
+  if(f.e && colr === '#0066cc') flags.push('<span class="mt-flag amber">ETD ' + mtEsc(f.e) + '</span>');
+  return flags.length ? '<div class="mt-info">' + flags.join('') + '</div>' : '';
 }
 function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
 function renderMyTasks(){
@@ -7394,13 +7414,14 @@ function renderMyTasks(){
       const kindHtml = kind ? '<span class="mt-kind" style="background:' + colr + ';color:' + kind[1] + '">' + kind[0] + '</span>' : '<span class="mt-kind mt-kind-empty"></span>';
       const nk = label.replace(/^<\s*/, '').trim();
       const bdg = badges[nk] ? '<span class="mt-chip chg">' + badges[nk] + '</span>' : '';
-      html += '<div class="mt-row' + cls + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
+      const tabHtml = mtCornerHtml(mtFlightInfo(t[5]), colr);
+      html += '<div class="mt-row' + cls + (tabHtml ? ' has-tab' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
-              '<div class="mt-label">' + kindHtml + mtEsc(nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
-              '<div class="mt-side">' + chip + bdg + '</div></div>';
+              '<div class="mt-label">' + kindHtml + '<span class="mt-name">' + mtEsc(nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk) + '</span>' + mtDestHtml(mtFlightInfo(t[5]), colr) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
+              '<div class="mt-side">' + chip + bdg + '</div>' + tabHtml + '</div>';
     });
   }
-  html += '<div class="mt-foot">Dados lidos da plataforma planete-online, atualizados a cada poucos minutos. Podem ter algum atraso — em caso de dúvida, confirma sempre na plataforma oficial.</div>';
+  html += '<div class="mt-foot">Pode ter algum atraso — em caso de dúvida, confirma sempre na plataforma oficial.</div>';
   body.innerHTML = html;
 }
 document.getElementById('my-tasks-link').addEventListener('click', openMyTasks);
