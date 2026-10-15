@@ -27,6 +27,12 @@ async function readTable(page, wanted) {
   return { rows: main.slice(1).filter((r) => r.length >= 12 && r[col('FLTNr.')]), col };
 }
 
+// optional column (never breaks the read if the site renames it)
+function opt(t, r, names) {
+  for (const nm of names) { const i = t.col(nm); if (i >= 0 && r[i]) return norm(r[i]).slice(0, 4); }
+  return '';
+}
+
 export async function fetchFlights({ user, pass }) {
   const browser = await chromium.launch();
   try {
@@ -49,7 +55,7 @@ export async function fetchFlights({ user, pass }) {
     const d = await readTable(page, ['FLTNr.', 'STD', 'ETD', 'POS', 'CKI1', 'GT', 'GREM', 'Remarks']);
     const dep = d.rows.map((r) => ({
       n: flightKey(r[d.col('FLTNr.')]), std: norm(r[d.col('STD')]), etd: norm(r[d.col('ETD')]), pos: norm(r[d.col('POS')]),
-      cki: norm(r[d.col('CKI1')]), gt: norm(r[d.col('GT')]), grem: norm(r[d.col('GREM')]), rem: norm(r[d.col('Remarks')]),
+      des: opt(d, r, ['DES','DEST','Destination']), cki: norm(r[d.col('CKI1')]), gt: norm(r[d.col('GT')]), grem: norm(r[d.col('GREM')]), rem: norm(r[d.col('Remarks')]),
     }));
 
     await page.goto(BASE + 'Arrivals.aspx', { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -57,7 +63,7 @@ export async function fetchFlights({ user, pass }) {
     let arr = [];
     try {
       const a = await readTable(page, ['FLTNr.', 'STA', 'POS']);
-      arr = a.rows.map((r) => ({ n: flightKey(r[a.col('FLTNr.')]), sta: norm(r[a.col('STA')]), pos: norm(r[a.col('POS')]) }));
+      arr = a.rows.map((r) => ({ n: flightKey(r[a.col('FLTNr.')]), sta: norm(r[a.col('STA')]), org: opt(a, r, ['ORG','ORIG','Origin']), pos: norm(r[a.col('POS')]) }));
     } catch (e) { /* arrivals are a bonus; departures are enough */ }
     return { dep, arr };
   } finally { await browser.close(); }
@@ -85,6 +91,7 @@ export function buildFlightMap(items, { dep, arr }) {
     if (!d && !a) return;
     const o = {};
     if (d) {
+      if (d.des) o.d = d.des;
       if (d.cki) o.c = d.cki;
       if (d.gt) o.g = d.gt;
       if (d.pos) o.p = d.pos;
@@ -92,6 +99,7 @@ export function buildFlightMap(items, { dep, arr }) {
       else if (/gate closed/i.test(d.rem)) { o.x = 'G'; const m = /(\d{1,2}:\d{2})/.exec(d.grem); if (m) o.xt = m[1]; }
       if (d.etd && bare(d.etd) !== bare(d.std)) o.e = bare(d.etd);
     }
+    if (a && a.org) o.o = a.org;
     if (a && a.pos) { o.pa = a.pos; if (!o.p) o.p = a.pos; }
     map[it.key] = o; matched++;
   });
