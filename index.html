@@ -7400,8 +7400,7 @@ function renderMyTasks(){
       const txt = String(x[1]); if(/^Removida: /.test(txt)) return;
       let m = /^Nova: (.+) \d\d:\d\d–\d\d:\d\d$/.exec(txt);
       if(m){ badges[m[1]] = 'TAREFA NOVA'; return; }
-      m = /^(.+?): /.exec(txt);
-      if(m) badges[m[1]] = 'TAREFA NOVA';
+      // only genuinely new tasks get the badge (time changes / updates / removals do not)
     });
     const items = rec.t.slice();
     items.sort((p, q) => String(p[1]).localeCompare(String(q[1])));
