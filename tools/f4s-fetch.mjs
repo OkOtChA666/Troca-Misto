@@ -63,7 +63,7 @@ export async function fetchFlights({ user, pass }) {
     let arr = [];
     try {
       const a = await readTable(page, ['FLTNr.', 'STA', 'POS']);
-      arr = a.rows.map((r) => ({ n: flightKey(r[a.col('FLTNr.')]), sta: norm(r[a.col('STA')]), org: opt(a, r, ['ORG','ORIG','Origin']), pos: norm(r[a.col('POS')]) }));
+      arr = a.rows.map((r) => ({ n: flightKey(r[a.col('FLTNr.')]), sta: norm(r[a.col('STA')]), org: opt(a, r, ['ORG','ORIG','Origin']), gate: opt(a, r, ['GT','GATE','EXIT','Exit Door','DOOR']), pos: norm(r[a.col('POS')]) }));
     } catch (e) { /* arrivals are a bonus; departures are enough */ }
     return { dep, arr };
   } finally { await browser.close(); }
@@ -100,6 +100,7 @@ export function buildFlightMap(items, { dep, arr }) {
       if (d.etd && bare(d.etd) !== bare(d.std)) o.e = bare(d.etd);
     }
     if (a && a.org) o.o = a.org;
+    if (a && a.gate) o.ga = a.gate;
     if (a && a.pos) { o.pa = a.pos; if (!o.p) o.p = a.pos; }
     map[it.key] = o; matched++;
   });
