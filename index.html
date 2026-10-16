@@ -7338,13 +7338,29 @@ function mtDestHtml(f, colr){
   const code = colr === '#dbffaa' ? (f.o || f.d) : f.d;       // arrivals: where it came from; others: where it goes
   return code ? '<span class="mt-dest">' + mtEsc(String(code).slice(0, 4)) + '</span>' : '';
 }
+// Check-in desks like "27,28-29" read better as "27-29" when they are one continuous run; anything with a gap stays as it is.
+function mtTidyDesks(v){
+  const txt = String(v).trim();
+  if(!/^\d+(\s*-\s*\d+)?(\s*,\s*\d+(\s*-\s*\d+)?)*$/.test(txt)) return txt;
+  const nums = new Set();
+  txt.split(',').forEach(part => {
+    const m = part.trim().split('-').map(x => parseInt(x, 10));
+    const lo = m[0], hi = m.length > 1 ? m[1] : m[0];
+    if(hi < lo || hi - lo > 200) { nums.add(NaN); return; }
+    for(let i = lo; i <= hi; i++) nums.add(i);
+  });
+  if(nums.has(NaN) || nums.size < 2) return txt;
+  const all = Array.from(nums).sort((p, q) => p - q);
+  for(let i = 1; i < all.length; i++) if(all[i] !== all[i - 1] + 1) return txt;   // a gap: keep the original
+  return all[0] + '-' + all[all.length - 1];
+}
 function mtTabInfo(f, colr){
   // text that goes in the white tab at the bottom right of the task; warnings stay on the left
   if(!f || typeof f !== 'object') return '';
   const sp = v => mtEsc(String(v).replace(/_/g, ' / ').replace(/\s*-\s*/g, ' – '));
   const isCheckin = colr === '#0099ff', isDep = colr === '#0066cc', isArr = colr === '#dbffaa';
   const bits = [];
-  if(f.c && !isDep && !isArr) bits.push('<span>CKIN <b>' + sp(f.c) + '</b></span>');
+  if(f.c && !isDep && !isArr) bits.push('<span>CKIN <b>' + sp(mtTidyDesks(f.c)) + '</b></span>');
   const gate = isArr ? (f.g || f.ga) : f.g;
   if(gate && !isCheckin) bits.push('<span>PORTA <b>' + sp(gate) + '</b></span>');
   const stand = isArr ? (f.pa || f.p) : f.p;
