@@ -120,6 +120,7 @@ async function syncOnce(USER, PASS) {
       const merged = { ...old, ...r.map };
       fl = { json: JSON.stringify(merged), at: now };
       console.log('FLIGHTS: dep=' + f.dep.length + ' arr=' + f.arr.length + ' wanted=' + r.wanted + ' matched=' + r.matched + ' kept=' + Object.keys(merged).length);
+      if (r.miss.length) console.log('UNMATCHED: ' + r.miss.slice(0, 40).join(', '));
     } catch (e) {
       console.log('FLIGHTS SKIPPED: ' + String(e && e.message ? e.message : e).split('\n')[0].slice(0, 160) + ' — keeping the previous copy');
     }
