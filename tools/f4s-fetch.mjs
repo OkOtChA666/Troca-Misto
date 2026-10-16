@@ -81,14 +81,18 @@ export function buildFlightMap(items, { dep, arr }) {
     if (exact.length) return exact.find((f) => !/\+/.test(timeOf(f))) || exact[0];
     return c.length === 1 ? c[0] : null;
   };
-  const map = {}; let wanted = 0, matched = 0;
+  const map = {}, miss = []; let wanted = 0, matched = 0;
   const seen = new Set();
   items.filter((it) => it && it.key && !seen.has(it.key) && seen.add(it.key)).forEach((it) => {
     wanted++;
     const first = it.car + it.n1, second = it.n2 ? it.car + it.n2 : '';
     const d = pick(dep, second || first, it.tm, (x) => x.std);
     const a = it.n2 || !d ? pick(arr, first, it.tm, (x) => x.sta) : null;
-    if (!d && !a) return;
+    if (!d && !a) {
+      const nd = dep.filter((f) => f.n === (second || first)).length, na = arr.filter((f) => f.n === first).length;
+      miss.push(it.key + (nd + na === 0 ? ' (not in the lists)' : ' (' + (nd + na) + ' rows, none at ' + it.tm + ')'));
+      return;
+    }
     const o = {};
     if (d) {
       if (d.des) o.d = d.des;
@@ -104,5 +108,5 @@ export function buildFlightMap(items, { dep, arr }) {
     if (a && a.pos) { o.pa = a.pos; if (!o.p) o.p = a.pos; }
     map[it.key] = o; matched++;
   });
-  return { map, wanted, matched };
+  return { map, wanted, matched, miss };
 }
