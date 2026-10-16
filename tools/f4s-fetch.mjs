@@ -3,7 +3,7 @@ import { chromium } from 'playwright';
 
 const BASE = 'https://flights4staff.ana.pt/Flights4Staff/';
 const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
-const flightKey = (s) => norm(s).toUpperCase().replace(/\s/g, '');
+const flightKey = (s) => norm(s).toUpperCase().replace(/[^A-Z0-9]/g, '');   // also drops hidden characters, not only spaces
 
 async function readTable(page, wanted) {
   // "Get more records" loads the rest of the day, a bit at a time
@@ -79,7 +79,18 @@ export function buildFlightMap(items, { dep, arr }) {
     if (!c.length) return null;
     const exact = c.filter((f) => bare(timeOf(f)) === tm);
     if (exact.length) return exact.find((f) => !/\+/.test(timeOf(f))) || exact[0];
-    return c.length === 1 ? c[0] : null;
+    if (c.length === 1) return c[0];
+    // several rows (e.g. today and tomorrow) and no exact time: take the nearest one within 6 hours, today's (first listed) on a tie
+    const mins = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(bare(t)); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+    const want = mins(tm); if (want === null) return null;
+    let best = null, bestD = 361;
+    c.forEach((f) => {
+      const v = mins(timeOf(f)); if (v === null) return;
+      let dd = Math.abs(v - want); dd = Math.min(dd, 1440 - dd);
+      if (/[+-]\d+$/.test(String(timeOf(f)).trim())) dd += 720;   // rows for other days (+1 tomorrow, -3 three days ago) are the last choice
+      if (dd < bestD) { best = f; bestD = dd; }
+    });
+    return best;
   };
   const map = {}, miss = []; let wanted = 0, matched = 0;
   const seen = new Set();
