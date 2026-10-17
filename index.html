@@ -892,6 +892,9 @@
   .mt-pop h6{ margin:0 0 6px; font-size:10px; letter-spacing:.14em; color:#ffb020; }
   .mt-pop div{ padding:2px 0; }
   .mt-pop .me{ color:#7ef0c4; }
+  .mt-pop h6.sub{ color:#8fa0c4; margin-top:8px; }
+  .mt-pop .off{ opacity:.55; }
+  .mt-row.past.team-open{ opacity:1; }
   .mt-name{ display:inline-block; min-width:78px; flex:none; }
   .mt-dest{ font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:0.06em; color:var(--amber); margin-left:10px; flex:none; align-self:baseline; font-size:14px; }
   .mt-row.has-tab{ padding-bottom:36px; }
@@ -7389,30 +7392,53 @@ function mtTeamAll(){
   }catch(e){}
   return MT_TEAM_ALL;
 }
-// Same flight and kind of task, or (check-in only) the same check-in desks at overlapping times.
+// Same flight and kind of task, or (check-in only) the same check-in desks.
+// Returns [id, name, start, end] for each person; the caller decides who counts.
 function mtTeamFor(t, colr){
   if(colr !== '#0099ff' && colr !== '#0066cc') return null;
   const f = mtFlightInfo(t[5]);
   const desks = (colr === '#0099ff' && f && f.c) ? mtTidyDesks(f.c) : '';
   let s = mtToMin(t[1]), e = mtToMin(t[2]); if(s !== null && e !== null && e <= s) e += 1440;
   if(!t[5] && !desks) return null;
+  const isCk = colr === '#0099ff';
   const seen = {}, out = [];
   mtTeamAll().forEach(x => {
     if(x.colr !== colr || seen[x.id]) return;
     const sameFlight = !!t[5] && x.fkey === t[5];
-    const sameDesks = !!desks && x.desks === desks && s !== null && e !== null && x.s !== null && x.e !== null && s < x.e && x.s < e;
-    if(sameFlight || sameDesks){ seen[x.id] = 1; out.push([x.id, x.name]); }
+    const sameDesks = !!desks && x.desks === desks && s !== null && e !== null && x.s !== null && x.e !== null &&
+      (isCk ? (x.s < e + 180) : (s < x.e && x.s < e));                // check-in: also people who take over later
+    if(sameFlight || sameDesks){ seen[x.id] = 1; out.push([x.id, x.name, x.s, x.e]); }
   });
   return out;
 }
+// Check-in: who is at the desks at one moment (now if the task is running, its start if it is still to come,
+// its last minute if it is over). People who start later are listed greyed out; people who left are not shown.
 function mtTeamHtml(t, colr, rowKey){
   const list = mtTeamFor(t, colr);
-  if(!list || list.length < 2) return '';                          // alone: nothing to show
+  if(!list) return '';
   const me = String(mtStaffId());
-  const names = list.slice().sort((p, q) => String(p[1]).localeCompare(String(q[1])))
-    .map(x => '<div' + (String(x[0]) === me ? ' class="me"' : '') + '>' + mtEsc(x[1]) + '</div>').join('');
-  return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '"><svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><b>' + list.length + '</b></div>' +
-         '<div class="mt-pop"><h6>NESTE VOO · ' + list.length + '</h6>' + names + '</div>';
+  const srt = l => l.slice().sort((p, q) => String(p[1]).localeCompare(String(q[1])));
+  const nm = (x, c) => '<div' + ((c || String(x[0]) === me) ? ' class="' + (c || '') + (String(x[0]) === me ? ' me' : '') + '"' : '') + '>' + mtEsc(x[1]) + '</div>';
+  let now = list, later = [], head = 'NESTE VOO';
+  if(colr === '#0099ff'){
+    let s = mtToMin(t[1]), e = mtToMin(t[2]);
+    if(s !== null && e !== null){
+      if(e <= s) e += 1440;
+      const d = new Date(), todayIso = d.getFullYear() + '-' + mtPad(d.getMonth() + 1) + '-' + mtPad(d.getDate());
+      const nowMin = d.getHours() * 60 + d.getMinutes();
+      let m = s;
+      if(MT_DOC.date === todayIso) m = nowMin >= e ? e - 1 : (nowMin >= s ? nowMin : s);
+      const known = list.filter(x => x[2] !== null && x[3] !== null);
+      now = known.filter(x => x[2] <= m && m < x[3]);
+      later = known.filter(x => x[2] > m);
+      head = 'ÀS ' + mtPad(Math.floor((m % 1440) / 60)) + ':' + mtPad(m % 60);
+    }
+  }
+  if(now.length < 2 && !later.length) return '';                   // alone: nothing to show
+  const icon = '<svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + '<b>' + now.length + '</b></div>' +
+         '<div class="mt-pop"><h6>' + head + ' · ' + now.length + (now.length === 1 ? ' PESSOA' : ' PESSOAS') + '</h6>' + srt(now).map(x => nm(x)).join('') +
+         (later.length ? '<h6 class="sub">DEPOIS · ' + later.length + '</h6>' + srt(later).map(x => nm(x, 'off')).join('') : '') + '</div>';
 }
 function mtCornerHtml(f, colr){
   const t = mtTabInfo(f, colr);
