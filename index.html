@@ -892,6 +892,7 @@
   .mt-pop h6{ margin:0 0 6px; font-size:10px; letter-spacing:.14em; color:#ffb020; }
   .mt-pop div{ padding:2px 0; }
   .mt-pop .me{ color:#7ef0c4; }
+  .mt-pill{ font-family:var(--mono); font-size:12px; font-weight:700; background:#e8eefc; color:#0b1220; padding:2px 10px; border-radius:4px; margin-left:10px; white-space:nowrap; flex:none; }
   .mt-pop h6.sub{ color:#8fa0c4; margin-top:8px; }
   .mt-pop .off{ opacity:.55; }
   .mt-row.past.team-open{ opacity:1; }
@@ -2824,6 +2825,16 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
   // person should reference ("thanks for covering me at 08:00-16:00"), not their own schedule.
   const originalEntry = getEntry(worker, idx);
   const shiftTimeText = originalEntry.status === 'work' ? (fmtHHMM(originalEntry.start)+'-'+fmtHHMM(originalEntry.end)) : null;
+  // Who was actually working: when the person saved here was OFF, they are the one covering and the
+  // notification must go the other way round (see functions_index.js). The partner's own shift time is
+  // stored too, since that is the shift being covered in that case.
+  const workerWasWorking = originalEntry.status === 'work';
+  let partnerShiftTimeText = null;
+  try{
+    const pw = partner ? DATA.workers.find(w => w.id === partner.id) : null;
+    const pe = pw ? getEntry(pw, idx) : null;
+    if(pe && pe.status === 'work') partnerShiftTimeText = fmtHHMM(pe.start)+'-'+fmtHHMM(pe.end);
+  }catch(e){}
   // calendarDate is the real, month-independent anchor for this swap (e.g. "2026-09-16") — idx
   // alone is just a position within WHATEVER month happens to be loaded at the time something
   // reads it, so once a new month's schedule replaces this one, every old swap's idx would
@@ -2831,7 +2842,7 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
   // a September swap as September, even after October's data is loaded in its place.
   const d = realDateForIdx(idx);
   const calendarDate = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  const newValue = partner ? { withId: partner.id, withName: partner.name, workerName: worker ? worker.name : null, dayNumber: DATA.days[idx], calendarDate: calendarDate, shiftTimeText: shiftTimeText, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
+  const newValue = partner ? { withId: partner.id, withName: partner.name, workerId: workerId, workerName: worker ? worker.name : null, workerWasWorking: workerWasWorking, partnerShiftTimeText: partnerShiftTimeText, dayNumber: DATA.days[idx], calendarDate: calendarDate, shiftTimeText: shiftTimeText, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
   if(newValue) SWAPS[key] = newValue; else delete SWAPS[key];
   // This entry has its own document now — writing or deleting it can never collide with or
   // overwrite a different swap the way one shared document holding everything used to.
@@ -7360,7 +7371,7 @@ function mtTidyDesks(v){
 function mtTabInfo(f, colr){
   // text that goes in the white tab at the bottom right of the task; warnings stay on the left
   if(!f || typeof f !== 'object') return '';
-  const sp = v => mtEsc(String(v).replace(/_/g, ' / ').replace(/\s*-\s*/g, ' – '));
+  const sp = v => mtEsc(String(v).replace(/_/g, ' | ').replace(/\s*-\s*/g, ' – '));
   const isCheckin = colr === '#0099ff', isDep = colr === '#0066cc', isArr = colr === '#dbffaa';
   const bits = [];
   if(f.c && !isDep && !isArr) bits.push('<span>CKIN <b>' + sp(mtTidyDesks(f.c)) + '</b></span>');
@@ -7401,13 +7412,13 @@ function mtTeamFor(t, colr){
   let s = mtToMin(t[1]), e = mtToMin(t[2]); if(s !== null && e !== null && e <= s) e += 1440;
   if(!t[5] && !desks) return null;
   const isCk = colr === '#0099ff';
-  const seen = {}, out = [];
+  const out = [];
   mtTeamAll().forEach(x => {
-    if(x.colr !== colr || seen[x.id]) return;
+    if(x.colr !== colr) return;
     const sameFlight = !!t[5] && x.fkey === t[5];
     const sameDesks = !!desks && x.desks === desks && s !== null && e !== null && x.s !== null && x.e !== null &&
       (isCk ? (x.s < e + 180) : (s < x.e && x.s < e));                // check-in: also people who take over later
-    if(sameFlight || sameDesks){ seen[x.id] = 1; out.push([x.id, x.name, x.s, x.e]); }
+    if(sameFlight || sameDesks) out.push([x.id, x.name, x.s, x.e]);   // one person can match with several tasks
   });
   return out;
 }
@@ -7419,7 +7430,7 @@ function mtTeamHtml(t, colr, rowKey){
   const me = String(mtStaffId());
   const srt = l => l.slice().sort((p, q) => String(p[1]).localeCompare(String(q[1])));
   const nm = (x, c) => '<div' + ((c || String(x[0]) === me) ? ' class="' + (c || '') + (String(x[0]) === me ? ' me' : '') + '"' : '') + '>' + mtEsc(x[1]) + '</div>';
-  let now = list, later = [], head = 'NESTE VOO';
+  let now = (function(){ const o = {}; list.forEach(x => { o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); })(), later = [], head = 'NESTE VOO';
   if(colr === '#0099ff'){
     let s = mtToMin(t[1]), e = mtToMin(t[2]);
     if(s !== null && e !== null){
@@ -7429,8 +7440,10 @@ function mtTeamHtml(t, colr, rowKey){
       let m = s;
       if(MT_DOC.date === todayIso) m = nowMin >= e ? e - 1 : (nowMin >= s ? nowMin : s);
       const known = list.filter(x => x[2] !== null && x[3] !== null);
-      now = known.filter(x => x[2] <= m && m < x[3]);
-      later = known.filter(x => x[2] > m);
+      const byId = l => { const o = {}; l.forEach(x => { o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); };
+      now = byId(known.filter(x => x[2] <= m && m < x[3]));
+      const here = {}; now.forEach(x => { here[x[0]] = 1; });
+      later = byId(known.filter(x => x[2] > m && !here[x[0]]));
       head = 'ÀS ' + mtPad(Math.floor((m % 1440) / 60)) + ':' + mtPad(m % 60);
     }
   }
@@ -7439,6 +7452,14 @@ function mtTeamHtml(t, colr, rowKey){
   return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + '<b>' + now.length + '</b></div>' +
          '<div class="mt-pop"><h6>' + head + ' · ' + now.length + (now.length === 1 ? ' PESSOA' : ' PESSOAS') + '</h6>' + srt(now).map(x => nm(x)).join('') +
          (later.length ? '<h6 class="sub">DEPOIS · ' + later.length + '</h6>' + srt(later).map(x => nm(x, 'off')).join('') : '') + '</div>';
+}
+// Task name for display only: "COM EZY/EJU/EZS 2ºB" -> "COM EZY" + a white pill with "2ºB"
+function mtNameHtml(nk){
+  let n = nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk;
+  n = n.replace(/\bCOM\s+EZY\/EJU\/EZS\b/i, 'COM EZY');
+  const m = /^(COM\b.*?)\s+(\d{1,2}\s?º\s?[A-Za-z])$/i.exec(n);
+  if(m) return '<span class="mt-name" style="min-width:0">' + mtEsc(m[1]) + '</span><span class="mt-pill">' + mtEsc(m[2].replace(/\s+/g, '')) + '</span>';
+  return '<span class="mt-name">' + mtEsc(n) + '</span>';
 }
 function mtCornerHtml(f, colr){
   const t = mtTabInfo(f, colr);
@@ -7527,7 +7548,7 @@ function renderMyTasks(){
       }
       html += '<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
-              '<div class="mt-label">' + kindHtml + '<span class="mt-name">' + mtEsc(nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk) + '</span>' + (/^COM\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(t[5]), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
+              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COM\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(t[5]), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
               '<div class="mt-side">' + chip + bdg + '</div>' + tabHtml + teamHtml + '</div>';
     });
   }
