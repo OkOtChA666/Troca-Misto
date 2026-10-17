@@ -1587,6 +1587,13 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">App instalável</span>
       </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="refresh-button-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Botão ATUALIZAR (Tarefas)</span>
+      </label>
     </div>
 
     <div id="stats-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
@@ -1677,6 +1684,27 @@ async function loadTrocaFormFeatureEnabled(){
 async function saveTrocaFormFeatureEnabled(){
   return await dbSetShared('trocaFormFeatureEnabled', { value: trocaFormFeatureEnabled });
 }
+// "Botão ATUALIZAR" in TAREFAS: shown or hidden for everyone from RULES. Default: shown.
+let refreshButtonEnabled = true;
+async function loadRefreshButtonEnabled(){
+  const doc = await dbGetShared('refreshButtonEnabled', null);
+  refreshButtonEnabled = doc ? !!doc.value : true;
+  try{ if(typeof renderMyTasks === 'function' && typeof MT_DOC !== 'undefined' && document.getElementById('my-tasks-overlay') && !document.getElementById('my-tasks-overlay').classList.contains('hidden')) renderMyTasks(); }catch(e){}
+}
+async function saveRefreshButtonEnabled(){
+  return await dbSetShared('refreshButtonEnabled', { value: refreshButtonEnabled });
+}
+// Started after the whole script has been read (the database helpers further down must exist first).
+setTimeout(() => {
+  loadRefreshButtonEnabled();
+  getDb().then(db => {
+    if(!db) return;
+    db.collection('data').doc('refreshButtonEnabled').onSnapshot(snap => {
+      refreshButtonEnabled = snap.exists ? !!snap.data().value : true;
+      try{ const o = document.getElementById('my-tasks-overlay'); if(o && !o.classList.contains('hidden') && typeof renderMyTasks === 'function') renderMyTasks(); }catch(e){}
+    }, () => {});
+  });
+}, 0);
 // "App instalável": when on, the page links its manifest so Chrome offers "Install app"; when off the
 // link is removed and the offer disappears. Already-installed apps are not affected. Default: on.
 let pwaInstallEnabled = true;
@@ -1697,7 +1725,7 @@ async function savePwaInstallEnabled(){
   return await dbSetShared('pwaInstallEnabled', { value: pwaInstallEnabled });
 }
 applyPwaInstallLink();   // on by default straight away; the saved setting then confirms or removes it
-loadPwaInstallEnabled();
+setTimeout(loadPwaInstallEnabled, 0);   // after the whole script has been read (database helpers must exist first)
 // Master on/off switch for push notifications, controlled from RULES — shared across
 // everyone, same pattern as the other toggles there. When off, this device neither asks for
 // notification permission nor registers for a push token at all.
@@ -6692,6 +6720,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('troca-form-feature-enabled-toggle').checked = trocaFormFeatureEnabled;
   document.getElementById('notifications-enabled-toggle').checked = notificationsEnabled;
   document.getElementById('pwa-install-enabled-toggle').checked = pwaInstallEnabled;
+  document.getElementById('refresh-button-enabled-toggle').checked = refreshButtonEnabled;
 });
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
@@ -6713,6 +6742,16 @@ document.getElementById('troca-form-feature-enabled-toggle').addEventListener('c
     // saved, and say so plainly instead of failing silently.
     trocaFormFeatureEnabled = !newValue;
     e.target.checked = trocaFormFeatureEnabled;
+    showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
+  }
+});
+document.getElementById('refresh-button-enabled-toggle').addEventListener('change', async (e) => {
+  const newValue = e.target.checked;
+  refreshButtonEnabled = newValue;
+  const ok = await saveRefreshButtonEnabled();
+  if(!ok){
+    refreshButtonEnabled = !newValue;
+    e.target.checked = refreshButtonEnabled;
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
 });
@@ -7557,7 +7596,7 @@ function renderMyTasks(){
   const upd = MT_DOC.updatedAt ? new Date(MT_DOC.updatedAt) : null;
   html += '<div class="mt-upd">Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
           (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '') + '</div>';
-  { const upAt = MT_DOC.updatedAt || 0, myReq = mtMyReq();
+  if(refreshButtonEnabled){ const upAt = MT_DOC.updatedAt || 0, myReq = mtMyReq();
     let label = 'ATUALIZAR', dis = false;
     if(Date.now() - upAt < 60000){ label = 'ATUALIZADO'; dis = true; }
     else if(myReq > upAt && Date.now() - myReq < 180000){ label = 'PEDIDO ENVIADO…'; dis = true; }
