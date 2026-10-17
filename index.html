@@ -3095,9 +3095,28 @@ loadExtraHours().then(() => {
 // start/end time, the way small operational changes actually happen during the week)
 // (SCHEDULE_OVERRIDES itself is declared near the top of the script — see the note there)
 function overrideKey(workerId, idx){ return workerId + ':' + idx; }
+// Whenever the corrections (the "AH" times) arrive or change, everything that shows them must be
+// drawn again — otherwise the lists drawn a moment earlier, before they arrived, keep showing none.
+function onScheduleOverridesChanged(){
+  try{ if(typeof refreshRecentSwapsLists === 'function') refreshRecentSwapsLists(); }catch(e){}
+  try{ if(typeof refreshAllDateSelectCounts === 'function') refreshAllDateSelectCounts(); }catch(e){}
+  try{
+    const p = document.getElementById('panel-schedule-override');
+    if(p && !p.classList.contains('hidden')){ renderScheduleOverrideList(); updateScheduleOverrideContext(); }
+  }catch(e){}
+}
 async function loadScheduleOverrides(){
   SCHEDULE_OVERRIDES = await dbGetShared('scheduleOverrides', SCHEDULE_OVERRIDES);
+  onScheduleOverridesChanged();
 }
+// Live: a correction saved on any device shows up everywhere without a reload.
+getDb().then(db => {
+  if(!db) return;
+  db.collection('data').doc('scheduleOverrides').onSnapshot(snap => {
+    SCHEDULE_OVERRIDES = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : {};
+    onScheduleOverridesChanged();
+  }, () => {});
+});
 async function saveScheduleOverrides(){
   await dbSetShared('scheduleOverrides', SCHEDULE_OVERRIDES);
 }
