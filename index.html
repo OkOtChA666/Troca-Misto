@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#080B14">
 <link rel="icon" type="image/png" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-512.png">
@@ -1581,6 +1580,13 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Notificações push</span>
       </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="pwa-install-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">App instalável</span>
+      </label>
     </div>
 
     <div id="stats-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
@@ -1671,6 +1677,27 @@ async function loadTrocaFormFeatureEnabled(){
 async function saveTrocaFormFeatureEnabled(){
   return await dbSetShared('trocaFormFeatureEnabled', { value: trocaFormFeatureEnabled });
 }
+// "App instalável": when on, the page links its manifest so Chrome offers "Install app"; when off the
+// link is removed and the offer disappears. Already-installed apps are not affected. Default: on.
+let pwaInstallEnabled = true;
+function applyPwaInstallLink(){
+  try{
+    let l = document.getElementById('pwa-manifest-link');
+    if(pwaInstallEnabled){
+      if(!l){ l = document.createElement('link'); l.id = 'pwa-manifest-link'; l.rel = 'manifest'; l.href = '/manifest.webmanifest'; document.head.appendChild(l); }
+    } else if(l){ l.remove(); }
+  }catch(e){}
+}
+async function loadPwaInstallEnabled(){
+  const doc = await dbGetShared('pwaInstallEnabled', null);
+  pwaInstallEnabled = doc ? !!doc.value : true;
+  applyPwaInstallLink();
+}
+async function savePwaInstallEnabled(){
+  return await dbSetShared('pwaInstallEnabled', { value: pwaInstallEnabled });
+}
+applyPwaInstallLink();   // on by default straight away; the saved setting then confirms or removes it
+loadPwaInstallEnabled();
 // Master on/off switch for push notifications, controlled from RULES — shared across
 // everyone, same pattern as the other toggles there. When off, this device neither asks for
 // notification permission nor registers for a push token at all.
@@ -6664,6 +6691,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('troca-sobre-troca-enabled-toggle').checked = trocaSobreTrocaEnabled;
   document.getElementById('troca-form-feature-enabled-toggle').checked = trocaFormFeatureEnabled;
   document.getElementById('notifications-enabled-toggle').checked = notificationsEnabled;
+  document.getElementById('pwa-install-enabled-toggle').checked = pwaInstallEnabled;
 });
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
@@ -6685,6 +6713,18 @@ document.getElementById('troca-form-feature-enabled-toggle').addEventListener('c
     // saved, and say so plainly instead of failing silently.
     trocaFormFeatureEnabled = !newValue;
     e.target.checked = trocaFormFeatureEnabled;
+    showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
+  }
+});
+document.getElementById('pwa-install-enabled-toggle').addEventListener('change', async (e) => {
+  const newValue = e.target.checked;
+  pwaInstallEnabled = newValue;
+  applyPwaInstallLink();
+  const ok = await savePwaInstallEnabled();
+  if(!ok){
+    pwaInstallEnabled = !newValue;
+    e.target.checked = pwaInstallEnabled;
+    applyPwaInstallLink();
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
 });
