@@ -912,7 +912,7 @@
   .mt-row.past{ opacity:0.45; }
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
   .mt-foot{ font-style:italic; font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-top:12px; }
-@keyframes nmscroll{0%,18%{transform:translateX(0)}50%,68%{transform:translateX(calc(-1px*var(--o)))}100%{transform:translateX(0)}}
+@keyframes nmmq{to{transform:translateX(calc(-1*var(--w)))}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -1109,12 +1109,12 @@
       </span>
     </div>
     <div id="logged-in-tab-row" style="display:flex; align-items:center; justify-content:space-between; gap:16px; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; padding:10px 16px; font-size:11px; font-family:var(--mono); width:80%; margin:-1px auto 0; background:#080D18; position:relative; z-index:1; box-shadow: inset 0 3px 6px rgba(0,0,0,0.4);">
-      <span style="display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); flex:1; min-width:0;">
+      <span style="display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); flex:0 1 auto; min-width:0;">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; flex:none;">
           <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
           <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
-        <span id="logged-in-clip" style="display:block; flex:1; min-width:0; overflow:hidden; white-space:nowrap;"><span id="logged-in-as-display" style="display:inline-block; white-space:nowrap;"></span></span>
+        <span id="logged-in-clip" style="display:block; flex:0 1 auto; min-width:0; max-width:128px; overflow:hidden; white-space:nowrap;"><span id="logged-in-as-display" style="display:inline-block; white-space:nowrap;"></span></span>
       </span>
       <span id="notifications-bell-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); position:relative; cursor:pointer;" title="Notificações">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
@@ -1123,7 +1123,7 @@
         </svg>
         <span id="notifications-badge" class="hidden" style="position:absolute; top:-6px; right:-8px; background:var(--nogo); color:#fff; font-size:9px; font-weight:700; line-height:1; min-width:14px; height:14px; border-radius:7px; display:flex; align-items:center; justify-content:center; padding:0 3px;">0</span>
       </span>
-      <span id="logout-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--nogo);" title="Terminar sessão">
+      <span id="logout-link" class="stat-link" style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; color:var(--nogo);" title="Terminar sessão">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           <polyline points="16 17 21 12 16 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -3412,35 +3412,37 @@ function applyAdminVisibility(){
 // name first (highlighted), then staff number, so it's clear at a glance whose session this is.
 function updateLoggedInDisplay(staffId, name){
   const el = document.getElementById('logged-in-as-display');
-  if(el) el.innerHTML = '<span style="color:var(--cyan);">' + escapeHtml(name) + '</span> - ' + escapeHtml(staffId);
+  if(!el) return;
+  el._html = '<span style="color:var(--cyan);">' + escapeHtml(name) + '</span> - ' + escapeHtml(staffId);
+  el._built = null;
   nameScrollFit();
 }
+// Name in the header: if it is wider than its box (max-width on #logged-in-clip, 128px),
+// it scrolls continuously to the left, in a loop. Shorter names stay still.
 function nameScrollFit(){
   const el = document.getElementById('logged-in-as-display');
   const clip = document.getElementById('logged-in-clip');
-  if(!el || !clip) return;
-  const prevO = el.style.getPropertyValue('--o');
-  const prevAnim = el.style.animation;
-  clip.style.webkitMaskImage = clip.style.maskImage = '';
-  const o = Math.ceil(el.scrollWidth - (clip.clientWidth - 28));
-  if(o > 0){
-    if(prevO === String(o) && prevAnim.indexOf('nmscroll') >= 0){ clip.style.webkitMaskImage = clip.style.maskImage = 'linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 6px),transparent 100%)'; return; }
-    el.style.setProperty('--o', o);
-    const dur = Math.max(6, 2*o/14 + 4);
-    el.style.animation = 'nmscroll ' + dur + 's ease-in-out infinite';
+  if(!el || !clip || !el._html) return;
+  const probe = '<span style="padding-right:28px;">' + el._html + '</span>';
+  el.style.animation = 'none'; el.style.transform = 'none';
+  el.innerHTML = probe;
+  const w = el.firstChild.getBoundingClientRect().width;
+  const textW = w - 28;
+  if(textW > clip.clientWidth + 0.5 && clip.clientWidth > 0){
+    el.innerHTML = probe + probe;
+    el.style.setProperty('--w', w + 'px');
+    el.style.animation = 'nmmq ' + (w / 28) + 's linear infinite';
     clip.style.webkitMaskImage = clip.style.maskImage = 'linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 6px),transparent 100%)';
   } else {
-    el.style.animation = 'none';
+    el.innerHTML = el._html;
+    clip.style.webkitMaskImage = clip.style.maskImage = '';
   }
 }
 window.addEventListener('resize', nameScrollFit);
 window.addEventListener('load', nameScrollFit);
 document.addEventListener('visibilitychange', nameScrollFit);
-setTimeout(function(){
-  const c = document.getElementById('logged-in-clip');
-  if(c && window.ResizeObserver) new ResizeObserver(function(){ if(!nameScrollFit._busy){ nameScrollFit._busy = true; nameScrollFit(); setTimeout(function(){ nameScrollFit._busy = false; }, 300); } }).observe(c);
-  setInterval(nameScrollFit, 4000);
-}, 0);
+setTimeout(nameScrollFit, 600);
+setTimeout(nameScrollFit, 2500);
 // ---------- push notifications ----------
 // The VAPID key is a public identifier for this Firebase project (not a secret) — it's what
 // lets FCM authorize this specific app to request a push subscription on a visitor's behalf.
