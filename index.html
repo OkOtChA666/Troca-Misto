@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TROCA-MISTO">
-<title>Troca-Misto: A tua plataforma para procurar trocas</title>
+<title>Troca-Misto: A tua plataforma para procurar trocas e muito mais</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -865,6 +865,7 @@
   .mt-ch-row{ display:flex; gap:10px; font-size:13px; color:var(--text-dim); padding:3px 0; line-height:1.4; }
   .mt-ch-row.new{ color:var(--text); font-weight:600; }
   .mt-ch-time{ font-family:var(--mono); color:var(--swap); min-width:40px; }
+  #my-area-badge{ display:none; background:var(--nogo); color:#fff; font-family:var(--mono); font-size:10px; font-weight:700; border-radius:9px; padding:1px 6px; margin-left:2px; }
   #my-tasks-badge{ display:none; background:var(--nogo); color:#fff; font-family:var(--mono); font-size:10px; font-weight:700; border-radius:9px; padding:1px 6px; margin-left:2px; }
   .mt-refresh{ float:right; margin-top:-30px; font-family:var(--mono); font-size:10.5px; letter-spacing:0.08em; font-weight:700; color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.4); border-radius:6px; padding:5px 9px; cursor:pointer; }
   .mt-refresh:disabled{ opacity:0.5; cursor:default; }
@@ -910,7 +911,7 @@
   .mt-row.now{ border-color:rgba(51,214,139,0.55); }
   .mt-row.past{ opacity:0.45; }
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
-  .mt-foot{ font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-top:12px; }
+  .mt-foot{ font-style:italic; font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-top:12px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -991,12 +992,6 @@
   </div>
 </div>
 
-<div class="modal-overlay hidden" id="my-tasks-overlay" style="align-items:flex-start; overflow-y:auto; z-index:150;">
-  <div class="mt-box">
-    <div class="mt-top"><span class="mt-title">AS MINHAS TAREFAS</span><button type="button" class="flag-btn" id="my-tasks-close" style="margin:0; padding:7px 12px;">Fechar</button></div>
-    <div id="my-tasks-body"></div>
-  </div>
-</div>
 
 <div class="modal-overlay hidden" id="password-modal">
   <div class="modal-box">
@@ -1092,8 +1087,8 @@
       <span>VERSÃO <b id="stat-rules">2026.10.01</b></span>
     </div>
     <div class="board-stats nav-tabs-row" id="planeamento-turnaround-row" style="border:1px solid var(--border); border-radius:8px 8px 0 0; padding:10px 16px; margin-top:12px; background: rgba(95, 224, 255, 0.05); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-      <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="As minhas trocas">
-        MINHAS TROCAS
+      <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="Área pessoal">
+        ÁREA PESSOAL<span id="my-area-badge"></span>
       </span>
       <span class="header-divider">|</span>
       <span id="schedule-override-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Atualizar Horário (beta)">
@@ -1119,13 +1114,6 @@
           <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         <span id="logged-in-as-display"></span>
-      </span>
-      <span id="my-tasks-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber); cursor:pointer;" title="As minhas tarefas de hoje">
-        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
-          <rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M9 4.5h6M9 10h6M9 14h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-        TAREFAS<span id="my-tasks-badge"></span>
       </span>
       <span id="notifications-bell-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); position:relative; cursor:pointer;" title="Notificações">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
@@ -1373,6 +1361,12 @@
        through TROCAS RECENTES which shows everyone's. -->
   <div class="panel hidden" id="panel-my-swaps">
     <button type="button" class="back-btn" id="my-swaps-back-btn" style="margin-bottom:16px;">← Voltar</button>
+    <div style="font-family:var(--mono); font-size:11px; letter-spacing:0.14em; color:var(--amber); margin:0 0 12px;">ÁREA PESSOAL</div>
+    <div class="swap-sort-toggle" id="area-tabs" style="margin:0 0 14px;">
+      <div class="swap-sort-tab active" id="area-tab-btn-swaps"><span>AS MINHAS TROCAS</span><div class="dash"></div></div>
+      <div class="swap-sort-tab" id="area-tab-btn-tasks"><span>AS MINHAS TAREFAS<span id="my-tasks-badge"></span></span><div class="dash"></div></div>
+    </div>
+    <div id="area-tab-swaps">
     <p class="hint" style="margin-bottom:14px;">Todas as trocas em que estiveste envolvido — tanto Dia de Folga como Troca de Turno, como requerente ou como quem ajudou.</p>
     <div class="recent-swaps-section">
       <div class="results-head" id="my-swaps-title-head"><span id="my-swaps-title">AS MINHAS TROCAS</span></div>
@@ -1385,6 +1379,10 @@
       <div style="text-align:center;">
         <button type="button" class="flag-btn" id="my-swaps-more-btn" style="display:none; margin-top:10px;">VER MAIS</button>
       </div>
+    </div>
+    </div>
+    <div id="area-tab-tasks" class="hidden">
+      <div id="my-tasks-body"></div>
     </div>
   </div>
 
@@ -1689,7 +1687,7 @@ let refreshButtonEnabled = true;
 async function loadRefreshButtonEnabled(){
   const doc = await dbGetShared('refreshButtonEnabled', null);
   refreshButtonEnabled = doc ? !!doc.value : true;
-  try{ if(typeof renderMyTasks === 'function' && typeof MT_DOC !== 'undefined' && document.getElementById('my-tasks-overlay') && !document.getElementById('my-tasks-overlay').classList.contains('hidden')) renderMyTasks(); }catch(e){}
+  try{ if(typeof renderMyTasks === 'function' && typeof MT_DOC !== 'undefined' && mtOpenOverlay()) renderMyTasks(); }catch(e){}
 }
 async function saveRefreshButtonEnabled(){
   return await dbSetShared('refreshButtonEnabled', { value: refreshButtonEnabled });
@@ -1701,7 +1699,7 @@ setTimeout(() => {
     if(!db) return;
     db.collection('data').doc('refreshButtonEnabled').onSnapshot(snap => {
       refreshButtonEnabled = snap.exists ? !!snap.data().value : true;
-      try{ const o = document.getElementById('my-tasks-overlay'); if(o && !o.classList.contains('hidden') && typeof renderMyTasks === 'function') renderMyTasks(); }catch(e){}
+      try{ if(mtOpenOverlay() && typeof renderMyTasks === 'function') renderMyTasks(); }catch(e){}
     }, () => {});
   });
 }, 0);
@@ -3728,9 +3726,10 @@ function openMySwaps(){
   document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
   document.querySelector('.tabs').classList.add('hidden');
   document.getElementById('panel-my-swaps').classList.remove('hidden');
-  renderMySwapsList(myTrocasExpanded);
+  showAreaTab('swaps');
 }
 function closeMySwaps(){
+  closeMyTasks();
   document.querySelector('.tabs').classList.remove('hidden');
   document.getElementById('panel-my-swaps').classList.add('hidden');
   switchTab('cover');
@@ -7393,11 +7392,17 @@ function mtMarkSeen(){
   mtUpdateBadge();
 }
 function mtUpdateBadge(){
-  const el = document.getElementById('my-tasks-badge'); if(!el) return;
   const seen = mtSeen(), n = mtChanges().filter(x => x[0] > seen).length;
-  el.style.display = n ? 'inline-block' : 'none'; el.textContent = n > 9 ? '9+' : String(n);
+  ['my-tasks-badge', 'my-area-badge'].forEach(id => {
+    const el = document.getElementById(id); if(!el) return;
+    el.style.display = n ? 'inline-block' : 'none'; el.textContent = n > 9 ? '9+' : String(n);
+  });
 }
-function mtOpenOverlay(){ return !document.getElementById('my-tasks-overlay').classList.contains('hidden'); }
+// "Open" now means: the AS MINHAS TAREFAS tab inside ÁREA PESSOAL is the visible one.
+function mtOpenOverlay(){
+  const p = document.getElementById('panel-my-swaps'), t = document.getElementById('area-tab-tasks');
+  return !!(p && t && !p.classList.contains('hidden') && !t.classList.contains('hidden'));
+}
 function mtListen(){
   if(MT_UNSUB || MT_LISTENING) return;
   MT_LISTENING = true;
@@ -7415,7 +7420,6 @@ function mtListen(){
 }
 function mtUnlisten(){ if(MT_UNSUB){ try{ MT_UNSUB(); } catch(e){} MT_UNSUB = null; } }
 function openMyTasks(){
-  document.getElementById('my-tasks-overlay').classList.remove('hidden');
   MT_ERR = false;
   if(MT_DOC === null) MT_DOC = null;
   renderMyTasks();
@@ -7426,9 +7430,19 @@ function openMyTasks(){
 }
 function closeMyTasks(){
   mtMarkSeen();
-  document.getElementById('my-tasks-overlay').classList.add('hidden');
   if(MT_TICK){ clearInterval(MT_TICK); MT_TICK = null; }
 }
+// Tabs inside ÁREA PESSOAL
+function showAreaTab(which){
+  const tasks = which === 'tasks';
+  document.getElementById('area-tab-btn-swaps').classList.toggle('active', !tasks);
+  document.getElementById('area-tab-btn-tasks').classList.toggle('active', tasks);
+  document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks);
+  document.getElementById('area-tab-tasks').classList.toggle('hidden', !tasks);
+  if(tasks) openMyTasks(); else { closeMyTasks(); renderMySwapsList(myTrocasExpanded); }
+}
+document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
+document.getElementById('area-tab-btn-tasks').addEventListener('click', () => showAreaTab('tasks'));
 // Background: while the page is visible and someone is logged in, keep the listener on so the badge shows new changes.
 setInterval(() => {
   if(document.hidden || !mtStaffId()){ if(!mtOpenOverlay()) mtUnlisten(); return; }
@@ -7581,11 +7595,11 @@ function mtInfoHtml(f, colr){
 function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
 function renderMyTasks(){
   const body = document.getElementById('my-tasks-body');
-  if(!body || document.getElementById('my-tasks-overlay').classList.contains('hidden')) return;
+  if(!body || !mtOpenOverlay()) return;
   let staffId = null;
   try{ staffId = localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){}
   const me = staffId ? DATA.workers.find(w => w.id === staffId) : null;
-  let html = '<div class="mt-who">' + mtEsc(me ? me.name : '') + '</div>';
+  let html = '';
   if(MT_ERR){ body.innerHTML = html + '<div class="mt-warn red">Não consegui ligar à base de dados. Vê as tuas tarefas na plataforma oficial.</div>'; return; }
   if(MT_DOC === null){ body.innerHTML = html + '<div class="mt-empty">A carregar…</div>'; return; }
   if(MT_DOC === false || !MT_DOC.a){ body.innerHTML = html + '<div class="mt-warn amber">Ainda não há tarefas guardadas. Vê as tuas tarefas na plataforma oficial.</div>'; return; }
@@ -7658,7 +7672,7 @@ function renderMyTasks(){
               '<div class="mt-side">' + chip + bdg + '</div>' + tabHtml + teamHtml + '</div>';
     });
   }
-  html += '<div class="mt-foot">Pode ter algum atraso — em caso de dúvida, confirma sempre na plataforma oficial.</div>';
+  html += '<div class="mt-foot">Pode ter algum atraso. Em caso de dúvida, confirma sempre na plataforma oficial.</div>';
   body.innerHTML = html;
 }
 document.addEventListener('click', ev => {
@@ -7668,8 +7682,6 @@ document.addEventListener('click', ev => {
   const on = !row.classList.contains('team-open');
   row.classList.toggle('team-open', on); mtTeamOpen[k] = on;
 });
-document.getElementById('my-tasks-link').addEventListener('click', openMyTasks);
-document.getElementById('my-tasks-close').addEventListener('click', closeMyTasks);
 </script>
 </body>
 </html>
