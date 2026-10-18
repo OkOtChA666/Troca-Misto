@@ -3419,18 +3419,28 @@ function nameScrollFit(){
   const el = document.getElementById('logged-in-as-display');
   const clip = document.getElementById('logged-in-clip');
   if(!el || !clip) return;
-  el.style.animation = 'none';
+  const prevO = el.style.getPropertyValue('--o');
+  const prevAnim = el.style.animation;
   clip.style.webkitMaskImage = clip.style.maskImage = '';
-  const o = Math.ceil(el.scrollWidth - clip.clientWidth);
+  const o = Math.ceil(el.scrollWidth - (clip.clientWidth - 28));
   if(o > 0){
+    if(prevO === String(o) && prevAnim.indexOf('nmscroll') >= 0){ clip.style.webkitMaskImage = clip.style.maskImage = 'linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 6px),transparent 100%)'; return; }
     el.style.setProperty('--o', o);
     const dur = Math.max(6, 2*o/14 + 4);
-    void el.offsetWidth;
     el.style.animation = 'nmscroll ' + dur + 's ease-in-out infinite';
     clip.style.webkitMaskImage = clip.style.maskImage = 'linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 6px),transparent 100%)';
+  } else {
+    el.style.animation = 'none';
   }
 }
 window.addEventListener('resize', nameScrollFit);
+window.addEventListener('load', nameScrollFit);
+document.addEventListener('visibilitychange', nameScrollFit);
+setTimeout(function(){
+  const c = document.getElementById('logged-in-clip');
+  if(c && window.ResizeObserver) new ResizeObserver(function(){ if(!nameScrollFit._busy){ nameScrollFit._busy = true; nameScrollFit(); setTimeout(function(){ nameScrollFit._busy = false; }, 300); } }).observe(c);
+  setInterval(nameScrollFit, 4000);
+}, 0);
 // ---------- push notifications ----------
 // The VAPID key is a public identifier for this Firebase project (not a secret) — it's what
 // lets FCM authorize this specific app to request a push subscription on a visitor's behalf.
