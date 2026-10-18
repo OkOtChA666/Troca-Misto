@@ -1361,8 +1361,12 @@
        (Dia de Folga and Troca de Turno) combined into one place, instead of having to hunt
        through TROCAS RECENTES which shows everyone's. -->
   <div class="panel hidden" id="panel-my-swaps">
-    <button type="button" class="back-btn" id="my-swaps-back-btn" style="margin-bottom:16px;">← Voltar</button>
-    <div style="font-family:var(--mono); font-size:11px; letter-spacing:0.14em; color:var(--amber); margin:0 0 12px;">ÁREA PESSOAL</div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">ÁREA PESSOAL</div>
+      <button type="button" id="my-swaps-back-btn" aria-label="Voltar" title="Voltar" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border-radius:50%; cursor:pointer; color:var(--amber); background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.45);">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
+      </button>
+    </div>
     <div class="swap-sort-toggle" id="area-tabs" style="margin:0 0 14px;">
       <div class="swap-sort-tab active" id="area-tab-btn-swaps"><span>AS MINHAS TROCAS</span><div class="dash"></div></div>
       <div class="swap-sort-tab" id="area-tab-btn-tasks"><span>AS MINHAS TAREFAS<span id="my-tasks-badge"></span></span><div class="dash"></div></div>
