@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TROCA-MISTO">
-<title>Troca-Misto: A tua plataforma para procurar trocas e muito mais</title>
+<title>Troca-Misto: A tua plataforma para procurar trocas e muito mais!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -912,6 +912,7 @@
   .mt-row.past{ opacity:0.45; }
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
   .mt-foot{ font-style:italic; font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-top:12px; }
+@keyframes nmscroll{0%,18%{transform:translateX(0)}50%,68%{transform:translateX(calc(-1px*var(--o)))}100%{transform:translateX(0)}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -1108,12 +1109,12 @@
       </span>
     </div>
     <div id="logged-in-tab-row" style="display:flex; align-items:center; justify-content:space-between; gap:16px; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; padding:10px 16px; font-size:11px; font-family:var(--mono); width:80%; margin:-1px auto 0; background:#080D18; position:relative; z-index:1; box-shadow: inset 0 3px 6px rgba(0,0,0,0.4);">
-      <span style="display:inline-flex; align-items:center; gap:6px; color:var(--text-dim);">
-        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
+      <span style="display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); flex:1; min-width:0;">
+        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; flex:none;">
           <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
           <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
-        <span id="logged-in-as-display"></span>
+        <span id="logged-in-clip" style="display:block; flex:1; min-width:0; overflow:hidden; white-space:nowrap;"><span id="logged-in-as-display" style="display:inline-block; white-space:nowrap;"></span></span>
       </span>
       <span id="notifications-bell-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); position:relative; cursor:pointer;" title="Notificações">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle;">
@@ -3412,7 +3413,24 @@ function applyAdminVisibility(){
 function updateLoggedInDisplay(staffId, name){
   const el = document.getElementById('logged-in-as-display');
   if(el) el.innerHTML = '<span style="color:var(--cyan);">' + escapeHtml(name) + '</span> - ' + escapeHtml(staffId);
+  nameScrollFit();
 }
+function nameScrollFit(){
+  const el = document.getElementById('logged-in-as-display');
+  const clip = document.getElementById('logged-in-clip');
+  if(!el || !clip) return;
+  el.style.animation = 'none';
+  clip.style.webkitMaskImage = clip.style.maskImage = '';
+  const o = Math.ceil(el.scrollWidth - clip.clientWidth);
+  if(o > 0){
+    el.style.setProperty('--o', o);
+    const dur = Math.max(6, 2*o/14 + 4);
+    void el.offsetWidth;
+    el.style.animation = 'nmscroll ' + dur + 's ease-in-out infinite';
+    clip.style.webkitMaskImage = clip.style.maskImage = 'linear-gradient(90deg,transparent 0,#000 6px,#000 calc(100% - 6px),transparent 100%)';
+  }
+}
+window.addEventListener('resize', nameScrollFit);
 // ---------- push notifications ----------
 // The VAPID key is a public identifier for this Firebase project (not a secret) — it's what
 // lets FCM authorize this specific app to request a push subscription on a visitor's behalf.
