@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TROCA-MISTO">
-<title>Troca-Misto: A tua plataforma para procurar trocas e muito mais</title>
+<title>Troca-Misto: A tua plataforma para procura de trocas e muito mais!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -1134,7 +1134,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link">AGENTES <b id="stat-workers">—</b></span>
       <span>HORÁRIO <b id="stat-range">—</b><b id="upload-schedule-link" role="button" aria-label="Carregar novo horário" title="Carregar novo horário (PDF)" style="display:none; cursor:pointer; color:var(--amber); margin-left:6px; padding:0 4px; font-size:1.25em; line-height:1;">+</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.10.05</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.10.01</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -1490,7 +1490,7 @@
     <button class="btn" id="request-publish-btn" disabled>Publicar Pedido</button>
 
     <div class="recent-swaps-section">
-      <div class="results-head"><span id="requests-open-title">PEDIDOS ABERTOS</span><button type="button" id="requests-hide-ineligible-btn" title="Mostrar/ocultar pedidos que não podes ajudar" style="background:none; border:none; cursor:pointer; color:var(--text-dim); padding:0; display:flex; align-items:center;"><svg id="requests-hide-ineligible-icon" viewBox="0 0 24 24" width="15" height="15"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="22" x2="22" y2="2" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
+      <div class="results-head"><span id="requests-open-title">PEDIDOS ABERTOS</span><button type="button" id="requests-hide-ineligible-btn" title="Mostrar/ocultar pedidos que não podes ajudar" style="cursor:pointer; color:var(--text-dim); background:var(--panel-2); border:1px solid #27344f; border-radius:16px; padding:6px 10px; display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-weight:600; font-size:10.5px; letter-spacing:0.06em;"><svg id="requests-hide-ineligible-icon" viewBox="0 0 24 24" width="16" height="16"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="22" x2="22" y2="2" stroke="currentColor" stroke-width="1.6"/></svg><span id="requests-hide-ineligible-label">SÓ OS QUE POSSO AJUDAR</span></button></div>
       <div id="requests-open-list"></div>
     </div>
   </div>
@@ -2869,6 +2869,10 @@ async function saveHideIneligibleRequests(){
 function updateHideIneligibleIcon(){
   const icon = document.getElementById('requests-hide-ineligible-icon');
   if(!icon) return;
+  const lbl = document.getElementById('requests-hide-ineligible-label');
+  if(lbl) lbl.textContent = hideIneligibleRequests ? 'SÓ OS QUE POSSO AJUDAR' : 'MOSTRAR TODOS';
+  const btn = document.getElementById('requests-hide-ineligible-btn');
+  if(btn){ btn.style.color = hideIneligibleRequests ? 'var(--cyan)' : 'var(--text-dim)'; btn.style.borderColor = hideIneligibleRequests ? 'rgba(95,224,255,.45)' : '#27344f'; }
   icon.innerHTML = hideIneligibleRequests
     ? '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="22" x2="22" y2="2" stroke="currentColor" stroke-width="1.6"/>'
     : '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/>';
@@ -5633,12 +5637,19 @@ function renderOpenRequests(){
   const list = document.getElementById('requests-open-list');
   const titleEl = document.getElementById('requests-open-title');
   if(!list) return;
-  const entries = Object.keys(REQUESTS).map(key => Object.assign({key}, REQUESTS[key]))
+  const allEntries = Object.keys(REQUESTS).map(key => Object.assign({key}, REQUESTS[key]))
     .filter(e => !isPastDay(e.idx))
     .sort((a,b) => (b.ts||0) - (a.ts||0));
+  // With the eye closed, anything this viewer can't help with (rule broken, or already expired for HR) is left out — and not counted.
+  const entries = allEntries.filter(e => {
+    if(!hideIneligibleRequests || rememberedName === e.requesterName) return true;
+    return !(getPossoAjudarState(e).disabled || getPedidosDeadlineStage(e) === 'expired');
+  });
   if(titleEl) titleEl.textContent = '('+entries.length+') PEDIDOS ABERTOS';
   if(entries.length === 0){
-    list.innerHTML = '<div class="empty-state" style="padding:16px 10px;">Sem pedidos abertos</div>';
+    list.innerHTML = allEntries.length > 0
+      ? '<div class="empty-state" style="padding:16px 10px; line-height:1.5;">Sem pedidos que possas ajudar.<br>Toca no olho para ver todos.</div>'
+      : '<div class="empty-state" style="padding:16px 10px;">Sem pedidos abertos</div>';
     return;
   }
   list.innerHTML = '';
