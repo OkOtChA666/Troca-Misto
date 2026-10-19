@@ -1491,6 +1491,11 @@
 
     <div class="recent-swaps-section">
       <div class="results-head"><span id="requests-open-title">PEDIDOS ABERTOS</span><button type="button" id="requests-hide-ineligible-btn" title="Mostrar/ocultar pedidos que não podes ajudar" style="cursor:pointer; color:var(--text-dim); background:var(--panel-2); border:1px solid #27344f; border-radius:16px; padding:6px 10px; display:inline-flex; align-items:center; font-family:var(--mono); font-weight:600; font-size:10.5px; letter-spacing:0.06em;"><span id="requests-hide-ineligible-label">SÓ OS QUE POSSO AJUDAR</span></button></div>
+      <div class="swap-sort-toggle" style="margin:0 0 12px;">
+        <div class="swap-sort-tab active" id="req-filter-all"><span>TODOS</span><div class="dash"></div></div>
+        <div class="swap-sort-tab" id="req-filter-cover"><span>DIA DE FOLGA</span><div class="dash"></div></div>
+        <div class="swap-sort-tab" id="req-filter-timeswap"><span>TROCA DE TURNO</span><div class="dash"></div></div>
+      </div>
       <div id="requests-open-list"></div>
     </div>
   </div>
@@ -5628,6 +5633,13 @@ function isPedidosDayTooLateToRequest(idx){
   const nowMinutes = now.getHours()*60 + now.getMinutes();
   return nowMinutes >= 17*60;
 }
+let reqTypeFilter = 'all';   // 'all' | 'cover' | 'timeswap' — which type of open requests the list shows
+function setReqTypeFilter(t){
+  reqTypeFilter = t;
+  ['all','cover','timeswap'].forEach(k => { const el = document.getElementById('req-filter-' + k); if(el) el.classList.toggle('active', k === t); });
+  renderOpenRequests();
+}
+['all','cover','timeswap'].forEach(k => document.getElementById('req-filter-' + k).addEventListener('click', () => setReqTypeFilter(k)));
 function renderOpenRequests(){
   const list = document.getElementById('requests-open-list');
   const titleEl = document.getElementById('requests-open-title');
@@ -5636,15 +5648,18 @@ function renderOpenRequests(){
     .filter(e => !isPastDay(e.idx))
     .sort((a,b) => (b.ts||0) - (a.ts||0));
   // With the eye closed, anything this viewer can't help with (rule broken, or already expired for HR) is left out — and not counted.
-  const entries = allEntries.filter(e => {
+  const typeEntries = reqTypeFilter === 'all' ? allEntries : allEntries.filter(e => e.type === reqTypeFilter);
+  const entries = typeEntries.filter(e => {
     if(!hideIneligibleRequests || rememberedName === e.requesterName) return true;
     return !(getPossoAjudarState(e).disabled || getPedidosDeadlineStage(e) === 'expired');
   });
   if(titleEl) titleEl.textContent = '('+entries.length+') PEDIDOS ABERTOS';
   if(entries.length === 0){
-    list.innerHTML = allEntries.length > 0
+    list.innerHTML = typeEntries.length > 0
       ? '<div class="empty-state" style="padding:16px 10px; line-height:1.5;">Sem pedidos que possas ajudar.<br>Clica no botão para ver todos.</div>'
-      : '<div class="empty-state" style="padding:16px 10px;">Sem pedidos abertos</div>';
+      : (allEntries.length > 0
+        ? '<div class="empty-state" style="padding:16px 10px;">Sem pedidos deste tipo.</div>'
+        : '<div class="empty-state" style="padding:16px 10px;">Sem pedidos abertos</div>');
     return;
   }
   list.innerHTML = '';
