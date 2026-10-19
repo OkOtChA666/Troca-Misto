@@ -402,6 +402,29 @@
   }
   .flag-btn:hover{ border-color: var(--nogo); color:var(--nogo); }
   .flag-btn.active{ background: var(--nogo-dim); border-color: var(--nogo); color: var(--nogo); }
+  .round-back{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border-radius:50%; cursor:pointer; color:var(--amber); background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.45); }
+  .tool-card{ display:flex; align-items:center; gap:14px; background:var(--panel-2); border:1px solid var(--border-soft); border-radius:12px; padding:16px; margin-bottom:12px; cursor:pointer; }
+  .tool-card:active{ transform:scale(0.985); }
+  .tool-ic{ flex:none; width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(95,224,255,0.08); border:1px solid rgba(95,224,255,0.3); color:var(--cyan); }
+  .tool-ic svg{ width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .tool-name{ font-family:var(--mono); font-weight:700; font-size:14px; letter-spacing:0.1em; color:var(--text); }
+  .tool-desc{ font-family:var(--sans); font-size:12px; color:var(--text-dim); margin-top:3px; }
+  .tool-arrow{ margin-left:auto; color:#4a5570; }
+  .tool-arrow svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .fl-meta{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; color:#5f6a82; margin:10px 2px; }
+  .fl-row{ display:grid; grid-template-columns:54px 1fr auto; gap:10px; align-items:center; background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .fl-row.past{ opacity:.4; }
+  .fl-tm{ font-family:var(--mono); font-weight:600; font-size:16px; color:var(--text); }
+  .fl-tm small{ display:block; font-weight:500; font-size:10.5px; color:var(--amber); }
+  .fl-fn{ font-family:var(--mono); font-weight:600; font-size:13px; color:var(--cyan); letter-spacing:0.04em; }
+  .fl-fn span{ font-family:var(--sans); font-weight:400; font-size:12px; color:var(--text); margin-left:6px; }
+  .fl-al{ font-family:var(--sans); font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .fl-ch{ display:flex; gap:5px; justify-content:flex-end; flex-wrap:wrap; }
+  .fl-chip{ font-family:var(--mono); font-weight:600; font-size:10.5px; padding:3px 7px; border-radius:6px; border:1px solid #27344f; color:#b9c3d8; white-space:nowrap; }
+  .fl-chip.o{ color:var(--amber); border-color:rgba(255,179,0,.45); }
+  .fl-chip.g{ color:#3ddc97; border-color:rgba(61,220,151,.4); }
+  .fl-st{ font-family:var(--mono); font-weight:600; font-size:10.5px; margin-top:5px; text-align:right; color:#3ddc97; }
+  .fl-st.d{ color:var(--amber); }
   .back-btn{
     display:inline-flex; align-items:center; gap:6px;
     font-family: var(--sans); font-size: 12.5px; font-weight:600;
@@ -1085,7 +1108,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link">AGENTES <b id="stat-workers">—</b></span>
       <span>HORÁRIO <b id="stat-range">—</b><b id="upload-schedule-link" role="button" aria-label="Carregar novo horário" title="Carregar novo horário (PDF)" style="display:none; cursor:pointer; color:var(--amber); margin-left:6px; padding:0 4px; font-size:1.25em; line-height:1;">+</b></span>
-      <span>VERSÃO <b id="stat-rules">2026.10.05</b></span>
+      <span>VERSÃO <b id="stat-rules">2026.10.01</b></span>
     </div>
     <div class="board-stats nav-tabs-row" id="planeamento-turnaround-row" style="border:1px solid var(--border); border-radius:8px 8px 0 0; padding:10px 16px; margin-top:12px; background: rgba(95, 224, 255, 0.05); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
       <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="Área pessoal">
@@ -1100,8 +1123,8 @@
         ADMIN
       </span>
       <span class="header-divider" id="admin-turnaround-divider">|</span>
-      <span id="turnaround-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Registo de Turnaround">
-        TURNAROUND
+      <span id="tools-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Ferramentas">
+        FERRAMENTAS
       </span>
       <span class="header-divider">|</span>
       <span id="extra-hours-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Horas Extra">
@@ -1372,7 +1395,6 @@
       <div class="swap-sort-tab" id="area-tab-btn-tasks"><span>AS MINHAS TAREFAS<span id="my-tasks-badge"></span></span><div class="dash"></div></div>
     </div>
     <div id="area-tab-swaps">
-    <p class="hint" style="margin-bottom:14px;">Todas as trocas em que estiveste envolvido — tanto Dia de Folga como Troca de Turno, como requerente ou como quem ajudou.</p>
     <div class="recent-swaps-section">
       <div class="results-head" id="my-swaps-title-head"><span id="my-swaps-title">AS MINHAS TROCAS</span></div>
       <div class="swap-sort-toggle">
@@ -1461,6 +1483,38 @@
         <button type="button" class="confirm-btn" id="whoareyou-confirm" style="padding:10px 14px; font-size:11.5px;" disabled>Continuar</button>
       </div>
     </div>
+  </div>
+
+  <!-- FERRAMENTAS PANEL -->
+  <div class="panel hidden" id="panel-tools">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">FERRAMENTAS</div>
+      <button type="button" id="tools-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+    </div>
+    <div class="tool-card" id="tool-card-turnaround">
+      <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4M21 7H8M7 21l-4-4 4-4M3 17h13"/></svg></div>
+      <div><div class="tool-name">TURNAROUND</div><div class="tool-desc">Registo de turnaround do voo</div></div>
+      <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+    </div>
+    <div class="tool-card" id="tool-card-flights">
+      <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M2 16l20-6-3-3-7 2-6-4-2 1 4 5-5 2-1-2-2 1z"/></svg></div>
+      <div><div class="tool-name">VOOS</div><div class="tool-desc">Partidas e chegadas do dia</div></div>
+      <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+    </div>
+  </div>
+
+  <!-- VOOS PANEL -->
+  <div class="panel hidden" id="panel-flights">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">VOOS</div>
+      <button type="button" id="flights-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+    </div>
+    <div class="swap-sort-toggle" style="margin:0 0 6px;">
+      <div class="swap-sort-tab active" id="flights-tab-dep"><span>PARTIDAS</span><div class="dash"></div></div>
+      <div class="swap-sort-tab" id="flights-tab-arr"><span>CHEGADAS</span><div class="dash"></div></div>
+    </div>
+    <div class="fl-meta"><span id="fl-updated">A CARREGAR…</span><span>SÓ AS NOSSAS COMPANHIAS</span></div>
+    <div id="flights-list"></div>
   </div>
 
   <!-- TURNAROUND PANEL -->
@@ -1597,6 +1651,11 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Botão ATUALIZAR (Tarefas)</span>
       </label>
+      <div style="margin-top:18px; text-transform:none; letter-spacing:normal;">
+        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Companhias nos VOOS (códigos separados por vírgula)</div>
+        <textarea id="flight-airlines-input" rows="3" style="width:100%; box-sizing:border-box; font-family:var(--mono); font-size:12px; color:var(--text); background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:10px;"></textarea>
+        <div id="flight-airlines-status" style="font-family:var(--sans); font-size:11px; color:var(--text-dim); margin-top:4px; min-height:14px;"></div>
+      </div>
     </div>
 
     <div id="stats-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
@@ -6456,11 +6515,115 @@ function closeTurnaround(){
   if(turnaroundLiveRefreshTimer){ clearInterval(turnaroundLiveRefreshTimer); turnaroundLiveRefreshTimer = null; }
   document.querySelector('.tabs').classList.remove('hidden');
   document.getElementById('panel-turnaround').classList.add('hidden');
-  switchTab('cover');
+  openTools();
 }
-document.getElementById('turnaround-link').addEventListener('click', openTurnaround);
+document.getElementById('tools-link').addEventListener('click', openTools);
 document.getElementById('turnaround-back-btn').addEventListener('click', closeTurnaround);
 document.getElementById('turnaround-switch-flight-btn').addEventListener('click', backToFlightPicker);
+// ---------- FERRAMENTAS + VOOS ----------
+function openTools(){
+  stopFlightsListen();
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector('.tabs').classList.add('hidden');
+  document.getElementById('panel-tools').classList.remove('hidden');
+}
+function closeTools(){
+  document.querySelector('.tabs').classList.remove('hidden');
+  document.getElementById('panel-tools').classList.add('hidden');
+  switchTab('cover');
+}
+document.getElementById('tools-back-btn').addEventListener('click', closeTools);
+document.getElementById('tool-card-turnaround').addEventListener('click', openTurnaround);
+document.getElementById('tool-card-flights').addEventListener('click', openFlights);
+document.getElementById('flights-back-btn').addEventListener('click', openTools);
+
+// Airlines we work for (codes as they appear at the start of the flight number). Editable in RULES.
+const FL_AIRLINES_DEFAULT = 'HV,TO,U2,EC,DS,AY,SK,DY,D8,DX,V7,SN,EW,E4,W6,W4,W9,LG,TB,X3,6B,OR,BY,FI,TS,BT,QS';
+const FL_NAMES = { HV:'Transavia', TO:'Transavia France', U2:'EasyJet', EC:'EasyJet Europe', DS:'EasyJet Switzerland', AY:'Finnair', SK:'SAS', DY:'Norwegian', D8:'Norwegian', DX:'Norwegian', V7:'Volotea', SN:'Brussels Airlines', EW:'Eurowings', E4:'Enter Air', W6:'Wizz Air', W4:'Wizz Air Malta', W9:'Wizz Air UK', LG:'Luxair', TB:'TUI fly', X3:'TUI fly', '6B':'TUI fly', OR:'TUI fly', BY:'TUI', FI:'Icelandair', TS:'Air Transat', BT:'airBaltic', QS:'Smartwings' };
+let flAirlines = FL_AIRLINES_DEFAULT;
+async function loadFlAirlines(){
+  const d = await dbGetShared('flightairlines', null);
+  if(d && typeof d.codes === 'string') flAirlines = d.codes;
+}
+let FL_DOC = null, FL_UNSUB = null, FL_TAB = 'dep', FL_TICK = null;
+function flSplit(n){
+  const m = /^([A-Z0-9]{2,3}?)(\d{1,4}[A-Z]?)$/.exec(String(n || '').toUpperCase());
+  return m ? { code: m[1], num: m[2] } : { code: '', num: String(n || '') };
+}
+function flTime(t){ const m = /(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? (('0' + m[1]).slice(-2) + ':' + m[2]) : ''; }
+function flMin(t){ const m = /(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+function renderFlights(){
+  const box = document.getElementById('flights-list');
+  const upd = document.getElementById('fl-updated');
+  if(!box) return;
+  if(FL_DOC === null){ box.innerHTML = ''; upd.textContent = 'A CARREGAR…'; return; }
+  if(FL_DOC === false || !FL_DOC.json){ box.innerHTML = '<div class="hint" style="text-align:center; padding:24px 0;">Ainda sem dados de voos.</div>'; upd.textContent = ''; return; }
+  let data = {}; try{ data = JSON.parse(FL_DOC.json) || {}; }catch(e){}
+  const at = parseInt(FL_DOC.at, 10) || 0;
+  upd.textContent = at ? 'ATUALIZADO ' + new Date(at).toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' }) : '';
+  const keep = {}; String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keep[c] = 1; });
+  const dep = FL_TAB === 'dep';
+  const rows = (dep ? data.dep : data.arr) || [];
+  const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
+  const out = [];
+  rows.forEach(r => {
+    const f = flSplit(r.n);
+    if(!f.code || !keep[f.code]) return;
+    const sched = flTime(dep ? r.std : r.sta);
+    const est = dep ? flTime(r.etd) : '';
+    const sm = flMin(sched);
+    const past = sm !== null && nowMin - sm > 30 && nowMin - sm < 720;
+    const place = dep ? (r.des || '') : (r.org || '');
+    const chips = [];
+    if(dep){
+      if(r.cki) chips.push('<span class="fl-chip">CKI ' + escapeHtml(r.cki) + '</span>');
+      if(r.gt) chips.push('<span class="fl-chip' + (/board|embar/i.test(r.grem || '') ? ' g' : '') + '">GT ' + escapeHtml(r.gt) + '</span>');
+    } else {
+      if(r.gate) chips.push('<span class="fl-chip">EXIT ' + escapeHtml(r.gate) + '</span>');
+      if(r.pos) chips.push('<span class="fl-chip">POS ' + escapeHtml(r.pos) + '</span>');
+    }
+    const status = dep ? (r.rem || r.grem || '') : '';
+    const delayed = est && est !== sched;
+    out.push('<div class="fl-row' + (past ? ' past' : '') + '"><div class="fl-tm">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
+      '<div><div class="fl-fn">' + escapeHtml(f.code + ' ' + f.num) + (place ? '<span>' + escapeHtml(place) + '</span>' : '') + '</div><div class="fl-al">' + escapeHtml(FL_NAMES[f.code] || f.code) + '</div></div>' +
+      '<div><div class="fl-ch">' + chips.join('') + '</div>' + (status ? '<div class="fl-st' + (delayed ? ' d' : '') + '">' + escapeHtml(String(status).toUpperCase()) + '</div>' : '') + '</div></div>');
+  });
+  box.innerHTML = out.length ? out.join('') : '<div class="hint" style="text-align:center; padding:24px 0;">Sem voos das nossas companhias.</div>';
+}
+function stopFlightsListen(){
+  if(FL_UNSUB){ try{ FL_UNSUB(); }catch(e){} FL_UNSUB = null; }
+  if(FL_TICK){ clearInterval(FL_TICK); FL_TICK = null; }
+}
+async function openFlights(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector('.tabs').classList.add('hidden');
+  document.getElementById('panel-flights').classList.remove('hidden');
+  FL_TAB = 'dep';
+  document.getElementById('flights-tab-dep').classList.add('active');
+  document.getElementById('flights-tab-arr').classList.remove('active');
+  renderFlights();
+  await loadFlAirlines();
+  stopFlightsListen();
+  try{
+    const db = await getDb();
+    if(db){
+      FL_UNSUB = db.collection('data').doc('flightlist').onSnapshot(
+        snap => { FL_DOC = snap.exists ? snap.data() : false; renderFlights(); },
+        () => { FL_DOC = false; renderFlights(); }
+      );
+    } else { FL_DOC = false; renderFlights(); }
+  }catch(e){ FL_DOC = false; renderFlights(); }
+  FL_TICK = setInterval(renderFlights, 60000);
+}
+function setFlightsTab(t){
+  FL_TAB = t;
+  document.getElementById('flights-tab-dep').classList.toggle('active', t === 'dep');
+  document.getElementById('flights-tab-arr').classList.toggle('active', t === 'arr');
+  renderFlights();
+}
+document.getElementById('flights-tab-dep').addEventListener('click', () => setFlightsTab('dep'));
+document.getElementById('flights-tab-arr').addEventListener('click', () => setFlightsTab('arr'));
+
 document.getElementById('turnaround-flight-input').addEventListener('input', (e) => {
   const before = e.target.value;
   const lengthBefore = before.length;
@@ -6754,6 +6917,15 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('notifications-enabled-toggle').checked = notificationsEnabled;
   document.getElementById('pwa-install-enabled-toggle').checked = pwaInstallEnabled;
   document.getElementById('refresh-button-enabled-toggle').checked = refreshButtonEnabled;
+  loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; });
+});
+document.getElementById('flight-airlines-input').addEventListener('change', async (e) => {
+  const v = e.target.value.split(/[\s,;]+/).map(x => x.trim().toUpperCase()).filter(Boolean).join(',');
+  e.target.value = v;
+  const st = document.getElementById('flight-airlines-status');
+  const ok = await dbSetShared('flightairlines', { codes: v });
+  if(ok){ flAirlines = v; st.textContent = 'Guardado.'; } else { st.textContent = 'Não foi possível guardar agora.'; }
+  setTimeout(() => { st.textContent = ''; }, 2500);
 });
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
