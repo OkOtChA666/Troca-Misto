@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TROCA-MISTO">
-<title>Troca-Misto: A tua plataforma para procurar trocas e muito mais!</title>
+<title>Troca-Misto: A tua platadorma para procura de trocas e muito mais!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -412,6 +412,9 @@
   .tool-arrow{ margin-left:auto; color:#4a5570; }
   .tool-arrow svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .fl-meta{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; color:#5f6a82; margin:10px 2px; }
+  .fl-cnt{ display:inline-block; margin-left:6px; font-size:10.5px; padding:2px 6px; border-radius:9px; background:rgba(255,179,0,.14); color:var(--amber); }
+  .fl-cnt:empty{ display:none; }
+  .swap-sort-tab.active .fl-cnt{ background:rgba(95,224,255,.16); color:var(--cyan); }
   .fl-row{ display:grid; grid-template-columns:54px 1fr auto; gap:10px; align-items:center; background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
   .fl-row.past{ opacity:.4; }
   .fl-tm{ font-family:var(--mono); font-weight:600; font-size:16px; color:var(--text); }
@@ -1510,8 +1513,8 @@
       <button type="button" id="flights-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
     </div>
     <div class="swap-sort-toggle" style="margin:0 0 6px;">
-      <div class="swap-sort-tab active" id="flights-tab-dep"><span>PARTIDAS</span><div class="dash"></div></div>
-      <div class="swap-sort-tab" id="flights-tab-arr"><span>CHEGADAS</span><div class="dash"></div></div>
+      <div class="swap-sort-tab active" id="flights-tab-dep"><span>PARTIDAS<span class="fl-cnt" id="fl-cnt-dep"></span></span><div class="dash"></div></div>
+      <div class="swap-sort-tab" id="flights-tab-arr"><span>CHEGADAS<span class="fl-cnt" id="fl-cnt-arr"></span></span><div class="dash"></div></div>
     </div>
     <div class="fl-meta"><span id="fl-updated">A CARREGAR…</span><span>SÓ AS NOSSAS COMPANHIAS</span></div>
     <div id="flights-list"></div>
@@ -6557,11 +6560,14 @@ function renderFlights(){
   const upd = document.getElementById('fl-updated');
   if(!box) return;
   if(FL_DOC === null){ box.innerHTML = ''; upd.textContent = 'A CARREGAR…'; return; }
-  if(FL_DOC === false || !FL_DOC.json){ box.innerHTML = '<div class="hint" style="text-align:center; padding:24px 0;">Ainda sem dados de voos.</div>'; upd.textContent = ''; return; }
+  if(FL_DOC === false || !FL_DOC.json){ document.getElementById('fl-cnt-dep').textContent = ''; document.getElementById('fl-cnt-arr').textContent = ''; box.innerHTML = '<div class="hint" style="text-align:center; padding:24px 0;">Ainda sem dados de voos.</div>'; upd.textContent = ''; return; }
   let data = {}; try{ data = JSON.parse(FL_DOC.json) || {}; }catch(e){}
   const at = parseInt(FL_DOC.at, 10) || 0;
   upd.textContent = at ? 'ATUALIZADO ' + new Date(at).toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' }) : '';
   const keep = {}; String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keep[c] = 1; });
+  const cnt = (list) => (list || []).filter(r => { const f = flSplit(r.n); return f.code && keep[f.code]; }).length;
+  document.getElementById('fl-cnt-dep').textContent = cnt(data.dep);
+  document.getElementById('fl-cnt-arr').textContent = cnt(data.arr);
   const dep = FL_TAB === 'dep';
   const rows = (dep ? data.dep : data.arr) || [];
   const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
