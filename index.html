@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TROCA-MISTO">
-<title>Troca-Misto: A tua plataforma para procura de trocas e muito mais!</title>
+<title>Troca-Misto: A tua plataforma para procurar trocas e muito mais!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -428,6 +428,29 @@
   .fl-chip.g{ color:#3ddc97; border-color:rgba(61,220,151,.4); }
   .fl-st{ font-family:var(--mono); font-weight:600; font-size:10.5px; margin-top:5px; text-align:right; color:#3ddc97; }
   .fl-st.d{ color:var(--amber); }
+  .ai-rule{ font-family:var(--mono); font-size:11px; color:#6d7790; border:1px dashed #27344f; border-radius:8px; padding:8px 10px; margin-bottom:12px; line-height:1.5; }
+  .ai-rule b{ color:var(--cyan); font-weight:600; }
+  .ai-mon{ text-align:center; font-family:var(--mono); font-weight:600; font-size:12px; letter-spacing:.1em; color:var(--text); margin:4px 0 10px; }
+  .ai-day{ display:grid; grid-template-columns:46px 1fr auto; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border-soft); border-left:4px solid #3ddc97; border-radius:10px; padding:10px 12px; margin-bottom:8px; cursor:pointer; }
+  .ai-day.w{ border-left-color:var(--amber); } .ai-day.b{ border-left-color:#ff5d6c; } .ai-day.n{ border-left-color:#2a3550; opacity:.6; cursor:default; }
+  .ai-dn{ font-family:var(--mono); font-weight:700; font-size:18px; color:var(--text); line-height:1; }
+  .ai-dn small{ display:block; font-weight:500; font-size:10px; color:var(--text-dim); margin-top:3px; }
+  .ai-cm{ font-family:var(--sans); font-size:12.5px; line-height:1.35; color:var(--text); }
+  .ai-cm i{ display:block; font-style:normal; font-family:var(--mono); font-size:10.5px; color:#6d7790; margin-top:3px; }
+  .ai-sb{ display:inline-block; font-family:var(--mono); font-weight:600; font-size:10.5px; padding:2px 7px; border-radius:9px; background:rgba(95,224,255,.14); color:var(--cyan); margin-top:4px; }
+  .ai-bal{ text-align:right; font-family:var(--mono); font-weight:700; font-size:18px; color:#3ddc97; white-space:nowrap; }
+  .ai-day.w .ai-bal{ color:var(--amber); } .ai-day.b .ai-bal{ color:#ff5d6c; } .ai-day.n .ai-bal{ color:var(--text-dim); }
+  .ai-det{ margin:-2px 0 10px; padding:12px; background:#0b1120; border:1px solid #1b2640; border-radius:10px; }
+  .ai-hh{ display:flex; align-items:flex-end; gap:3px; height:64px; }
+  .ai-col{ flex:1; position:relative; height:100%; display:flex; flex-direction:column; justify-content:flex-end; }
+  .ai-need{ background:rgba(255,179,0,.55); border-radius:2px 2px 0 0; } .ai-col.s .ai-need{ background:rgba(255,93,108,.7); }
+  .ai-have{ position:absolute; left:0; right:0; border-top:2px solid var(--cyan); }
+  .ai-ax{ display:flex; gap:3px; font-family:var(--mono); font-size:9px; color:#5f6a82; margin-top:4px; } .ai-ax span{ flex:1; text-align:center; }
+  .ai-lg{ font-family:var(--mono); font-size:10px; color:#6d7790; margin-top:8px; } .ai-lg b{ color:var(--cyan); }
+  .ai-miss h4{ margin:12px 0 8px; font-family:var(--mono); font-weight:600; font-size:10.5px; letter-spacing:.12em; color:var(--amber); border-top:1px solid #1b2640; padding-top:10px; }
+  .ai-chip{ display:inline-flex; gap:6px; font-family:var(--sans); font-size:11.5px; padding:5px 9px; border-radius:14px; border:1px solid rgba(255,93,108,.5); color:#ff9aa4; margin:0 6px 6px 0; }
+  .ai-chip b{ color:#ff5d6c; cursor:pointer; }
+  .ai-sug{ display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; } .ai-sug span{ font-family:var(--sans); font-size:11.5px; padding:5px 9px; border-radius:14px; border:1px solid #27344f; color:#b9c3d8; cursor:pointer; }
   .back-btn{
     display:inline-flex; align-items:center; gap:6px;
     font-family: var(--sans); font-size: 12.5px; font-weight:600;
@@ -1555,8 +1578,15 @@
       <button type="button" class="btn" id="custom1-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">MAIN</button>
       <button type="button" class="btn" id="custom2-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">RULES</button>
       <button type="button" class="btn" id="stats-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">STATS</button>
+      <button type="button" class="btn" id="aistaff-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">AI STAFF</button>
     </div>
 
+    <div id="aistaff-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber); margin-bottom:12px;">AI STAFF</div>
+      <div class="ai-rule">Por voo de partida, ao mesmo tempo:<br><b>2</b> check-in + <b>2</b> porta + <b>1</b> acolhimento = <b>5 pessoas</b>.<br>Comparado com quem está de serviço em cada hora.</div>
+      <div class="ai-mon" id="ai-month">OUTUBRO 2026</div>
+      <div id="ai-list"></div>
+    </div>
     <div id="msg-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
       <label style="display:flex; align-items:center; gap:10px; margin-bottom:24px; cursor:pointer; text-transform:none; letter-spacing:normal;">
         <span class="pill-toggle">
@@ -6851,7 +6881,7 @@ function openScheduleOverride(){
 // Generalized helpers for the message panels (currently just msg) — only one
 // can be open at a time, and opening any of them hides the other 3 buttons + the normal
 // PLANEAMENTO content, leaving only "← Voltar" visible until you back out of it.
-const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats'];
+const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff'];
 function closeAllMsgPanels(){
   ALL_MSG_PANEL_KEYS.forEach(key => {
     document.getElementById(key+'-panel').classList.add('hidden');
@@ -7092,6 +7122,172 @@ document.getElementById('temp-cancel-btn').addEventListener('click', async () =>
   statusEl.textContent = 'Mensagem cancelada.';
   statusEl.style.color = 'var(--text-dim)';
 });
+
+// ---------- AI STAFF (inside ADMIN): shortage of staff by day ----------
+// Needs, per departure of our airlines, all at the same time: check-in 2 + gate 2 + acolhimento 1.
+// Windows are in minutes before the (estimated) departure. Easy to change here.
+const AI_RULES = { ckiPeople:2, ckiFrom:120, ckiTo:40, gatePeople:2, gateFrom:50, gateTo:0, accPeople:1, accBefore:10, accAfterAlone:30 };
+const AI_SLOT = 15, AI_SLOTS = 1440 / AI_SLOT;
+let AI_ABS = {};      // { 'YYYY-MM-DD': [workerId, ...] }
+let AI_OPEN = null;   // day index that is expanded
+let AI_FLIGHTS = null;
+const aiHM = (m) => ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
+function aiShiftMins(entry){
+  if(!entry || entry.status !== 'work' || !entry.start || !entry.end) return null;
+  const s = (+entry.start.slice(0,2)) * 60 + (+entry.start.slice(2,4));
+  let e = (+entry.end.slice(0,2)) * 60 + (+entry.end.slice(2,4));
+  if(e <= s) e += 1440;
+  return [s, e];
+}
+function aiDate(idx){
+  const [y, m] = (DATA.month || '2026-09').split('-').map(Number);
+  return new Date(y, m - 1, DATA.days[idx]);
+}
+const aiKey = (d) => d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+function sufOf(t){ const m = /([+-]\d+)\s*$/.exec(String(t || '').trim()); return m ? +m[1] : 0; }
+function aiCalc(idx){
+  const date = aiDate(idx), key = aiKey(date);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const off = Math.round((date - today) / 86400000);
+  // flights of that day (our airlines only). "has data" = the lists contain departures for that day.
+  let fl = null, keepMap = {};
+  if(AI_FLIGHTS && AI_FLIGHTS.dep){
+    String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keepMap[c] = 1; });
+    const days = {}; AI_FLIGHTS.dep.forEach(r => { days[sufOf(r.std)] = 1; });
+    if(days[off]) fl = AI_FLIGHTS.dep.filter(r => { const f = flSplit(r.n); return f.code && keepMap[f.code] && sufOf(r.std) === off; });
+  }
+  // people on shift per slot
+  const have = new Array(AI_SLOTS).fill(0);
+  const absent = AI_ABS[key] || [];
+  const workers = [];
+  DATA.workers.forEach(w => {
+    const here = aiShiftMins(getEffectiveEntry(w, idx));
+    if(here){
+      workers.push({ id: w.id, name: w.name, s: here[0], e: Math.min(here[1], 1440) });
+      if(absent.indexOf(w.id) < 0) for(let t = here[0]; t < Math.min(here[1], 1440); t += AI_SLOT) have[Math.floor(t / AI_SLOT)]++;
+    }
+    if(idx > 0){
+      const prev = aiShiftMins(getEffectiveEntry(w, idx - 1));
+      if(prev && prev[1] > 1440){
+        const dk = aiKey(aiDate(idx - 1));
+        if((AI_ABS[dk] || []).indexOf(w.id) < 0) for(let t = 0; t < prev[1] - 1440; t += AI_SLOT) have[Math.floor(t / AI_SLOT)]++;
+      }
+    }
+  });
+  const working = workers.filter(w => absent.indexOf(w.id) < 0).length;
+  const out = { key, idx, date, workers, working, absent, have, need: null, flights: fl ? fl.length : 0 };
+  if(!fl) return out;
+  const need = new Array(AI_SLOTS).fill(0);
+  const base = off * 1440;   // minutes (relative to today 00:00) where this day starts
+  const absOf = (t, r) => { const m = flMin(t); return m === null ? null : sufOf(t) * 1440 + m; };
+  const add = (a, b, n) => { for(let t = Math.max(a, base); t < Math.min(b, base + 1440); t += AI_SLOT){ const k = Math.floor((t - base) / AI_SLOT); if(k >= 0 && k < AI_SLOTS) need[k] += n; } };
+  const deps = AI_FLIGHTS.dep.map(r => ({ r, f: flSplit(r.n) })).filter(x => x.f.code && keepMap[x.f.code]);
+  const arrs = (AI_FLIGHTS.arr || []).map(r => ({ r, f: flSplit(r.n) })).filter(x => x.f.code && keepMap[x.f.code]);
+  const usedArr = new Set();
+  deps.forEach(x => {
+    let std = absOf(x.r.std); if(std === null) return;
+    const etd = absOf(x.r.etd); if(etd !== null && sufOf(x.r.etd) === sufOf(x.r.std)) std = etd;
+    x.abs = std;
+    add(std - AI_RULES.ckiFrom, std - AI_RULES.ckiTo, AI_RULES.ckiPeople);
+    add(std - AI_RULES.gateFrom, std - AI_RULES.gateTo, AI_RULES.gatePeople);
+    // acolhimento: stays with the team from shortly before the same aircraft arrives until the doors close.
+    // The aircraft is the arrival with the previous flight number (same airline) that lands before this departure.
+    const num = parseInt(x.f.num, 10);
+    const arr = arrs.find(a => !usedArr.has(a) && a.f.code === x.f.code && parseInt(a.f.num, 10) === num - 1 && absOf(a.r.sta) !== null && absOf(a.r.sta) < std && absOf(a.r.sta) > std - 720);
+    if(arr){ usedArr.add(arr); add(absOf(arr.r.sta) - AI_RULES.accBefore, std, AI_RULES.accPeople); }
+  });
+  // arrivals whose aircraft does not leave again (no paired departure): short acolhimento only
+  arrs.forEach(a => { if(usedArr.has(a)) return; const sta = absOf(a.r.sta); if(sta !== null) add(sta - AI_RULES.accBefore, sta + AI_RULES.accAfterAlone, AI_RULES.accPeople); });
+  out.need = need;
+  // balance & comment
+  let worst = 9999;
+  for(let k = 0; k < AI_SLOTS; k++) if(need[k] > 0) worst = Math.min(worst, have[k] - need[k]);
+  out.bal = worst === 9999 ? null : worst;
+  const periods = (test) => { const ps = []; let cur = null;
+    for(let k = 0; k < AI_SLOTS; k++){
+      if(need[k] > 0 && test(have[k] - need[k])){ if(!cur) cur = { a:k, b:k, peak:0 }; cur.b = k; cur.peak = Math.max(cur.peak, need[k] - have[k]); }
+      else if(cur){ ps.push(cur); cur = null; }
+    }
+    if(cur) ps.push(cur); return ps; };
+  const rng = (p) => 'das ' + aiHM(p.a * AI_SLOT) + ' às ' + aiHM((p.b + 1) * AI_SLOT);
+  if(out.bal === null){ out.cls = 'n'; out.text = 'Sem voos de partida das nossas companhias.'; }
+  else if(out.bal < 0){
+    out.cls = 'b';
+    const ps = periods(b => b < 0).sort((x, y) => y.peak - x.peak);
+    out.text = 'Seria preciso mais ' + ps[0].peak + (ps[0].peak === 1 ? ' pessoa ' : ' pessoas ') + rng(ps[0]) + '.' + (ps[1] ? ' Também faltam ' + ps[1].peak + ' ' + rng(ps[1]) + '.' : '');
+  } else if(out.bal <= 2){
+    out.cls = 'w';
+    const ps = periods(b => b === out.bal)[0];
+    out.text = out.bal === 0 ? 'Dia no limite ' + rng(ps) + '. Não há pessoas a mais.' : 'Dia apertado ' + rng(ps) + '. Só há ' + out.bal + (out.bal === 1 ? ' pessoa' : ' pessoas') + ' a mais do que o necessário.';
+  } else { out.cls = ''; out.text = 'Há gente suficiente durante todo o dia.'; }
+  return out;
+}
+function aiRenderDay(c){
+  const wd = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][c.date.getDay()];
+  const noData = c.need === null;
+  let h = '<div class="ai-day ' + (noData ? 'n' : c.cls) + '" data-i="' + c.idx + '"><div class="ai-dn">' + DATA.days[c.idx] + '<small>' + wd + '</small></div>' +
+    '<div class="ai-cm">' + (noData ? 'Ainda não há voos para este dia.' : escapeHtml(c.text) + '<i>' + c.flights + (c.flights === 1 ? ' voo' : ' voos') + '</i><span class="ai-sb">👤 ' + c.working + ' EM SERVIÇO</span>') + '</div>' +
+    '<div class="ai-bal">' + (noData || c.bal === null ? '—' : (c.bal < 0 ? '−' + (-c.bal) : '+' + c.bal)) + '</div></div>';
+  if(AI_OPEN === c.idx && !noData){
+    let cols = '', ax = '';
+    const maxV = Math.max(4, ...c.need, ...c.have);
+    for(let hr = 0; hr < 24; hr++){
+      let nd = 0, hv = 9999;
+      for(let q = 0; q < 60 / AI_SLOT; q++){ const k = hr * 60 / AI_SLOT + q; nd = Math.max(nd, c.need[k]); hv = Math.min(hv, c.have[k]); }
+      cols += '<div class="ai-col' + (nd > hv ? ' s' : '') + '"><div class="ai-need" style="height:' + (nd / maxV * 100) + '%"></div><div class="ai-have" style="bottom:' + (hv / maxV * 100) + '%"></div></div>';
+      ax += '<span>' + (hr % 6 === 0 ? ('0' + hr).slice(-2) : '') + '</span>';
+    }
+    const chips = c.absent.map(id => { const w = c.workers.find(x => x.id === id); return w ? '<span class="ai-chip">' + escapeHtml(w.name) + ' · ' + aiHM(w.s) + '–' + aiHM(w.e % 1440 || 1440) + ' <b data-rm="' + escapeHtml(id) + '">✕</b></span>' : ''; }).join('');
+    h += '<div class="ai-det"><div class="ai-hh">' + cols + '</div><div class="ai-ax">' + ax + '</div><div class="ai-lg">■ necessárias &nbsp; <b>—</b> em serviço</div>' +
+      '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
+      '<input type="text" id="ai-q" placeholder="Escrever nome ou nº…" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:9px 10px; color:var(--text); font-family:var(--sans); font-size:13px;">' +
+      '<div class="ai-sug" id="ai-sug"></div></div></div>';
+  }
+  return h;
+}
+function renderAiStaff(){
+  const box = document.getElementById('ai-list'); if(!box) return;
+  const mm = (DATA.month || '').split('-');
+  document.getElementById('ai-month').textContent = (MONTH_FULL[mm[1]] || '') + ' ' + (mm[0] || '');
+  const today = new Date(); today.setHours(0,0,0,0);
+  let h = '';
+  for(let i = 0; i < DATA.days.length; i++){
+    if(aiDate(i) < today) continue;
+    h += aiRenderDay(aiCalc(i));
+  }
+  box.innerHTML = h || '<div class="hint" style="text-align:center; padding:20px 0;">Sem dias para mostrar.</div>';
+  box.querySelectorAll('.ai-day').forEach(el => el.addEventListener('click', () => {
+    const i = +el.dataset.i; if(el.classList.contains('n')) return;
+    AI_OPEN = AI_OPEN === i ? null : i; renderAiStaff();
+  }));
+  box.querySelectorAll('[data-rm]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); aiSetAbs(AI_OPEN, el.dataset.rm, false); }));
+  const q = document.getElementById('ai-q');
+  if(q) q.addEventListener('input', () => {
+    const v = q.value.trim().toUpperCase(); const sug = document.getElementById('ai-sug');
+    if(!v){ sug.innerHTML = ''; return; }
+    const c = aiCalc(AI_OPEN);
+    sug.innerHTML = c.workers.filter(w => c.absent.indexOf(w.id) < 0 && (w.name.toUpperCase().includes(v) || String(w.id).includes(v))).slice(0, 8)
+      .map(w => '<span data-add="' + escapeHtml(w.id) + '">' + escapeHtml(w.name) + ' · ' + aiHM(w.s) + '–' + aiHM(w.e % 1440 || 1440) + '</span>').join('');
+    sug.querySelectorAll('[data-add]').forEach(el => el.addEventListener('click', () => aiSetAbs(AI_OPEN, el.dataset.add, true)));
+  });
+}
+async function aiSetAbs(idx, id, on){
+  const key = aiKey(aiDate(idx));
+  const list = (AI_ABS[key] || []).filter(x => x !== id);
+  if(on) list.push(id);
+  AI_ABS[key] = list; if(!list.length) delete AI_ABS[key];
+  renderAiStaff();
+  await dbSetShared('aistaff', { abs: JSON.stringify(AI_ABS) });
+}
+async function openAiStaff(){
+  openMsgPanel('aistaff');
+  AI_OPEN = null; renderAiStaff();
+  const [fd, ab] = await Promise.all([dbGetShared('flightlist', null), dbGetShared('aistaff', null), loadFlAirlines()]).then(r => [r[0], r[1]]);
+  try{ AI_FLIGHTS = fd && fd.json ? JSON.parse(fd.json) : null; }catch(e){ AI_FLIGHTS = null; }
+  try{ AI_ABS = ab && ab.abs ? JSON.parse(ab.abs) : {}; }catch(e){ AI_ABS = {}; }
+  renderAiStaff();
+}
+document.getElementById('aistaff-toggle-btn').addEventListener('click', openAiStaff);
 document.getElementById('stats-toggle-btn').addEventListener('click', () => {
   openMsgPanel('stats');
 
