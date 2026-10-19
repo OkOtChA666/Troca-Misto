@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TROCA-MISTO">
-<title>Troca-Misto: A tua plataforma para procurar trocas e muito mais!</title>
+<title>Troca-Misto: A tua plataforma para procurar trocas e muito mais</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -1134,21 +1134,20 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link">AGENTES <b id="stat-workers">—</b></span>
       <span>HORÁRIO <b id="stat-range">—</b><b id="upload-schedule-link" role="button" aria-label="Carregar novo horário" title="Carregar novo horário (PDF)" style="display:none; cursor:pointer; color:var(--amber); margin-left:6px; padding:0 4px; font-size:1.25em; line-height:1;">+</b></span>
-      <span>VERSÃO <b id="stat-rules">2026.10.01</b></span>
-    </div>
-    <div class="board-stats nav-tabs-row" id="planeamento-turnaround-row" style="border:1px solid var(--border); border-radius:8px 8px 0 0; padding:10px 16px; margin-top:12px; background: rgba(95, 224, 255, 0.05); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-      <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="Área pessoal">
-        ÁREA PESSOAL<span id="my-area-badge"></span>
-      </span>
-      <span class="header-divider">|</span>
-      <span id="schedule-override-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Atualizar Horário (beta)">
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.10.05</b></span>
+      <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
           <path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="1.6"/>
         </svg>
         ADMIN
       </span>
-      <span class="header-divider" id="admin-turnaround-divider">|</span>
+    </div>
+    <div class="board-stats nav-tabs-row" id="planeamento-turnaround-row" style="border:1px solid var(--border); border-radius:8px 8px 0 0; padding:10px 16px; margin-top:12px; background: rgba(95, 224, 255, 0.05); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+      <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="Área pessoal">
+        ÁREA PESSOAL<span id="my-area-badge"></span>
+      </span>
+      <span class="header-divider">|</span>
       <span id="tools-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Ferramentas">
         FERRAMENTAS
       </span>
@@ -3485,7 +3484,9 @@ async function checkAccessPassword(){
 // visible but not clickable — admin (Gonçalo) sees everything exactly as before.
 function applyAdminVisibility(){
   const adminLink = document.getElementById('schedule-override-link');
-  if(adminLink) adminLink.style.display = isAdminSession ? '' : 'none';
+  if(adminLink) adminLink.style.display = isAdminSession ? 'inline-flex' : 'none';
+  const verWrap = document.getElementById('stat-version-wrap');
+  if(verWrap) verWrap.style.display = isAdminSession ? 'none' : '';
   const uploadLink = document.getElementById('upload-schedule-link');
   if(uploadLink) uploadLink.style.display = isAdminSession ? '' : 'none';
   // The divider right after ADMIN needs to hide along with it — otherwise a non-admin
