@@ -112,6 +112,15 @@ async function syncOnce(USER, PASS) {
   if (FU && FP) {
     try {
       const f = await fetchFlights({ user: FU, pass: FP });
+      // full flight lists (Arrivals / Departures) for the app's VOOS screen — separate document, never blocks the tasks
+      try {
+        const slim = (x) => x.map((r) => { const o = {}; Object.keys(r).forEach((k) => { if (r[k]) o[k] = r[k]; }); return o; });
+        const air = {}; [...f.dep, ...f.arr].forEach((r) => { const m = /^([A-Z0-9]{2,3}?)(\d{1,4}[A-Z]?)$/.exec(r.n || ''); const c = m ? m[1] : (r.n || '?'); air[c] = (air[c] || 0) + 1; });
+        console.log('AIRLINES: ' + Object.keys(air).sort().map((c) => c + '=' + air[c]).join(' '));
+        const fbody = JSON.stringify({ fields: { json: sv(JSON.stringify({ dep: slim(f.dep), arr: slim(f.arr) })), at: iv(now), date: sv(parsed.date) } });
+        const fr = await fetch(BASE + 'flightlist?key=' + API_KEY, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body: fbody });
+        console.log('FLIGHTLIST: ' + (fr.ok ? 'saved dep=' + f.dep.length + ' arr=' + f.arr.length : 'HTTP ' + fr.status));
+      } catch (e) { console.log('FLIGHTLIST SKIPPED: ' + String(e && e.message ? e.message : e).slice(0, 120)); }
       const keys = []; parsed.agents.forEach((ag) => ag.tasks.forEach((t) => { if (t.fparts) keys.push({ key: t.fkey, ...t.fparts }); }));
       const r = buildFlightMap(keys, f);
       // keep what was already known earlier today (flights leave the Flights4Staff list after a while); new readings win
