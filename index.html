@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TROCA-MISTO">
-<title>Troca-Misto: A tua platadorma para procura de trocas e muito mais!</title>
+<title>Troca-Misto: A tua plataforma para procura de trocas e muito mais!</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -6555,6 +6555,8 @@ function flSplit(n){
 }
 function flTime(t){ const m = /(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? (('0' + m[1]).slice(-2) + ':' + m[2]) : ''; }
 function flMin(t){ const m = /(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+// Flights4Staff marks other days with a suffix on the time ("07:50+1" = tomorrow, "21:10-1" = yesterday); today has none.
+function flToday(t){ return !/[+-]\d+\s*$/.test(String(t || '').trim()); }
 function renderFlights(){
   const box = document.getElementById('flights-list');
   const upd = document.getElementById('fl-updated');
@@ -6565,16 +6567,16 @@ function renderFlights(){
   const at = parseInt(FL_DOC.at, 10) || 0;
   upd.textContent = at ? 'ATUALIZADO ' + new Date(at).toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' }) : '';
   const keep = {}; String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keep[c] = 1; });
-  const cnt = (list) => (list || []).filter(r => { const f = flSplit(r.n); return f.code && keep[f.code]; }).length;
-  document.getElementById('fl-cnt-dep').textContent = cnt(data.dep);
-  document.getElementById('fl-cnt-arr').textContent = cnt(data.arr);
+  const cnt = (list, isDep) => (list || []).filter(r => { const f = flSplit(r.n); return f.code && keep[f.code] && flToday(isDep ? r.std : r.sta); }).length;
+  document.getElementById('fl-cnt-dep').textContent = cnt(data.dep, true);
+  document.getElementById('fl-cnt-arr').textContent = cnt(data.arr, false);
   const dep = FL_TAB === 'dep';
   const rows = (dep ? data.dep : data.arr) || [];
   const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
   const out = [];
   rows.forEach(r => {
     const f = flSplit(r.n);
-    if(!f.code || !keep[f.code]) return;
+    if(!f.code || !keep[f.code] || !flToday(dep ? r.std : r.sta)) return;
     const sched = flTime(dep ? r.std : r.sta);
     const est = dep ? flTime(r.etd) : '';
     const sm = flMin(sched);
