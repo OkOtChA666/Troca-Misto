@@ -1583,7 +1583,7 @@
 
     <div id="aistaff-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
       <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber); margin-bottom:12px;">AI STAFF</div>
-      <div class="ai-rule">Por voo de partida, ao mesmo tempo:<br><b>2</b> check-in + <b>2</b> porta + <b>1</b> acolhimento = <b>5 pessoas</b>.<br>Comparado com quem está de serviço em cada hora.</div>
+      <div class="ai-rule">Por voo de partida, ao mesmo tempo:<br><b>2</b> check-in + <b>2</b> porta + <b>1</b> acolhimento = <b>5 pessoas</b>.<br>Comparado com quem está de serviço em cada hora (pausas: as reais das tarefas no dia de hoje; nos outros dias, 1 hora 4 horas depois do início nos turnos de 8H).</div>
       <div class="ai-mon" id="ai-month">OUTUBRO 2026</div>
       <div id="ai-list"></div>
     </div>
@@ -7126,7 +7126,7 @@ document.getElementById('temp-cancel-btn').addEventListener('click', async () =>
 // ---------- AI STAFF (inside ADMIN): shortage of staff by day ----------
 // Needs, per departure of our airlines, all at the same time: check-in 2 + gate 2 + acolhimento 1.
 // Windows are in minutes before the (estimated) departure. Easy to change here.
-const AI_RULES = { ckiPeople:2, ckiFrom:120, ckiTo:40, gatePeople:2, gateFrom:50, gateTo:0, accPeople:1, accBefore:10, accAfterAlone:30 };
+const AI_RULES = { ckiPeople:2, ckiFrom:120, ckiTo:40, gatePeople:2, gateFrom:50, gateTo:0, accPeople:1, accBefore:10, accAfterAlone:30, breakMinShift:450, breakAfter:240, breakLen:60 };
 const AI_SLOT = 15, AI_SLOTS = 1440 / AI_SLOT;
 let AI_ABS = {};      // { 'YYYY-MM-DD': [workerId, ...] }
 let AI_OPEN = null;   // day index that is expanded
@@ -7144,6 +7144,23 @@ function aiDate(idx){
   return new Date(y, m - 1, DATA.days[idx]);
 }
 const aiKey = (d) => d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+let AI_TASKS = null;
+// Real break times (minutes) of one person on the day covered by the tasks; null = no task data for that person/day.
+function aiRealBreaks(id, dayKey){
+  if(!AI_TASKS || AI_TASKS.date !== dayKey || !AI_TASKS.a || !AI_TASKS.a[id]) return null;
+  let rec = null; try{ rec = JSON.parse(AI_TASKS.a[id]); }catch(e){}
+  if(!rec || !Array.isArray(rec.t)) return null;
+  const out = [];
+  rec.t.forEach(t => {
+    const nk = String(t[0] || '').replace(/^<\s*/, '').trim();
+    if(!/^(break|pausa|pause)$/i.test(nk)) return;
+    const s = mtToMin(t[1]); let e = mtToMin(t[2]);
+    if(s === null || e === null) return;
+    if(e <= s) e += 1440;
+    out.push([s, e]);
+  });
+  return out;
+}
 function sufOf(t){ const m = /([+-]\d+)\s*$/.exec(String(t || '').trim()); return m ? +m[1] : 0; }
 function aiCalc(idx){
   const date = aiDate(idx), key = aiKey(date);
@@ -7164,13 +7181,23 @@ function aiCalc(idx){
     const here = aiShiftMins(getEffectiveEntry(w, idx));
     if(here){
       workers.push({ id: w.id, name: w.name, s: here[0], e: Math.min(here[1], 1440) });
-      if(absent.indexOf(w.id) < 0) for(let t = here[0]; t < Math.min(here[1], 1440); t += AI_SLOT) have[Math.floor(t / AI_SLOT)]++;
+      if(absent.indexOf(w.id) < 0){
+        for(let t = here[0]; t < Math.min(here[1], 1440); t += AI_SLOT) have[Math.floor(t / AI_SLOT)]++;
+        // break: long shifts have 1 hour off the floor, usually 4 hours after the start
+        // for the day the tasks cover, the real BREAK times from the tasks are used; other days (or people with no tasks) use the rule
+        const real = aiRealBreaks(w.id, key);
+        const brs = real !== null ? real : (here[1] - here[0] >= AI_RULES.breakMinShift ? [[here[0] + AI_RULES.breakAfter, here[0] + AI_RULES.breakAfter + AI_RULES.breakLen]] : []);
+        brs.forEach(b => { for(let t = Math.max(b[0], here[0]); t < Math.min(b[1], here[1], 1440); t += AI_SLOT) have[Math.floor(t / AI_SLOT)]--; });
+      }
     }
     if(idx > 0){
       const prev = aiShiftMins(getEffectiveEntry(w, idx - 1));
       if(prev && prev[1] > 1440){
         const dk = aiKey(aiDate(idx - 1));
-        if((AI_ABS[dk] || []).indexOf(w.id) < 0) for(let t = 0; t < prev[1] - 1440; t += AI_SLOT) have[Math.floor(t / AI_SLOT)]++;
+        if((AI_ABS[dk] || []).indexOf(w.id) < 0){
+          for(let t = 0; t < prev[1] - 1440; t += AI_SLOT) have[Math.floor(t / AI_SLOT)]++;
+          if(prev[1] - prev[0] >= AI_RULES.breakMinShift) for(let t = prev[0] + AI_RULES.breakAfter; t < prev[0] + AI_RULES.breakAfter + AI_RULES.breakLen; t += AI_SLOT){ if(t >= 1440 && t - 1440 < prev[1] - 1440) have[Math.floor((t - 1440) / AI_SLOT)]--; }
+        }
       }
     }
   });
@@ -7282,7 +7309,8 @@ async function aiSetAbs(idx, id, on){
 async function openAiStaff(){
   openMsgPanel('aistaff');
   AI_OPEN = null; renderAiStaff();
-  const [fd, ab] = await Promise.all([dbGetShared('flightlist', null), dbGetShared('aistaff', null), loadFlAirlines()]).then(r => [r[0], r[1]]);
+  const [fd, ab, tk] = await Promise.all([dbGetShared('flightlist', null), dbGetShared('aistaff', null), dbGetShared('tasks', null), loadFlAirlines()]).then(r => [r[0], r[1], r[2]]);
+  AI_TASKS = tk && tk.a ? tk : null;
   try{ AI_FLIGHTS = fd && fd.json ? JSON.parse(fd.json) : null; }catch(e){ AI_FLIGHTS = null; }
   try{ AI_ABS = ab && ab.abs ? JSON.parse(ab.abs) : {}; }catch(e){ AI_ABS = {}; }
   renderAiStaff();
