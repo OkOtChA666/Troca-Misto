@@ -447,6 +447,31 @@
   .ai-have{ position:absolute; left:0; right:0; border-top:2px solid var(--cyan); }
   .ai-ax{ display:flex; gap:3px; font-family:var(--mono); font-size:9px; color:#5f6a82; margin-top:4px; } .ai-ax span{ flex:1; text-align:center; }
   .ai-lg{ font-family:var(--mono); font-size:10px; color:#6d7790; margin-top:8px; } .ai-lg b{ color:var(--cyan); }
+  .ai-ttl{ font:600 10.5px var(--mono); letter-spacing:.1em; color:var(--text-dim); margin-bottom:8px; }
+  .ai-tag{ display:inline-block; font:700 9px var(--mono); letter-spacing:.1em; color:#080B14; background:var(--cyan); border-radius:3px; padding:1px 5px; margin-left:6px; vertical-align:middle; }
+  .ai-wrap{ display:flex; gap:6px; }
+  .ai-y{ position:relative; width:16px; height:110px; font:9px var(--mono); color:#5f6a82; }
+  .ai-y span{ position:absolute; right:0; transform:translateY(50%); }
+  .ai-hh2{ position:relative; flex:1; display:flex; align-items:flex-end; gap:2px; height:110px; border-bottom:1px solid #27344f; }
+  .ai-gl{ position:absolute; left:0; right:0; height:0; border-top:1px solid rgba(255,255,255,.05); pointer-events:none; }
+  .ai-col2{ flex:1; position:relative; height:100%; display:flex; flex-direction:column; justify-content:flex-end; cursor:pointer; }
+  .ai-col2.sel{ background:rgba(255,255,255,.08); }
+  .ai-col2 .ai-need{ background:rgba(255,179,0,.6); } .ai-col2.s .ai-need{ background:rgba(255,93,108,.8); }
+  .ai-col2 .ai-have{ left:-1px; right:-1px; }
+  .ai-av{ position:absolute; left:-1px; right:-1px; height:0; border-top:2px dashed #fff; }
+  .ai-ax2{ display:flex; gap:2px; margin:4px 0 0 22px; font:9px var(--mono); color:#5f6a82; } .ai-ax2 span{ flex:1; }
+  .ai-rl{ font:9px var(--mono); color:#5f6a82; margin:8px 0 0 22px; letter-spacing:.06em; }
+  .ai-fr{ display:flex; gap:2px; margin:2px 0 0 22px; }
+  .ai-fr span{ flex:1; text-align:center; font:600 10px var(--mono); padding:2px 0; border-radius:3px; cursor:pointer; color:var(--cyan); }
+  .ai-fr span.z{ color:#3a4560; font-weight:400; } .ai-fr span.sel{ background:rgba(255,255,255,.08); }
+  .ai-fr span.a{ color:#8fd1a8; } .ai-fr span.k{ color:#c79bff; }
+  .ai-leg{ display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:10px; font:11px var(--sans); color:#b9c3d8; }
+  .ai-leg i{ display:inline-block; vertical-align:middle; margin-right:5px; }
+  .ai-sw{ width:10px; height:10px; border-radius:2px; } .ai-ln{ width:14px; height:0; border-top:2px solid var(--cyan); margin-bottom:2px; } .ai-ln2{ width:14px; height:0; border-top:2px dashed #fff; margin-bottom:2px; }
+  .ai-tip{ margin-top:10px; background:#101a2e; border:1px solid #27344f; border-radius:8px; padding:9px 11px; font:12px/1.4 var(--sans); }
+  .ai-tip b{ font-family:var(--mono); } .ai-tip .r{ color:#ff5d6c; } .ai-tip .c{ color:var(--cyan); } .ai-tip .am{ color:var(--amber); } .ai-tip .g{ color:#3ddc97; } .ai-tip .p{ color:#c79bff; }
+  .ai-tip .fl{ margin-top:6px; font:11.5px/1.5 var(--mono); color:#b9c3d8; }
+  .ai-tip .x{ margin-top:8px; border-top:1px solid #27344f; padding-top:8px; font:11.5px/1.55 var(--mono); color:#b9c3d8; }
   .ai-miss h4{ margin:12px 0 8px; font-family:var(--mono); font-weight:600; font-size:10.5px; letter-spacing:.12em; color:var(--amber); border-top:1px solid #1b2640; padding-top:10px; }
   .ai-chip{ display:inline-flex; gap:6px; font-family:var(--sans); font-size:11.5px; padding:5px 9px; border-radius:14px; border:1px solid rgba(255,93,108,.5); color:#ff9aa4; margin:0 6px 6px 0; }
   .ai-chip b{ color:#ff5d6c; cursor:pointer; }
@@ -7152,6 +7177,7 @@ document.getElementById('temp-cancel-btn').addEventListener('click', async () =>
 const AI_RULES = { ckiPeople:2, ckiFrom:120, ckiTo:40, gatePeople:2, gateFrom:50, gateTo:0, accPeople:1, accBefore:10, accAfterAlone:30, breakMinShift:450, breakAfter:240, breakLen:60 };
 const AI_SLOT = 15, AI_SLOTS = 1440 / AI_SLOT;
 let AI_ABS = {};      // { 'YYYY-MM-DD': [workerId, ...] }
+let AI_SEL = null;    // hour tapped in the open day
 let AI_OPEN = null;   // day index that is expanded
 let AI_FLIGHTS = null;
 const aiHM = (m) => ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
@@ -7197,7 +7223,8 @@ function aiCalc(idx){
     if(days[off]) fl = AI_FLIGHTS.dep.filter(r => { const f = flSplit(r.n); return f.code && keepMap[f.code] && sufOf(r.std) === off; });
   }
   // people on shift per slot
-  const have = new Array(AI_SLOTS).fill(0);
+  const have = new Array(AI_SLOTS).fill(0), on = new Array(AI_SLOTS).fill(0), brk = new Array(AI_SLOTS).fill(0), tsk = new Array(AI_SLOTS).fill(0);
+  let hasTasks = false;
   const absent = AI_ABS[key] || [];
   const workers = [];
   DATA.workers.forEach(w => {
@@ -7205,12 +7232,27 @@ function aiCalc(idx){
     if(here){
       workers.push({ id: w.id, name: w.name, s: here[0], e: Math.min(here[1], 1440) });
       if(absent.indexOf(w.id) < 0){
-        for(let t = here[0]; t < Math.min(here[1], 1440); t += AI_SLOT) have[Math.floor(t / AI_SLOT)]++;
+        for(let t = here[0]; t < Math.min(here[1], 1440); t += AI_SLOT){ have[Math.floor(t / AI_SLOT)]++; on[Math.floor(t / AI_SLOT)]++; }
         // break: long shifts have 1 hour off the floor, usually 4 hours after the start
         // for the day the tasks cover, the real BREAK times from the tasks are used; other days (or people with no tasks) use the rule
         const real = aiRealBreaks(w.id, key);
         const brs = real !== null ? real : (here[1] - here[0] >= AI_RULES.breakMinShift ? [[here[0] + AI_RULES.breakAfter, here[0] + AI_RULES.breakAfter + AI_RULES.breakLen]] : []);
-        brs.forEach(b => { for(let t = Math.max(b[0], here[0]); t < Math.min(b[1], here[1], 1440); t += AI_SLOT) have[Math.floor(t / AI_SLOT)]--; });
+        const brkSet = {};
+        brs.forEach(b => { for(let t = Math.max(b[0], here[0]); t < Math.min(b[1], here[1], 1440); t += AI_SLOT){ have[Math.floor(t / AI_SLOT)]--; brk[Math.floor(t / AI_SLOT)]++; brkSet[Math.floor(t / AI_SLOT)] = 1; } });
+        // tasks (today only): a task is a block of time, the person is busy from its start to its end
+        if(real !== null && AI_TASKS && AI_TASKS.date === key){
+          hasTasks = true;
+          let rec = null; try{ rec = JSON.parse(AI_TASKS.a[w.id]); }catch(e){}
+          const busy = {};
+          ((rec && rec.t) || []).forEach(tt => {
+            const nk = String(tt[0] || '').replace(/^<\s*/, '').trim();
+            if(/^(break|pausa|pause)$/i.test(nk)) return;
+            const a = mtToMin(tt[1]); let b = mtToMin(tt[2]); if(a === null || b === null) return;
+            if(b <= a) b += 1440;
+            for(let t = Math.max(a, here[0]); t < Math.min(b, here[1], 1440); t += AI_SLOT) busy[Math.floor(t / AI_SLOT)] = 1;
+          });
+          Object.keys(busy).forEach(k => { if(!brkSet[k]) tsk[k]++; });
+        }
       }
     }
     if(idx > 0){
@@ -7218,14 +7260,14 @@ function aiCalc(idx){
       if(prev && prev[1] > 1440){
         const dk = aiKey(aiDate(idx - 1));
         if((AI_ABS[dk] || []).indexOf(w.id) < 0){
-          for(let t = 0; t < prev[1] - 1440; t += AI_SLOT) have[Math.floor(t / AI_SLOT)]++;
-          if(prev[1] - prev[0] >= AI_RULES.breakMinShift) for(let t = prev[0] + AI_RULES.breakAfter; t < prev[0] + AI_RULES.breakAfter + AI_RULES.breakLen; t += AI_SLOT){ if(t >= 1440 && t - 1440 < prev[1] - 1440) have[Math.floor((t - 1440) / AI_SLOT)]--; }
+          for(let t = 0; t < prev[1] - 1440; t += AI_SLOT){ have[Math.floor(t / AI_SLOT)]++; on[Math.floor(t / AI_SLOT)]++; }
+          if(prev[1] - prev[0] >= AI_RULES.breakMinShift) for(let t = prev[0] + AI_RULES.breakAfter; t < prev[0] + AI_RULES.breakAfter + AI_RULES.breakLen; t += AI_SLOT){ if(t >= 1440 && t - 1440 < prev[1] - 1440){ have[Math.floor((t - 1440) / AI_SLOT)]--; brk[Math.floor((t - 1440) / AI_SLOT)]++; } }
         }
       }
     }
   });
   const working = workers.filter(w => absent.indexOf(w.id) < 0).length;
-  const out = { key, idx, date, workers, working, absent, have, need: null, flights: fl ? fl.length : 0 };
+  const out = { key, idx, date, workers, working, absent, have, on, brk, tsk, hasTasks, depH: new Array(24).fill(0), arrH: new Array(24).fill(0), need: null, flights: fl ? fl.length : 0 };
   if(!fl) return out;
   const need = new Array(AI_SLOTS).fill(0);
   const base = off * 1440;   // minutes (relative to today 00:00) where this day starts
@@ -7238,6 +7280,7 @@ function aiCalc(idx){
     let std = absOf(x.r.std); if(std === null) return;
     const etd = absOf(x.r.etd); if(etd !== null && sufOf(x.r.etd) === sufOf(x.r.std)) std = etd;
     x.abs = std;
+    { const hh = Math.floor((std - base) / 60); if(hh >= 0 && hh < 24) out.depH[hh]++; }
     add(std - AI_RULES.ckiFrom, std - AI_RULES.ckiTo, AI_RULES.ckiPeople);
     add(std - AI_RULES.gateFrom, std - AI_RULES.gateTo, AI_RULES.gatePeople);
     // acolhimento: stays with the team from shortly before the same aircraft arrives until the doors close.
@@ -7246,6 +7289,7 @@ function aiCalc(idx){
     const arr = arrs.find(a => !usedArr.has(a) && a.f.code === x.f.code && parseInt(a.f.num, 10) === num - 1 && absOf(a.r.sta) !== null && absOf(a.r.sta) < std && absOf(a.r.sta) > std - 720);
     if(arr){ usedArr.add(arr); add(absOf(arr.r.sta) - AI_RULES.accBefore, std, AI_RULES.accPeople); }
   });
+  arrs.forEach(a => { const sa = absOf(a.r.sta); if(sa === null) return; const hh = Math.floor((sa - base) / 60); if(hh >= 0 && hh < 24) out.arrH[hh]++; });
   // arrivals whose aircraft does not leave again (no paired departure): short acolhimento only
   arrs.forEach(a => { if(usedArr.has(a)) return; const sta = absOf(a.r.sta); if(sta !== null) add(sta - AI_RULES.accBefore, sta + AI_RULES.accAfterAlone, AI_RULES.accPeople); });
   out.need = need;
@@ -7279,16 +7323,46 @@ function aiRenderDay(c){
     '<div class="ai-cm">' + (noData ? 'Ainda não há voos para este dia.' : escapeHtml(c.text) + '<i>' + c.flights + (c.flights === 1 ? ' voo' : ' voos') + '</i><span class="ai-sb">👤 ' + c.working + ' EM SERVIÇO</span>') + '</div>' +
     '<div class="ai-bal">' + (noData || c.bal === null ? '—' : (c.bal < 0 ? '−' + (-c.bal) : '+' + c.bal)) + '</div></div>';
   if(AI_OPEN === c.idx && !noData){
-    let cols = '', ax = '';
-    const maxV = Math.max(4, ...c.need, ...c.have);
+    const spq = 60 / AI_SLOT, H = [];
+    for(let hr = 0; hr < 24; hr++){ let best = hr * spq, bv = 1e9; for(let q = 0; q < spq; q++){ const k = hr * spq + q, b = c.have[k] - c.need[k]; if(b < bv){ bv = b; best = k; } } H.push(best); }
+    const maxRaw = Math.max(4, ...H.map(k => Math.max(c.need[k], c.on[k])));
+    const step = maxRaw > 30 ? 10 : 5, maxV = Math.ceil(maxRaw / step) * step;
+    let sel = AI_SEL;
+    if(sel === null){ let bv = 1e9; sel = 0; for(let hr = 0; hr < 24; hr++){ const k = H[hr]; if(c.need[k] > 0 && c.have[k] - c.need[k] < bv){ bv = c.have[k] - c.need[k]; sel = hr; } } }
+    let cols = '', ax = '', rb = '', rd = '', ra = '', yl = '', gl = '';
+    for(let t = 0; t <= maxV; t += step){ yl += '<span style="bottom:' + (t / maxV * 100) + '%">' + t + '</span>'; if(t > 0) gl += '<div class="ai-gl" style="bottom:' + (t / maxV * 100) + '%"></div>'; }
     for(let hr = 0; hr < 24; hr++){
-      let nd = 0, hv = 9999;
-      for(let q = 0; q < 60 / AI_SLOT; q++){ const k = hr * 60 / AI_SLOT + q; nd = Math.max(nd, c.need[k]); hv = Math.min(hv, c.have[k]); }
-      cols += '<div class="ai-col' + (nd > hv ? ' s' : '') + '"><div class="ai-need" style="height:' + (nd / maxV * 100) + '%"></div><div class="ai-have" style="bottom:' + (hv / maxV * 100) + '%"></div></div>';
-      ax += '<span>' + (hr % 6 === 0 ? ('0' + hr).slice(-2) : '') + '</span>';
+      const k = H[hr], nd = c.need[k], hv = c.have[k], sc = ' data-hr="' + hr + '"';
+      cols += '<div class="ai-col2' + (nd > hv ? ' s' : '') + (hr === sel ? ' sel' : '') + '"' + sc + '><div class="ai-need" style="height:' + (nd / maxV * 100) + '%"></div>' +
+        (c.hasTasks ? '<div class="ai-have" style="bottom:' + (c.on[k] / maxV * 100) + '%"></div><div class="ai-av" style="bottom:' + (hv / maxV * 100) + '%"></div>' : '<div class="ai-have" style="bottom:' + (hv / maxV * 100) + '%"></div>') + '</div>';
+      ax += '<span>' + (hr % 3 === 0 ? ('0' + hr).slice(-2) + 'h' : '') + '</span>';
+      let bm = 0; for(let q = 0; q < spq; q++) bm = Math.max(bm, c.brk[hr * spq + q]);
+      rb += '<span class="k' + (bm ? '' : ' z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (bm || '·') + '</span>';
+      rd += '<span class="' + (c.depH[hr] ? '' : 'z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (c.depH[hr] ? '▲' + c.depH[hr] : '·') + '</span>';
+      ra += '<span class="a' + (c.arrH[hr] ? '' : ' z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (c.arrH[hr] ? '▼' + c.arrH[hr] : '·') + '</span>';
     }
+    // the tapped hour: the numbers of its tightest 15 minutes
+    const sk = H[sel], sn = c.need[sk], shv = c.have[sk], sd = shv - sn, p2 = (n) => ('0' + n).slice(-2);
+    let tip = '<b>' + p2(sel) + ':00–' + p2((sel + 1) % 24) + ':00</b> &nbsp; ' + (sn === 0 ? 'sem voos nesta hora' :
+      '<span class="am">precisas ' + sn + '</span> · <span class="c">estão ' + shv + '</span> → ' + (sd < 0 ? '<span class="r"><b>faltam ' + (-sd) + '</b></span>' : '<b>sobram ' + sd + '</b>')) +
+      '<div class="fl"><span class="c">' + c.depH[sel] + ' partidas</span> · ' + c.arrH[sel] + ' chegadas</div>';
+    if(c.hasTasks){
+      const tk = c.tsk[sk], fr = Math.max(0, shv - tk);
+      tip += '<div class="x">Escalados <b>' + c.on[sk] + '</b> − em pausa <b class="p">' + c.brk[sk] + '</b> = disponíveis <b>' + shv + '</b><br>' +
+        'Com tarefa (check-in/gate/rampa): <b>' + tk + '</b>' + (sn ? (tk >= sn ? ' <span class="g">✓ cobre o que precisas (' + sn + ')</span>' : ' <span class="am">⚠ só ' + tk + ' de ' + sn + ' precisas</span>') : '') +
+        '<br>Livres (sem tarefa nem pausa): <b>' + fr + '</b></div>';
+    }
+    const lg = '<div class="ai-leg"><span><i class="ai-sw" style="background:rgba(255,179,0,.6)"></i>Pessoas necessárias</span>' +
+      (c.hasTasks ? '<span><i class="ai-ln"></i>Escalados (turno)</span><span><i class="ai-ln2"></i>Disponíveis (sem pausas)</span>' : '<span><i class="ai-ln"></i>Pessoas em serviço</span>') +
+      '<span><i class="ai-sw" style="background:rgba(255,93,108,.8)"></i>Faltam pessoas</span>' +
+      (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> Pessoas em pausa nessa hora</span>' : '') +
+      '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
+    const grid = '<div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div>' +
+      '<div class="ai-wrap"><div class="ai-y">' + yl + '</div><div class="ai-hh2">' + gl + cols + '</div></div><div class="ai-ax2">' + ax + '</div>' +
+      (c.hasTasks ? '<div class="ai-rl">EM PAUSA (das tarefas)</div><div class="ai-fr">' + rb + '</div>' : '') +
+      '<div class="ai-rl">VOOS DE PARTIDA / CHEGADA</div><div class="ai-fr">' + rd + '</div><div class="ai-fr">' + ra + '</div>' + lg + '<div class="ai-tip">' + tip + '</div>';
     const chips = c.absent.map(id => { const w = c.workers.find(x => x.id === id); return w ? '<span class="ai-chip">' + escapeHtml(w.name) + ' · ' + aiHM(w.s) + '–' + aiHM(w.e % 1440 || 1440) + ' <b data-rm="' + escapeHtml(id) + '">✕</b></span>' : ''; }).join('');
-    h += '<div class="ai-det"><div class="ai-hh">' + cols + '</div><div class="ai-ax">' + ax + '</div><div class="ai-lg">■ necessárias &nbsp; <b>—</b> em serviço</div>' +
+    h += '<div class="ai-det">' + grid +
       '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
       '<input type="text" id="ai-q" placeholder="Escrever nome ou nº…" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:9px 10px; color:var(--text); font-family:var(--sans); font-size:13px;">' +
       '<div class="ai-sug" id="ai-sug"></div></div></div>';
@@ -7308,8 +7382,9 @@ function renderAiStaff(){
   box.innerHTML = h || '<div class="hint" style="text-align:center; padding:20px 0;">Sem dias para mostrar.</div>';
   box.querySelectorAll('.ai-day').forEach(el => el.addEventListener('click', () => {
     const i = +el.dataset.i; if(el.classList.contains('n')) return;
-    AI_OPEN = AI_OPEN === i ? null : i; renderAiStaff();
+    AI_OPEN = AI_OPEN === i ? null : i; AI_SEL = null; renderAiStaff();
   }));
+  box.querySelectorAll('[data-hr]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); AI_SEL = +el.dataset.hr; renderAiStaff(); }));
   box.querySelectorAll('[data-rm]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); aiSetAbs(AI_OPEN, el.dataset.rm, false); }));
   const q = document.getElementById('ai-q');
   if(q) q.addEventListener('input', () => {
