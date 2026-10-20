@@ -7301,6 +7301,7 @@ function aiCalc(idx){
   arrs.forEach(a => { const sa = absOf(a.r.sta); if(sa === null) return; const sl = Math.floor((sa - base) / AI_SLOT); if(sl >= 0 && sl < AI_SLOTS) out.arrS[sl]++; });
   // arrivals whose aircraft does not leave again (no paired departure): short acolhimento only
   arrs.forEach(a => { if(usedArr.has(a)) return; const sta = absOf(a.r.sta); if(sta !== null) add(sta - AI_RULES.accBefore, sta + AI_RULES.accAfterAlone, AI_RULES.accPeople); });
+  out.arrCount = arrs.filter(a => sufOf(a.r.sta) === off).length;
   out.need = need;
   // balance & comment
   let worst = 9999;
@@ -7390,7 +7391,7 @@ function aiRenderDay(c){
   const wd = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][c.date.getDay()];
   const noData = c.need === null;
   let h = '<div class="ai-day ' + (noData ? 'n' : c.cls) + '" data-i="' + c.idx + '"><div class="ai-dn">' + DATA.days[c.idx] + '<small>' + wd + '</small></div>' +
-    '<div class="ai-cm">' + (noData ? 'Ainda não há voos para este dia.' : escapeHtml(c.text) + '<i>' + c.flights + (c.flights === 1 ? ' voo' : ' voos') + '</i><span class="ai-sb">👤 ' + c.working + ' EM SERVIÇO</span>') + '</div>' +
+    '<div class="ai-cm">' + (noData ? 'Ainda não há voos para este dia.' : escapeHtml(c.text) + '<i><b style="color:var(--cyan); font-weight:700;">' + c.flights + '</b> ' + (c.flights === 1 ? 'partida' : 'partidas') + ' &nbsp;|&nbsp; <b style="color:#8fd1a8; font-weight:700;">' + c.arrCount + '</b> ' + (c.arrCount === 1 ? 'chegada' : 'chegadas') + '</i><span class="ai-sb">👤 ' + c.working + ' EM SERVIÇO</span>') + '</div>' +
     '<div class="ai-bal">' + (noData || c.bal === null ? '—' : (c.bal < 0 ? '−' + (-c.bal) : '+' + c.bal)) + '</div></div>';
   if(AI_OPEN === c.idx && !noData){
     const P = aiParts(c);
