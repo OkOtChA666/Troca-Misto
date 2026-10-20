@@ -448,7 +448,16 @@
   .ai-ax{ display:flex; gap:3px; font-family:var(--mono); font-size:9px; color:#5f6a82; margin-top:4px; } .ai-ax span{ flex:1; text-align:center; }
   .ai-lg{ font-family:var(--mono); font-size:10px; color:#6d7790; margin-top:8px; } .ai-lg b{ color:var(--cyan); }
   .ai-ttl{ font:600 10.5px var(--mono); letter-spacing:.1em; color:var(--text-dim); margin-bottom:8px; }
-  .ai-tag{ display:inline-block; font:700 9px var(--mono); letter-spacing:.1em; color:#080B14; background:var(--cyan); border-radius:3px; padding:1px 5px; margin-left:6px; vertical-align:middle; }
+  .ai-tag{ display:inline-block; white-space:nowrap; font:700 9px var(--mono); letter-spacing:.1em; color:#080B14; background:var(--cyan); border-radius:3px; padding:1px 5px; margin-left:6px; vertical-align:middle; }
+  .ai-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; } .ai-top .ai-ttl{ margin-bottom:0; white-space:nowrap; }
+  .ai-zs{ display:flex; align-items:center; gap:8px; width:50%; } .ai-zs span{ font:700 18px var(--mono); color:var(--amber); width:14px; text-align:center; }
+  .ai-zs input{ flex:1; min-width:0; height:34px; -webkit-appearance:none; appearance:none; background:transparent; touch-action:pan-x; }
+  .ai-zs input::-webkit-slider-runnable-track{ height:6px; border-radius:3px; background:#27344f; }
+  .ai-zs input::-webkit-slider-thumb{ -webkit-appearance:none; width:28px; height:28px; border-radius:50%; background:var(--amber); margin-top:-11px; border:3px solid #0b1120; box-shadow:0 0 0 1px var(--amber); }
+  .ai-zs input::-moz-range-track{ height:6px; border-radius:3px; background:#27344f; }
+  .ai-zs input::-moz-range-thumb{ width:22px; height:22px; border-radius:50%; background:var(--amber); border:3px solid #0b1120; }
+  .ai-sc{ flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; } .ai-in{ min-width:100%; }
+  .ai-rl{ position:sticky; left:0; width:max-content; }
   .ai-wrap{ display:flex; gap:6px; }
   .ai-y{ position:relative; width:16px; height:110px; font:9px var(--mono); color:#5f6a82; }
   .ai-y span{ position:absolute; right:0; transform:translateY(50%); }
@@ -459,9 +468,9 @@
   .ai-col2 .ai-need{ background:rgba(255,179,0,.6); } .ai-col2.s .ai-need{ background:rgba(255,93,108,.8); }
   .ai-col2 .ai-have{ left:-1px; right:-1px; }
   .ai-av{ position:absolute; left:-1px; right:-1px; height:0; border-top:2px dashed #fff; }
-  .ai-ax2{ display:flex; gap:2px; margin:4px 0 0 22px; font:9px var(--mono); color:#5f6a82; } .ai-ax2 span{ flex:1; }
-  .ai-rl{ font:9px var(--mono); color:#5f6a82; margin:8px 0 0 22px; letter-spacing:.06em; }
-  .ai-fr{ display:flex; gap:2px; margin:2px 0 0 22px; }
+  .ai-ax2{ display:flex; gap:2px; margin:4px 0 0 0; font:9px var(--mono); color:#5f6a82; } .ai-ax2 span{ flex:1; }
+  .ai-rl{ font:9px var(--mono); color:#5f6a82; margin:8px 0 0 0; letter-spacing:.06em; }
+  .ai-fr{ display:flex; gap:2px; margin:2px 0 0 0; }
   .ai-fr span{ flex:1; text-align:center; font:600 10px var(--mono); padding:2px 0; border-radius:3px; cursor:pointer; color:var(--cyan); }
   .ai-fr span.z{ color:#3a4560; font-weight:400; } .ai-fr span.sel{ background:rgba(255,255,255,.08); }
   .ai-fr span.a{ color:#8fd1a8; } .ai-fr span.k{ color:#c79bff; }
@@ -7316,6 +7325,20 @@ function aiCalc(idx){
   } else { out.cls = ''; out.text = 'Há gente suficiente durante todo o dia.'; }
   return out;
 }
+function aiTip(c, H, sel){
+    const sk = H[sel], sn = c.need[sk], shv = c.have[sk], sd = shv - sn, p2 = (n) => ('0' + n).slice(-2);
+    let tip = '<b>' + p2(sel) + ':00–' + p2((sel + 1) % 24) + ':00</b> &nbsp; ' + (sn === 0 ? 'ninguém precisa de estar em check-in/gate nesta hora' :
+      '<span class="am">precisas ' + sn + '</span> · <span class="c">estão ' + shv + '</span> → ' + (sd < 0 ? '<span class="r"><b>faltam ' + (-sd) + '</b></span>' : '<b>sobram ' + sd + '</b>')) +
+      '<div class="fl"><span class="c">' + c.depH[sel] + ' partidas</span> · ' + c.arrH[sel] + ' chegadas</div>';
+    if(c.hasTasks){
+      const tk = c.tsk[sk], fr = Math.max(0, shv - tk);
+      tip += '<div class="x">Escalados <b>' + c.on[sk] + '</b> − em pausa <b class="p">' + c.brk[sk] + '</b> = disponíveis <b>' + shv + '</b><br>' +
+        'Com tarefa (check-in/gate/rampa): <b>' + tk + '</b>' + (sn ? (tk >= sn ? ' <span class="g">✓ cobre o que precisas (' + sn + ')</span>' : ' <span class="am">⚠ só ' + tk + ' de ' + sn + ' precisas</span>') : '') +
+        '<br>Livres (sem tarefa nem pausa): <b>' + fr + '</b></div>';
+    }
+    return tip;
+}
+let AI_CUR = null, AI_ZOOM = 1;
 function aiRenderDay(c){
   const wd = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][c.date.getDay()];
   const noData = c.need === null;
@@ -7335,32 +7358,22 @@ function aiRenderDay(c){
       const k = H[hr], nd = c.need[k], hv = c.have[k], sc = ' data-hr="' + hr + '"';
       cols += '<div class="ai-col2' + (nd > hv ? ' s' : '') + (hr === sel ? ' sel' : '') + '"' + sc + '><div class="ai-need" style="height:' + (nd / maxV * 100) + '%"></div>' +
         (c.hasTasks ? '<div class="ai-have" style="bottom:' + (c.on[k] / maxV * 100) + '%"></div><div class="ai-av" style="bottom:' + (hv / maxV * 100) + '%"></div>' : '<div class="ai-have" style="bottom:' + (hv / maxV * 100) + '%"></div>') + '</div>';
-      ax += '<span>' + (hr % 3 === 0 ? ('0' + hr).slice(-2) + 'h' : '') + '</span>';
+      ax += '<span data-l="' + hr + '">' + (AI_ZOOM >= 1.6 ? ('0' + hr).slice(-2) : hr % 3 === 0 ? ('0' + hr).slice(-2) + 'h' : '') + '</span>';
       let bm = 0; for(let q = 0; q < spq; q++) bm = Math.max(bm, c.brk[hr * spq + q]);
       rb += '<span class="k' + (bm ? '' : ' z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (bm || '·') + '</span>';
       rd += '<span class="' + (c.depH[hr] ? '' : 'z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (c.depH[hr] ? '▲' + c.depH[hr] : '·') + '</span>';
       ra += '<span class="a' + (c.arrH[hr] ? '' : ' z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (c.arrH[hr] ? '▼' + c.arrH[hr] : '·') + '</span>';
     }
-    // the tapped hour: the numbers of its tightest 15 minutes
-    const sk = H[sel], sn = c.need[sk], shv = c.have[sk], sd = shv - sn, p2 = (n) => ('0' + n).slice(-2);
-    let tip = '<b>' + p2(sel) + ':00–' + p2((sel + 1) % 24) + ':00</b> &nbsp; ' + (sn === 0 ? 'sem voos nesta hora' :
-      '<span class="am">precisas ' + sn + '</span> · <span class="c">estão ' + shv + '</span> → ' + (sd < 0 ? '<span class="r"><b>faltam ' + (-sd) + '</b></span>' : '<b>sobram ' + sd + '</b>')) +
-      '<div class="fl"><span class="c">' + c.depH[sel] + ' partidas</span> · ' + c.arrH[sel] + ' chegadas</div>';
-    if(c.hasTasks){
-      const tk = c.tsk[sk], fr = Math.max(0, shv - tk);
-      tip += '<div class="x">Escalados <b>' + c.on[sk] + '</b> − em pausa <b class="p">' + c.brk[sk] + '</b> = disponíveis <b>' + shv + '</b><br>' +
-        'Com tarefa (check-in/gate/rampa): <b>' + tk + '</b>' + (sn ? (tk >= sn ? ' <span class="g">✓ cobre o que precisas (' + sn + ')</span>' : ' <span class="am">⚠ só ' + tk + ' de ' + sn + ' precisas</span>') : '') +
-        '<br>Livres (sem tarefa nem pausa): <b>' + fr + '</b></div>';
-    }
+    const tip = aiTip(c, H, sel); AI_CUR = { c, H };
     const lg = '<div class="ai-leg"><span><i class="ai-sw" style="background:rgba(255,179,0,.6)"></i>Pessoas necessárias</span>' +
       (c.hasTasks ? '<span><i class="ai-ln"></i>Escalados (turno)</span><span><i class="ai-ln2"></i>Disponíveis (sem pausas)</span>' : '<span><i class="ai-ln"></i>Pessoas em serviço</span>') +
       '<span><i class="ai-sw" style="background:rgba(255,93,108,.8)"></i>Faltam pessoas</span>' +
       (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> Pessoas em pausa nessa hora</span>' : '') +
       '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
-    const grid = '<div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div>' +
-      '<div class="ai-wrap"><div class="ai-y">' + yl + '</div><div class="ai-hh2">' + gl + cols + '</div></div><div class="ai-ax2">' + ax + '</div>' +
+    const grid = '<div class="ai-top"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><div class="ai-zs"><span>−</span><input type="range" id="ai-zr" min="1" max="4" step="0.1" value="' + AI_ZOOM + '"><span>+</span></div></div>' +
+      '<div class="ai-wrap"><div class="ai-y">' + yl + '</div><div class="ai-sc"><div class="ai-in" style="width:' + (AI_ZOOM * 100) + '%"><div class="ai-hh2" style="touch-action:' + (AI_ZOOM < 1.05 ? 'pan-y' : 'auto') + '">' + gl + cols + '</div><div class="ai-ax2">' + ax + '</div>' +
       (c.hasTasks ? '<div class="ai-rl">EM PAUSA (das tarefas)</div><div class="ai-fr">' + rb + '</div>' : '') +
-      '<div class="ai-rl">VOOS DE PARTIDA / CHEGADA</div><div class="ai-fr">' + rd + '</div><div class="ai-fr">' + ra + '</div>' + lg + '<div class="ai-tip">' + tip + '</div>';
+      '<div class="ai-rl">VOOS DE PARTIDA / CHEGADA</div><div class="ai-fr">' + rd + '</div><div class="ai-fr">' + ra + '</div></div></div></div>' + lg + '<div class="ai-tip" id="ai-tip">' + tip + '</div>';
     const chips = c.absent.map(id => { const w = c.workers.find(x => x.id === id); return w ? '<span class="ai-chip">' + escapeHtml(w.name) + ' · ' + aiHM(w.s) + '–' + aiHM(w.e % 1440 || 1440) + ' <b data-rm="' + escapeHtml(id) + '">✕</b></span>' : ''; }).join('');
     h += '<div class="ai-det">' + grid +
       '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
@@ -7368,6 +7381,11 @@ function aiRenderDay(c){
       '<div class="ai-sug" id="ai-sug"></div></div></div>';
   }
   return h;
+}
+function aiPick(hr){
+  AI_SEL = hr;
+  document.querySelectorAll('.ai-col2, .ai-fr span').forEach(el => el.classList.toggle('sel', +el.dataset.hr === hr));
+  const t = document.getElementById('ai-tip'); if(t && AI_CUR) t.innerHTML = aiTip(AI_CUR.c, AI_CUR.H, hr);
 }
 function renderAiStaff(){
   const box = document.getElementById('ai-list'); if(!box) return;
@@ -7379,12 +7397,29 @@ function renderAiStaff(){
     if(aiDate(i) < today) continue;
     h += aiRenderDay(aiCalc(i));
   }
+  const sc0 = box.querySelector('.ai-sc'); const keepScroll = sc0 ? sc0.scrollLeft : 0;
   box.innerHTML = h || '<div class="hint" style="text-align:center; padding:20px 0;">Sem dias para mostrar.</div>';
   box.querySelectorAll('.ai-day').forEach(el => el.addEventListener('click', () => {
     const i = +el.dataset.i; if(el.classList.contains('n')) return;
     AI_OPEN = AI_OPEN === i ? null : i; AI_SEL = null; renderAiStaff();
   }));
-  box.querySelectorAll('[data-hr]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); AI_SEL = +el.dataset.hr; renderAiStaff(); }));
+  box.querySelectorAll('[data-hr]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); aiPick(+el.dataset.hr); }));
+  const hh = box.querySelector('.ai-hh2'), sc = box.querySelector('.ai-sc'), zr = document.getElementById('ai-zr');
+  if(sc) sc.scrollLeft = keepScroll;
+  if(hh){
+    const hrAt = (e) => { const r = hh.getBoundingClientRect(); return Math.max(0, Math.min(23, Math.floor((e.clientX - r.left) / r.width * 24))); };
+    let dragging = false;
+    hh.addEventListener('pointerdown', (e) => { if(AI_ZOOM < 1.05){ dragging = true; try{ hh.setPointerCapture(e.pointerId); }catch(x){} aiPick(hrAt(e)); } });
+    hh.addEventListener('pointermove', (e) => { if(dragging) aiPick(hrAt(e)); });
+    const end = () => { dragging = false; }; hh.addEventListener('pointerup', end); hh.addEventListener('pointercancel', end);
+  }
+  if(zr) zr.addEventListener('input', () => {
+    AI_ZOOM = +zr.value;
+    const inn = box.querySelector('.ai-in'); inn.style.width = (AI_ZOOM * 100) + '%';
+    hh.style.touchAction = AI_ZOOM < 1.05 ? 'pan-y' : 'auto';
+    box.querySelectorAll('[data-l]').forEach(el => { const n = +el.dataset.l; el.textContent = AI_ZOOM >= 1.6 ? ('0' + n).slice(-2) : (n % 3 === 0 ? ('0' + n).slice(-2) + 'h' : ''); });
+    const t = box.querySelector('.ai-col2.sel'); if(t) sc.scrollLeft = t.offsetLeft - sc.clientWidth / 2 + t.offsetWidth / 2;
+  });
   box.querySelectorAll('[data-rm]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); aiSetAbs(AI_OPEN, el.dataset.rm, false); }));
   const q = document.getElementById('ai-q');
   if(q) q.addEventListener('input', () => {
