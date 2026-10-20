@@ -57,6 +57,14 @@
     padding: 20px;
   }
   #access-portal.hidden{ display:none; }
+  .legal-ft{ text-align:center; font:10.5px/1.5 var(--mono); color:#5b6577; padding:0 8px; }
+  .legal-ft.portal{ position:absolute; left:0; right:0; bottom:14px; }
+  .legal-ft.main{ margin:22px 0 10px; }
+  .legal-lk{ display:inline-flex; align-items:center; gap:6px; margin-top:4px; cursor:pointer; color:#7b86a0; letter-spacing:.12em; font-size:10px; text-transform:uppercase; }
+  .legal-lk svg{ width:10px; height:10px; stroke:currentColor; fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; transition:transform .2s; }
+  .legal-ft.open .legal-lk svg{ transform:rotate(180deg); }
+  .legal-full{ display:none; margin:10px auto 0; max-width:340px; padding:10px 12px; border:1px dashed #27344f; border-radius:8px; font:11px/1.55 var(--sans); color:#6d7790; text-align:left; background:rgba(8,11,20,.85); }
+  .legal-ft.open .legal-full{ display:block; }
   #maintenance-screen{
     position:fixed; inset:0; z-index:290;
     display:flex; align-items:center; justify-content:center;
@@ -1044,6 +1052,7 @@
     <div class="access-error hidden" id="access-portal-error">Número ou password incorretos.</div>
     <button type="button" class="access-btn hidden" id="access-portal-btn">ENTRAR</button>
   </div>
+  <div class="legal-ft hidden portal" id="legal-ft-portal"><div>© 2026 Gonçalo Madeira. Todos os direitos reservados.</div><div class="legal-lk">Aviso legal <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div><div class="legal-full">O TROCA-MISTO é uma plataforma independente e não oficial, criada para facilitar as trocas entre colaboradores e simplificar a sua organização. Não é uma plataforma oficial da entidade empregadora, nem a substitui. A sua utilização não garante a aprovação das trocas, que permanece sujeita às regras e à validação aplicáveis pela entidade empregadora.</div></div>
 </div>
 
 <div id="maintenance-screen" class="hidden">
@@ -1743,6 +1752,13 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Botão ATUALIZAR (Tarefas)</span>
       </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="legal-footer-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Mostrar aviso legal no fundo da app</span>
+      </label>
       <div style="margin-top:18px; text-transform:none; letter-spacing:normal;">
         <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Companhias nos VOOS (códigos separados por vírgula)</div>
         <textarea id="flight-airlines-input" rows="3" style="width:100%; box-sizing:border-box; font-family:var(--mono); font-size:12px; color:var(--text); background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:10px;"></textarea>
@@ -1810,6 +1826,7 @@
     </div>
   </div>
 
+  <div class="legal-ft hidden main" id="legal-ft-main"><div>© 2026 Gonçalo Madeira. Todos os direitos reservados.</div><div class="legal-lk">Aviso legal <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div><div class="legal-full">O TROCA-MISTO é uma plataforma independente e não oficial, criada para facilitar as trocas entre colaboradores e simplificar a sua organização. Não é uma plataforma oficial da entidade empregadora, nem a substitui. A sua utilização não garante a aprovação das trocas, que permanece sujeita às regras e à validação aplicáveis pela entidade empregadora.</div></div>
 </div>
 
 <script>
@@ -1838,6 +1855,15 @@ async function loadTrocaFormFeatureEnabled(){
 async function saveTrocaFormFeatureEnabled(){
   return await dbSetShared('trocaFormFeatureEnabled', { value: trocaFormFeatureEnabled });
 }
+// Legal footer (copyright + aviso legal): shown or hidden for everyone from RULES. Default: shown.
+let legalFooterEnabled = true;
+function applyLegalFooter(){ document.querySelectorAll('.legal-ft').forEach(el => el.classList.toggle('hidden', !legalFooterEnabled)); }
+async function loadLegalFooterEnabled(){
+  try{ const doc = await dbGetShared('legalFooterEnabled', null); legalFooterEnabled = doc ? !!doc.value : true; }catch(e){ legalFooterEnabled = true; }
+  applyLegalFooter();
+}
+async function saveLegalFooterEnabled(){ return await dbSetShared('legalFooterEnabled', { value: legalFooterEnabled }); }
+document.addEventListener('click', (e) => { const lk = e.target.closest('.legal-lk'); if(lk) lk.parentNode.classList.toggle('open'); });
 // "Botão ATUALIZAR" in TAREFAS: shown or hidden for everyone from RULES. Default: shown.
 let refreshButtonEnabled = true;
 async function loadRefreshButtonEnabled(){
@@ -7056,6 +7082,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('notifications-enabled-toggle').checked = notificationsEnabled;
   document.getElementById('pwa-install-enabled-toggle').checked = pwaInstallEnabled;
   document.getElementById('refresh-button-enabled-toggle').checked = refreshButtonEnabled;
+  document.getElementById('legal-footer-enabled-toggle').checked = legalFooterEnabled;
   loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; });
 });
 document.getElementById('flight-airlines-input').addEventListener('change', async (e) => {
@@ -7086,6 +7113,15 @@ document.getElementById('troca-form-feature-enabled-toggle').addEventListener('c
     // saved, and say so plainly instead of failing silently.
     trocaFormFeatureEnabled = !newValue;
     e.target.checked = trocaFormFeatureEnabled;
+    showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
+  }
+});
+document.getElementById('legal-footer-enabled-toggle').addEventListener('change', async (e) => {
+  const newValue = e.target.checked;
+  legalFooterEnabled = newValue; applyLegalFooter();
+  const ok = await saveLegalFooterEnabled();
+  if(!ok){
+    legalFooterEnabled = !newValue; applyLegalFooter(); e.target.checked = legalFooterEnabled;
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
 });
@@ -7653,6 +7689,7 @@ Promise.all([
   loadPedidosDeadlineEnabled(),
   loadTrocaSobreTrocaEnabled(),
   loadTrocaFormFeatureEnabled(),
+  loadLegalFooterEnabled(),
   loadNotificationsEnabled(),
   loadMilestoneState(),
   loadTempMessage(),
