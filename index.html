@@ -7424,10 +7424,12 @@ function renderAiStaff(){
   let h = '';
   for(let i = 0; i < DATA.days.length; i++){
     if(aiDate(i) < today) continue;
-    h += aiRenderDay(aiCalc(i));
+    const c = aiCalc(i);
+    if(c.need === null) continue;   // only days that Flights4Staff already has
+    h += aiRenderDay(c);
   }
   const sc0 = box.querySelector('.ai-sc'); const keepScroll = sc0 ? sc0.scrollLeft : 0;
-  box.innerHTML = h || '<div class="hint" style="text-align:center; padding:20px 0;">Sem dias para mostrar.</div>';
+  box.innerHTML = h || '<div class="hint" style="text-align:center; padding:20px 0;">Ainda não há dados de voos.</div>';
   box.querySelectorAll('.ai-day').forEach(el => el.addEventListener('click', () => {
     const i = +el.dataset.i; if(el.classList.contains('n')) return;
     AI_OPEN = AI_OPEN === i ? null : i; AI_SEL = null; renderAiStaff();
