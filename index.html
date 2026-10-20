@@ -450,7 +450,7 @@
   .ai-ttl{ font:600 10.5px var(--mono); letter-spacing:.1em; color:var(--text-dim); margin-bottom:8px; }
   .ai-tag{ display:inline-block; white-space:nowrap; font:700 9px var(--mono); letter-spacing:.1em; color:#080B14; background:var(--cyan); border-radius:3px; padding:1px 5px; margin-left:6px; vertical-align:middle; }
   .ai-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; } .ai-top .ai-ttl{ margin-bottom:0; white-space:nowrap; }
-  .ai-zs{ display:flex; align-items:center; gap:8px; width:50%; } .ai-zs span{ font:700 18px var(--mono); color:var(--amber); width:14px; text-align:center; }
+  .ai-zs{ display:flex; align-items:center; gap:6px; flex:1; min-width:0; margin-left:12px; } .ai-zs span{ font:700 18px var(--mono); color:var(--amber); width:14px; text-align:center; }
   .ai-zs input{ flex:1; min-width:0; height:34px; -webkit-appearance:none; appearance:none; background:transparent; touch-action:pan-x; }
   .ai-zs input::-webkit-slider-runnable-track{ height:6px; border-radius:3px; background:#27344f; }
   .ai-zs input::-webkit-slider-thumb{ -webkit-appearance:none; width:28px; height:28px; border-radius:50%; background:var(--amber); margin-top:-11px; border:3px solid #0b1120; box-shadow:0 0 0 1px var(--amber); }
@@ -7276,7 +7276,7 @@ function aiCalc(idx){
     }
   });
   const working = workers.filter(w => absent.indexOf(w.id) < 0).length;
-  const out = { key, idx, date, workers, working, absent, have, on, brk, tsk, hasTasks, depH: new Array(24).fill(0), arrH: new Array(24).fill(0), need: null, flights: fl ? fl.length : 0 };
+  const out = { key, idx, date, workers, working, absent, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
   if(!fl) return out;
   const need = new Array(AI_SLOTS).fill(0);
   const base = off * 1440;   // minutes (relative to today 00:00) where this day starts
@@ -7289,7 +7289,7 @@ function aiCalc(idx){
     let std = absOf(x.r.std); if(std === null) return;
     const etd = absOf(x.r.etd); if(etd !== null && sufOf(x.r.etd) === sufOf(x.r.std)) std = etd;
     x.abs = std;
-    { const hh = Math.floor((std - base) / 60); if(hh >= 0 && hh < 24) out.depH[hh]++; }
+    { const sl = Math.floor((std - base) / AI_SLOT); if(sl >= 0 && sl < AI_SLOTS) out.depS[sl]++; }
     add(std - AI_RULES.ckiFrom, std - AI_RULES.ckiTo, AI_RULES.ckiPeople);
     add(std - AI_RULES.gateFrom, std - AI_RULES.gateTo, AI_RULES.gatePeople);
     // acolhimento: stays with the team from shortly before the same aircraft arrives until the doors close.
@@ -7298,22 +7298,22 @@ function aiCalc(idx){
     const arr = arrs.find(a => !usedArr.has(a) && a.f.code === x.f.code && parseInt(a.f.num, 10) === num - 1 && absOf(a.r.sta) !== null && absOf(a.r.sta) < std && absOf(a.r.sta) > std - 720);
     if(arr){ usedArr.add(arr); add(absOf(arr.r.sta) - AI_RULES.accBefore, std, AI_RULES.accPeople); }
   });
-  arrs.forEach(a => { const sa = absOf(a.r.sta); if(sa === null) return; const hh = Math.floor((sa - base) / 60); if(hh >= 0 && hh < 24) out.arrH[hh]++; });
+  arrs.forEach(a => { const sa = absOf(a.r.sta); if(sa === null) return; const sl = Math.floor((sa - base) / AI_SLOT); if(sl >= 0 && sl < AI_SLOTS) out.arrS[sl]++; });
   // arrivals whose aircraft does not leave again (no paired departure): short acolhimento only
   arrs.forEach(a => { if(usedArr.has(a)) return; const sta = absOf(a.r.sta); if(sta !== null) add(sta - AI_RULES.accBefore, sta + AI_RULES.accAfterAlone, AI_RULES.accPeople); });
   out.need = need;
   // balance & comment
   let worst = 9999;
-  for(let k = 0; k < AI_SLOTS; k++) if(need[k] > 0) worst = Math.min(worst, have[k] - need[k]);
+  for(let k = out.from; k < AI_SLOTS; k++) if(need[k] > 0) worst = Math.min(worst, have[k] - need[k]);
   out.bal = worst === 9999 ? null : worst;
   const periods = (test) => { const ps = []; let cur = null;
-    for(let k = 0; k < AI_SLOTS; k++){
+    for(let k = out.from; k < AI_SLOTS; k++){
       if(need[k] > 0 && test(have[k] - need[k])){ if(!cur) cur = { a:k, b:k, peak:0 }; cur.b = k; cur.peak = Math.max(cur.peak, need[k] - have[k]); }
       else if(cur){ ps.push(cur); cur = null; }
     }
     if(cur) ps.push(cur); return ps; };
   const rng = (p) => 'das ' + aiHM(p.a * AI_SLOT) + ' às ' + aiHM((p.b + 1) * AI_SLOT);
-  if(out.bal === null){ out.cls = 'n'; out.text = 'Sem voos de partida das nossas companhias.'; }
+  if(out.bal === null){ out.cls = off === 0 ? '' : 'n'; out.text = off === 0 ? 'Já não há mais voos para cobrir hoje.' : 'Sem voos de partida das nossas companhias.'; }
   else if(out.bal < 0){
     out.cls = 'b';
     const ps = periods(b => b < 0).sort((x, y) => y.peak - x.peak);
@@ -7325,20 +7325,67 @@ function aiCalc(idx){
   } else { out.cls = ''; out.text = 'Há gente suficiente durante todo o dia.'; }
   return out;
 }
-function aiTip(c, H, sel){
-    const sk = H[sel], sn = c.need[sk], shv = c.have[sk], sd = shv - sn, p2 = (n) => ('0' + n).slice(-2);
-    let tip = '<b>' + p2(sel) + ':00–' + p2((sel + 1) % 24) + ':00</b> &nbsp; ' + (sn === 0 ? 'ninguém precisa de estar em check-in/gate nesta hora' :
-      '<span class="am">precisas ' + sn + '</span> · <span class="c">estão ' + shv + '</span> → ' + (sd < 0 ? '<span class="r"><b>faltam ' + (-sd) + '</b></span>' : '<b>sobram ' + sd + '</b>')) +
-      '<div class="fl"><span class="c">' + c.depH[sel] + ' partidas</span> · ' + c.arrH[sel] + ' chegadas</div>';
-    if(c.hasTasks){
-      const tk = c.tsk[sk], fr = Math.max(0, shv - tk);
-      tip += '<div class="x">Escalados <b>' + c.on[sk] + '</b> − em pausa <b class="p">' + c.brk[sk] + '</b> = disponíveis <b>' + shv + '</b><br>' +
-        'Com tarefa (check-in/gate/rampa): <b>' + tk + '</b>' + (sn ? (tk >= sn ? ' <span class="g">✓ cobre o que precisas (' + sn + ')</span>' : ' <span class="am">⚠ só ' + tk + ' de ' + sn + ' precisas</span>') : '') +
-        '<br>Livres (sem tarefa nem pausa): <b>' + fr + '</b></div>';
-    }
-    return tip;
-}
 let AI_CUR = null, AI_ZOOM = 1;
+function aiTip(c, u, g){
+  const sn = c.need[u.k], shv = c.have[u.k], sd = shv - sn;
+  let tip = '<b>' + aiHM(u.t0) + '–' + aiHM(u.t1 % 1440) + '</b> &nbsp; ' + (sn === 0 ? 'ninguém precisa de estar em check-in/gate ' + (g === 2 ? 'nesta meia hora' : 'nesta hora') :
+    '<span class="am">precisas ' + sn + '</span> · <span class="c">estão ' + shv + '</span> → ' + (sd < 0 ? '<span class="r"><b>faltam ' + (-sd) + '</b></span>' : '<b>sobram ' + sd + '</b>')) +
+    '<div class="fl"><span class="c">' + u.dep + ' partidas</span> · ' + u.arr + ' chegadas</div>';
+  if(c.hasTasks){
+    const tk = c.tsk[u.k], fr = Math.max(0, shv - tk);
+    tip += '<div class="x">Escalados <b>' + c.on[u.k] + '</b> − em pausa <b class="p">' + c.brk[u.k] + '</b> = disponíveis <b>' + shv + '</b><br>' +
+      'Com tarefa (check-in/gate/rampa): <b>' + tk + '</b>' + (sn ? (tk >= sn ? ' <span class="g">✓ cobre o que precisas (' + sn + ')</span>' : ' <span class="am">⚠ só ' + tk + ' de ' + sn + ' precisas</span>') : '') +
+      '<br>Livres (sem tarefa nem pausa): <b>' + fr + '</b></div>';
+  }
+  return tip;
+}
+// the chart for one open day: bars per hour (or per half hour when zoomed in); today starts 1h before now
+function aiParts(c){
+  const g = AI_ZOOM >= 2.6 ? 2 : 1, spu = (60 / AI_SLOT) / g, N = 24 * g, unitMin = 60 / g;
+  const startU = Math.floor(c.from / spu), units = [];
+  for(let u = 0; u < N; u++){
+    let best = u * spu, bv = 1e9, dep = 0, arr = 0, bm = 0;
+    for(let q = 0; q < spu; q++){ const k = u * spu + q, bb = c.have[k] - c.need[k]; if(bb < bv){ bv = bb; best = k; } dep += c.depS[k]; arr += c.arrS[k]; bm = Math.max(bm, c.brk[k]); }
+    units.push({ u, k: best, dep, arr, bm, t0: u * unitMin, t1: (u + 1) * unitMin });
+  }
+  const shown = units.slice(startU);
+  const maxRaw = Math.max(4, ...shown.map(x => Math.max(c.need[x.k], c.on[x.k])));
+  const step = maxRaw > 30 ? 10 : 5, maxV = Math.ceil(maxRaw / step) * step;
+  let sel;
+  if(AI_SEL === null){ let bv = 1e9; sel = startU; shown.forEach(x => { if(c.need[x.k] > 0 && c.have[x.k] - c.need[x.k] < bv){ bv = c.have[x.k] - c.need[x.k]; sel = x.u; } }); }
+  else sel = Math.max(startU, Math.min(N - 1, Math.floor(AI_SEL / unitMin)));
+  let cols = '', ax = '', rb = '', rd = '', ra = '', yl = '', gl = '';
+  for(let t = 0; t <= maxV; t += step){ yl += '<span style="bottom:' + (t / maxV * 100) + '%">' + t + '</span>'; if(t > 0) gl += '<div class="ai-gl" style="bottom:' + (t / maxV * 100) + '%"></div>'; }
+  shown.forEach(x => {
+    const nd = c.need[x.k], hv = c.have[x.k], sc = ' data-u="' + x.u + '"', sl = x.u === sel ? ' sel' : '';
+    cols += '<div class="ai-col2' + (nd > hv ? ' s' : '') + sl + '"' + sc + '><div class="ai-need" style="height:' + (nd / maxV * 100) + '%"></div>' +
+      (c.hasTasks ? '<div class="ai-have" style="bottom:' + (c.on[x.k] / maxV * 100) + '%"></div><div class="ai-av" style="bottom:' + (hv / maxV * 100) + '%"></div>' : '<div class="ai-have" style="bottom:' + (hv / maxV * 100) + '%"></div>') + '</div>';
+    ax += '<span data-l="' + x.u + '"></span>';
+    rb += '<span class="k' + (x.bm ? '' : ' z') + sl + '"' + sc + '>' + (x.bm || '·') + '</span>';
+    rd += '<span class="' + (x.dep ? '' : 'z') + sl + '"' + sc + '>' + (x.dep ? '▲' + x.dep : '·') + '</span>';
+    ra += '<span class="a' + (x.arr ? '' : ' z') + sl + '"' + sc + '>' + (x.arr ? '▼' + x.arr : '·') + '</span>';
+  });
+  AI_CUR = { c, units, g };
+  const inner = '<div class="ai-hh2" style="touch-action:' + (AI_ZOOM < 1.05 ? 'pan-y' : 'auto') + '">' + gl + cols + '</div><div class="ai-ax2">' + ax + '</div>' +
+    (c.hasTasks ? '<div class="ai-rl">EM PAUSA (das tarefas)</div><div class="ai-fr">' + rb + '</div>' : '') +
+    '<div class="ai-rl">VOOS DE PARTIDA / CHEGADA</div><div class="ai-fr">' + rd + '</div><div class="ai-fr">' + ra + '</div>';
+  return { yl, inner, tip: aiTip(c, units[sel], g) };
+}
+// hour/half-hour labels under the bars, thinned out so they never overlap
+function aiLabels(box){
+  const hh = box.querySelector('.ai-hh2'); if(!hh || !AI_CUR) return;
+  const g = AI_CUR.g, spans = box.querySelectorAll('.ai-ax2 [data-l]'); if(!spans.length) return;
+  const w = hh.getBoundingClientRect().width / spans.length;
+  const step = Math.max(1, Math.ceil(((g === 2 ? 5 : 3) * 6 + 8) / (w || 1)));
+  const hstep = g === 2 ? Math.max(1, Math.ceil(step / 2)) : step;
+  spans.forEach(el => {
+    const u = +el.dataset.l, hr = Math.floor(u / g);
+    let on;
+    if(g === 2) on = step <= 1 ? true : (u % 2 === 0 && hr % hstep === 0);
+    else on = hr % hstep === 0;
+    el.textContent = on ? (g === 2 ? aiHM(u * 30) : ('0' + hr).slice(-2) + 'h') : '';
+  });
+}
 function aiRenderDay(c){
   const wd = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][c.date.getDay()];
   const noData = c.need === null;
@@ -7346,34 +7393,14 @@ function aiRenderDay(c){
     '<div class="ai-cm">' + (noData ? 'Ainda não há voos para este dia.' : escapeHtml(c.text) + '<i>' + c.flights + (c.flights === 1 ? ' voo' : ' voos') + '</i><span class="ai-sb">👤 ' + c.working + ' EM SERVIÇO</span>') + '</div>' +
     '<div class="ai-bal">' + (noData || c.bal === null ? '—' : (c.bal < 0 ? '−' + (-c.bal) : '+' + c.bal)) + '</div></div>';
   if(AI_OPEN === c.idx && !noData){
-    const spq = 60 / AI_SLOT, H = [];
-    for(let hr = 0; hr < 24; hr++){ let best = hr * spq, bv = 1e9; for(let q = 0; q < spq; q++){ const k = hr * spq + q, b = c.have[k] - c.need[k]; if(b < bv){ bv = b; best = k; } } H.push(best); }
-    const maxRaw = Math.max(4, ...H.map(k => Math.max(c.need[k], c.on[k])));
-    const step = maxRaw > 30 ? 10 : 5, maxV = Math.ceil(maxRaw / step) * step;
-    let sel = AI_SEL;
-    if(sel === null){ let bv = 1e9; sel = 0; for(let hr = 0; hr < 24; hr++){ const k = H[hr]; if(c.need[k] > 0 && c.have[k] - c.need[k] < bv){ bv = c.have[k] - c.need[k]; sel = hr; } } }
-    let cols = '', ax = '', rb = '', rd = '', ra = '', yl = '', gl = '';
-    for(let t = 0; t <= maxV; t += step){ yl += '<span style="bottom:' + (t / maxV * 100) + '%">' + t + '</span>'; if(t > 0) gl += '<div class="ai-gl" style="bottom:' + (t / maxV * 100) + '%"></div>'; }
-    for(let hr = 0; hr < 24; hr++){
-      const k = H[hr], nd = c.need[k], hv = c.have[k], sc = ' data-hr="' + hr + '"';
-      cols += '<div class="ai-col2' + (nd > hv ? ' s' : '') + (hr === sel ? ' sel' : '') + '"' + sc + '><div class="ai-need" style="height:' + (nd / maxV * 100) + '%"></div>' +
-        (c.hasTasks ? '<div class="ai-have" style="bottom:' + (c.on[k] / maxV * 100) + '%"></div><div class="ai-av" style="bottom:' + (hv / maxV * 100) + '%"></div>' : '<div class="ai-have" style="bottom:' + (hv / maxV * 100) + '%"></div>') + '</div>';
-      ax += '<span data-l="' + hr + '">' + (AI_ZOOM >= 1.6 ? ('0' + hr).slice(-2) : hr % 3 === 0 ? ('0' + hr).slice(-2) + 'h' : '') + '</span>';
-      let bm = 0; for(let q = 0; q < spq; q++) bm = Math.max(bm, c.brk[hr * spq + q]);
-      rb += '<span class="k' + (bm ? '' : ' z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (bm || '·') + '</span>';
-      rd += '<span class="' + (c.depH[hr] ? '' : 'z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (c.depH[hr] ? '▲' + c.depH[hr] : '·') + '</span>';
-      ra += '<span class="a' + (c.arrH[hr] ? '' : ' z') + (hr === sel ? ' sel' : '') + '"' + sc + '>' + (c.arrH[hr] ? '▼' + c.arrH[hr] : '·') + '</span>';
-    }
-    const tip = aiTip(c, H, sel); AI_CUR = { c, H };
+    const P = aiParts(c);
     const lg = '<div class="ai-leg"><span><i class="ai-sw" style="background:rgba(255,179,0,.6)"></i>Pessoas necessárias</span>' +
       (c.hasTasks ? '<span><i class="ai-ln"></i>Escalados (turno)</span><span><i class="ai-ln2"></i>Disponíveis (sem pausas)</span>' : '<span><i class="ai-ln"></i>Pessoas em serviço</span>') +
       '<span><i class="ai-sw" style="background:rgba(255,93,108,.8)"></i>Faltam pessoas</span>' +
       (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> Pessoas em pausa nessa hora</span>' : '') +
       '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
-    const grid = '<div class="ai-top"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><div class="ai-zs"><span>−</span><input type="range" id="ai-zr" min="1" max="4" step="0.1" value="' + AI_ZOOM + '"><span>+</span></div></div>' +
-      '<div class="ai-wrap"><div class="ai-y">' + yl + '</div><div class="ai-sc"><div class="ai-in" style="width:' + (AI_ZOOM * 100) + '%"><div class="ai-hh2" style="touch-action:' + (AI_ZOOM < 1.05 ? 'pan-y' : 'auto') + '">' + gl + cols + '</div><div class="ai-ax2">' + ax + '</div>' +
-      (c.hasTasks ? '<div class="ai-rl">EM PAUSA (das tarefas)</div><div class="ai-fr">' + rb + '</div>' : '') +
-      '<div class="ai-rl">VOOS DE PARTIDA / CHEGADA</div><div class="ai-fr">' + rd + '</div><div class="ai-fr">' + ra + '</div></div></div></div>' + lg + '<div class="ai-tip" id="ai-tip">' + tip + '</div>';
+    const grid = '<div class="ai-top"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><div class="ai-zs"><span>−</span><input type="range" id="ai-zr" min="1" max="5" step="0.1" value="' + AI_ZOOM + '"><span>+</span></div></div>' +
+      '<div class="ai-wrap"><div class="ai-y">' + P.yl + '</div><div class="ai-sc"><div class="ai-in" style="width:' + (AI_ZOOM * 100) + '%">' + P.inner + '</div></div></div>' + lg + '<div class="ai-tip" id="ai-tip">' + P.tip + '</div>';
     const chips = c.absent.map(id => { const w = c.workers.find(x => x.id === id); return w ? '<span class="ai-chip">' + escapeHtml(w.name) + ' · ' + aiHM(w.s) + '–' + aiHM(w.e % 1440 || 1440) + ' <b data-rm="' + escapeHtml(id) + '">✕</b></span>' : ''; }).join('');
     h += '<div class="ai-det">' + grid +
       '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
@@ -7382,10 +7409,12 @@ function aiRenderDay(c){
   }
   return h;
 }
-function aiPick(hr){
-  AI_SEL = hr;
-  document.querySelectorAll('.ai-col2, .ai-fr span').forEach(el => el.classList.toggle('sel', +el.dataset.hr === hr));
-  const t = document.getElementById('ai-tip'); if(t && AI_CUR) t.innerHTML = aiTip(AI_CUR.c, AI_CUR.H, hr);
+function aiPick(u){
+  if(!AI_CUR) return;
+  const g = AI_CUR.g, un = AI_CUR.units[u]; if(!un) return;
+  AI_SEL = un.t0;
+  document.querySelectorAll('.ai-col2, .ai-fr span').forEach(el => el.classList.toggle('sel', +el.dataset.u === u));
+  const t = document.getElementById('ai-tip'); if(t) t.innerHTML = aiTip(AI_CUR.c, un, g);
 }
 function renderAiStaff(){
   const box = document.getElementById('ai-list'); if(!box) return;
@@ -7403,21 +7432,23 @@ function renderAiStaff(){
     const i = +el.dataset.i; if(el.classList.contains('n')) return;
     AI_OPEN = AI_OPEN === i ? null : i; AI_SEL = null; renderAiStaff();
   }));
-  box.querySelectorAll('[data-hr]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); aiPick(+el.dataset.hr); }));
-  const hh = box.querySelector('.ai-hh2'), sc = box.querySelector('.ai-sc'), zr = document.getElementById('ai-zr');
+  const inn = box.querySelector('.ai-in'), sc = box.querySelector('.ai-sc'), zr = document.getElementById('ai-zr');
   if(sc) sc.scrollLeft = keepScroll;
-  if(hh){
-    const hrAt = (e) => { const r = hh.getBoundingClientRect(); return Math.max(0, Math.min(23, Math.floor((e.clientX - r.left) / r.width * 24))); };
+  if(inn){
+    aiLabels(box);
+    inn.addEventListener('click', (e) => { const t = e.target.closest('[data-u]'); if(t){ e.stopPropagation(); aiPick(+t.dataset.u); } });
+    const uAt = (e) => { const hh = inn.querySelector('.ai-hh2'), r = hh.getBoundingClientRect(), n = hh.querySelectorAll('.ai-col2').length, first = +hh.querySelector('.ai-col2').dataset.u; return first + Math.max(0, Math.min(n - 1, Math.floor((e.clientX - r.left) / r.width * n))); };
     let dragging = false;
-    hh.addEventListener('pointerdown', (e) => { if(AI_ZOOM < 1.05){ dragging = true; try{ hh.setPointerCapture(e.pointerId); }catch(x){} aiPick(hrAt(e)); } });
-    hh.addEventListener('pointermove', (e) => { if(dragging) aiPick(hrAt(e)); });
-    const end = () => { dragging = false; }; hh.addEventListener('pointerup', end); hh.addEventListener('pointercancel', end);
+    inn.addEventListener('pointerdown', (e) => { if(AI_ZOOM < 1.05 && e.target.closest('.ai-hh2')){ dragging = true; try{ inn.setPointerCapture(e.pointerId); }catch(x){} aiPick(uAt(e)); } });
+    inn.addEventListener('pointermove', (e) => { if(dragging) aiPick(uAt(e)); });
+    const end = () => { dragging = false; }; inn.addEventListener('pointerup', end); inn.addEventListener('pointercancel', end);
   }
   if(zr) zr.addEventListener('input', () => {
     AI_ZOOM = +zr.value;
-    const inn = box.querySelector('.ai-in'); inn.style.width = (AI_ZOOM * 100) + '%';
-    hh.style.touchAction = AI_ZOOM < 1.05 ? 'pan-y' : 'auto';
-    box.querySelectorAll('[data-l]').forEach(el => { const n = +el.dataset.l; el.textContent = AI_ZOOM >= 1.6 ? ('0' + n).slice(-2) : (n % 3 === 0 ? ('0' + n).slice(-2) + 'h' : ''); });
+    const P = aiParts(aiCalc(AI_OPEN));
+    box.querySelector('.ai-y').innerHTML = P.yl; inn.innerHTML = P.inner; inn.style.width = (AI_ZOOM * 100) + '%';
+    document.getElementById('ai-tip').innerHTML = P.tip;
+    aiLabels(box);
     const t = box.querySelector('.ai-col2.sel'); if(t) sc.scrollLeft = t.offsetLeft - sc.clientWidth / 2 + t.offsetWidth / 2;
   });
   box.querySelectorAll('[data-rm]').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); aiSetAbs(AI_OPEN, el.dataset.rm, false); }));
