@@ -430,6 +430,14 @@
   .fl-st.d{ color:var(--amber); }
   .ai-rule{ font-family:var(--mono); font-size:11px; color:#6d7790; border:1px dashed #27344f; border-radius:8px; padding:8px 10px; margin-bottom:12px; line-height:1.5; }
   .ai-rule b{ color:var(--cyan); font-weight:600; }
+  .ai-rl2{ margin-top:14px; border:1px dashed #27344f; border-radius:8px; overflow:hidden; }
+  .ai-rh{ display:flex; justify-content:space-between; align-items:center; padding:11px 12px; cursor:pointer; font:600 11px var(--mono); letter-spacing:.14em; color:var(--amber); }
+  .ai-ch{ display:inline-flex; width:24px; height:24px; border-radius:50%; border:1px solid #27344f; align-items:center; justify-content:center; transition:transform .2s; }
+  .ai-ch svg{ width:12px; height:12px; stroke:var(--amber); fill:none; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+  .ai-rl2.open .ai-ch{ transform:rotate(180deg); }
+  .ai-rule2{ display:none; padding:0 12px 12px; font:11px/1.5 var(--mono); color:#6d7790; } .ai-rl2.open .ai-rule2{ display:block; }
+  .ai-rule2 b{ color:var(--cyan); font-weight:600; }
+  .back-btn.as-round{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border-radius:50%; color:var(--amber); background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.45); }
   .ai-mon{ text-align:center; font-family:var(--mono); font-weight:600; font-size:12px; letter-spacing:.1em; color:var(--text); margin:4px 0 10px; }
   .ai-day{ display:grid; grid-template-columns:46px 1fr auto; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border-soft); border-left:4px solid #3ddc97; border-radius:10px; padding:10px 12px; margin-bottom:8px; cursor:pointer; }
   .ai-day.w{ border-left-color:var(--amber); } .ai-day.b{ border-left-color:#ff5d6c; } .ai-day.n{ border-left-color:#2a3550; opacity:.6; cursor:default; }
@@ -1611,20 +1619,20 @@
 
   <!-- BETA: SCHEDULE OVERRIDE PANEL -->
   <div class="panel hidden" id="panel-schedule-override">
-    <div style="display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
+    <div id="so-row" style="display:flex; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
       <button type="button" class="back-btn" id="schedule-override-back-btn" style="margin-bottom:0;">← Voltar</button>
       <button type="button" class="btn" id="msg-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">MSG</button>
       <button type="button" class="btn" id="custom1-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">MAIN</button>
       <button type="button" class="btn" id="custom2-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">RULES</button>
       <button type="button" class="btn" id="stats-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">STATS</button>
-      <button type="button" class="btn" id="aistaff-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">AI STAFF</button>
+      <button type="button" class="btn" id="aistaff-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">PREVISÃO</button>
     </div>
 
     <div id="aistaff-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
-      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber); margin-bottom:12px;">AI STAFF</div>
-      <div class="ai-rule">Por voo de partida, ao mesmo tempo:<br><b>2</b> check-in + <b>2</b> porta + <b>1</b> acolhimento = <b>5 pessoas</b>.<br>Comparado com quem está de serviço em cada hora (pausas: as reais das tarefas no dia de hoje; nos outros dias, 1 hora 4 horas depois do início nos turnos de 8H).</div>
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;"><div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">PREVISÃO</div><button type="button" id="ai-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button></div>
       <div class="ai-mon" id="ai-month">OUTUBRO 2026</div>
       <div id="ai-list"></div>
+      <div class="ai-rl2" id="ai-rl2"><div class="ai-rh" id="ai-rh"><span>REGRAS DO CÁLCULO</span><span class="ai-ch"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div><div class="ai-rule2">Por voo de partida, ao mesmo tempo:<br><b>2</b> check-in + <b>2</b> porta + <b>1</b> acolhimento = <b>5 pessoas</b>.<br>Comparado com quem está de serviço em cada hora (pausas: as reais das tarefas no dia de hoje; nos outros dias, 1 hora 4 horas depois do início nos turnos de 8H).</div></div>
     </div>
     <div id="msg-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
       <label style="display:flex; align-items:center; gap:10px; margin-bottom:24px; cursor:pointer; text-transform:none; letter-spacing:normal;">
@@ -6940,6 +6948,7 @@ function openScheduleOverride(){
 // PLANEAMENTO content, leaving only "← Voltar" visible until you back out of it.
 const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff'];
 function closeAllMsgPanels(){
+  document.getElementById('so-row').classList.remove('hidden');
   ALL_MSG_PANEL_KEYS.forEach(key => {
     document.getElementById(key+'-panel').classList.add('hidden');
     document.getElementById(key+'-toggle-btn').classList.remove('hidden');
@@ -7474,7 +7483,7 @@ async function aiSetAbs(idx, id, on){
   await dbSetShared('aistaff', { abs: JSON.stringify(AI_ABS) });
 }
 async function openAiStaff(){
-  openMsgPanel('aistaff');
+  openMsgPanel('aistaff'); document.getElementById('so-row').classList.add('hidden');
   AI_OPEN = null; renderAiStaff();
   const [fd, ab, tk] = await Promise.all([dbGetShared('flightlist', null), dbGetShared('aistaff', null), dbGetShared('tasks', null), loadFlAirlines()]).then(r => [r[0], r[1], r[2]]);
   AI_TASKS = tk && tk.a ? tk : null;
@@ -7483,6 +7492,8 @@ async function openAiStaff(){
   renderAiStaff();
 }
 document.getElementById('aistaff-toggle-btn').addEventListener('click', openAiStaff);
+document.getElementById('ai-back-btn').addEventListener('click', closeAllMsgPanels);
+document.getElementById('ai-rh').addEventListener('click', () => document.getElementById('ai-rl2').classList.toggle('open'));
 document.getElementById('stats-toggle-btn').addEventListener('click', () => {
   openMsgPanel('stats');
 
