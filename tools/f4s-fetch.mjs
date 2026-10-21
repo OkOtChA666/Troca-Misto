@@ -25,7 +25,7 @@ async function readTable(page, wanted) {
   const need = wanted.map(col);
   if (need.some((i) => i < 0)) throw new Error('columns changed: ' + H.join(','));
   // aircraft registration: an optional column, found by its header name (never breaks the read if there is none)
-  const regIdx = H.findIndex((h) => /^(reg|regn|rego|regist|acreg|a\/creg|tail|ac|a\/c)$|^(reg|regist|tail)/i.test(h));
+  const regIdx = (() => { const i = H.findIndex((h) => /^reg$/i.test(h)); return i >= 0 ? i : H.findIndex((h) => /^(regn|rego|regist\w*|acreg|a\/creg|tail\w*)$/i.test(h)); })();   // exact REG first; never the A/C (aircraft type) column
   return { rows: main.slice(1).filter((r) => r.length >= 12 && r[col('FLTNr.')]), col, H, regIdx };
 }
 
