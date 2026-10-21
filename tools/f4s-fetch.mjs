@@ -24,7 +24,9 @@ async function readTable(page, wanted) {
   const col = (n) => H.indexOf(n);
   const need = wanted.map(col);
   if (need.some((i) => i < 0)) throw new Error('columns changed: ' + H.join(','));
-  return { rows: main.slice(1).filter((r) => r.length >= 12 && r[col('FLTNr.')]), col };
+  // aircraft registration: an optional column, found by its header name (never breaks the read if there is none)
+  const regIdx = H.findIndex((h) => /^(reg|regn|rego|regist|acreg|a\/creg|tail|ac|a\/c)$|^(reg|regist|tail)/i.test(h));
+  return { rows: main.slice(1).filter((r) => r.length >= 12 && r[col('FLTNr.')]), col, H, regIdx };
 }
 
 // optional column (never breaks the read if the site renames it)
@@ -55,7 +57,7 @@ export async function fetchFlights({ user, pass }) {
     const d = await readTable(page, ['FLTNr.', 'STD', 'ETD', 'POS', 'CKI1', 'GT', 'GREM', 'Remarks']);
     const dep = d.rows.map((r) => ({
       n: flightKey(r[d.col('FLTNr.')]), std: norm(r[d.col('STD')]), etd: norm(r[d.col('ETD')]), pos: norm(r[d.col('POS')]),
-      des: opt(d, r, ['DES','DEST','Destination']), cki: norm(r[d.col('CKI1')]), gt: norm(r[d.col('GT')]), grem: norm(r[d.col('GREM')]), rem: norm(r[d.col('Remarks')]),
+      reg: d.regIdx >= 0 ? norm(r[d.regIdx]).slice(0, 10) : '', des: opt(d, r, ['DES','DEST','Destination']), cki: norm(r[d.col('CKI1')]), gt: norm(r[d.col('GT')]), grem: norm(r[d.col('GREM')]), rem: norm(r[d.col('Remarks')]),
     }));
 
     await page.goto(BASE + 'Arrivals.aspx', { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -63,9 +65,9 @@ export async function fetchFlights({ user, pass }) {
     let arr = [];
     try {
       const a = await readTable(page, ['FLTNr.', 'STA', 'POS']);
-      arr = a.rows.map((r) => ({ n: flightKey(r[a.col('FLTNr.')]), sta: norm(r[a.col('STA')]), org: opt(a, r, ['ORG','ORIG','Origin']), gate: opt(a, r, ['GT','GATE','EXIT','Exit Door','DOOR']), pos: norm(r[a.col('POS')]) }));
+      arr = a.rows.map((r) => ({ reg: a.regIdx >= 0 ? norm(r[a.regIdx]).slice(0, 10) : '', n: flightKey(r[a.col('FLTNr.')]), sta: norm(r[a.col('STA')]), org: opt(a, r, ['ORG','ORIG','Origin']), gate: opt(a, r, ['GT','GATE','EXIT','Exit Door','DOOR']), pos: norm(r[a.col('POS')]) }));
     } catch (e) { /* arrivals are a bonus; departures are enough */ }
-    return { dep, arr };
+    return { dep, arr, cols: { dep: d.H, regDep: d.regIdx >= 0 ? d.H[d.regIdx] : '' } };
   } finally { await browser.close(); }
 }
 
@@ -117,6 +119,7 @@ export function buildFlightMap(items, { dep, arr }) {
     if (a && a.org) o.o = a.org;
     if (a && a.gate) o.ga = a.gate;
     if (a && a.pos) { o.pa = a.pos; if (!o.p) o.p = a.pos; }
+    { const rg = (d && d.reg) || (a && a.reg); if (rg) o.r = rg; }
     map[it.key] = o; matched++;
   });
   return { map, wanted, matched, miss };
