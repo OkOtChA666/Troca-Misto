@@ -6120,7 +6120,8 @@ let notificationsListenerUnsubscribe = null;
 function renderNotificationsBadge(){
   const badge = document.getElementById('notifications-badge');
   if(!badge) return;
-  const unreadCount = Object.values(NOTIFICATIONS).filter(n => !n.read && !isNotificationEventPast(n)).length;
+  let unreadCount = Object.values(NOTIFICATIONS).filter(n => !n.read && !isNotificationEventPast(n)).length;
+  try{ const sn = mtSeen(); unreadCount += mtChanges().filter(x => x[0] > sn).length; }catch(e){}   // changes to my own tasks (see mtChanges)
   badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
   badge.classList.toggle('hidden', unreadCount === 0);
 }
@@ -6197,22 +6198,52 @@ function notificationGroupLabel(ts){
   const diffDays = Math.floor((new Date(now.getFullYear(),now.getMonth(),now.getDate()) - new Date(d.getFullYear(),d.getMonth(),d.getDate())) / 86400000);
   return diffDays < 7 ? 'Esta semana' : 'Mais antigas';
 }
+// Turns one line of the task-change history (written by the sync job) into a bell entry.
+// A time change on a flight task is a delay/advance of the flight ('delay'); anything else
+// (a task appearing or disappearing, a BREAK moving) is a real change ('change').
+function mtClassify(txt){
+  txt = String(txt || ''); let m;
+  if((m = /^Nova: (.+) (\d\d:\d\d–\d\d:\d\d)$/.exec(txt))) return { type:'change', line:'Nova: ' + m[1] + ' · ' + m[2] };
+  if((m = /^Removida: (.+) (\d\d:\d\d–\d\d:\d\d)$/.exec(txt))) return { type:'change', line:'Removida: ' + m[1] + ' · ' + m[2] };
+  if((m = /^(.+): (\d\d:\d\d–\d\d:\d\d) → (\d\d:\d\d–\d\d:\d\d)$/.exec(txt))){
+    const isBreak = /^(break|pausa|pause)$/i.test(m[1].replace(/^<\s*/, '').trim());
+    return { type: isBreak ? 'change' : 'delay', line: m[1] + ' · ' + m[2] + ' → ' + m[3] };
+  }
+  if((m = /^(.+): (alterada pelo coordenador|atualizada)$/.exec(txt))) return { type:'delay', line: m[1] + ' · ' + m[2] };
+  return { type:'change', line: txt };
+}
 function renderNotificationsList(){
   const list = document.getElementById('notifications-modal-list');
   const empty = document.getElementById('notifications-modal-empty');
   if(!list) return;
   const entries = Object.entries(NOTIFICATIONS)
     .filter(([id, n]) => !isNotificationEventPast(n))
-    .sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+    .map(([id, n]) => ({ kind:'n', id, n, ts: n.createdAt || 0 }));
+  let seenTs = 0; try{ seenTs = mtSeen(); mtChanges().forEach(x => entries.push({ kind:'t', x, ts: x[0] })); }catch(e){}
+  entries.sort((a, b) => b.ts - a.ts);
   empty.classList.toggle('hidden', entries.length > 0);
   let html = '';
   let lastGroup = null;
-  for(const [id, n] of entries){
+  for(const item of entries){
+    const n = item.kind === 'n' ? item.n : { createdAt: item.ts };
     const group = n.createdAt ? notificationGroupLabel(n.createdAt) : 'Mais antigas';
     if(group !== lastGroup){
       html += '<div style="font-size:10px; letter-spacing:1px; color:var(--text-dim); text-transform:uppercase; margin:'+(lastGroup===null?'0':'14px')+' 0 6px;">'+escapeHtml(group)+'</div>';
       lastGroup = group;
     }
+    if(item.kind === 't'){
+      const c = mtClassify(item.x[1]), unread = item.x[0] > seenTs, whenT = notificationRelativeTime(item.x[0]);
+      const st = unread ? 'color:var(--text); font-weight:600;' : 'color:var(--text-dim);';
+      const ic = c.type === 'delay'
+        ? '<div style="width:26px; height:26px; border-radius:50%; background:rgba(255,179,0,0.12); color:var(--amber); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;">◷</div>'
+        : '<div style="width:26px; height:26px; border-radius:50%; background:rgba(255,93,108,0.15); color:var(--nogo); border:1px solid rgba(255,93,108,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:var(--mono); font-weight:800; font-size:15px;">!</div>';
+      html += '<div style="display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);">' + ic +
+        '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + st + '">' + (c.type === 'delay' ? 'Hora alterada · voo' : 'As tuas tarefas mudaram') + '</div>' +
+        '<div style="font-size:11.5px; color:var(--amber); font-weight:600; margin-top:2px;">' + escapeHtml(c.line) + '</div>' +
+        '<div style="font-size:10px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);">' + escapeHtml(whenT) + '</div></div></div>';
+      continue;
+    }
+    const id = item.id;
     const parsed = parseNotificationBody(n.body || '');
     const when = n.createdAt ? notificationRelativeTime(n.createdAt) : '';
     const unreadStyle = n.read ? 'color:var(--text-dim);' : 'color:var(--text); font-weight:600;';
@@ -6260,6 +6291,7 @@ function openNotificationsModal(){
   // Opening the list is what counts as "seen" — mark every currently-unread entry as read.
   const unreadIds = Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id);
   unreadIds.forEach(id => { dbSetCollectionEntry('notifications', id, Object.assign({}, NOTIFICATIONS[id], { read: true })); });
+  try{ if(MT_DOC) mtMarkSeen(); }catch(e){}
 }
 document.getElementById('notifications-bell-link').addEventListener('click', openNotificationsModal);
 document.getElementById('notifications-modal-close').addEventListener('click', () => {
@@ -8079,13 +8111,7 @@ function mtMarkSeen(){
   try{ localStorage.setItem(mtSeenKey(), String(Math.max.apply(null, l.map(x => x[0])))); } catch(e){}
   mtUpdateBadge();
 }
-function mtUpdateBadge(){
-  const seen = mtSeen(), n = mtChanges().filter(x => x[0] > seen).length;
-  ['my-tasks-badge', 'my-area-badge'].forEach(id => {
-    const el = document.getElementById(id); if(!el) return;
-    el.style.display = n ? 'inline-block' : 'none'; el.textContent = n > 9 ? '9+' : String(n);
-  });
-}
+function mtUpdateBadge(){ renderNotificationsBadge(); }   // the bell carries the number now (the red badges on ÁREA PESSOAL / AS MINHAS TAREFAS are gone)
 // "Open" now means: the AS MINHAS TAREFAS tab inside ÁREA PESSOAL is the visible one.
 function mtOpenOverlay(){
   const p = document.getElementById('panel-my-swaps'), t = document.getElementById('area-tab-tasks');
