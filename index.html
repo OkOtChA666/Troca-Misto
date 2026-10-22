@@ -6221,15 +6221,29 @@ function mtClassify(txt){
   return { type:'change', kind:'raw', line: txt };
 }
 // the detail lines of a task notification: flight/task name in amber, times and words in white (times written "11:15 – 12:05")
+function mtKindFor(c){
+  try{
+    const id = mtStaffId(); if(!id || !MT_DOC || !MT_DOC.a || !MT_DOC.a[id]) return null;
+    const tasks = (JSON.parse(MT_DOC.a[id]).t) || [];
+    const nm = String(c.name || '').replace(/^<\s*/, '').trim();
+    for(const t of tasks){
+      const lab = String(t[0] || '').replace(/^<\s*/, '').trim();
+      if(lab === nm && (t[1] + '–' + t[2]) === c.nw){ const colr = mtColor(t[3]); const k = colr ? MT_KINDS[colr] : null; if(k) return { label:k[0], bg:colr, fg:k[1] }; }
+    }
+  }catch(e){}
+  return null;
+}
 function mtNotifDetail(c){
   const T = x => escapeHtml(String(x).replace(/–/g, ' – '));
   const nm = escapeHtml(String(c.name || '').replace(/^<\s*/, '').trim());
   const base = 'font-size:11.5px; font-weight:600; margin-top:2px;';
   if(c.kind === 'nova' || c.kind === 'removido'){
     const pill = c.kind === 'nova' ? 'background:#249255;' : 'background:#b3363f;';
-    return '<div style="display:grid; grid-template-columns:78px 1fr; column-gap:8px; align-items:center; margin-top:3px; font-size:11.5px; font-weight:600;">' +
+    const kd = c.kind === 'nova' ? mtKindFor(c) : null;   // what kind the new task is (ACOLHIMENTO, PARTIDA, CHECK-IN), shown under NOVA
+    const kdHtml = kd ? '<span style="background:' + kd.bg + '; color:' + kd.fg + '; font-family:var(--mono); font-weight:700; font-size:9.5px; letter-spacing:0.06em; padding:3px 0; border-radius:4px; text-align:center;">' + escapeHtml(kd.label) + '</span>' : '<span></span>';
+    return '<div style="display:grid; grid-template-columns:78px 1fr; column-gap:8px; row-gap:3px; align-items:center; margin-top:3px; font-size:11.5px; font-weight:600; margin-bottom:6px;">' +
       '<span style="' + pill + ' color:#fff; font-family:var(--mono); font-weight:700; font-size:9.5px; letter-spacing:0.08em; padding:3px 0; border-radius:4px; text-align:center;">' + (c.kind === 'nova' ? 'NOVA' : 'REMOVIDO') + '</span>' +
-      '<span style="color:var(--amber);">' + nm + '</span><span></span><span style="color:var(--text);">' + T(c.nw) + '</span></div>';
+      '<span style="color:var(--amber);">' + nm + '</span>' + kdHtml + '<span style="color:var(--text);">' + T(c.nw) + '</span></div>';
   }
   if(c.kind === 'shift') return '<div style="' + base + ' color:var(--amber);">' + nm + '</div>' +
     '<div style="' + base + ' margin-top:1px; color:var(--text);"><span style="text-decoration:line-through; text-decoration-thickness:1px; color:var(--text-dim); font-weight:500;">' + T(c.old) + '</span> → ' + T(c.nw) + '</div>';
