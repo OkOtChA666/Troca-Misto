@@ -976,6 +976,12 @@
   .mt-kind{ display:inline-block; box-sizing:border-box; width:96px; text-align:center; flex:none; }
   .mt-kind-empty{ background:none !important; }
   .mt-label{ flex-wrap:nowrap !important; }
+  /* STAND and the aircraft registration take turns in the same tab (same width, slide up/down) */
+  .mt-corner > span.mt-alt{ display:grid; overflow:hidden; padding:0; cursor:pointer; }
+  .mt-alt > span{ grid-area:1/1; display:flex; align-items:center; justify-content:center; padding:0 14px; animation:mtSwap 6s infinite; }
+  .mt-alt > span:nth-child(2){ animation-delay:-3s; }
+  .mt-alt.paused > span{ animation-play-state:paused; }
+  @keyframes mtSwap{ 0%,44%{ transform:translateY(0); opacity:1; } 50%{ transform:translateY(-100%); opacity:0; } 50.01%,94%{ transform:translateY(100%); opacity:0; } 100%{ transform:translateY(0); opacity:1; } }
   .mt-info{ display:flex; flex-wrap:wrap; gap:4px 14px; font-family:var(--mono); font-size:12px; color:var(--text-dim); margin-top:2px; }
   .mt-info b{ color:var(--text); font-weight:700; letter-spacing:0.02em; }
   .mt-flag{ font-size:10px; font-weight:700; letter-spacing:0.08em; padding:2px 6px; border-radius:4px; }
@@ -8157,7 +8163,11 @@ function showAreaTab(which){
   if(tasks) openMyTasks(); else { closeMyTasks(); renderMySwapsList(myTrocasExpanded); }
 }
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
-document.getElementById('area-tab-btn-tasks').addEventListener('click', () => showAreaTab('tasks'));
+document.getElementById('area-tab-btn-tasks').addEventListener('click', () => {
+  showAreaTab('tasks');
+  // same as after PROCURAR: bring the tab bar to the top so the tasks fill the screen
+  setTimeout(() => { try{ document.getElementById('area-tab-btn-tasks').scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){} }, 60);
+});
 // Background: while the page is visible and someone is logged in, keep the listener on so the badge shows new changes.
 setInterval(() => {
   if(document.hidden || !mtStaffId()){ if(!mtOpenOverlay()) mtUnlisten(); return; }
@@ -8173,6 +8183,7 @@ async function mtRequestRefresh(){
   try{ const db = await getDb(); if(db) await db.collection('data').doc('taskreq').set({ t: now }); } catch(e){}
 }
 document.getElementById('my-tasks-body').addEventListener('click', ev => {
+  const alt = ev.target.closest && ev.target.closest('.mt-alt'); if(alt) alt.classList.toggle('paused');   // tap the STAND/registration tab to hold it still
   const b = ev.target.closest && ev.target.closest('#mt-refresh-btn');
   if(b && !b.disabled) mtRequestRefresh();
 });
@@ -8209,12 +8220,15 @@ function mtTabInfo(f, colr){
   const sp = v => mtEsc(String(v).replace(/_/g, ' | ').replace(/\s*-\s*/g, ' – '));
   const isCheckin = colr === '#0099ff', isDep = colr === '#0066cc', isArr = colr === '#dbffaa';
   const bits = [];
-  if(f.r && (isDep || isArr)) bits.push('<span><b style="margin-left:0">' + mtEsc(f.r) + '</b></span>');   // aircraft registration (acolhimento and partida only)
   if(f.c && !isDep && !isArr) bits.push('<span>CKIN <b>' + sp(mtTidyDesks(f.c)) + '</b></span>');
   const gate = isArr ? (f.g || f.ga) : f.g;
   if(gate && !isCheckin) bits.push('<span>PORTA <b>' + sp(gate) + '</b></span>');
   const stand = isArr ? (f.pa || f.p) : f.p;
-  if(stand && !isCheckin) bits.push('<span>STAND <b>' + mtEsc(stand) + '</b></span>');
+  const reg = (f.r && (isDep || isArr)) ? mtEsc(f.r) : '';
+  if(stand && !isCheckin){
+    if(reg) bits.push('<span class="mt-alt"><span>STAND <b>' + mtEsc(stand) + '</b></span><span><b style="margin-left:0">' + reg + '</b></span></span>');
+    else bits.push('<span>STAND <b>' + mtEsc(stand) + '</b></span>');
+  } else if(reg) bits.push('<span><b style="margin-left:0">' + reg + '</b></span>');
   return bits.join('');
 }
 let MT_TEAM_FOR = null, MT_TEAM_ALL = [];
