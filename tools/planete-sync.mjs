@@ -168,7 +168,13 @@ async function main() {
   if (!RUN_MIN) { await syncOnce(USER, PASS); return; }
   let lastStart = 0, lastReq = await readRequest();
   while (Date.now() < deadline) {
-    if (isNight()) { console.log('NIGHT PAUSE: stopping until the next run'); return; }
+    if (isNight()) {
+      // wait quietly (no logins, no reading, no saving) until the night is over or this run's time is up.
+      // Staying alive for ~50 min matters: a run that ends in seconds cannot start the next one, and the chain would die.
+      console.log('NIGHT PAUSE: waiting quietly until 03:00 (no reading)');
+      while (Date.now() < deadline && isNight()) await sleep(30 * 1000);
+      continue;   // night over (read again right away) or time is up (the loop ends and hands over)
+    }
     lastStart = Date.now();
     await syncOnce(USER, PASS);
     const lastEnd = Date.now();
