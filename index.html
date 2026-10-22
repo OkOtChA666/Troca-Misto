@@ -6211,14 +6211,30 @@ function notificationGroupLabel(ts){
 // (a task appearing or disappearing, a BREAK moving) is a real change ('change').
 function mtClassify(txt){
   txt = String(txt || ''); let m;
-  if((m = /^Nova: (.+) (\d\d:\d\d–\d\d:\d\d)$/.exec(txt))) return { type:'change', line:'Nova: ' + m[1] + ' · ' + m[2] };
-  if((m = /^Removida: (.+) (\d\d:\d\d–\d\d:\d\d)$/.exec(txt))) return { type:'change', line:'Removida: ' + m[1] + ' · ' + m[2] };
+  if((m = /^Nova: (.+) (\d\d:\d\d–\d\d:\d\d)$/.exec(txt))) return { type:'change', kind:'nova', name:m[1], nw:m[2], line:'Nova: ' + m[1] + ' · ' + m[2] };
+  if((m = /^Removida: (.+) (\d\d:\d\d–\d\d:\d\d)$/.exec(txt))) return { type:'change', kind:'removido', name:m[1], nw:m[2], line:'Removido: ' + m[1] + ' · ' + m[2] };
   if((m = /^(.+): (\d\d:\d\d–\d\d:\d\d) → (\d\d:\d\d–\d\d:\d\d)$/.exec(txt))){
     const isBreak = /^(break|pausa|pause)$/i.test(m[1].replace(/^<\s*/, '').trim());
-    return { type: isBreak ? 'change' : 'delay', line: m[1] + ' · ' + m[2] + ' → ' + m[3] };
+    return { type: isBreak ? 'change' : 'delay', kind:'shift', name:m[1], old:m[2], nw:m[3], line: m[1] + ' · ' + m[2] + ' → ' + m[3] };
   }
-  if((m = /^(.+): (alterada pelo coordenador|atualizada)$/.exec(txt))) return { type:'delay', line: m[1] + ' · ' + m[2] };
-  return { type:'change', line: txt };
+  if((m = /^(.+): (alterada pelo coordenador|atualizada)$/.exec(txt))) return { type:'delay', kind:'note', name:m[1], note:m[2], line: m[1] + ' · ' + m[2] };
+  return { type:'change', kind:'raw', line: txt };
+}
+// the detail lines of a task notification: flight/task name in amber, times and words in white (times written "11:15 – 12:05")
+function mtNotifDetail(c){
+  const T = x => escapeHtml(String(x).replace(/–/g, ' – '));
+  const nm = escapeHtml(String(c.name || '').replace(/^<\s*/, '').trim());
+  const base = 'font-size:11.5px; font-weight:600; margin-top:2px;';
+  if(c.kind === 'nova' || c.kind === 'removido'){
+    const pill = c.kind === 'nova' ? 'background:#249255;' : 'background:#b3363f;';
+    return '<div style="display:grid; grid-template-columns:78px 1fr; column-gap:8px; align-items:center; margin-top:3px; font-size:11.5px; font-weight:600;">' +
+      '<span style="' + pill + ' color:#fff; font-family:var(--mono); font-weight:700; font-size:9.5px; letter-spacing:0.08em; padding:3px 0; border-radius:4px; text-align:center;">' + (c.kind === 'nova' ? 'NOVA' : 'REMOVIDO') + '</span>' +
+      '<span style="color:var(--amber);">' + nm + '</span><span></span><span style="color:var(--text);">' + T(c.nw) + '</span></div>';
+  }
+  if(c.kind === 'shift') return '<div style="' + base + ' color:var(--amber);">' + nm + '</div>' +
+    '<div style="' + base + ' margin-top:1px; color:var(--text);"><span style="text-decoration:line-through; text-decoration-thickness:1px; color:var(--text-dim); font-weight:500;">' + T(c.old) + '</span> → ' + T(c.nw) + '</div>';
+  if(c.kind === 'note') return '<div style="' + base + ' color:var(--amber);">' + nm + '</div><div style="' + base + ' margin-top:1px; color:var(--text);">' + escapeHtml(c.note) + '</div>';
+  return '<div style="' + base + ' color:var(--amber);">' + escapeHtml(c.line) + '</div>';
 }
 function renderNotificationsList(){
   const list = document.getElementById('notifications-modal-list');
@@ -6247,7 +6263,7 @@ function renderNotificationsList(){
         : '<div style="width:26px; height:26px; border-radius:50%; background:rgba(255,93,108,0.15); color:var(--nogo); border:1px solid rgba(255,93,108,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:var(--mono); font-weight:800; font-size:15px;">!</div>';
       html += '<div style="display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);">' + ic +
         '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + st + '">' + (c.type === 'delay' ? 'Hora alterada · voo' : 'As tuas tarefas mudaram') + '</div>' +
-        '<div style="font-size:11.5px; color:var(--amber); font-weight:600; margin-top:2px;">' + escapeHtml(c.line) + '</div>' +
+        mtNotifDetail(c) +
         '<div style="font-size:10px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);">' + escapeHtml(whenT) + '</div></div></div>';
       continue;
     }
