@@ -976,6 +976,7 @@
   .mt-kind{ display:inline-block; box-sizing:border-box; width:96px; text-align:center; flex:none; }
   .mt-kind-empty{ background:none !important; }
   .mt-label{ flex-wrap:nowrap !important; }
+  #area-tab-btn-tasks{ scroll-margin-top:16px; }
   /* STAND and the aircraft registration take turns in the same tab (same width, slide up/down) */
   .mt-corner > span.mt-alt{ display:grid; overflow:hidden; padding:0; cursor:pointer; }
   .mt-alt > span{ grid-area:1/1; display:flex; align-items:center; justify-content:center; padding:0 14px; animation:mtSwap 6s infinite; }
@@ -8166,7 +8167,11 @@ document.getElementById('area-tab-btn-swaps').addEventListener('click', () => sh
 document.getElementById('area-tab-btn-tasks').addEventListener('click', () => {
   showAreaTab('tasks');
   // same as after PROCURAR: bring the tab bar to the top so the tasks fill the screen
-  setTimeout(() => { try{ document.getElementById('area-tab-btn-tasks').scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){} }, 60);
+  // the task list fills in a moment later (the page gets taller), so a single early scroll stops short: scroll, then correct until the tab bar really sits at the top
+  const goTop = (smooth) => { try{ document.getElementById('area-tab-btn-tasks').scrollIntoView({behavior: smooth ? 'smooth' : 'auto', block:'start'}); }catch(e){} };
+  const off = () => { try{ return Math.abs(document.getElementById('area-tab-btn-tasks').getBoundingClientRect().top); }catch(e){ return 0; } };
+  setTimeout(() => goTop(true), 60);
+  [500, 900, 1400].forEach(ms => setTimeout(() => { if(off() > 22) goTop(false); }, ms));
 });
 // Background: while the page is visible and someone is logged in, keep the listener on so the badge shows new changes.
 setInterval(() => {
