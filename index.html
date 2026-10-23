@@ -1009,6 +1009,13 @@
   .mt-pill{ font-family:var(--mono); font-size:12px; font-weight:700; background:#e8eefc; color:#0b1220; padding:2px 10px; border-radius:4px; margin-left:10px; white-space:nowrap; flex:none; }
   .mt-pop h6.sub{ color:#8fa0c4; margin-top:8px; }
   .mt-pop .off{ opacity:.55; }
+  .mt-desk{ font-weight:700; font-size:11px; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center; }
+  .mt-pop .mt-desk.me{ background:#7ef0c4; color:#0b1220; }
+  .mt-desk-toggle{ display:flex; align-items:center; justify-content:space-between; margin-top:9px; padding-top:8px; border-top:1px solid rgba(143,160,196,.35); font-size:10px; font-weight:700; letter-spacing:.14em; color:#8fa0c4; cursor:pointer; }
+  .mt-sw{ position:relative; width:34px; height:19px; border-radius:10px; background:#3b4d78; flex:none; }
+  .mt-sw:before{ content:""; position:absolute; top:3px; left:3px; width:13px; height:13px; border-radius:50%; background:#e8eefc; transition:transform .15s; }
+  .mt-sw.on{ background:var(--amber); }
+  .mt-sw.on:before{ transform:translateX(15px); }
   .mt-row.past.team-open{ opacity:1; }
   .mt-name{ display:inline-block; min-width:104px; flex:none; white-space:nowrap; }
   .mt-pair{ display:inline-flex !important; flex-direction:column; gap:2px; line-height:1.25; }
@@ -8237,6 +8244,7 @@ async function mtRequestRefresh(){
   try{ const db = await getDb(); if(db) await db.collection('data').doc('taskreq').set({ t: now }); } catch(e){}
 }
 document.getElementById('my-tasks-body').addEventListener('click', ev => {
+  if(ev.target.closest && ev.target.closest('.mt-desk-toggle')){ try{ localStorage.setItem('trocaMistoShowDesks', mtShowDesks() ? '0' : '1'); }catch(e){} renderMyTasks(); return; }
   const alt = ev.target.closest && ev.target.closest('.mt-alt'); if(alt) alt.classList.toggle('paused');   // tap the STAND/registration tab to hold it still
   const b = ev.target.closest && ev.target.closest('#mt-refresh-btn');
   if(b && !b.disabled) mtRequestRefresh();
@@ -8301,7 +8309,7 @@ function mtTeamAll(){
         const f = mtFlightInfo(t[5]);
         let s = mtToMin(t[1]), e = mtToMin(t[2]);
         if(s !== null && e !== null && e <= s) e += 1440;
-        MT_TEAM_ALL.push({ id, name: rec.n || id, colr, fkey: t[5] || '', desks: (colr === '#0099ff' && f && f.c) ? mtTidyDesks(f.c) : '', s, e });
+        MT_TEAM_ALL.push({ id, name: rec.n || id, colr, label: t[0] || '', fkey: t[5] || '', desks: (colr === '#0099ff' && f && f.c) ? mtTidyDesks(f.c) : '', s, e });
       });
     });
   }catch(e){}
@@ -8322,18 +8330,44 @@ function mtTeamFor(t, colr){
     const sameFlight = !!t[5] && x.fkey === t[5];
     const sameDesks = !!desks && x.desks === desks && s !== null && e !== null && x.s !== null && x.e !== null &&
       (isCk ? (x.s < e + 180) : (s < x.e && x.s < e));                // check-in: also people who take over later
-    if(sameFlight || sameDesks) out.push([x.id, x.name, x.s, x.e]);   // one person can match with several tasks
+    if(sameFlight || sameDesks) out.push([x.id, x.name, x.s, x.e, x.label]);   // one person can match with several tasks
   });
   return out;
 }
 // Check-in: who is at the desks at one moment (now if the task is running, its start if it is still to come,
 // its last minute if it is over). People who start later are listed greyed out; people who left are not shown.
+// ---- desk (balcão) of each person at a common check-in ----
+// "COM EZY 4ºB" = the 4th desk of the check-in's desk range. easyJet (EZY/EJU/EZS) counts from the LAST desk, every other airline from the first.
+function mtShowDesks(){ try{ return localStorage.getItem('trocaMistoShowDesks') === '1'; }catch(e){ return false; } }
+function mtDeskList(v){
+  const txt = String(v || '').trim();
+  if(!/^\d+(\s*-\s*\d+)?(\s*,\s*\d+(\s*-\s*\d+)?)*$/.test(txt)) return [];
+  const nums = [];
+  txt.split(',').forEach(part => { const m = part.trim().split('-').map(x => parseInt(x, 10)); const lo = m[0], hi = m.length > 1 ? m[1] : m[0]; if(hi >= lo && hi - lo <= 200) for(let i = lo; i <= hi; i++) nums.push(i); });
+  return nums.filter((n, i) => nums.indexOf(n) === i).sort((a, b) => a - b);
+}
+function mtDeskFor(label, deskList){
+  const m = /^COM\b.*?\s+(\d{1,2})\s?[ºª°]?\s?B$/i.exec(String(label || '').replace(/^<\s*/, '').trim());
+  if(!m || !deskList.length) return null;
+  const pos = parseInt(m[1], 10); if(!(pos >= 1 && pos <= deskList.length)) return null;
+  return /\bE(ZY|JU|ZS)\b/i.test(label) ? deskList[deskList.length - pos] : deskList[pos - 1];
+}
 function mtTeamHtml(t, colr, rowKey){
   const list = mtTeamFor(t, colr);
   if(!list) return '';
   const me = String(mtStaffId());
-  const srt = l => l.slice().sort((p, q) => String(p[1]).localeCompare(String(q[1])));
-  const nm = (x, c) => '<div' + ((c || String(x[0]) === me) ? ' class="' + (c || '') + (String(x[0]) === me ? ' me' : '') + '"' : '') + '>' + mtEsc(x[1]) + '</div>';
+  const srt = l => l.slice().sort((p, q) => {
+    if(showDesks){ const a = deskOf(p), b = deskOf(q); if(a !== null && b !== null && a !== b) return a - b; if(a !== null && b === null) return -1; if(a === null && b !== null) return 1; }
+    return String(p[1]).localeCompare(String(q[1]));
+  });
+  const showDesks = colr === '#0099ff' && mtShowDesks();
+  const deskList = showDesks ? mtDeskList((mtFlightInfo(t[5]) || {}).c) : [];
+  const deskOf = x => showDesks ? mtDeskFor(x[4], deskList) : null;
+  const nm = (x, c) => {
+    const d = deskOf(x), isMe = String(x[0]) === me;
+    const badge = d !== null ? '<span class="mt-desk' + (isMe ? ' me' : '') + '">' + d + '</span>' : '';
+    return '<div' + ((c || isMe) ? ' class="' + (c || '') + (isMe ? ' me' : '') + '"' : '') + (badge ? ' style="display:flex; justify-content:space-between; align-items:center; gap:14px;"' : '') + '><span>' + mtEsc(x[1]) + '</span>' + badge + '</div>';
+  };
   let now = (function(){ const o = {}; list.forEach(x => { o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); })(), later = [], head = 'NESTE VOO';
   if(colr === '#0099ff'){
     let s = mtToMin(t[1]), e = mtToMin(t[2]);
@@ -8355,7 +8389,8 @@ function mtTeamHtml(t, colr, rowKey){
   const icon = '<svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
   return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + '<b>' + now.length + '</b></div>' +
          '<div class="mt-pop"><h6>' + head + ' · ' + now.length + (now.length === 1 ? ' PESSOA' : ' PESSOAS') + '</h6>' + srt(now).map(x => nm(x)).join('') +
-         (later.length ? '<h6 class="sub">DEPOIS · ' + later.length + '</h6>' + srt(later).map(x => nm(x, 'off')).join('') : '') + '</div>';
+         (later.length ? '<h6 class="sub">DEPOIS · ' + later.length + '</h6>' + srt(later).map(x => nm(x, 'off')).join('') : '') +
+         (colr === '#0099ff' && isAdminSession ? '<div class="mt-desk-toggle" role="switch" aria-checked="' + mtShowDesks() + '"><span>MOSTRAR BALCÕES</span><span class="mt-sw' + (mtShowDesks() ? ' on' : '') + '"></span></div>' : '') + '</div>';
 }
 // Task name for display only: "COM EZY/EJU(/EZS) 2ºB" -> "COM EZY" + a white pill with "2ºB"
 function mtNameHtml(nk){
