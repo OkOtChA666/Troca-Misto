@@ -620,10 +620,10 @@
     padding: 8px 12px; border-bottom: 1px solid var(--border-soft);
     background: var(--panel-2); position:sticky; top:0; z-index:1;
   }
-  .skills-header-checks{ display:flex; gap:14px; }
+  .skills-header-checks{ display:flex; gap:2px; }
   .skills-col-label{
-    width:44px; text-align:center; flex-shrink:0;
-    font-family: var(--mono); font-size: 10px; letter-spacing:0.05em;
+    width:36px; text-align:center; flex-shrink:0;
+    font-family: var(--mono); font-size: 9px; letter-spacing:0;
     text-transform:uppercase; color: var(--text-dim);
   }
   .skills-row{
@@ -631,10 +631,13 @@
     padding: 11px 12px; border-bottom: 1px solid var(--border-soft);
   }
   .skills-row:last-child{ border-bottom:none; }
-  .skills-row-name{ font-size: 13.5px; color: var(--text); }
-  .skills-row-checks{ display:flex; gap:14px; }
-  .skills-check-cell{ width:44px; display:flex; justify-content:center; }
-  .skills-row input[type=checkbox]{ width:17px; height:17px; accent-color: var(--cyan); cursor:pointer; }
+  .skills-header,.skills-row{ gap:6px; padding-left:8px; padding-right:8px; }
+  .skills-row-name{ font-size: 13px; color: var(--text); flex:1; min-width:0; }
+  .skills-row-checks{ display:flex; gap:2px; flex:none; }
+  .skills-check-cell{ width:36px; display:flex; justify-content:center; }
+  .skills-row input[type=checkbox]{ width:16px; height:16px; accent-color: var(--cyan); cursor:pointer; }
+  .skills-col-out{ color:#ff5d6c !important; font-weight:700; }
+  .skills-row input[data-sys=dismissed]{ accent-color:#ff5d6c; }
 
   /* ---- Results board ---- */
   .results{ margin-top: 16px; }
@@ -4141,11 +4144,20 @@ const DCS_SYSTEMS = [
   { key: 'availAM', label: 'AM', abbr: 'AM', store: {} }, // only available for morning shifts (ending by/around 12:00)
   { key: 'availPM', label: 'PM', abbr: 'PM', store: {} }, // only available for afternoon shifts (starting from ~13:00)
   { key: 'availWK', label: 'WK', abbr: 'WK', store: {} }, // only available on weekends
-  { key: 'blocked', label: 'BLOCK', abbr: 'BLK', store: {} } // hidden from every search/picker across the app
+  { key: 'blocked', label: 'INCOG', abbr: 'INC', store: {} }, // hidden from every search/picker across the app
+  { key: 'dismissed', label: 'OUT', abbr: 'OUT', store: {} }  // left the company: hidden like BLOCK, and not counted in AGENTES
 ];
+function isDismissed(workerId){
+  const sys = DCS_SYSTEMS.find(s => s.key === 'dismissed');
+  return !!(sys && hasDcsSystem(sys, workerId));
+}
 function isBlocked(workerId){
   const sys = DCS_SYSTEMS.find(s => s.key === 'blocked');
-  return !!(sys && hasDcsSystem(sys, workerId));
+  return !!(sys && hasDcsSystem(sys, workerId)) || isDismissed(workerId);   // someone who left is hidden everywhere, like BLOCK
+}
+// header number: everybody on the schedule except the people marked OUT (BLOCK still counts)
+function updateAgentCount(){
+  try{ document.getElementById('stat-workers').textContent = DATA.workers.filter(w => !isDismissed(w.id)).length; }catch(e){}
 }
 async function loadDcsSystem(sys){
   sys.store = await dbGetShared(sys.key, sys.store);
@@ -4158,8 +4170,9 @@ async function toggleDcsSystem(sys, workerId){
   if(sys.store[workerId]) delete sys.store[workerId];
   else sys.store[workerId] = true;
   await saveDcsSystem(sys);
+  updateAgentCount();
 }
-DCS_SYSTEMS.forEach(sys => loadDcsSystem(sys));
+Promise.all(DCS_SYSTEMS.map(sys => loadDcsSystem(sys))).then(updateAgentCount, updateAgentCount);
 
 // ---------- availability tags (AM/PM/WK) — unlike Altea/iPort, these actively flag
 // candidates whose marked availability conflicts with the day/time being proposed ----------
@@ -4196,7 +4209,7 @@ function renderSkillsList(filter){
   header.className = 'skills-header';
   header.innerHTML = '<span></span><span class="skills-header-checks">'+
     '<span class="skills-col-label">Altea</span>'+
-    DCS_SYSTEMS.map(sys => '<span class="skills-col-label">'+escapeHtml(sys.label)+'</span>').join('')+
+    DCS_SYSTEMS.map(sys => '<span class="skills-col-label'+(sys.key === 'dismissed' ? ' skills-col-out' : '')+'">'+escapeHtml(sys.label)+'</span>').join('')+
     '</span>';
   box.appendChild(header);
 
