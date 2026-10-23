@@ -1435,6 +1435,10 @@
 
   <!-- SKILLS PANEL -->
   <div class="panel hidden" id="panel-skills">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">AGENTES</div>
+      <button type="button" id="skills-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+    </div>
     <div class="field">
       <label for="skills-filter">Procura um nome</label>
       <input type="text" id="skills-filter" placeholder="Start typing to filter the list…" autocomplete="off">
@@ -4485,6 +4489,7 @@ function refreshAllDateSelectCounts(){
 document.getElementById('tab-cover').addEventListener('click', () => switchTab('cover'));
 document.getElementById('tab-trade').addEventListener('click', () => switchTab('trade'));
 document.getElementById('tab-requests').addEventListener('click', () => switchTab('requests'));
+document.getElementById('skills-back-btn').addEventListener('click', () => { openScheduleOverride(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 document.getElementById('so-card-agentes').addEventListener('click', () => {
   document.getElementById('panel-schedule-override').classList.add('hidden');
   document.querySelector('.tabs').classList.remove('hidden');
