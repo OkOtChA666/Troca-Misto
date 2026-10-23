@@ -5357,6 +5357,7 @@ document.getElementById('extra-confirm-btn').addEventListener('click', async () 
   });
 });
 
+let EXTRA_SHOW_PAST = false;
 function renderExtraHoursList(){
   const list = document.getElementById('extra-hours-list');
   if(!list) return;
@@ -5380,7 +5381,16 @@ function renderExtraHoursList(){
     return;
   }
   list.innerHTML = '';
+  const nPast = entries.filter(x => isPastDay(x.idx)).length;
+  if(nPast > 0){
+    const t = document.createElement('div');
+    t.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;padding:0 4px;font-family:var(--mono);font-size:11px;color:var(--text-dim)';
+    t.innerHTML = '<span>PASSADAS (' + nPast + ')</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;">MOSTRAR <input type="checkbox" id="extra-show-past"' + (EXTRA_SHOW_PAST ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:var(--cyan);cursor:pointer;"></label>';
+    list.appendChild(t);
+    t.querySelector('input').addEventListener('change', ev => { EXTRA_SHOW_PAST = ev.target.checked; renderExtraHoursList(); });
+  }
   entries.forEach((x, i) => {
+    if(isPastDay(x.idx) && !EXTRA_SHOW_PAST) return;
     const row = document.createElement('div');
     row.className = 'row';
     row.style.animationDelay = (i*20)+'ms';
