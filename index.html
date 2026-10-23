@@ -8390,7 +8390,7 @@ function mtTeamHtml(t, colr, rowKey){
   return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + '<b>' + now.length + '</b></div>' +
          '<div class="mt-pop"><h6>' + head + ' · ' + now.length + (now.length === 1 ? ' PESSOA' : ' PESSOAS') + '</h6>' + srt(now).map(x => nm(x)).join('') +
          (later.length ? '<h6 class="sub">DEPOIS · ' + later.length + '</h6>' + srt(later).map(x => nm(x, 'off')).join('') : '') +
-         (colr === '#0099ff' && isAdminSession ? '<div class="mt-desk-toggle" role="switch" aria-checked="' + mtShowDesks() + '"><span>MOSTRAR BALCÕES</span><span class="mt-sw' + (mtShowDesks() ? ' on' : '') + '"></span></div>' : '') + '</div>';
+         (colr === '#0099ff' ? '<div class="mt-desk-toggle" role="switch" aria-checked="' + mtShowDesks() + '"><span>MOSTRAR BALCÕES</span><span class="mt-sw' + (mtShowDesks() ? ' on' : '') + '"></span></div>' : '') + '</div>';
 }
 // Task name for display only: "COM EZY/EJU(/EZS) 2ºB" -> "COM EZY" + a white pill with "2ºB"
 function mtNameHtml(nk){
