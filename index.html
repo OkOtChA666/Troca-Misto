@@ -915,6 +915,16 @@
   .su-box{ background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px; width:760px; max-width:100%; margin:10px auto; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
   .su-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
   .su-title{ font-family:var(--mono); font-size:13px; letter-spacing:0.12em; color:var(--amber); font-weight:700; }
+  .su-bk{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:12px; margin-bottom:12px; }
+  .su-bk-h{ color:var(--amber); font-weight:700; font-size:15px; }
+  .su-bk-s{ font-size:12px; color:var(--text-dim); margin:2px 0 10px; }
+  .su-bk-box{ border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px; font-size:13px; }
+  .su-bk-r{ display:flex; justify-content:space-between; padding:4px 0; }
+  .su-bk-r b{ color:var(--cyan); font-family:var(--mono); }
+  .su-bk-w{ font-size:12px; color:#ff8a8a; margin:10px 0; }
+  .su-bk-dl{ width:100%; padding:11px; border-radius:8px; border:1px solid var(--cyan); background:transparent; color:var(--cyan); font-weight:700; font-size:14px; cursor:pointer; }
+  .su-bk-ok{ font-size:12px; color:#3ddc97; text-align:center; margin-top:8px; }
+  .su-bk-t{ font-size:11px; color:var(--text-dim); text-align:center; margin-top:6px; }
   .su-p{ font-size:13.5px; color:var(--text); line-height:1.5; margin:0 0 12px; }
   .su-file{ width:100%; margin-bottom:10px; color:var(--text); font-family:var(--sans); }
   .su-status{ font-size:13px; color:var(--cyan); margin-top:10px; min-height:18px; }
@@ -7985,9 +7995,84 @@ function suLoadPdfJs(){
   });
 }
 const SU_ENTRY_RE = /^(\d{4}-\d{4}(,[A-Z0-9]+)*|DC|DS|FO|\/|Off)$/;
+// ---------- backup of the current month, offered before a new schedule replaces it ----------
+let SU_BACKUP_DONE = false;
+function suBackupLabel(worker, idx){
+  const e = worker ? getEntry(worker, idx) : null;
+  if(!e) return '?';
+  if(e.status === 'work') return fmtHHMM(e.start) + '-' + fmtHHMM(e.end);
+  return (e.codes && e.codes.length) ? e.codes.join('/') : 'FOLGA';
+}
+function suBackupSwapLines(){
+  const wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const lines = [];
+  Object.keys(SWAPS).forEach(key => {
+    try{
+      const rec = SWAPS[key]; if(!rec) return;
+      const i = key.lastIndexOf(':'); const wid = key.slice(0, i); const idx = Number(key.slice(i + 1));
+      const A = DATA.workers.find(w => w.id === wid), B = DATA.workers.find(w => w.id === rec.withId);
+      let date = '';
+      if(rec.calendarDate){ const [y,m,d] = rec.calendarDate.split('-').map(Number); const dt = new Date(y, m-1, d); date = wd[dt.getDay()] + ' ' + String(d).padStart(2,'0') + ' ' + mn[m-1]; }
+      else date = fmtDateLabel(idx);
+      const a0 = suBackupLabel(A, idx), b0 = suBackupLabel(B, idx);
+      lines.push({ ts: rec.ts || 0, text: (rec.workerName || (A && A.name) || wid) + '  ⇄  ' + (rec.withName || (B && B.name) || rec.withId) + ' · ' + date + ' · ' + (rec.type || 'cover') +
+        ' · ' + (rec.workerName || (A && A.name) || wid) + ': ' + a0 + ' → ' + b0 + ' · ' + (rec.withName || (B && B.name) || rec.withId) + ': ' + b0 + ' → ' + a0 });
+    }catch(e){}
+  });
+  return lines.sort((x, y) => x.ts - y.ts).map(l => l.text);
+}
+// Excel/Sheets-friendly list of swaps (semicolon-separated + BOM so Portuguese Excel opens it with accents intact)
+function suBackupCsv(){
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const rows = [['Data','Pessoa A','Pessoa B','Tipo','Turno A antes','Turno A depois','Turno B antes','Turno B depois','Registada em']];
+  const items = [];
+  Object.keys(SWAPS).forEach(key => {
+    try{
+      const rec = SWAPS[key]; if(!rec) return;
+      const i = key.lastIndexOf(':'); const wid = key.slice(0, i); const idx = Number(key.slice(i + 1));
+      const A = DATA.workers.find(w => w.id === wid), B = DATA.workers.find(w => w.id === rec.withId);
+      const a0 = suBackupLabel(A, idx), b0 = suBackupLabel(B, idx);
+      const cd = rec.calendarDate || (function(){ const d = realDateForIdx(idx); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+      const reg = rec.ts ? new Date(rec.ts).toLocaleString('pt-PT') : '';
+      items.push([cd, rec.workerName || (A && A.name) || wid, rec.withName || (B && B.name) || rec.withId, rec.type || 'cover', a0, b0, b0, a0, reg]);
+    }catch(e){}
+  });
+  items.sort((x, y) => x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0);
+  return '\uFEFF' + rows.concat(items).map(r => r.map(q).join(';')).join('\r\n');
+}
+function suBackupBuild(){
+  return {
+    app: 'TROCA-MISTO', tipo: 'backup antes de carregar novo horario', criadoEm: new Date().toISOString(),
+    mes: DATA.month, versao: DATA.version || null,
+    resumo: { agentes: DATA.workers.length, trocas: Object.keys(SWAPS).length, pedidos: Object.keys(REQUESTS).length },
+    trocas_legiveis: suBackupSwapLines(),
+    dados: { schedule: DATA, swaps: SWAPS, requests: REQUESTS, scheduleOverrides: SCHEDULE_OVERRIDES, extraHours: EXTRA_HOURS }
+  };
+}
+function suBackupDownload(){
+  const b = suBackupBuild();
+  const blob = new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'troca-misto-backup-' + (DATA.month || 'mes') + '_guardado-' + new Date().toISOString().slice(0,10) + '_' + new Date().toISOString().slice(11,16).replace(':','h') + '.json';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  setTimeout(() => {
+    try{
+      const c = document.createElement('a');
+      c.href = URL.createObjectURL(new Blob([suBackupCsv()], { type: 'text/csv;charset=utf-8' }));
+      c.download = 'trocas-' + (DATA.month || 'mes') + '_lista-para-ler.csv';
+      document.body.appendChild(c); c.click();
+      setTimeout(() => { URL.revokeObjectURL(c.href); c.remove(); }, 1000);
+    }catch(e){}
+  }, 600);
+  SU_BACKUP_DONE = true;
+  renderScheduleUpload();
+}
 function openScheduleUpload(){
   if(!isAdminSession) return;
   SU = null;
+  SU_BACKUP_DONE = false;
   const ov = document.getElementById('schedule-upload-overlay');
   ov.classList.remove('hidden');
   renderScheduleUpload();
@@ -7999,11 +8084,25 @@ function closeScheduleUpload(){
 function renderScheduleUpload(msg){
   const body = document.getElementById('schedule-upload-body');
   if(!SU){
+    const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const mm = Number(String(DATA.month || '').split('-')[1]) || 0;
+    const mLabel = (monthNames[mm-1] || DATA.month || '') + ' ' + String(DATA.month || '').split('-')[0];
+    const row = (l, v) => '<div class="su-bk-r"><span>' + l + '</span><b>' + v + '</b></div>';
     body.innerHTML =
+      '<div class="su-bk"><div class="su-bk-h">⚠ Antes de carregar o novo horário</div>' +
+      '<div class="su-bk-s">Vais substituir o horário atual. Guarda primeiro uma cópia.</div>' +
+      '<div class="su-bk-box">' + row('Mês atual', suEsc(mLabel)) + row('Versão', suEsc(DATA.version || '—')) + row('Agentes', DATA.workers.length) +
+        row('Trocas feitas', Object.keys(SWAPS).length) + row('Pedidos abertos', Object.keys(REQUESTS).length) +
+        row('Horas extra registadas', Object.keys(EXTRA_HOURS || {}).length) + '</div>' +
+      '<div class="su-bk-w">Se escolheres limpar o mês anterior, as trocas e pedidos são apagados e não dá para recuperar.</div>' +
+      '<button type="button" class="su-bk-dl" id="su-bk-dl">⬇ Download ' + (['January','February','March','April','May','June','July','August','September','October','November','December'][mm-1] || 'this month') + '</button>' +
+      (SU_BACKUP_DONE ? '<div class="su-bk-ok">✓ Descarregados 2 ficheiros: a lista para ler (.csv) e a cópia de segurança (.json) — guarda-os no Drive</div>' : '<div class="su-bk-t">O passo seguinte só fica ativo depois de descarregares a cópia</div>') +
+      '</div>' +
       '<p class="su-p">Escolhe o PDF do horário do mês (o mesmo ficheiro <b>Check_in…pdf</b>). Vou lê-lo aqui no teu telemóvel/computador, mostrar-te o resultado para confirmares, e só depois gravar.</p>' +
-      '<input type="file" id="su-file" accept="application/pdf,.pdf" class="su-file">' +
+      '<input type="file" id="su-file" accept="application/pdf,.pdf" class="su-file"' + (SU_BACKUP_DONE ? '' : ' disabled style="opacity:.4"') + '>' +
       '<div id="su-status" class="su-status">' + (msg ? suEsc(msg) : '') + '</div>';
     document.getElementById('su-file').addEventListener('change', onScheduleFileChosen);
+    document.getElementById('su-bk-dl').addEventListener('click', suBackupDownload);
     return;
   }
   const P = SU.parsed;
