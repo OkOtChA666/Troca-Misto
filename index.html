@@ -1457,7 +1457,10 @@
 
   <!-- HORAS EXTRA PANEL -->
   <div class="panel hidden" id="panel-extra">
-    <button type="button" class="back-btn" id="extra-back-btn" style="margin-bottom:16px;">← Voltar</button>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">HORAS EXTRA</div>
+      <button type="button" id="extra-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+    </div>
     <p class="hint" style="margin-bottom:14px;">Vais trabalhar num dia de folga? Coloca aqui, assim não apareces como disponível se alguém procurar troca para esse dia.</p>
 
     <div class="field combo" id="combo-extra-name">
@@ -5364,7 +5367,13 @@ function renderExtraHoursList(){
     const worker = DATA.workers.find(w => w.id === workerId);
     return { key, workerId, idx, worker, e: EXTRA_HOURS[key] };
   }).filter(x => x.worker)
-    .sort((a,b) => (b.e.ts||0) - (a.e.ts||0));
+    .sort((a,b) => {
+      // upcoming days first (soonest at the top), then past days (most recent first); same day → by name
+      const pa = isPastDay(a.idx) ? 1 : 0, pb = isPastDay(b.idx) ? 1 : 0;
+      if(pa !== pb) return pa - pb;
+      if(a.idx !== b.idx) return pa ? (b.idx - a.idx) : (a.idx - b.idx);
+      return String(a.worker.name).localeCompare(String(b.worker.name), 'pt');
+    });
 
   if(entries.length === 0){
     list.innerHTML = '<div class="empty-state" style="padding:16px 10px;">Sem horas extra marcadas</div>';
