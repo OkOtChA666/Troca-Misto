@@ -8367,7 +8367,8 @@ function mtTeamHtml(t, colr, rowKey){
   const deskOf = x => showDesks ? mtDeskFor(x[4], deskList) : null;
   const nm = (x, c) => {
     const d = deskOf(x), isMe = String(x[0]) === me;
-    const badge = d !== null ? '<span class="mt-desk' + (isMe ? ' me' : '') + '">' + d + '</span>' : '';
+    // check-in popovers always reserve the badge column (an invisible one when the desks are hidden), so the popover keeps the same width either way
+    const badge = colr !== '#0099ff' ? '' : (d !== null ? '<span class="mt-desk' + (isMe ? ' me' : '') + '">' + d + '</span>' : '<span class="mt-desk" style="visibility:hidden;">00</span>');
     return '<div' + ((c || isMe) ? ' class="' + (c || '') + (isMe ? ' me' : '') + '"' : '') + (badge ? ' style="display:flex; justify-content:space-between; align-items:center; gap:14px;"' : '') + '><span>' + mtEsc(x[1]) + '</span>' + badge + '</div>';
   };
   let now = (function(){ const o = {}; list.forEach(x => { o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); })(), later = [], head = 'NESTE VOO';
