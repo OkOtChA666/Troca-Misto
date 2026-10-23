@@ -1212,7 +1212,7 @@
     <h1>TROCA-MISTO™</h1>
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link">AGENTES <b id="stat-workers">—</b></span>
-      <span>HORÁRIO <b id="stat-range">—</b><b id="upload-schedule-link" role="button" aria-label="Carregar novo horário" title="Carregar novo horário (PDF)" style="display:none; cursor:pointer; color:var(--amber); margin-left:6px; padding:0 4px; font-size:1.25em; line-height:1;">+</b></span>
+      <span>HORÁRIO <b id="stat-range">—</b></span>
       <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.10.01</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
@@ -1660,8 +1660,14 @@
       <div id="so-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">ADMIN</div>
       <button type="button" id="so-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
     </div>
+    <div id="so-sched" class="hidden">
+      <div id="so-sched-month" style="font-size:12px; color:var(--text-dim); margin:0 0 12px;"></div>
+      <button type="button" id="so-sched-upload" class="confirm-btn" style="width:100%; margin-bottom:10px; text-align:left;">⬆ Carregar novo horário (PDF)</button>
+      <button type="button" id="so-sched-restore" class="flag-btn" style="width:100%; text-align:left; display:block; padding:12px;" disabled><span style="display:block;">↺ Restore — versão antes do último upload</span><span id="so-sched-restore-info" style="display:block; margin-top:4px; font-weight:400; font-size:11px;"></span></button>
+    </div>
     <div id="so-menu">
       <div class="tool-card" id="so-card-ah"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div><div class="tool-name">ALTERAÇÃO DE HORÁRIOS</div><div class="tool-desc">Mudar o horário de um trabalhador</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-sched"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"/></svg></div><div><div class="tool-name">HORÁRIO MENSAL</div><div class="tool-desc">Carregar novo mês · Restore</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-aistaff"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><div><div class="tool-name">PREVISÃO</div><div class="tool-desc">Pessoas necessárias por hora</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-msg"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></div><div><div class="tool-name">MSG</div><div class="tool-desc">Avisos e mensagens na app</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-custom1"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2-2z"/></svg></div><div><div class="tool-name">MAIN</div><div class="tool-desc">Manutenção: bloquear o acesso</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
@@ -3642,8 +3648,6 @@ function applyAdminVisibility(){
   if(adminLink) adminLink.style.display = isAdminSession ? 'inline-flex' : 'none';
   const verWrap = document.getElementById('stat-version-wrap');
   if(verWrap) verWrap.style.display = isAdminSession ? 'none' : '';
-  const uploadLink = document.getElementById('upload-schedule-link');
-  if(uploadLink) uploadLink.style.display = isAdminSession ? '' : 'none';
   // The divider right after ADMIN needs to hide along with it — otherwise a non-admin
   // session would show a stray "|" with nothing before it.
   const adminDivider = document.getElementById('admin-turnaround-divider');
@@ -7117,23 +7121,30 @@ function renderScheduleOverrideList(){
   });
 }
 // ---------- ADMIN menu: stacked cards, one section open at a time ----------
-const SO_TITLES = { ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO' };
+const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO' };
 function soShowMenu(){
   closeAllMsgPanels();
   document.getElementById('schedule-override-normal-content').classList.add('hidden');
   document.getElementById('so-menu').classList.remove('hidden');
   document.getElementById('so-head').classList.remove('hidden');
   document.getElementById('so-title').textContent = 'ADMIN';
+  document.getElementById('so-sched').classList.add('hidden');
 }
 function soOpen(key){
   document.getElementById('so-menu').classList.add('hidden');
   document.getElementById('so-head').classList.remove('hidden');
   document.getElementById('so-title').textContent = SO_TITLES[key] || 'ADMIN';
+  if(key === 'sched'){
+    document.getElementById('so-sched-month').innerHTML = 'Mês atual: <b style="color:var(--cyan)">' + suEsc((['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][Number(String(DATA.month||'').split('-')[1]) - 1] || '') + ' ' + String(DATA.month||'').split('-')[0]) + '</b>';
+    document.getElementById('so-sched').classList.remove('hidden');
+    refreshRestoreLink();
+    return;
+  }
   if(key === 'ah'){ closeAllMsgPanels(); document.getElementById('so-row').style.display = 'none'; return; }
   document.getElementById(key + '-toggle-btn').click();
   if(key === 'aistaff') document.getElementById('so-head').classList.add('hidden');
 }
-['ah','aistaff','msg','custom1','custom2','stats'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
+['ah','sched','aistaff','msg','custom1','custom2','stats'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
 document.getElementById('so-back-btn').addEventListener('click', () => {
   if(!document.getElementById('so-menu').classList.contains('hidden')) closeScheduleOverride();
   else soShowMenu();
@@ -8069,6 +8080,73 @@ function suBackupDownload(){
   SU_BACKUP_DONE = true;
   renderScheduleUpload();
 }
+// ---------- restore point: the state saved right before the last schedule upload ----------
+let SU_RESTORE_META = null;
+async function suMakeRestorePoint(){
+  // Reads fresh from the database (not just this device's memory), so nothing that exists is missed.
+  const swaps = await dbLoadCollection('swaps', SWAPS);
+  const reqs = await dbLoadCollection('requests', REQUESTS);
+  const ov = await dbGetShared('scheduleOverrides', SCHEDULE_OVERRIDES);
+  const xh = await dbGetShared('extraHours', EXTRA_HOURS);
+  const doc = {
+    savedAt: Date.now(), month: DATA.month || '', version: DATA.version || '',
+    nAgents: DATA.workers.length, nSwaps: Object.keys(swaps || {}).length, nRequests: Object.keys(reqs || {}).length,
+    schedule: JSON.stringify(DATA), swaps: JSON.stringify(swaps || {}), requests: JSON.stringify(reqs || {}),
+    overrides: JSON.stringify(ov || {}), extraHours: JSON.stringify(xh || {})
+  };
+  const size = JSON.stringify(doc).length;
+  if(size > 900000) return { ok:false, why:'A cópia de segurança ficou demasiado grande (' + Math.round(size/1024) + ' KB).' };
+  const ok = await dbSetShared('scheduleBackup', doc);
+  return ok ? { ok:true } : { ok:false, why:'Não consegui guardar o ponto de restauro.' };
+}
+async function refreshRestoreLink(){
+  const btn = document.getElementById('so-sched-restore'), info = document.getElementById('so-sched-restore-info');
+  if(!btn) return;
+  const b = await dbGetShared('scheduleBackup', null);
+  SU_RESTORE_META = (b && b.savedAt && b.schedule) ? { savedAt: b.savedAt, month: b.month, nSwaps: b.nSwaps, nRequests: b.nRequests } : null;
+  btn.disabled = !SU_RESTORE_META;
+  btn.style.opacity = SU_RESTORE_META ? '1' : '.45';
+  if(SU_RESTORE_META){
+    const d = new Date(SU_RESTORE_META.savedAt);
+    info.textContent = 'Guardado em ' + String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ' · ' + (SU_RESTORE_META.nSwaps == null ? '?' : SU_RESTORE_META.nSwaps) + ' trocas';
+  } else info.textContent = 'Ainda não há cópia — aparece depois do primeiro upload.';
+}
+function openRestore(){
+  if(!isAdminSession || !SU_RESTORE_META) return;
+  const m = SU_RESTORE_META, d = new Date(m.savedAt);
+  const when = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  const row = (l, v) => '<div style="display:flex;justify-content:space-between;padding:3px 0"><span>' + l + '</span><b style="color:var(--cyan);font-family:var(--mono)">' + suEsc(v) + '</b></div>';
+  showConfirmDialog('<div style="text-align:left"><b style="color:var(--amber)">↺ Voltar à versão anterior?</b><p style="margin:8px 0">Volta a tudo como estava <b>antes do último upload</b>.</p>' +
+    '<div style="border:1px solid var(--border-soft);border-radius:8px;padding:6px 10px">' + row('Guardado em', when) + row('Mês', m.month || '—') + row('Trocas', m.nSwaps == null ? '—' : m.nSwaps) + row('Pedidos', m.nRequests == null ? '—' : m.nRequests) + '</div>' +
+    '<p style="margin:10px 0 0;color:#ff8a8a;font-size:12px">O horário atual é substituído. As trocas feitas depois do upload perdem-se.</p></div>',
+    doRestore, false, 'Restaurar', false, null, 'Cancelar');
+}
+async function doRestore(){
+  try{
+    const b = await dbGetShared('scheduleBackup', null);
+    if(!b || !b.schedule) { showToastSafe('Não há cópia para restaurar.'); return; }
+    const sched = JSON.parse(b.schedule);
+    sched.uploadedAt = Date.now();      // new stamp so every device notices and reloads
+    sched.uploadedBy = ADMIN_STAFF_ID;
+    const swaps = JSON.parse(b.swaps || '{}'), reqs = JSON.parse(b.requests || '{}');
+    const db = await getDb();
+    for(const col of ['swaps', 'requests']){
+      const snap = await db.collection(col).get();
+      for(let i = 0; i < snap.docs.length; i += 400){
+        const batch = db.batch(); snap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref)); await batch.commit();
+      }
+    }
+    await Promise.all(Object.keys(swaps).map(k => saveSwapEntry(k, swaps[k])));
+    await Promise.all(Object.keys(reqs).map(k => saveRequestEntry(k, reqs[k])));
+    await dbSetShared('scheduleOverrides', JSON.parse(b.overrides || '{}'));
+    await dbSetShared('extraHours', JSON.parse(b.extraHours || '{}'));
+    const ok = await dbSetShared('schedule', sched);
+    if(!ok) { showToastSafe('Falhou ao restaurar o horário.'); return; }
+    try{ localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(sched)); sessionStorage.setItem('schedReloaded', String(sched.uploadedAt)); }catch(e){}
+    location.reload();
+  }catch(e){ showToastSafe('Falhou ao restaurar. Tenta outra vez.'); }
+}
+function showToastSafe(msg){ try{ showConfirmDialog(suEsc(msg), () => {}, false, 'OK', false, null, null, true); }catch(e){ alert(msg); } }
 function openScheduleUpload(){
   if(!isAdminSession) return;
   SU = null;
@@ -8246,6 +8324,10 @@ async function saveUploadedSchedule(clear){
     version: SU.version || SU.month.replace('-', '.') + '.01',
     uploadedAt: Date.now(), uploadedBy: ADMIN_STAFF_ID
   };
+  st.textContent = 'A guardar ponto de restauro…';
+  const rp = await suMakeRestorePoint();
+  if(!rp.ok){ st.textContent = rp.why + ' Nada foi alterado.'; return; }
+  st.textContent = 'A gravar…';
   const ok = await dbSetShared('schedule', sched);
   if(!ok){ st.textContent = 'Não consegui gravar (sem ligação ou sem permissão). Nada foi alterado.'; return; }
   if(clear){
@@ -8271,7 +8353,8 @@ async function saveUploadedSchedule(clear){
   st.textContent = 'Horário gravado ✓ A recarregar…';
   setTimeout(() => location.reload(), 900);
 }
-document.getElementById('upload-schedule-link').addEventListener('click', openScheduleUpload);
+document.getElementById('so-sched-upload').addEventListener('click', openScheduleUpload);
+document.getElementById('so-sched-restore').addEventListener('click', openRestore);
 document.getElementById('schedule-upload-close').addEventListener('click', closeScheduleUpload);
 
 // Every device: if a newer schedule was uploaded, cache it and reload once so the whole app
