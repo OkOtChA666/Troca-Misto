@@ -3533,7 +3533,22 @@ document.getElementById('cancel-swap-modal').addEventListener('click', (e) => {
 // entirely, since impersonating someone else now requires actually knowing their password.
 let isAdminSession = false;
 const ADMIN_STAFF_ID = '11280';
-const ADMIN_PASSWORD = 'Portway2027!!';
+// The admin password is no longer written in this file: only a one-way "fingerprint" (PBKDF2-SHA256, salted) is.
+// To change the password, make a new fingerprint with the hash tool and replace the line below.
+const ADMIN_PASSWORD_HASH = 'pbkdf2$200000$f7163f750ddd9156347ef1b68fcbda8d$5ef5f7ba04c035629cd9aea561c7b2c86ce80a8edafd745b83674b2351a5f500';
+const unhexBytes = h => new Uint8Array((h.match(/../g) || []).map(x => parseInt(x, 16)));
+async function verifyPassword(pw, stored){
+  try{
+    const [kind, iter, salt, hash] = String(stored).split('$');
+    if(kind !== 'pbkdf2') return false;
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+    const got = new Uint8Array(await crypto.subtle.deriveBits({ name:'PBKDF2', salt: unhexBytes(salt), iterations: parseInt(iter, 10), hash:'SHA-256' }, key, 256));
+    const want = unhexBytes(hash);
+    if(got.length !== want.length) return false;
+    let diff = 0; for(let i = 0; i < want.length; i++) diff |= got[i] ^ want[i];
+    return diff === 0;
+  }catch(e){ return false; }
+}
 const STAFF_DEFAULT_PASSWORD = 'Portway2026%';
 async function checkAccessPassword(){
   const staffInput = document.getElementById('access-portal-staffnum');
@@ -3544,8 +3559,8 @@ async function checkAccessPassword(){
   const isAdmin = staffId === ADMIN_STAFF_ID;
   // For now everyone (except admin) shares one default password — a real per-person password
   // (settable after first login) is a planned next step, not built yet.
-  const expectedPassword = isAdmin ? ADMIN_PASSWORD : STAFF_DEFAULT_PASSWORD;
-  if(worker && input.value === expectedPassword){
+  const passwordOk = !worker ? false : (isAdmin ? await verifyPassword(input.value, ADMIN_PASSWORD_HASH) : input.value === STAFF_DEFAULT_PASSWORD);
+  if(worker && passwordOk){
     isAdminSession = isAdmin;
     await saveRememberedName(worker.name);
     applyRememberedName('cover-name-input', onPickCoverWorker);
