@@ -622,8 +622,8 @@
   }
   .skills-header-checks{ display:flex; gap:2px; }
   .skills-col-label{
-    width:36px; text-align:center; flex-shrink:0;
-    font-family: var(--mono); font-size: 9px; letter-spacing:0;
+    width:30px; text-align:center; flex-shrink:0;
+    font-family: var(--mono); font-size: 8px; letter-spacing:0;
     text-transform:uppercase; color: var(--text-dim);
   }
   .skills-row{
@@ -631,11 +631,11 @@
     padding: 11px 12px; border-bottom: 1px solid var(--border-soft);
   }
   .skills-row:last-child{ border-bottom:none; }
-  .skills-header,.skills-row{ gap:6px; padding-left:8px; padding-right:8px; }
-  .skills-row-name{ font-size: 13px; color: var(--text); flex:1; min-width:0; }
+  .skills-header,.skills-row{ gap:4px; padding-left:8px; padding-right:4px; }
+  .skills-row-name{ font-size: 12px; color: var(--text); flex:1; min-width:0; overflow-wrap:anywhere; line-height:1.25; }
   .skills-row-checks{ display:flex; gap:2px; flex:none; }
-  .skills-check-cell{ width:36px; display:flex; justify-content:center; }
-  .skills-row input[type=checkbox]{ width:16px; height:16px; accent-color: var(--cyan); cursor:pointer; }
+  .skills-check-cell{ width:30px; display:flex; justify-content:center; }
+  .skills-row input[type=checkbox]{ width:15px; height:15px; accent-color: var(--cyan); cursor:pointer; }
   .skills-col-out{ color:#ff5d6c !important; font-weight:700; }
   .skills-row input[data-sys=dismissed]{ accent-color:#ff5d6c; }
 
@@ -1668,6 +1668,7 @@
     <div id="so-menu">
       <div class="tool-card" id="so-card-ah"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div><div class="tool-name">ALTERAÇÃO DE HORÁRIOS</div><div class="tool-desc">Mudar o horário de um trabalhador</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-sched"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"/></svg></div><div><div class="tool-name">HORÁRIO MENSAL</div><div class="tool-desc">Carregar novo mês · Restore</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-agentes"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg></div><div><div class="tool-name">AGENTES</div><div class="tool-desc">Skills, INCOG e OUT</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-aistaff"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><div><div class="tool-name">PREVISÃO</div><div class="tool-desc">Pessoas necessárias por hora</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-msg"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></div><div><div class="tool-name">MSG</div><div class="tool-desc">Avisos e mensagens na app</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-custom1"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2-2z"/></svg></div><div><div class="tool-name">MAIN</div><div class="tool-desc">Manutenção: bloquear o acesso</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
@@ -3654,15 +3655,10 @@ function applyAdminVisibility(){
   if(adminDivider) adminDivider.style.display = isAdminSession ? '' : 'none';
   const agentesLink = document.getElementById('stat-workers-link');
   if(agentesLink){
-    if(isAdminSession){
-      agentesLink.style.cursor = '';
-      agentesLink.style.pointerEvents = '';
-      agentesLink.style.opacity = '';
-    } else {
-      agentesLink.style.cursor = 'default';
-      agentesLink.style.pointerEvents = 'none';
-      agentesLink.style.opacity = '0.6';
-    }
+    // the AGENTES list now lives in ADMIN → AGENTES; the header number is display-only for everyone
+    agentesLink.style.cursor = 'default';
+    agentesLink.style.pointerEvents = 'none';
+    agentesLink.style.opacity = isAdminSession ? '' : '0.6';
   }
 }
 // Shows who's currently logged in on this device, in the small tab row under the main links —
@@ -4171,6 +4167,7 @@ function isBlocked(workerId){
 }
 // header number: everybody on the schedule except the people marked OUT (BLOCK still counts)
 function updateAgentCount(){
+  try{ updateSkillsStats(); }catch(e){}
   try{ document.getElementById('stat-workers').textContent = DATA.workers.filter(w => !isDismissed(w.id)).length; }catch(e){}
 }
 async function loadDcsSystem(sys){
@@ -4211,7 +4208,8 @@ function updateSkillsStats(){
   const el = document.getElementById('skills-stats');
   if(!el) return;
   const count = Object.keys(ALTEA).filter(id => ALTEA[id]).length;
-  el.innerHTML = '<b>'+count+'</b> of '+DATA.workers.length+' marked with Altea / all systems';
+  const nOut = DATA.workers.filter(w => isDismissed(w.id)).length;
+  el.innerHTML = '<b>'+count+'</b> of '+DATA.workers.length+' marked with Altea / all systems' + (nOut ? ' · <b style="color:#ff5d6c">'+nOut+'</b> OUT' : '');
 }
 function renderSkillsList(filter){
   const box = document.getElementById('skills-list');
@@ -4484,8 +4482,12 @@ function refreshAllDateSelectCounts(){
 document.getElementById('tab-cover').addEventListener('click', () => switchTab('cover'));
 document.getElementById('tab-trade').addEventListener('click', () => switchTab('trade'));
 document.getElementById('tab-requests').addEventListener('click', () => switchTab('requests'));
-document.getElementById('stat-workers-link').addEventListener('click', () => {
+document.getElementById('so-card-agentes').addEventListener('click', () => {
+  document.getElementById('panel-schedule-override').classList.add('hidden');
+  document.querySelector('.tabs').classList.remove('hidden');
+  closeAllMsgPanels();
   switchTab('skills');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 function switchTab(name){
   document.getElementById('tab-cover').classList.toggle('active', name==='cover');
