@@ -1033,6 +1033,7 @@
   .mt-sw.on{ background:var(--amber); }
   .mt-sw.on:before{ transform:translateX(15px); }
   .mt-row.past.team-open{ opacity:1; }
+  .mt-dly{ margin-left:8px; background:var(--amber); color:#1a1200; border-radius:6px; padding:1px 8px; font:800 11px var(--mono); letter-spacing:.1em; }
   .mt-name{ display:inline-block; min-width:104px; flex:none; white-space:nowrap; }
   .mt-pair{ display:inline-flex !important; flex-direction:column; gap:2px; line-height:1.25; }
   .mt-dest{ font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:0.06em; color:var(--amber); margin-left:10px; flex:none; align-self:baseline; font-size:14px; }
@@ -8697,8 +8698,11 @@ function mtTeamHtml(t, colr, rowKey){
          (colr === '#0099ff' ? '<div class="mt-desk-toggle" role="switch" aria-checked="' + mtShowDesks() + '"><span>MOSTRAR BALCÕES</span><span class="mt-sw' + (mtShowDesks() ? ' on' : '') + '"></span></div>' : '') + '</div>';
 }
 // Task name for display only: "COM EZY/EJU(/EZS) 2ºB" -> "COM EZY" + a white pill with "2ºB"
+// a flight task whose name carries "DLY" (delayed): the flag moves next to the time, the flight number stays clean
+function mtIsDly(nk){ return /(^|\s)DLY(\s|$)/i.test(String(nk || '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '')); }
 function mtNameHtml(nk){
   let n = nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk;
+  n = n.replace(/(^|\s)DLY(?=\s|$)/i, '').replace(/\s{2,}/g, ' ').trim() || n;
   n = n.replace(/\bCOM\s+EZY\/EJU(\/EZS)?\b/i, 'COM EZY');   // 'COM EZY/EJU' and 'COM EZY/EJU/EZS' both show as 'COM EZY'
   const m = /^(COM\b.*?)\s+(\d{1,2})\s?[ºª°]?\s?([A-Za-z])$/i.exec(n);   // the coordinator sometimes forgets the º: "4B" and "4ºB" are the same
   if(m) return '<span class="mt-name" style="min-width:0">' + mtEsc(m[1]) + '</span><span class="mt-pill">' + mtEsc(m[2] + 'º' + m[3].toUpperCase()) + '</span>';
@@ -8792,7 +8796,7 @@ function renderMyTasks(){
         return;
       }
       html += '<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
-              '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
+              '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
               '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COM\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(t[5]), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
               '<div class="mt-side">' + chip + bdg + '</div>' + tabHtml + teamHtml + '</div>';
     });
