@@ -76,20 +76,22 @@ export async function fetchFlights({ user, pass }) {
 // Returns { map: { key: {c,g,p,pa,x,xt,e} }, wanted, matched }
 export function buildFlightMap(items, { dep, arr }) {
   const bare = (t) => String(t || '').replace(/\+\d+$/, '');
+  // F4S marks rows of other days with a suffix on the time ("11:30+1" = tomorrow, "11:30-1" = yesterday); today has none.
+  // The tasks are always today's, so a row of another day must never be used — better no gate/stand than tomorrow's.
+  const other = (t) => /[+-]\d+\s*$/.test(String(t || '').trim());
   const pick = (list, n, tm, timeOf) => {
-    const c = list.filter((f) => f.n === n);
+    const c = list.filter((f) => f.n === n && !other(timeOf(f)));
     if (!c.length) return null;
     const exact = c.filter((f) => bare(timeOf(f)) === tm);
-    if (exact.length) return exact.find((f) => !/\+/.test(timeOf(f))) || exact[0];
+    if (exact.length) return exact[0];
     if (c.length === 1) return c[0];
-    // several rows (e.g. today and tomorrow) and no exact time: take the nearest one within 6 hours, today's (first listed) on a tie
+    // several rows today and no exact time (delays move the time): take the nearest one within 6 hours
     const mins = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(bare(t)); return m ? (+m[1]) * 60 + (+m[2]) : null; };
     const want = mins(tm); if (want === null) return null;
     let best = null, bestD = 361;
     c.forEach((f) => {
       const v = mins(timeOf(f)); if (v === null) return;
       let dd = Math.abs(v - want); dd = Math.min(dd, 1440 - dd);
-      if (/[+-]\d+$/.test(String(timeOf(f)).trim())) dd += 720;   // rows for other days (+1 tomorrow, -3 three days ago) are the last choice
       if (dd < bestD) { best = f; bestD = dd; }
     });
     return best;
