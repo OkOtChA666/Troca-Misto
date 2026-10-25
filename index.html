@@ -1505,6 +1505,13 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
       </button>
     </div>
+    <div id="np-card" class="hidden" style="margin:0 0 14px; padding:12px 14px; border:1px solid var(--border); background:var(--panel-2); border-radius:12px;">
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFB300" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none; margin-top:1px;"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 0 0 4 0"/></svg>
+        <div><div id="np-title" style="font:700 12px var(--mono); letter-spacing:.1em; color:var(--text);"></div><div id="np-text" style="font:12px/1.45 var(--sans); color:var(--text-dim); margin-top:3px;"></div></div>
+      </div>
+      <button type="button" id="np-btn" class="hidden" style="width:100%; margin-top:10px; padding:11px; border-radius:9px; border:0; background:var(--amber); color:#1a1200; font:800 12px var(--mono); letter-spacing:.12em; cursor:pointer;">ATIVAR NOTIFICAÇÕES</button>
+    </div>
     <div class="swap-sort-toggle" id="area-tabs" style="margin:0 0 14px;">
       <div class="swap-sort-tab active" id="area-tab-btn-swaps"><span>AS MINHAS TROCAS</span><div class="dash"></div></div>
       <div class="swap-sort-tab" id="area-tab-btn-tasks"><span>AS MINHAS TAREFAS<span id="my-tasks-badge"></span></span><div class="dash"></div></div>
@@ -3726,15 +3733,47 @@ setTimeout(nameScrollFit, 2500);
 // The VAPID key is a public identifier for this Firebase project (not a secret) — it's what
 // lets FCM authorize this specific app to request a push subscription on a visitor's behalf.
 const FCM_VAPID_KEY = 'BMsieXuop7EUqttZtVWdEVp32M4nxoiH9eHfanMC08A4jlaheOIbKUA3YQBW0kGPZvw8X5jfR5B4eHSVItiuSrk';
+// ---- "Ativar notificações" card in ÁREA PESSOAL: shown only on devices where notifications are not working yet ----
+function npIsIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function npIsInstalled(){ try{ return !!navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); }catch(e){ return false; } }
+function npRefresh(){
+  const card = document.getElementById('np-card'); if(!card) return;
+  const title = document.getElementById('np-title'), text = document.getElementById('np-text'), btn = document.getElementById('np-btn');
+  const show = (t, x, withBtn) => { title.textContent = t; text.innerHTML = x; btn.classList.toggle('hidden', !withBtn); card.classList.remove('hidden'); };
+  card.classList.add('hidden');
+  try{
+    const staffId = localStorage.getItem('trocaMistoLoginStaffId');
+    if(!staffId || !notificationsEnabled) return;
+    if(npIsIOS() && !npIsInstalled()){
+      show('NO IPHONE', 'Para receber notificações, abre no Safari: <b style="color:var(--text)">Partilhar → Adicionar ao ecrã principal</b>, e abre a app a partir do ícone.', false); return;
+    }
+    if(!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    if(Notification.permission === 'granted') return;
+    if(Notification.permission === 'denied'){
+      show('NOTIFICAÇÕES BLOQUEADAS', 'Ativa-as nas definições do telemóvel (Definições → Notificações → TROCA-MISTO) e volta aqui.', false); return;
+    }
+    show('NOTIFICAÇÕES DESLIGADAS', 'Recebe avisos de trocas e de alterações às tuas tarefas.', true);
+  }catch(e){}
+}
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest && ev.target.closest('#np-btn'); if(!b) return;
+  const staffId = localStorage.getItem('trocaMistoLoginStaffId'); if(!staffId) return;
+  // called straight from the tap, so iOS accepts the permission request
+  Promise.resolve(setupPushNotificationsForThisDevice(staffId, true)).then(npRefresh, npRefresh);
+});
+document.addEventListener('visibilitychange', () => { if(!document.hidden) npRefresh(); });
 // Called whenever notifications are (or already were) turned on for this device — asks for
 // browser permission if needed, registers the service worker, gets this device's own unique
 // push address from FCM, and saves it to Firestore linked to whoever's logged in right now.
 // Safe to call repeatedly (e.g. on every login) — a device already granted/registered just
 // gets its token refreshed, which is harmless and keeps it from ever going stale.
-async function setupPushNotificationsForThisDevice(staffId){
+async function setupPushNotificationsForThisDevice(staffId, fromTap){
   if(!('Notification' in window) || !('serviceWorker' in navigator)){
     return; // this browser doesn't support web push at all — nothing to do
   }
+  // iPhone/iPad only show the permission prompt for a real tap; an automatic request is ignored. So on iOS the
+  // automatic call only refreshes a device that is already allowed — the first "yes" comes from the button in ÁREA PESSOAL.
+  if(!fromTap && npIsIOS() && Notification.permission !== 'granted') return;
   try{
     const permission = await Notification.requestPermission();
     if(permission !== 'granted') return; // person declined — respect that silently, no error shown
@@ -4036,6 +4075,7 @@ function openMySwaps(){
   document.querySelector('.tabs').classList.add('hidden');
   document.getElementById('panel-my-swaps').classList.remove('hidden');
   showAreaTab('swaps');
+  npRefresh();
 }
 function closeMySwaps(){
   closeMyTasks();
@@ -7937,6 +7977,7 @@ Promise.all([
     const staffId = localStorage.getItem('trocaMistoLoginStaffId');
     if(staffId) setupPushNotificationsForThisDevice(staffId);
   }
+  npRefresh();
 });
 // ===== Schedule PDF reader (used by the admin "CARREGAR NOVO HORARIO" screen) =====
 // Layout it expects (the Check-in monthly PDF): per page, a header row with weekday cells
