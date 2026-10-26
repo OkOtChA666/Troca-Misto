@@ -918,6 +918,11 @@
   .su-box{ background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px; width:760px; max-width:100%; margin:10px auto; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
   .su-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
   .su-title{ font-family:var(--mono); font-size:13px; letter-spacing:0.12em; color:var(--amber); font-weight:700; }
+  .su-dep{ margin:0 0 12px; } .su-dep-l{ font-family:var(--mono); font-size:11px; letter-spacing:.1em; color:var(--text-dim); margin:0 0 6px; }
+  .su-dep-seg{ display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .su-dep-seg div{ flex:1; text-align:center; padding:10px; font:700 13px var(--mono); letter-spacing:.08em; color:var(--text-dim); cursor:pointer; }
+  .su-dep-seg div.on{ background:var(--amber-glow); color:var(--amber); cursor:default; }
+  html.grp-sup #area-tabs, html.grp-sup #tools-link, html.grp-sup #tools-link + .header-divider{ display:none !important; }   /* check-in only: tasks, flights, tools */
   .su-bk{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:12px; margin-bottom:12px; }
   .su-bk-h{ color:var(--amber); font-weight:700; font-size:15px; }
   .su-bk-s{ font-size:12px; color:var(--text-dim); margin:2px 0 10px; }
@@ -1920,13 +1925,29 @@ function fixOldNames(o, depth){
   return o;
 }
 function applyNameFixes(d){ try{ (d.workers || []).forEach(w => { if(w && NAME_FIXES[w.id]) w.name = NAME_FIXES[w.id]; }); }catch(e){} return d; }
+// ===================== DEPARTMENTS =====================
+// TTAE is the original (its data keeps the names it always had). Every other department keeps its own copy of the schedule,
+// swaps, requests, overrides and so on, under names starting with its code ("sup_..."), so nothing is ever shared by mistake.
+// Which department a device is in is decided at login, from the staff number (see checkAccessPassword).
+const GROUPS = { '': 'TTAE', sup: 'SUPERVISÃO' };
+const GROUP = (function(){ try{ const g = localStorage.getItem('trocaMistoGroup') || ''; return GROUPS[g] ? g : ''; }catch(e){ return ''; } })();
+const GROUP_LABEL = GROUPS[GROUP];
+try{ if(GROUP){ document.documentElement.classList.add('grp-' + GROUP); const eb = document.querySelector('.eyebrow'); if(eb) eb.textContent = GROUP_LABEL + ' · FAO · PAX'; } }catch(e){}
+const GLOBAL_KEY = /Enabled$|^maintenance$|^flightlist$|^flightairlines$|^aistaff$|^tasks$|^taskreq$/;   // settings and check-in-only data: one copy for everybody
+function gScope(key, g){ g = (g === undefined ? GROUP : g); return g && !GLOBAL_KEY.test(key) ? g + '_' + key : key; }
+function gColl(name, g){ g = (g === undefined ? GROUP : g); return g && (name === 'swaps' || name === 'requests') ? g + '_' + name : name; }
+const SCHEDULE_CACHE_KEY = 'trocaMistoScheduleCache' + (GROUP ? '_' + GROUP : '');
+const SUP_ADMINS = ['4337'];   // department admins of SUPERVISÃO (they only get ALTERAÇÃO DE HORÁRIOS)
+const SUP_PASSWORD_HASH = 'pbkdf2$200000$1bf25cd12658f371bd168f9683ab9eee$11a609883ed274fe8f8db2b58a92723cda604278d3e9192118f4e2d450c969f1';
+const EMBEDDED_SUP = {"month":"2026-10","days":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31],"workers":[{"id":"5457","name":"ALVES FILOMENA","s":["1600-2400","1600-2400","1500-2300","1530-2330","DC","DS","0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","1600-2400","1600-2400","1530-2330","1400-2200","DC","DS","1000-1800","1000-1800","1000-1800","1000-1800","DC","DS","0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","0600-1400"]},{"id":"5461","name":"CAPUTO ILSE","s":["0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","1600-2400","1600-2400","1500-2300","1500-2300","DC","DS","0330-1130","0330-1130","0430-1230","0430-1230","DC","DS","1500-2300","1500-2300","1400-2200","1530-2330","DC","DS","1000-1800","1000-1800","0600-1400","0600-1400","DC","DS","1600-2400"]},{"id":"10101","name":"CORREIA FILIPE","s":["DS","1500-2300","1400-2200","1400-2200","1300-2100","DC","DS","0700-1500","0430-1230","0430-1230","0430-1230","DC","DS","1400-2200","1400-2200","1500-2300","1400-2200","1500-2300","DC","DS","0700-1500","0430-1230","0430-1230","DC","DS","1500-2300","1500-2300","1400-2200","1300-2100","DC","DS"]},{"id":"10457","name":"FARIA DEBORA","s":["DC","DS","0600-1400","0600-1400","0600-1400","0600-1400","DC","DS","1400-2200","1100-1900,F50","1100-1900,F50","1100-1900,F50","DC","DS","1100-1900,F50","1100-1900,F50","1100-1900,F50","1100-1900,F50","DC","DS","0600-1400","0700-1500","1000-1800","0700-1500","DC","DS","0430-1230","0430-1230","0700-1500","0700-1500","DC"]},{"id":"4450","name":"FRAGATA ANA","s":["1300-2100","1300-2100","DC","DS","0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","1530-2330","1500-2300","1300-2100","1200-2000","DC","DS","0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","1600-2400","1600-2400","1600-2400","1600-2400","DC","DS","0430-1230","0430-1230","0430-1230"]},{"id":"5424","name":"GUERREIRO DAVID","s":["DC","DS","1000-1800","1000-1800","1000-1800","1300-2100","DC","DS","0700-1500","1000-1800","1000-1800","0600-1400","DC","DS","1600-2400","1600-2400","1600-2400","1600-2400","DC","DS","1300-2100","1400-2200","1300-2100","1400-2200","DC","DS","1600-2400","1600-2400","1530-2330","1500-2300","DC"]},{"id":"11094","name":"LOUREIRO NELSON","s":["0600-1400","0600-1400","DC","DS","0700-1500","1000-1800","0700-1500","1000-1800,FOR","DC","DS","1300-2100","1000-1800","1400-2200","1300-2100","DC","DS","0430-1230","0430-1230","0430-1230","0430-1230","0430-1230","DC","DS","1000-1800","1300-2100","1300-2100","DC","DS","0430-1230","0430-1230","0430-1230"]},{"id":"4337","name":"MORAIS RUTE","s":["0330-1130","0330-1130","DC","DS","1600-2400","1600-2400","1400-2200","1400-2200","DC","DS","0600-1400","0430-1230","0600-1400","0600-1400","DC","DS","1000-1800","1000-1800","1300-2100","1300-2100","DC","DS","0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","1600-2400","1600-2400","1400-2200"]},{"id":"3720","name":"MORGADO ANTÓNIO","s":["DC","DS","0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","1600-2400","1600-2400","1400-2200","1300-2100","DC","DS","0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","1200-2000,F50","1200-2000,F50","1200-2000,F50","1200-2000,F50","DC","DS","0600-1400,F50","0600-1400,F50","0600-1400,F50","0600-1400,F50","DC"]},{"id":"3422","name":"MOÇO JENNY","s":["0430-1230","0600-1400","0600-1400","0600-1400","DC","DS","1400-2200","1530-2330","1300-2100","1430-2230","DC","DS","0430-1230","0430-1230","0330-1130","0330-1130","DC","DS","1600-2400","1600-2400","1600-2400","1600-2400","DC","DS","0600-1400","0600-1400","0430-1230","0430-1230","DC","DS","1500-2300"]},{"id":"4440","name":"NOGUEIRA MARTA","s":["1400-2200","1400-2200","DC","DS","0430-1230","0430-1230","0430-1230","0430-1230","DC","DS","1600-2400","1600-2400","1500-2300","1400-2200","DC","DS","0600-1400","0600-1400","0430-1230","0430-1230","DC","DS","1500-2300","1500-2300","1400-2200","1400-2200","DC","DS","0330-1130","0330-1130","0330-1130"]},{"id":"4108","name":"NUNES JOSÉ","s":["DC","DS","1600-2400","1600-2400","1500-2300","1500-2300","DC","DS","0600-1400","0600-1400","0330-1130","0330-1130","DC","DS","1000-1800","1000-1800","1300-2100","1400-2200","DC","DS","0330-1130","0330-1130","0330-1130","0330-1130","DC","DS","1000-1800","1000-1800","1000-1800","1000-1800","DC"]},{"id":"4899","name":"SANDRINE ISABELLE SANDRINA","s":["0800-1600","0700-1500","DC","DS","1400-2200","1400-2200","1300-2100","1300-2100","DC","DS","0430-1230","0430-1230","0430-1230","0430-1230","DC","DS","1400-2200","1530-2330","1400-2200","1400-2200","DC","DS","0600-1400","0430-1230","0430-1230","0430-1230","DC","DS","1400-2200","1400-2200","1300-2100"]},{"id":"3590","name":"SARAGOÇA ANA","s":["1530-2330","1300-2100","1300-2100","1300-2100","DC","DS","0600-1400","0600-1400","0430-1230","0430-1230","DC","DS","1000-1800","1000-1800","0700-1500","0700-1500","DC","DS","0700-1500","0700-1500","0430-1230","0430-1230","DC","DS","1530-2330","1400-2200","1400-2200","1300-2100","DC","DS","1100-1900,F50"]},{"id":"5413","name":"ÂNGELO CÁTIA","s":["1000-1800","1000-1800","0700-1500","0700-1500","DC","DS","1000-1800","1300-2100","1000-1800","1300-2100","DC","DS","1200-2000,F50","1200-2000,F50","1200-2000,F50","1200-2000,F50","DC","DS","0600-1400,F50","0600-1400,F50","0600-1400,F50","0600-1400,F50","DC","DS","1200-2000,F50","1200-2000,F50","1200-2000,F50","1200-2000,F50","DC","DS","1000-1800"]}]};
+const BASE_DATA = GROUP === 'sup' ? EMBEDDED_SUP : EMBEDDED_DATA;
 const DATA = (function(){
   try{
-    const c = JSON.parse(localStorage.getItem('trocaMistoScheduleCache') || 'null');
-    if(c && c.month && c.month >= EMBEDDED_DATA.month && c.days && c.days.length && c.workers && c.workers.length
+    const c = JSON.parse(localStorage.getItem(SCHEDULE_CACHE_KEY) || 'null');
+    if(c && c.month && c.month >= BASE_DATA.month && c.days && c.days.length && c.workers && c.workers.length
        && c.workers.every(w => w && w.id && w.name && Array.isArray(w.s) && w.s.length === c.days.length)) return applyNameFixes(c);
   } catch(e){}
-  return applyNameFixes(EMBEDDED_DATA);
+  return applyNameFixes(BASE_DATA);
 })();
 // ---------- Mod. 625 "Troca ou Substituição de Serviço" form template (base64 fillable PDF) ----------
 // TOGGLE: flip to true once authorized to use this on the live board. Currently a placeholder
@@ -2061,7 +2082,13 @@ function getMedAppointmentTime(workerId, idx){
 function hasLostAndFoundDuty(workerId, idx){
   const worker = DATA.workers.find(w => w.id === workerId);
   const entry = worker ? getEntry(worker, idx) : null;
-  return !!(entry && entry.codes && entry.codes.includes('LOST'));
+  return !!(entry && entry.codes && (entry.codes.includes('LOST') || entry.codes.includes('FOR')));   // FOR = training: not available either
+}
+// FOR (formação, Supervisão): a training day cannot be swapped, neither given away nor taken
+function hasTrainingDay(workerId, idx){
+  const worker = DATA.workers.find(w => w.id === workerId);
+  const entry = worker ? getEntry(worker, idx) : null;
+  return !!(entry && entry.codes && entry.codes.includes('FOR'));
 }
 // Declared here (very early) rather than near its load/save functions further down, because
 // getEntry() reads it and getEntry() gets called synchronously during initial page setup —
@@ -2828,11 +2855,11 @@ async function getUserId(){
 // Shared document body must be a plain object (never an array or scalar at the top level) —
 // callers that store a boolean/string wrap it as {value: ...} themselves; callers whose data
 // is already an object (SWAPS, REQUESTS, etc.) pass/read it directly as the whole body.
-async function dbGetShared(key, fallback){
+async function dbGetShared(key, fallback, grp){   // grp: read another department's copy (only used when logging in)
   try{
     const db = await getDb();
     if(!db) return fallback;
-    const snap = await db.collection('data').doc(key).get();
+    const snap = await db.collection('data').doc(gScope(key, grp)).get();
     // Deep-cloning guarantees callers can freely mutate what they get back (add/delete keys,
     // reassign fields) — see the note this comment used to carry about a frozen-snapshot bug
     // elsewhere; kept here defensively even though Firestore's compat SDK returns plain
@@ -2846,7 +2873,7 @@ async function dbSetShared(key, data){
   try{
     const db = await getDb();
     if(!db) return false;
-    await db.collection('data').doc(key).set(data);
+    await db.collection('data').doc(gScope(key)).set(data);
     return true;
   } catch(e){
     return false;
@@ -2888,7 +2915,7 @@ async function dbLoadCollection(collectionName, fallback){
   try{
     const db = await getDb();
     if(!db) return fallback;
-    const snap = await db.collection(collectionName).get();
+    const snap = await db.collection(gColl(collectionName)).get();
     const result = {};
     snap.forEach(d => { result[d.id] = JSON.parse(JSON.stringify(d.data())); });
     return result;
@@ -2900,7 +2927,7 @@ async function dbSetCollectionEntry(collectionName, docId, data){
   try{
     const db = await getDb();
     if(!db) return false;
-    await db.collection(collectionName).doc(docId).set(data);
+    await db.collection(gColl(collectionName)).doc(docId).set(data);
     return true;
   } catch(e){
     return false;
@@ -2910,7 +2937,7 @@ async function dbDeleteCollectionEntry(collectionName, docId){
   try{
     const db = await getDb();
     if(!db) return false;
-    await db.collection(collectionName).doc(docId).delete();
+    await db.collection(gColl(collectionName)).doc(docId).delete();
     return true;
   } catch(e){
     return false;
@@ -3393,7 +3420,7 @@ loadSwaps().then(() => refreshRecentSwapsLists());
 // everyone at once, which is the entire point of a shared tool like this.
 getDb().then(db => {
   if(!db) return;
-  db.collection('swaps').onSnapshot(snapshot => {
+  db.collection(gColl('swaps')).onSnapshot(snapshot => {
     const updated = {};
     snapshot.forEach(d => { updated[d.id] = JSON.parse(JSON.stringify(d.data())); });
     SWAPS = fixOldNames(updated);
@@ -3450,7 +3477,7 @@ async function loadScheduleOverrides(){
 // Live: a correction saved on any device shows up everywhere without a reload.
 getDb().then(db => {
   if(!db) return;
-  db.collection('data').doc('scheduleOverrides').onSnapshot(snap => {
+  db.collection('data').doc(gScope('scheduleOverrides')).onSnapshot(snap => {
     SCHEDULE_OVERRIDES = snap.exists ? JSON.parse(JSON.stringify(snap.data())) : {};
     onScheduleOverridesChanged();
   }, () => {});
@@ -3620,7 +3647,9 @@ document.getElementById('cancel-swap-modal').addEventListener('click', (e) => {
 // who's using the app — replacing the old separate "pick your name from a dropdown" step
 // entirely, since impersonating someone else now requires actually knowing their password.
 let isAdminSession = false;
+let isDeptAdminSession = false;   // a department admin (e.g. Supervisão): sees ADMIN, but only ALTERAÇÃO DE HORÁRIOS
 const ADMIN_STAFF_ID = '11280';
+const ADMIN_NAME = 'MADEIRA GONÇALO';   // shown for the admin when the department he is looking at does not list him
 // The admin password is no longer written in this file: only a one-way "fingerprint" (PBKDF2-SHA256, salted) is.
 // To change the password, make a new fingerprint with the hash tool and replace the line below.
 const ADMIN_PASSWORD_HASH = 'pbkdf2$200000$f7163f750ddd9156347ef1b68fcbda8d$5ef5f7ba04c035629cd9aea561c7b2c86ce80a8edafd745b83674b2351a5f500';
@@ -3638,25 +3667,55 @@ async function verifyPassword(pw, stored){
   }catch(e){ return false; }
 }
 const STAFF_DEFAULT_PASSWORD = 'Portway2026%';
+// Which department's password applies. TTAE: the shared default; SUPERVISÃO: its own (stored as a fingerprint, like the admin's).
+async function groupPasswordOk(g, pw){
+  if(g === 'sup') return await verifyPassword(pw, SUP_PASSWORD_HASH);
+  return pw === STAFF_DEFAULT_PASSWORD;
+}
+function startSessionFor(staffId, g, isAdmin){
+  localStorage.setItem('trocaMistoLoginStaffId', staffId);
+  localStorage.setItem('trocaMistoLoginIsAdmin', String(isAdmin));
+  try{ if(g) localStorage.setItem('trocaMistoGroup', g); else localStorage.removeItem('trocaMistoGroup'); }catch(e){}
+}
 async function checkAccessPassword(){
   const staffInput = document.getElementById('access-portal-staffnum');
   const input = document.getElementById('access-portal-input');
   const error = document.getElementById('access-portal-error');
   const staffId = staffInput.value.trim();
-  const worker = DATA.workers.find(w => w.id === staffId);
   const isAdmin = staffId === ADMIN_STAFF_ID;
-  // For now everyone (except admin) shares one default password — a real per-person password
-  // (settable after first login) is a planned next step, not built yet.
-  const passwordOk = !worker ? false : (isAdmin ? await verifyPassword(input.value, ADMIN_PASSWORD_HASH) : input.value === STAFF_DEFAULT_PASSWORD);
+  let worker = DATA.workers.find(w => w.id === staffId);
+  let passwordOk = false;
+  if(isAdmin){
+    // the admin can be in any department, whether or not that department's schedule lists him
+    passwordOk = await verifyPassword(input.value, ADMIN_PASSWORD_HASH);
+    if(passwordOk && !worker) worker = { id: ADMIN_STAFF_ID, name: ADMIN_NAME, s: [] };
+  } else if(worker){
+    passwordOk = await groupPasswordOk(GROUP, input.value);
+  } else if(staffId){
+    // not in this department's schedule: the staff number decides the department — look in the others
+    for(const og of Object.keys(GROUPS)){
+      if(og === GROUP) continue;
+      const sch = await dbGetShared('schedule', null, og);
+      const w = sch && Array.isArray(sch.workers) ? sch.workers.find(x => x && x.id === staffId) : null;
+      if(w){
+        if(await groupPasswordOk(og, input.value)){
+          startSessionFor(staffId, og, false);
+          location.reload();   // reload so the whole app starts in that department
+          return;
+        }
+        break;
+      }
+    }
+  }
   if(worker && passwordOk){
     isAdminSession = isAdmin;
+    isDeptAdminSession = !isAdmin && GROUP === 'sup' && SUP_ADMINS.includes(staffId);
     await saveRememberedName(worker.name);
     applyRememberedName('cover-name-input', onPickCoverWorker);
     applyRememberedName('trade-a-input', onPickTradeA);
     applyRememberedName('extra-name-input', onPickExtraWorker);
     applyRememberedName('request-name-input', onPickRequestPoster);
-    localStorage.setItem('trocaMistoLoginStaffId', staffId);
-    localStorage.setItem('trocaMistoLoginIsAdmin', String(isAdmin));
+    startSessionFor(staffId, GROUP, isAdmin);
     document.getElementById('access-portal').classList.add('hidden');
     applyAdminVisibility();
     updateLoggedInDisplay(staffId, worker.name);
@@ -3679,13 +3738,13 @@ async function checkAccessPassword(){
 // visible but not clickable — admin (Gonçalo) sees everything exactly as before.
 function applyAdminVisibility(){
   const adminLink = document.getElementById('schedule-override-link');
-  if(adminLink) adminLink.style.display = isAdminSession ? 'inline-flex' : 'none';
+  if(adminLink) adminLink.style.display = (isAdminSession || isDeptAdminSession) ? 'inline-flex' : 'none';
   const verWrap = document.getElementById('stat-version-wrap');
   if(verWrap) verWrap.style.display = isAdminSession ? 'none' : '';
   // The divider right after ADMIN needs to hide along with it — otherwise a non-admin
   // session would show a stray "|" with nothing before it.
   const adminDivider = document.getElementById('admin-turnaround-divider');
-  if(adminDivider) adminDivider.style.display = isAdminSession ? '' : 'none';
+  if(adminDivider) adminDivider.style.display = (isAdminSession || isDeptAdminSession) ? '' : 'none';
   const agentesLink = document.getElementById('stat-workers-link');
   if(agentesLink){
     // the AGENTES list now lives in ADMIN → AGENTES; the header number is display-only for everyone
@@ -3817,9 +3876,11 @@ document.getElementById('access-portal-staffnum').addEventListener('input', upda
 (function restoreLoginIfPresent(){
   const savedStaffId = localStorage.getItem('trocaMistoLoginStaffId');
   if(!savedStaffId) return;
-  const worker = DATA.workers.find(w => w.id === savedStaffId);
+  let worker = DATA.workers.find(w => w.id === savedStaffId);
+  if(!worker && savedStaffId === ADMIN_STAFF_ID) worker = { id: ADMIN_STAFF_ID, name: ADMIN_NAME, s: [] };   // the admin may look at a department that does not list him
   if(!worker) return; // roster changed since this device last logged in — fall back to a real login
   isAdminSession = localStorage.getItem('trocaMistoLoginIsAdmin') === 'true';
+  isDeptAdminSession = !isAdminSession && GROUP === 'sup' && SUP_ADMINS.includes(savedStaffId);
   document.getElementById('access-portal').classList.add('hidden');
   applyAdminVisibility();
   updateLoggedInDisplay(savedStaffId, worker.name);
@@ -3853,6 +3914,7 @@ document.getElementById('logout-link').addEventListener('click', () => {
   showConfirmDialog('Terminar sessão? Vais precisar do teu número de colaborador e password para entrar novamente.', () => {
     localStorage.removeItem('trocaMistoLoginStaffId');
     localStorage.removeItem('trocaMistoLoginIsAdmin');
+    try{ localStorage.removeItem('trocaMistoGroup'); }catch(e){}
     location.reload();
   }, false, 'SAIR', false, null, 'CANCELAR');
 });
@@ -4739,6 +4801,10 @@ function runCoverSearch(){
     // #cover-results, so there's nothing further to do except stop here.
     return;
   }
+  if(hasTrainingDay(coverWorker.id, idx)){
+    document.getElementById('cover-results').innerHTML = '<div class="empty-state"><span class="big">FORMAÇÃO</span>'+coverWorker.name+' está em formação em '+fmtDateLabel(idx)+' — não é possível fazer troca nesse dia.</div>';
+    return;
+  }
   if(hasMedAppointment(coverWorker.id, idx)){
     // A fixed medical appointment can't move for a swap — same early-exit shape as the
     // block above, just a different underlying reason.
@@ -5092,6 +5158,10 @@ function runTradeSearch(){
     // updateTurnoContext() above already shows the full blocked-state message with details —
     // no need to duplicate a bare version of it down here too. It also already cleared
     // #trade-results, so there's nothing further to do except stop here.
+    return;
+  }
+  if(hasTrainingDay(tradeA.id, idx)){
+    document.getElementById('trade-results').innerHTML = '<div class="empty-state"><span class="big">FORMAÇÃO</span>'+tradeA.name+' está em formação em '+fmtDateLabel(idx)+' — não é possível fazer troca nesse dia.</div>';
     return;
   }
   if(hasMedAppointment(tradeA.id, idx)){
@@ -5580,7 +5650,7 @@ async function renderMultiDayCalendar(){
     // that already has a pending request isn't selectable either — posting another one for
     // the exact same day doesn't make sense while the first is still open (this naturally
     // also covers an expired request that's now disabled but still sitting there unclaimed).
-    const selectable = isWorking && !hasPendingRequest && !isTodayDay(idx) && !isPedidosDayTooLateToRequest(idx) && !hasMedAppointment(requestPosterWorker.id, idx) && !(trocaSobreTrocaEnabled && hasSwap); // same-day is too last-minute; tomorrow-past-17:00 would be born already expired; a fixed medical appointment can't move for a swap; already having a swap this day (while the rule is on) shouldn't have been clickable at all — matches every other search/claim path's own trocaSobreTroca check
+    const selectable = isWorking && !hasPendingRequest && !isTodayDay(idx) && !isPedidosDayTooLateToRequest(idx) && !hasMedAppointment(requestPosterWorker.id, idx) && !hasTrainingDay(requestPosterWorker.id, idx) && !(trocaSobreTrocaEnabled && hasSwap); // same-day is too last-minute; tomorrow-past-17:00 would be born already expired; a fixed medical appointment can't move for a swap; already having a swap this day (while the rule is on) shouldn't have been clickable at all — matches every other search/claim path's own trocaSobreTroca check
     const selected = selectedMultiDays.has(idx);
     const past = isPastDay(idx);
     const clickable = selectable && !past;
@@ -5645,6 +5715,8 @@ async function renderMultiDayCalendar(){
       // Locked out by HR's own deadline — same idea as the other non-selectable states,
       // worth a quick explanation rather than the tap doing nothing at all.
       cell.addEventListener('click', () => showTooLateGlimpse());
+    } else if(isWorking && !isTodayDay(idx) && hasTrainingDay(requestPosterWorker.id, idx)){
+      cell.addEventListener('click', () => showConfirmDialog('Formação nesse dia — não é possível fazer troca.', () => {}, false, 'OK', false, null, null, true));
     } else if(isWorking && !isTodayDay(idx) && hasMedAppointment(requestPosterWorker.id, idx)){
       // A fixed medical appointment — same idea, worth a quick explanation rather than the
       // tap doing nothing at all.
@@ -5848,7 +5920,7 @@ function getPossoAjudarState(req){
   if(!me || isBlocked(me.id)) return { disabled: false };
   if(me.id === req.requesterId) return { disabled: false }; // handled separately — this is your own request
   if(trocaSobreTrocaEnabled && findSwapRecordFor(me, req.idx)) return { disabled: true, reason: 'Já tens uma troca marcada para este dia.' };
-  if(hasLostAndFoundDuty(me.id, req.idx)) return { disabled: true, reason: 'Estás escalado(a) para o Lost & Found nesse dia — não disponível para trocas de PAX.' };
+  if(hasLostAndFoundDuty(me.id, req.idx)) return { disabled: true, reason: (hasTrainingDay(me.id, req.idx) ? 'Estás em formação nesse dia — não disponível para trocas.' : 'Estás escalado(a) para o Lost & Found nesse dia — não disponível para trocas de PAX.') };
   const { hardBlockMsg, issues } = computeClaimIssues(me, req);
   if(hardBlockMsg) return { disabled: true, reason: hardBlockMsg };
   if(issues.some(i => i.type === 'med')) return { disabled: true, reason: 'Consulta médica marcada nesse dia — não é possível fazer esta troca.' };
@@ -6177,7 +6249,7 @@ function computeClaimIssues(volunteer, req){
     // Defensive, final-confirm-time check — the search results and the "who are you" picker
     // already exclude this person earlier, but this is the actual source of truth both of
     // those defer to, so it needs its own guard rather than relying only on upstream filters.
-    return { hardBlockMsg: 'Estás escalado(a) para o Lost & Found nesse dia — não disponível para trocas de PAX.', issues: [] };
+    return { hardBlockMsg: (hasTrainingDay(volunteer.id, req.idx) ? 'Estás em formação nesse dia — não disponível para trocas.' : 'Estás escalado(a) para o Lost & Found nesse dia — não disponível para trocas de PAX.'), issues: [] };
   }
   const requesterEntry = getEffectiveEntry(requester, req.idx);
 
@@ -6275,7 +6347,7 @@ loadRequests();
 // anyone updates this device's view automatically, no refresh needed.
 getDb().then(db => {
   if(!db) return;
-  db.collection('requests').onSnapshot(snapshot => {
+  db.collection(gColl('requests')).onSnapshot(snapshot => {
     const updated = {};
     snapshot.forEach(d => { updated[d.id] = JSON.parse(JSON.stringify(d.data())); });
     REQUESTS = fixOldNames(updated);
@@ -7231,6 +7303,10 @@ function renderScheduleOverrideList(){
 }
 // ---------- ADMIN menu: stacked cards, one section open at a time ----------
 const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO' };
+function soApplyCards(){
+  ['ah','sched','agentes','aistaff','msg','custom1','custom2','stats'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
+  const t = document.getElementById('so-title'); if(t && GROUP && isAdminSession) t.textContent = 'ADMIN · ' + GROUP_LABEL;
+}
 function soShowMenu(){
   closeAllMsgPanels();
   document.getElementById('schedule-override-normal-content').classList.add('hidden');
@@ -7238,8 +7314,10 @@ function soShowMenu(){
   document.getElementById('so-head').classList.remove('hidden');
   document.getElementById('so-title').textContent = 'ADMIN';
   document.getElementById('so-sched').classList.add('hidden');
+  soApplyCards();
 }
 function soOpen(key){
+  if(!isAdminSession && key !== 'ah') return;
   document.getElementById('so-menu').classList.add('hidden');
   document.getElementById('so-head').classList.remove('hidden');
   document.getElementById('so-title').textContent = SO_TITLES[key] || 'ADMIN';
@@ -7490,7 +7568,7 @@ document.getElementById('order66-btn').addEventListener('click', () => {
             }
             // Swaps and requests live in their own collections now (one document per entry),
             // not under "data" — wipe those too so ORDER 66 still means everything.
-            for(const collName of ['swaps', 'requests']){
+            for(const collName of ['swaps', 'requests', 'sup_swaps', 'sup_requests']){
               const collSnap = await db.collection(collName).get();
               for(const d of collSnap.docs){
                 await db.collection(collName).doc(d.id).delete();
@@ -7991,17 +8069,34 @@ async function extractSchedulePdfPages(pdfjsLib, arrayBuffer){
     const tc = await (await doc.getPage(p)).getTextContent();
     const items = [];
     tc.items.forEach(i => {
-      const str = (i.str || '').replace(/ /g, ' ');
+      const str = (i.str || '').replace(/ /g, ' ').replace(/([a-z])(?=(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) \d)/g, '$1 ');   // header cells that came out glued ("…OctFri 02…") get a space
       if(!str.trim()) return;
       const x0 = i.transform[4], y = i.transform[5], w = i.width || 0;
-      // an item can hold several words ("19:00 F", "05 Oct"): split them, spreading x by character offset
-      const glued = /^\d{1,2}:\d{2}\s+F$/.exec(str.trim());
-      if(glued){ items.push({ s: str.trim().replace(/\s+/, ' '), x: x0, w: w, y: y }); return; }  // "19:00 F" stays one piece
-      const re = /\S+/g; let m;
-      while((m = re.exec(str))){
-        const frac0 = m.index / str.length, frac1 = (m.index + m[0].length) / str.length;
-        items.push({ s: m[0], x: x0 + w * frac0, w: w * (frac1 - frac0), y: y });
-      }
+      // emit one piece of text spanning [ox, ox+ow]; cx = its centre (a cell's text is centred in its cell)
+      const emit = (txt, ox, ow) => {
+        const cx = ox + ow / 2;
+        // an item can hold several words ("19:00 F", "05 Oct"): split them, spreading x by character offset
+        const glued = /^\d{1,2}:\d{2}\s+F$/.exec(txt.trim());
+        if(glued){ items.push({ s: txt.trim().replace(/\s+/, ' '), x: ox, w: ow, y: y, cx: cx }); return; }  // "19:00 F" stays one piece
+        const re = /\S+/g; let m;
+        while((m = re.exec(txt))){
+          const frac0 = m.index / txt.length, frac1 = (m.index + m[0].length) / txt.length;
+          items.push({ s: m[0], x: ox + ow * frac0, w: ow * (frac1 - frac0), y: y, cx: cx });
+        }
+      };
+      // A cell's text can come out glued to its neighbour's ("11:00 19:00 F50 DC", "DS 11:00 19:00"): cut it at the DC / DS
+      // codes, and give every part its own share of the width, so each part is placed in its own column.
+      const wl = []; { const re = /\S+/g; let m; while((m = re.exec(str))) wl.push({ t: m[0], a: m.index, b: m.index + m[0].length }); }
+      const isCode = t => t === 'DC' || t === 'DS';
+      if(wl.length > 1 && wl.some(k => isCode(k.t)) && wl.some(k => !isCode(k.t))){
+        let g = 0;
+        while(g < wl.length){
+          let e = g; while(e + 1 < wl.length && isCode(wl[e + 1].t) === isCode(wl[g].t)) e++;
+          const a0 = wl[g].a, b0 = wl[e].b;
+          emit(str.slice(a0, b0), x0 + w * a0 / str.length, w * (b0 - a0) / str.length);
+          g = e + 1;
+        }
+      } else emit(str, x0, w);
     });
     pages.push(items);
   }
@@ -8010,7 +8105,7 @@ async function extractSchedulePdfPages(pdfjsLib, arrayBuffer){
 const SCHED_WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const SCHED_MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const SCHED_CODES = ['DC','DS','FO','/','Off','OFF'];
-const SCHED_TAGS = ['F50','CKI','DPT','LH','LOST'];
+const SCHED_TAGS = ['F50','CKI','DPT','LH','LOST','FOR'];
 function schedTime(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t); return m ? m[1].padStart(2,'0') + m[2] : null; }
 function schedMinus6h(hhmm){ let h = parseInt(hhmm.slice(0,2),10) - 6; if(h < 0) h += 24; return String(h).padStart(2,'0') + hhmm.slice(2); }
 // Turns the raw tokens of one cell (top→bottom) into a schedule entry + how sure we are.
@@ -8027,6 +8122,7 @@ function deriveScheduleEntry(tokens){
     if(t === '(FOR)'){ forSeen = true; return; }
     // anything else (BR, "2"...) is ignored
   });
+  if(forSeen) tags.push('FOR');   // training day (Supervisão): kept as a tag, the day cannot be swapped
   const uniqTags = [...new Set(tags)];
   if(codes.length){
     if(times.length){ level = 'auto'; note = 'tem código e horas — usei o código'; }
@@ -8037,6 +8133,7 @@ function deriveScheduleEntry(tokens){
   else if(times.length >= 3){
     if(times[0] === times[1]){ return { entry: '', level: 'error', note: 'horas inconsistentes' }; }
     start = times[0]; end = times[1]; level = 'auto'; note = 'mais de duas horas — usei as duas primeiras';
+    if(forSeen){ end = times[times.length - 1]; note = 'turno + formação (FOR): usei do primeiro início ao último fim — confirma'; }
   }
   else if(times.length === 1){
     if(uniqTags.includes('LH')){ end = times[0]; start = schedMinus6h(end); level = 'auto'; note = 'só uma hora (LH) — assumi 6h de turno'; }
@@ -8064,11 +8161,12 @@ function parseSchedulePages(pages){
       const dn = items.filter(i => /^\d{1,2}$/.test(i.s) && Math.abs(i.y - hy) < 3 && i.x > hdr[0].x && i.x < hdr[0].x + 30)[0];
       firstDay = dn ? parseInt(dn.s, 10) : 1;
       const mm = items.filter(i => SCHED_MONTHS_EN.includes(i.s) && i.y < hy && i.y > hy - 14)[0];
-      if(mm) monthIdx = SCHED_MONTHS_EN.indexOf(mm.s);
+      const mm2 = mm || items.filter(i => SCHED_MONTHS_EN.includes(i.s) && Math.abs(i.y - hy) < 3 && i.x > hdr[0].x)[0];   // single-line header: the month sits on the weekday line
+      if(mm2) monthIdx = SCHED_MONTHS_EN.indexOf(mm2.s);
     } else if(hdr.length !== N){
       problems.push('Página ' + (pi+1) + ': ' + hdr.length + ' dias no cabeçalho em vez de ' + N + '.');
     }
-    const cols = hdr.map(h => h.x + h.w / 2);
+    let cols = hdr.map(h => h.x + h.w / 2);
     const colOf = cx => { let b = 0, bd = 1e9; cols.forEach((c, i) => { const d = Math.abs(c - cx); if(d < bd){ bd = d; b = i; } }); return b; };
     const hdrY = hdr[0].y;
     const xData = hdr[0].x - 8;
@@ -8079,13 +8177,20 @@ function parseSchedulePages(pages){
     if(!ids.length){ problems.push('Página ' + (pi+1) + ': não encontrei nenhum número de agente.'); return; }
     const names = body.filter(i => i.x >= xName && i.x < xData);
     const data = body.filter(i => i.x >= xData);
+    // Column centres: a header like "Thu 01 Oct" (one line) is not centred on its column, and the text of a cell can spill into the next one.
+    // So take the centres from the cells themselves (a cell's text is centred) when that gives exactly one column per day; otherwise keep the header ones.
+    {
+      const cxs = [...new Set(data.map(i => Math.round(i.cx * 2) / 2))].sort((a, b) => a - b), grp = [];
+      cxs.forEach(c => { const g = grp[grp.length - 1]; if(g && c - g[g.length - 1] < 6) g.push(c); else grp.push([c]); });
+      if(grp.length === hdr.length) cols = grp.map(g => g.reduce((s, v) => s + v, 0) / g.length);
+    }
     ids.forEach((a, k) => {
       const hi = k ? (ids[k-1].y + a.y) / 2 : 1e9;
       const lo = k < ids.length - 1 ? (a.y + ids[k+1].y) / 2 : a.y - 40;   // last worker: ignore page footer text
       const inBand = i => i.y <= hi && i.y > lo;
       const nm = names.filter(i => inBand(i) && Math.abs(i.y - a.y) <= 12).sort((u, v) => (Math.abs(v.y - u.y) > 2 ? v.y - u.y : u.x - v.x)).map(i => i.s).join(' ');
       const cells = cols.map(() => []);
-      data.filter(inBand).sort((u, v) => v.y - u.y || u.x - v.x).forEach(i => cells[colOf(i.x + i.w / 2)].push(i.s));
+      data.filter(inBand).sort((u, v) => v.y - u.y || u.x - v.x).forEach(i => cells[colOf(i.cx)].push(i.s));
       const s = cells.map((c, di) => {
         const r = deriveScheduleEntry(c);
         if(r.level !== 'ok') cellInfo.push({ wi: workers.length, di, tokens: c.join(' '), level: r.level, note: r.note });
@@ -8110,7 +8215,6 @@ function guessScheduleYear(monthIdx, firstWeekday, firstDay, nowYear){
 // The admin picks the month's PDF; it is read in the browser, shown for review (anything the
 // reader was unsure about is listed so it can be corrected by hand), and only then saved to the
 // database as the "schedule" document. Every device picks it up on its next load.
-const SCHEDULE_CACHE_KEY = 'trocaMistoScheduleCache';
 let SU = null; // upload session state
 function suEsc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function suLoadPdfJs(){
@@ -8252,7 +8356,7 @@ async function doRestore(){
     const swaps = JSON.parse(b.swaps || '{}'), reqs = JSON.parse(b.requests || '{}');
     const db = await getDb();
     for(const col of ['swaps', 'requests']){
-      const snap = await db.collection(col).get();
+      const snap = await db.collection(gColl(col)).get();
       for(let i = 0; i < snap.docs.length; i += 400){
         const batch = db.batch(); snap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref)); await batch.commit();
       }
@@ -8287,9 +8391,11 @@ function renderScheduleUpload(msg){
     const mm = Number(String(DATA.month || '').split('-')[1]) || 0;
     const mLabel = (monthNames[mm-1] || DATA.month || '') + ' ' + String(DATA.month || '').split('-')[0];
     const row = (l, v) => '<div class="su-bk-r"><span>' + l + '</span><b>' + v + '</b></div>';
-    body.innerHTML =
+    // the admin chooses which department the PDF is for; switching reloads the app in that department (backup, preview and restore then all work on it)
+    const depSeg = isAdminSession ? '<div class="su-dep"><div class="su-dep-l">DEPARTAMENTO</div><div class="su-dep-seg">' + Object.keys(GROUPS).map(g => '<div class="' + (g === GROUP ? 'on' : '') + '" data-g="' + g + '">' + GROUPS[g] + '</div>').join('') + '</div></div>' : '';
+    body.innerHTML = depSeg +
       '<div class="su-bk"><div class="su-bk-h">⚠ Antes de carregar o novo horário</div>' +
-      '<div class="su-bk-s">Vais substituir o horário atual. Guarda primeiro uma cópia.</div>' +
+      '<div class="su-bk-s">Vais substituir o horário de <b>' + suEsc(GROUP_LABEL) + '</b>. Guarda primeiro uma cópia.</div>' +
       '<div class="su-bk-box">' + row('Mês atual', suEsc(mLabel)) + row('Versão', suEsc(DATA.version || '—')) + row('Agentes', DATA.workers.length) +
         row('Trocas feitas', Object.keys(SWAPS).length) + row('Pedidos abertos', Object.keys(REQUESTS).length) +
         row('Horas extra registadas', Object.keys(EXTRA_HOURS || {}).length) + '</div>' +
@@ -8297,11 +8403,19 @@ function renderScheduleUpload(msg){
       '<button type="button" class="su-bk-dl" id="su-bk-dl">⬇ Download ' + (['January','February','March','April','May','June','July','August','September','October','November','December'][mm-1] || 'this month') + '</button>' +
       (SU_BACKUP_DONE ? '<div class="su-bk-ok">✓ Descarregados 2 ficheiros: a lista para ler (.csv) e a cópia de segurança (.json) — guarda-os no Drive</div>' : '<div class="su-bk-t">O passo seguinte só fica ativo depois de descarregares a cópia</div>') +
       '</div>' +
-      '<p class="su-p">Escolhe o PDF do horário do mês (o mesmo ficheiro <b>Check_in…pdf</b>). Vou lê-lo aqui no teu telemóvel/computador, mostrar-te o resultado para confirmares, e só depois gravar.</p>' +
+      '<p class="su-p">Escolhe o PDF do horário do mês de <b>' + suEsc(GROUP_LABEL) + '</b>. Vou lê-lo aqui no teu telemóvel/computador, mostrar-te o resultado para confirmares, e só depois gravar.</p>' +
       '<input type="file" id="su-file" accept="application/pdf,.pdf" class="su-file"' + (SU_BACKUP_DONE ? '' : ' disabled style="opacity:.4"') + '>' +
       '<div id="su-status" class="su-status">' + (msg ? suEsc(msg) : '') + '</div>';
     document.getElementById('su-file').addEventListener('change', onScheduleFileChosen);
     document.getElementById('su-bk-dl').addEventListener('click', suBackupDownload);
+    body.querySelectorAll('.su-dep-seg div[data-g]').forEach(el => el.addEventListener('click', () => {
+      const g = el.getAttribute('data-g');
+      if(g === GROUP) return;
+      showConfirmDialog('Mudar para <b>' + suEsc(GROUPS[g]) + '</b>? A app recarrega nesse departamento.', () => {
+        try{ if(g) localStorage.setItem('trocaMistoGroup', g); else localStorage.removeItem('trocaMistoGroup'); sessionStorage.setItem('reopenUpload', '1'); }catch(e){}
+        location.reload();
+      }, false, 'Mudar', false, null, 'Cancelar');
+    }));
     return;
   }
   const P = SU.parsed;
@@ -8310,6 +8424,10 @@ function renderScheduleUpload(msg){
   const added = P.workers.filter(w => !cur.has(w.id));
   const gone = DATA.workers.filter(w => !nxt.has(w.id));
   const dupes = P.workers.length - nxt.size;
+  // a PDF of another department shares almost no staff numbers with the current schedule
+  const common = P.workers.filter(w => cur.has(w.id)).length;
+  const mismatch = cur.size >= 5 && common < Math.min(cur.size, P.workers.length) * 0.5;
+  SU.mismatch = mismatch;
   const monthVal = SU.month;
   let html = '';
   html += '<div class="su-grid">' +
@@ -8319,6 +8437,7 @@ function renderScheduleUpload(msg){
   html += '<div class="su-sub">Agentes: <b>' + P.workers.length + '</b> (agora no ar: ' + DATA.workers.length + ') · Dias: <b>' + P.days.length + '</b></div>';
   if(added.length) html += '<details class="su-det"><summary>Novos agentes (' + added.length + ')</summary>' + added.map(w => suEsc(w.id + ' ' + w.name)).join('<br>') + '</details>';
   if(gone.length) html += '<details class="su-det"><summary>Saíram (' + gone.length + ')</summary>' + gone.map(w => suEsc(w.id + ' ' + w.name)).join('<br>') + '</details>';
+  if(mismatch) html += '<div class="su-warn">⚠ Só ' + common + ' de ' + P.workers.length + ' agentes deste PDF estão no horário atual de ' + suEsc(GROUP_LABEL) + '. Parece ser o PDF de outro departamento — confirma antes de gravar.</div>';
   if(dupes) html += '<div class="su-warn">⚠ Há ' + dupes + ' número(s) de agente repetido(s) — verifica o PDF.</div>';
   if(P.problems.length) html += '<div class="su-warn">⚠ ' + P.problems.map(suEsc).join('<br>⚠ ') + '</div>';
   html += '<div class="su-h">Células para rever <span id="su-count"></span></div>';
@@ -8430,6 +8549,7 @@ function onScheduleSaveClick(){
   const clear = document.getElementById('su-clear').checked;
   showConfirmDialog(
     'Gravar o horário de <b>' + suEsc(SU.month) + '</b> com <b>' + P.workers.length + '</b> agentes?<br><br>' +
+    (SU.mismatch ? '<b style="color:#ff8a8a">⚠ Este PDF não parece ser de ' + suEsc(GROUP_LABEL) + ' (quase nenhum número de agente coincide).</b><br><br>' : '') +
     'Todos os utilizadores passam a ver este horário na próxima vez que abrirem a app.' +
     (clear ? '<br><br><b>Vou apagar</b> as trocas, os pedidos e as alterações de horário do mês anterior.' : '<br><br>As trocas e pedidos atuais ficam como estão.'),
     () => saveUploadedSchedule(clear), false, 'Gravar'
@@ -8456,7 +8576,7 @@ async function saveUploadedSchedule(clear){
     try{
       const db = await getDb();
       for(const col of ['swaps', 'requests']){
-        const snap = await db.collection(col).get();
+        const snap = await db.collection(gColl(col)).get();
         for(let i = 0; i < snap.docs.length; i += 400){
           const batch = db.batch();
           snap.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
@@ -8477,6 +8597,8 @@ async function saveUploadedSchedule(clear){
 document.getElementById('so-sched-upload').addEventListener('click', openScheduleUpload);
 document.getElementById('so-sched-restore').addEventListener('click', openRestore);
 document.getElementById('schedule-upload-close').addEventListener('click', closeScheduleUpload);
+// after switching department from the upload screen the app reloads: come straight back to the upload screen
+setTimeout(() => { try{ if(sessionStorage.getItem('reopenUpload') === '1'){ sessionStorage.removeItem('reopenUpload'); if(isAdminSession){ openScheduleOverride(); soOpen('sched'); openScheduleUpload(); } } }catch(e){} }, 700);
 
 // Every device: if a newer schedule was uploaded, cache it and reload once so the whole app
 // (which reads DATA at startup) runs on it.
@@ -8486,7 +8608,7 @@ document.getElementById('schedule-upload-close').addEventListener('click', close
     if(!remote || !remote.month || !remote.uploadedAt || !remote.days || !remote.days.length || !remote.workers || !remote.workers.length) return;
     // a damaged schedule document must never replace a working one
     if(!remote.workers.every(w => w && w.id && w.name && Array.isArray(w.s) && w.s.length === remote.days.length)) return;
-    if(remote.month < EMBEDDED_DATA.month) return;
+    if(remote.month < BASE_DATA.month) return;
     if(DATA.uploadedAt === remote.uploadedAt) return;
     if(sessionStorage.getItem('schedReloaded') === String(remote.uploadedAt)) return; // never loop
     try{
