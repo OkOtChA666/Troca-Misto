@@ -922,6 +922,9 @@
   .su-dep-seg{ display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
   .su-dep-seg div{ flex:1; text-align:center; padding:10px; font:700 13px var(--mono); letter-spacing:.08em; color:var(--text-dim); cursor:pointer; }
   .su-dep-seg div.on{ background:var(--amber-glow); color:var(--amber); cursor:default; }
+  html.grp-sup #cover-requires-altea, html.grp-sup #cover-requires-iport{ display:none !important; }
+  html.grp-sup .field:has(#cover-requires-altea){ display:none !important; }
+  html.grp-sup .sys-badge{ display:none !important; }
   html.grp-sup #area-tabs, html.grp-sup #tools-link, html.grp-sup #tools-link + .header-divider{ display:none !important; }   /* check-in only: tasks, flights, tools */
   .su-bk{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:12px; margin-bottom:12px; }
   .su-bk-h{ color:var(--amber); font-weight:700; font-size:15px; }
@@ -1220,7 +1223,7 @@
     <p class="eyebrow">TTAE GRUPO · FAO · PAX</p>
     <h1>TROCA-MISTO™</h1>
     <div class="board-stats board-stats-top">
-      <span id="stat-workers-link" class="stat-link">AGENTES <b id="stat-workers">—</b></span>
+      <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
       <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.10.01</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
@@ -1932,7 +1935,8 @@ function applyNameFixes(d){ try{ (d.workers || []).forEach(w => { if(w && NAME_F
 const GROUPS = { '': 'TTAE', sup: 'SUPERVISÃO' };
 const GROUP = (function(){ try{ const g = localStorage.getItem('trocaMistoGroup') || ''; return GROUPS[g] ? g : ''; }catch(e){ return ''; } })();
 const GROUP_LABEL = GROUPS[GROUP];
-try{ if(GROUP){ document.documentElement.classList.add('grp-' + GROUP); const eb = document.querySelector('.eyebrow'); if(eb) eb.textContent = GROUP_LABEL + ' · FAO · PAX'; } }catch(e){}
+const PEOPLE_WORD = GROUP === 'sup' ? ['Supervisor', 'Supervisores'] : ['Agente', 'Agentes'];   // what a person on the schedule is called in this department
+try{ if(GROUP){ document.documentElement.classList.add('grp-' + GROUP); if(GROUP === 'sup'){ const wl = document.getElementById('stat-workers-label'); if(wl) wl.textContent = 'SUPERVISORES'; } const eb = document.querySelector('.eyebrow'); if(eb) eb.textContent = GROUP_LABEL + ' · FAO · PAX'; } }catch(e){}
 const GLOBAL_KEY = /Enabled$|^maintenance$|^flightlist$|^flightairlines$|^aistaff$|^tasks$|^taskreq$/;   // settings and check-in-only data: one copy for everybody
 function gScope(key, g){ g = (g === undefined ? GROUP : g); return g && !GLOBAL_KEY.test(key) ? g + '_' + key : key; }
 function gColl(name, g){ g = (g === undefined ? GROUP : g); return g && (name === 'swaps' || name === 'requests') ? g + '_' + name : name; }
@@ -4554,7 +4558,7 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
     const todayTag = isTomorrowDay(idx) ? ' <span class="csr-today-tag">AMANHÃ</span>' : (allowToday && isTodayDay(idx) ? ' <span class="csr-today-tag">HOJE</span>' : '');
     return {
       dateHtml: '<span class="'+dateClass+'">'+fmtDateLabel(idx)+todayTag+'</span>',
-      countHtml: '<span class="'+countClass+'">'+counts[idx]+' Agentes</span>'
+      countHtml: '<span class="'+countClass+'">'+counts[idx]+' '+(counts[idx] === 1 ? PEOPLE_WORD[0] : PEOPLE_WORD[1])+'</span>'
     };
   }
   function refreshTrigger(){
@@ -4723,6 +4727,7 @@ function countCleanCoverCandidates(myEntry, excludeWorkerId, idx){
   return count;
 }
 function dayDifficultyHtml(count){
+  if(GROUP) return '';   // thresholds are percentages of a large team; meaningless for a small department
   // Percentage-of-total-staff, not a fixed headcount — so this stays correctly calibrated
   // whether next month's roster has more or fewer people than this one.
   const totalStaff = DATA.workers.length;
