@@ -2090,7 +2090,7 @@ async function loadExtraFeatureEnabled(){
 async function saveExtraFeatureEnabled(){ return await dbSetShared('extraFeatureEnabled', { value: extraFeatureEnabled }); }
 function extraMin(hhmm){ return parseInt(hhmm.slice(0,2),10)*60 + parseInt(hhmm.slice(2,4),10); }
 function extraFmt(m){ return String(Math.floor(m/60)%24).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
-function extraDur(min){ const h = Math.floor(min/60), m = min%60; return h + 'h' + (m ? String(m).padStart(2,'0') : ''); }
+function extraDur(min){ const h = Math.floor(min/60), m = min%60; if(!h) return m + 'mn'; return h + 'h' + (m ? String(m).padStart(2,'0') : ''); }
 let extraMode = 'me';   // 'me' = I do a 2nd shift · 'them' = someone does mine (search only)
 function renderExtra(){
   const sel = document.getElementById('extra-day');
