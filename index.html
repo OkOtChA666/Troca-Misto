@@ -640,6 +640,12 @@
   .skills-check-cell{ width:30px; display:flex; justify-content:center; }
   .skills-row input[type=checkbox]{ width:15px; height:15px; accent-color: var(--cyan); cursor:pointer; }
   .skills-col-out{ color:#ff5d6c !important; font-weight:700; }
+  .skills-col-lock{ color:#ffb020 !important; font-weight:700; width:54px !important; }
+  .skills-lock-cell{ width:54px !important; }
+  .skills-row input[data-sys=locked]{ accent-color:#ffb020; }
+  .skills-row-locked{ background:rgba(255,176,32,.08); }
+  .skills-row-locked .skills-row-name{ color:#ffb020; }
+  .skills-off{ font-size:9px; color:var(--text-dim); font-family:var(--mono); margin-left:4px; }
   .skills-row input[data-sys=dismissed]{ accent-color:#ff5d6c; }
 
   /* ---- Results board ---- */
@@ -3758,6 +3764,17 @@ async function checkAccessPassword(){
     passwordOk = await verifyPassword(input.value, ADMIN_PASSWORD_HASH);
     if(passwordOk && !worker) worker = { id: ADMIN_STAFF_ID, name: ADMIN_NAME, s: [] };
   } else if(worker){
+    // a number that is in both departments' schedules (e.g. a supervisor who also appears in the check-in PDF): with the SUPERVISÃO password he/she goes to SUPERVISÃO
+    if(GROUP === ''){
+      try{
+        const sch = await dbGetShared('schedule', null, 'sup');
+        if(sch && Array.isArray(sch.workers) && sch.workers.some(x => x && x.id === staffId) && await groupPasswordOk('sup', input.value)){
+          startSessionFor(staffId, 'sup', false);
+          location.reload();
+          return;
+        }
+      }catch(e){}
+    }
     passwordOk = await groupPasswordOk(GROUP, input.value);
   } else if(staffId){
     // not in this department's schedule: the staff number decides the department — look in the others
@@ -4351,8 +4368,14 @@ const DCS_SYSTEMS = [
   { key: 'availPM', label: 'PM', abbr: 'PM', store: {} }, // only available for afternoon shifts (starting from ~13:00)
   { key: 'availWK', label: 'WK', abbr: 'WK', store: {} }, // only available on weekends
   { key: 'blocked', label: 'INCOG', abbr: 'INC', store: {} }, // hidden from every search/picker across the app
-  { key: 'dismissed', label: 'OUT', abbr: 'OUT', store: {} }  // left the company: hidden like BLOCK, and not counted in AGENTES
+  { key: 'dismissed', label: 'OUT', abbr: 'OUT', store: {} },  // left the company: hidden like BLOCK, and not counted in AGENTES
+  // SUPERVISÃO only: ignored when a Supervisão month is uploaded (they stay in TTAE). Value = the person's name, so they can still be listed (and unlocked) when they are not on the schedule.
+  { key: 'locked', label: '🔒 LOCKED', abbr: 'LCK', supOnly: true, store: { '5424': 'GUERREIRO DAVID', '4899': 'SANDRINE ISABELLE SANDRINA', '3590': 'SARAGOÇA ANA' } }
 ];
+function isLockedAgent(id){
+  const sys = DCS_SYSTEMS.find(s => s.key === 'locked');
+  return !!(sys && sys.store[String(id)]);
+}
 function isDismissed(workerId){
   const sys = DCS_SYSTEMS.find(s => s.key === 'dismissed');
   return !!(sys && hasDcsSystem(sys, workerId));
@@ -4396,9 +4419,9 @@ async function saveDcsSystem(sys){
   await dbSetShared(sys.key, sys.store);
 }
 function hasDcsSystem(sys, workerId){ return !!sys.store[workerId]; }
-async function toggleDcsSystem(sys, workerId){
+async function toggleDcsSystem(sys, workerId, name){
   if(sys.store[workerId]) delete sys.store[workerId];
-  else sys.store[workerId] = true;
+  else sys.store[workerId] = (sys.key === 'locked' ? (name || String(workerId)) : true);
   await saveDcsSystem(sys);
   updateAgentCount();
 }
@@ -4426,6 +4449,12 @@ function checkAvailabilityConflict(workerId, idx, proposedStart, proposedEnd){
 function updateSkillsStats(){
   const el = document.getElementById('skills-stats');
   if(!el) return;
+  if(GROUP === 'sup'){
+    const lk = DCS_SYSTEMS.find(x => x.key === 'locked');
+    const nL = Object.keys(lk.store).length, nO = DATA.workers.filter(w => isDismissed(w.id)).length;
+    el.innerHTML = '<b>'+DATA.workers.length+'</b> agentes' + (nL ? ' · <b style="color:#ffb020">'+nL+'</b> LOCKED' : '') + (nO ? ' · <b style="color:#ff5d6c">'+nO+'</b> OUT' : '');
+    return;
+  }
   const count = Object.keys(ALTEA).filter(id => ALTEA[id]).length;
   const nOut = DATA.workers.filter(w => isDismissed(w.id)).length;
   el.innerHTML = '<b>'+count+'</b> of '+DATA.workers.length+' marked with Altea / all systems' + (nOut ? ' · <b style="color:#ff5d6c">'+nOut+'</b> OUT' : '');
@@ -4435,33 +4464,52 @@ function renderSkillsList(filter){
   if(!box) return;
   const f = (filter||'').trim().toLowerCase();
   box.innerHTML = '';
+  const isSup = GROUP === 'sup';
+  // TTAE: Altea + every system except LOCKED. SUPERVISÃO: only INCOG, OUT and LOCKED.
+  const systems = DCS_SYSTEMS.filter(sys => isSup ? ['blocked','dismissed','locked'].includes(sys.key) : !sys.supOnly);
+  const cols = (isSup ? [] : [{ altea:true, label:'Altea' }]).concat(systems.map(sys => ({ sys, label: sys.label })));
 
   const header = document.createElement('div');
   header.className = 'skills-header';
   header.innerHTML = '<span></span><span class="skills-header-checks">'+
-    '<span class="skills-col-label">Altea</span>'+
-    DCS_SYSTEMS.map(sys => '<span class="skills-col-label'+(sys.key === 'dismissed' ? ' skills-col-out' : '')+'">'+escapeHtml(sys.label)+'</span>').join('')+
+    cols.map(c => '<span class="skills-col-label'+(c.sys && c.sys.key === 'dismissed' ? ' skills-col-out' : '')+(c.sys && c.sys.key === 'locked' ? ' skills-col-lock' : '')+'">'+escapeHtml(c.label)+'</span>').join('')+
     '</span>';
   box.appendChild(header);
 
+  function addRow(id, name, offSchedule){
+    const row = document.createElement('div');
+    row.className = 'skills-row' + (isSup && isLockedAgent(id) ? ' skills-row-locked' : '');
+    const checksHtml = cols.map(c => c.altea
+      ? '<span class="skills-check-cell"><input type="checkbox" '+(hasAltea(id)?'checked':'')+' data-sys="altea"></span>'
+      : '<span class="skills-check-cell'+(c.sys.key==='locked'?' skills-lock-cell':'')+'"><input type="checkbox" '+(hasDcsSystem(c.sys, id)?'checked':'')+' data-sys="'+c.sys.key+'"></span>').join('');
+    row.innerHTML = '<div class="skills-row-name">'+escapeHtml(name)+(offSchedule ? ' <span class="skills-off">fora do horário</span>' : '')+'</div>'+
+      '<span class="skills-row-checks">'+checksHtml+'</span>';
+    const inputs = row.querySelectorAll('input[type=checkbox]');
+    inputs.forEach((inp, i) => {
+      const c = cols[i];
+      inp.addEventListener('change', () => {
+        if(c.altea) toggleAltea(id);
+        else{
+          toggleDcsSystem(c.sys, id, name);
+          if(c.sys.key === 'locked') row.classList.toggle('skills-row-locked', !!c.sys.store[String(id)]);
+          try{ updateSkillsStats(); }catch(e){}
+        }
+      });
+    });
+    box.appendChild(row);
+  }
+
   DATA.workers
     .filter(w => !f || w.name.toLowerCase().includes(f))
-    .forEach(w => {
-      const row = document.createElement('div');
-      row.className = 'skills-row';
-      const alteaChecked = hasAltea(w.id) ? 'checked' : '';
-      const checksHtml = '<span class="skills-check-cell"><input type="checkbox" '+alteaChecked+' data-sys="altea"></span>' +
-        DCS_SYSTEMS.map(sys => '<span class="skills-check-cell"><input type="checkbox" '+(hasDcsSystem(sys, w.id)?'checked':'')+' data-sys="'+sys.key+'"></span>').join('');
-      row.innerHTML = '<div class="skills-row-name">'+w.name+'</div>'+
-        '<span class="skills-row-checks">'+checksHtml+'</span>';
-      const inputs = row.querySelectorAll('input[type=checkbox]');
-      inputs[0].addEventListener('change', () => toggleAltea(w.id));
-      for(let i=1;i<inputs.length;i++){
-        const sys = DCS_SYSTEMS[i-1];
-        inputs[i].addEventListener('change', () => toggleDcsSystem(sys, w.id));
-      }
-      box.appendChild(row);
-    });
+    .forEach(w => addRow(w.id, w.name, false));
+
+  // SUPERVISÃO: locked people who are not on this month's schedule stay listed so they can be unlocked
+  if(isSup){
+    const lk = DCS_SYSTEMS.find(x => x.key === 'locked');
+    const onSched = new Set(DATA.workers.map(w => String(w.id)));
+    Object.keys(lk.store).filter(id => !onSched.has(id) && (!f || String(lk.store[id]).toLowerCase().includes(f)))
+      .forEach(id => addRow(id, String(lk.store[id]), true));
+  }
 }
 document.getElementById('skills-filter').addEventListener('input', (e) => renderSkillsList(e.target.value));
 loadAltea();
@@ -8246,6 +8294,8 @@ function deriveScheduleEntry(tokens){
   if(uniqTags.length) entry += ',' + uniqTags.join(';');
   return { entry, level, note };
 }
+// People who appear in the SUPERVISÃO PDF but belong to TTAE (check-in): left out when a SUPERVISÃO month is uploaded.
+// (the people skipped on a Supervisão upload are now the LOCKED agents, set in ADMIN > AGENTES)
 // pages = output of extractSchedulePdfPages. Returns { days:[1..N], weekdays:[...], monthIdx, workers:[{id,name,s:[...]}], cells:[{wi,di,tokens,level,note}], problems:[...] }
 function parseSchedulePages(pages){
   const problems = [];
@@ -8318,6 +8368,7 @@ function parseSchedulePages(pages){
       sorted.forEach(i => { const r = i._r2 !== undefined ? i._r2 : i._r; if(r >= 0) rowCells[r][i._c].push(i); });
     }
     ids.forEach((a, k) => {
+      if(typeof GROUP !== 'undefined' && GROUP === 'sup' && isLockedAgent(a.s)) return;
       const hi = bands[k][0], lo = bands[k][1];
       const inBand = i => i.y <= hi && i.y > lo;
       const nm = names.filter(i => inBand(i) && Math.abs(i.y - a.y) <= 12).sort((u, v) => (Math.abs(v.y - u.y) > 2 ? v.y - u.y : u.x - v.x)).map(i => i.s).join(' ');
