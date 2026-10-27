@@ -225,6 +225,10 @@
   }
   .panel + .panel{ margin-top: 14px; }
   .hidden{ display:none !important; }
+  .extra-seg{ display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:10px; font-family:var(--mono); font-weight:700; font-size:11px; letter-spacing:.06em; text-align:center; }
+  .extra-seg div{ flex:1; padding:11px 4px; color:var(--text-dim); background:var(--panel-2); cursor:pointer; }
+  .extra-seg div + div{ border-left:1px solid var(--border); }
+  .extra-seg div.on{ color:var(--amber); background:rgba(255,176,32,.10); }
   .extra-mine{ background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:12px; }
   .extra-mine .em-top{ display:flex; justify-content:space-between; align-items:center; font-family:var(--mono); font-size:12px; color:var(--text-dim); }
   .extra-mine .em-top b{ color:var(--cyan); font-weight:700; }
@@ -1619,6 +1623,11 @@
 
   <!-- EXTRA PANEL (admin only): a second shift to add to my own day -->
   <div class="panel hidden" id="panel-xshift">
+    <div class="extra-seg" id="extra-seg">
+      <div data-m="me" class="on">EU FAÇO O 2º TURNO</div>
+      <div data-m="them">ALGUÉM FAZ O MEU</div>
+    </div>
+    <div class="hint" style="margin:-4px 0 10px;">só para procurar — nada é registado</div>
     <div class="field">
       <label for="extra-day">Data</label>
       <select id="extra-day"></select>
@@ -2086,6 +2095,7 @@ async function saveExtraFeatureEnabled(){ return await dbSetShared('extraFeature
 function extraMin(hhmm){ return parseInt(hhmm.slice(0,2),10)*60 + parseInt(hhmm.slice(2,4),10); }
 function extraFmt(m){ return String(Math.floor(m/60)%24).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
 function extraDur(min){ const h = Math.floor(min/60), m = min%60; return h + 'h' + (m ? String(m).padStart(2,'0') : ''); }
+let extraMode = 'me';   // 'me' = I do a 2nd shift · 'them' = someone does mine (search only)
 function renderExtra(){
   const sel = document.getElementById('extra-day');
   if(!sel.options.length){
@@ -2123,7 +2133,7 @@ function renderExtra(){
   rows.sort((x, y) => x.gap - y.gap || x.a - y.a);
   const MAX_DAY = 600;   // never more than 10h in a day
   const ok = rows.filter(r => r.total <= MAX_DAY), over = rows.filter(r => r.total > MAX_DAY);
-  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">QUEM ESTÁ A TRABALHAR · ' + working + '<span>máx. 10h por dia</span></div>';
+  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">' + (extraMode === 'them' ? 'PODEM FAZER O MEU' : 'QUEM ESTÁ A TRABALHAR') + ' · ' + working + '<span>máx. 10h por dia</span></div>';
   const addRow = (box, r) => {
     const d = document.createElement('div'); d.className = 'extra-row';
     d.innerHTML = '<div class="en"><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
@@ -2148,6 +2158,11 @@ function renderExtra(){
   }
 }
 document.getElementById('extra-day').addEventListener('change', renderExtra);
+document.querySelectorAll('#extra-seg div').forEach(el => el.addEventListener('click', () => {
+  extraMode = el.getAttribute('data-m');
+  document.querySelectorAll('#extra-seg div').forEach(x => x.classList.toggle('on', x === el));
+  renderExtra();
+}));
 
 let legalFooterEnabled = true;
 function applyLegalFooter(){ document.querySelectorAll('.legal-ft').forEach(el => el.classList.toggle('hidden', !legalFooterEnabled)); }
