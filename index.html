@@ -235,7 +235,13 @@
   .extra-head span{ font-weight:400; font-size:10px; color:var(--text-dim); letter-spacing:.05em; }
   .extra-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--border-soft); font-size:13px; }
   .extra-row .et{ font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-top:3px; }
-  .extra-row .er{ text-align:right; }
+  .extra-row .en{ flex:1; min-width:0; overflow-wrap:anywhere; }
+  .extra-row .ebc{ width:46px; display:flex; justify-content:center; flex:none; }
+  .ebadge{ font-family:var(--mono); font-weight:700; font-size:11px; border-radius:6px; padding:4px 0; width:36px; text-align:center; }
+  .ebadge.eb4{ background:rgba(25,211,255,.10); color:#19d3ff; border:1px solid rgba(25,211,255,.4); }
+  .ebadge.eb6{ background:rgba(255,176,32,.10); color:#ffb020; border:1px solid rgba(255,176,32,.4); }
+  .ebadge.eb8{ background:rgba(46,229,138,.10); color:#2ee58a; border:1px solid rgba(46,229,138,.4); }
+  .extra-row .er{ text-align:right; width:92px; flex:none; }
   .extra-row .etot{ font-family:var(--mono); font-size:11px; font-weight:700; color:#2ee58a; }
   .extra-row .egap{ font-family:var(--mono); font-size:9px; color:var(--text-dim); margin-top:3px; }
   .extra-row .egap.adj{ color:var(--cyan); }
@@ -1618,10 +1624,6 @@
       <select id="extra-day"></select>
     </div>
     <div id="extra-mine" class="extra-mine"></div>
-    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin:12px 0;">
-      <span class="pill-toggle"><input type="checkbox" id="extra-only8" checked><span class="pill-track"></span></span>
-      <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Só turnos que fazem 8h no dia</span>
-    </label>
     <div id="extra-head" class="extra-head"></div>
     <div id="extra-list"></div>
   </div>
@@ -2104,7 +2106,6 @@ function renderExtra(){
   mineBox.innerHTML = '<div class="em-top"><span>O MEU TURNO · ' + escapeHtml(fmtDateLabel(idx)) + '</span><span><b>' + myE.start.slice(0,2)+':'+myE.start.slice(2) + ' – ' + myE.end.slice(0,2)+':'+myE.end.slice(2) + '</b> · ' + extraDur(myDur) + '</span></div>' +
     '<div class="extra-bar"><i style="left:'+(ms/14.4)+'%; width:'+(myDur/14.4)+'%; background:var(--cyan);"></i></div>' +
     '<div class="extra-scale"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>';
-  const only8 = document.getElementById('extra-only8').checked;
   const rows = [];
   let working = 0;
   DATA.workers.forEach(w => {
@@ -2117,21 +2118,36 @@ function renderExtra(){
     if(b <= a || (a < mEnd && b > ms)) return;            // overlaps mine (or overnight) → can't do both
     const gap = a >= mEnd ? a - mEnd : ms - b;
     const total = myDur + (b - a);
-    if(only8 && total !== 480) return;
-    rows.push({ w, e, gap, total, a });
+    rows.push({ w, e, gap, total, a, dur: b - a });
   });
   rows.sort((x, y) => x.gap - y.gap || x.a - y.a);
-  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">QUEM ESTÁ A TRABALHAR · ' + working + '<span>' + rows.length + ' opções</span></div>';
-  if(!rows.length){ list.innerHTML = '<div class="hint" style="text-align:center;">Nenhum turno encaixa neste dia.</div>'; return; }
-  rows.forEach(r => {
+  const MAX_DAY = 600;   // never more than 10h in a day
+  const ok = rows.filter(r => r.total <= MAX_DAY), over = rows.filter(r => r.total > MAX_DAY);
+  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">QUEM ESTÁ A TRABALHAR · ' + working + '<span>máx. 10h por dia</span></div>';
+  const addRow = (box, r) => {
     const d = document.createElement('div'); d.className = 'extra-row';
-    d.innerHTML = '<div><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
-      '<div class="er"><div class="etot">dia = ' + extraDur(r.total) + '</div><div class="egap' + (r.gap === 0 ? ' adj' : '') + '">' + (r.gap === 0 ? 'logo a seguir' : 'pausa ' + extraDur(r.gap)) + '</div></div>';
-    list.appendChild(d);
-  });
+    d.innerHTML = '<div class="en"><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
+      '<div class="ebc"><span class="ebadge eb' + (r.dur >= 480 ? '8' : r.dur >= 360 ? '6' : '4') + '">' + extraDur(r.dur) + '</span></div>' +
+      '<div class="er"><div class="etot"' + (r.total > MAX_DAY ? ' style="color:#ff5d6c;"' : '') + '>' + extraDur(r.total) + '</div><div class="egap' + (r.gap === 0 ? ' adj' : '') + '">' + (r.gap === 0 ? 'logo a seguir' : 'Intervalo ' + extraDur(r.gap)) + '</div></div>';
+    box.appendChild(d);
+  };
+  if(!ok.length) list.innerHTML = '<div class="hint" style="text-align:center;">Nenhum turno encaixa neste dia.</div>';
+  ok.forEach(r => addRow(list, r));
+  if(over.length){
+    const th = document.createElement('div');
+    th.className = 'results-head collapsible-head';
+    th.style.cssText = 'margin-top:18px; padding-top:14px; border-top:1px dashed var(--border-soft);';
+    th.innerHTML = '<span>STAFF EM NÃO CONFORMIDADE PARA TROCA</span><span class="collapse-chevron collapsed">▾</span>';
+    const box = document.createElement('div'); box.className = 'hidden';
+    list.appendChild(th); list.appendChild(box);
+    over.forEach(r => addRow(box, r));
+    th.addEventListener('click', () => {
+      const c = box.classList.toggle('hidden');
+      th.querySelector('.collapse-chevron').classList.toggle('collapsed', c);
+    });
+  }
 }
 document.getElementById('extra-day').addEventListener('change', renderExtra);
-document.getElementById('extra-only8').addEventListener('change', renderExtra);
 
 let legalFooterEnabled = true;
 function applyLegalFooter(){ document.querySelectorAll('.legal-ft').forEach(el => el.classList.toggle('hidden', !legalFooterEnabled)); }
