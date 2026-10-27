@@ -2127,9 +2127,9 @@ function renderExtra(){
     rows.push({ w, e, gap, total, a, dur: b - a });
   });
   rows.sort((x, y) => x.gap - y.gap || x.a - y.a);
-  const MAX_DAY = 600;   // never more than 10h in a day
+  const MAX_DAY = 480;   // anything above 8h in a day goes to STAFF EM NÃO CONFORMIDADE
   const ok = rows.filter(r => r.total <= MAX_DAY), over = rows.filter(r => r.total > MAX_DAY);
-  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">' + 'ENCAIXAM NO MEU TURNO' + ' · ' + working + '<span>máx. 10h por dia</span></div>';
+  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">' + 'ENCAIXAM NO MEU TURNO' + ' · ' + working + '<span>máx. 8h por dia</span></div>';
   const addRow = (box, r) => {
     const d = document.createElement('div'); d.className = 'extra-row';
     d.innerHTML = '<div class="en"><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
