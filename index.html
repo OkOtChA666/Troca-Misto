@@ -4757,6 +4757,9 @@ document.getElementById('skills-back-btn').addEventListener('click', () => { ope
 // ADMIN: one-tap switch between TTAE and SUPERVISÃO
 (function(){
   const btn = document.getElementById('so-switch-dept'); if(!btn) return;
+  // only the real admin can change department; a department admin (e.g. Rute in Supervisão) can't, so she never sees the button
+  let _sid = ''; try{ _sid = localStorage.getItem('trocaMistoLoginStaffId') || ''; }catch(e){}
+  if(_sid !== ADMIN_STAFF_ID){ btn.remove(); return; }
   const target = GROUP === 'sup' ? '' : 'sup';
   btn.innerHTML = '⇄ MUDAR PARA ' + GROUPS[target] + '<small>estás em ' + GROUPS[GROUP] + '</small>';
   btn.addEventListener('click', () => {
