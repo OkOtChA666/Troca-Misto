@@ -239,6 +239,7 @@
   .extra-head span{ font-weight:400; font-size:10px; color:var(--text-dim); letter-spacing:.05em; }
   .extra-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--border-soft); font-size:13px; }
   .extra-row .et{ font-family:var(--sans); font-weight:500; font-size:13px; color:#aebdd3; margin-top:3px; }
+  .extra-over .extra-row:first-child{ border-top:none; }
   .extra-row .en{ flex:1; min-width:0; overflow-wrap:anywhere; }
   .extra-row .ebc{ width:46px; display:flex; justify-content:center; flex:none; }
   .ebadge{ font-family:var(--sans); font-weight:800; font-size:12px; border-radius:6px; padding:4px 0; width:36px; text-align:center; }
@@ -2144,7 +2145,7 @@ function renderExtra(){
     th.className = 'results-head collapsible-head';
     th.style.cssText = 'margin-top:18px; padding-top:14px; border-top:1px dashed var(--border-soft);';
     th.innerHTML = '<span>MAIS DE 8H DE TRABALHO! · ' + over.length + '</span><span class="collapse-chevron collapsed">▾</span>';
-    const box = document.createElement('div'); box.className = 'hidden';
+    const box = document.createElement('div'); box.className = 'hidden extra-over';
     list.appendChild(th); list.appendChild(box);
     over.forEach(r => addRow(box, r));
     th.addEventListener('click', () => {
