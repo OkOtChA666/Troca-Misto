@@ -922,11 +922,24 @@
   .su-dep-seg{ display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
   .su-dep-seg div{ flex:1; text-align:center; padding:10px; font:700 13px var(--mono); letter-spacing:.08em; color:var(--text-dim); cursor:pointer; }
   .su-dep-seg div.on{ background:var(--amber-glow); color:var(--amber); cursor:default; }
+  .stat-delta{ margin-left:5px; font:700 11px var(--mono); border-radius:6px; padding:1px 5px; vertical-align:1px; }
+  .stat-delta:empty{ display:none; }
+  .stat-delta.up{ color:#33D68B; background:rgba(51,214,139,0.13); }
+  .stat-delta.down{ color:#FF5C6C; background:rgba(255,92,108,0.13); }
   html.grp-sup h1{ color:#FF6A00; text-shadow:0 0 18px rgba(255,106,0,0.18); }   /* Supervisão: orange title, to tell it apart from TTAE at a glance */
   html.grp-sup #cover-requires-altea, html.grp-sup #cover-requires-iport{ display:none !important; }
   html.grp-sup .field:has(#cover-requires-altea){ display:none !important; }
   html.grp-sup .sys-badge{ display:none !important; }
-  html.grp-sup #area-tabs, html.grp-sup #tools-link, html.grp-sup #tools-link + .header-divider{ display:none !important; }   /* check-in only: tasks, flights, tools */
+  html.grp-sup #tools-link, html.grp-sup #tools-link + .header-divider{ display:none !important; }   /* check-in only: tasks, flights, tools */
+  #sf-link, #sf-div{ display:none; }
+  html.grp-sup #sf-link{ display:inline-flex; }
+  html.grp-sup #sf-div{ display:inline; }
+  .sf-row{ cursor:pointer; -webkit-tap-highlight-color:transparent; border-width:2px; }
+  .sf-row.me{ border-color:#FF6A00; background:rgba(255,106,0,0.10); }
+  .sf-pick{ width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font:800 13px var(--mono); color:#111; }
+  .sf-pick.free{ border:2px dashed #4a5675; color:#6b7896; font-size:20px; font-weight:400; background:transparent; }
+  .sf-who{ text-align:center; font:600 9.5px var(--mono); color:var(--text-dim); margin-top:2px; max-width:56px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sf-hint{ font-size:12px; color:var(--text-dim); margin:0 2px 10px; line-height:1.45; }
   .su-bk{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:12px; margin-bottom:12px; }
   .su-bk-h{ color:var(--amber); font-weight:700; font-size:15px; }
   .su-bk-s{ font-size:12px; color:var(--text-dim); margin:2px 0 10px; }
@@ -1224,7 +1237,7 @@
     <p class="eyebrow">TTAE GRUPO · FAO · PAX</p>
     <h1>TROCA-MISTO™</h1>
     <div class="board-stats board-stats-top">
-      <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b></span>
+      <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
       <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.10.01</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
@@ -1240,6 +1253,8 @@
         ÁREA PESSOAL<span id="my-area-badge"></span>
       </span>
       <span class="header-divider">|</span>
+      <span id="sf-link" class="stat-link" style="align-items:center; gap:5px; color:var(--cyan);" title="Lista de voos">LISTA DE VOOS</span>
+      <span class="header-divider" id="sf-div">|</span>
       <span id="tools-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Ferramentas">
         FERRAMENTAS
       </span>
@@ -1640,6 +1655,14 @@
   </div>
 
   <!-- VOOS PANEL -->
+  <div class="panel hidden" id="panel-sup-flights">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">LISTA DE VOOS</div>
+      <button type="button" id="sf-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    </div>
+    <div id="sf-list"></div>
+  </div>
+
   <div class="panel hidden" id="panel-flights">
     <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
       <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">VOOS</div>
@@ -2363,6 +2386,7 @@ function renderEndOfMonthWarning(){
 }
 const MONTH_ABBR = MONTH_NAMES[(DATA.month||'2026-09').split('-')[1]] || 'Sep';
 document.getElementById('stat-workers').textContent = DATA.workers.length;
+updateAgentDelta();
 document.getElementById('stat-range').textContent = MONTH_FULL[(DATA.month||'2026-09').split('-')[1]] || 'SETEMBRO';
 if(DATA.version) document.getElementById('stat-rules').textContent = DATA.version;
 
@@ -4299,7 +4323,23 @@ function isBlocked(workerId){
   return !!(sys && hasDcsSystem(sys, workerId)) || isDismissed(workerId);   // someone who left is hidden everywhere, like BLOCK
 }
 // header number: everybody on the schedule except the people marked OUT (BLOCK still counts)
+// Next to the agents number: how many more (+) or fewer (-) people the schedule has than the month before.
+// The previous month's number is stored in the schedule itself ("prev") when a new month is uploaded; nothing is shown until then, or when the number is the same.
+function updateAgentDelta(){
+  try{
+    const el = document.getElementById('stat-workers-delta'); if(!el) return;
+    el.className = 'stat-delta'; el.textContent = ''; el.title = '';
+    const pv = DATA.prev;
+    if(!pv || !pv.month || !(pv.count > 0) || String(pv.month) >= String(DATA.month)) return;
+    const d = DATA.workers.length - pv.count;
+    if(!d) return;
+    el.textContent = (d > 0 ? '+' : '-') + Math.abs(d);
+    el.classList.add(d > 0 ? 'up' : 'down');
+    el.title = 'Face ao mês anterior (' + pv.count + ')';
+  }catch(e){}
+}
 function updateAgentCount(){
+  try{ updateAgentDelta(); }catch(e){}
   try{ updateSkillsStats(); }catch(e){}
   try{ document.getElementById('stat-workers').textContent = DATA.workers.filter(w => !isDismissed(w.id)).length; }catch(e){}
 }
@@ -6476,7 +6516,7 @@ function mtKindFor(c){
 function mtNotifDetail(c){
   const T = x => escapeHtml(String(x).replace(/–/g, ' – '));
   // labels such as "COM X3 3ºB 05:10-07:25" end with their own time — it is shown once, in white, so drop it from the name
-  const nm = escapeHtml(String(c.name || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim());
+  const nm = escapeHtml(String(c.name || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').replace(/^COMM\b/i, 'COM').trim());
   const base = 'font-size:11.5px; font-weight:600; margin-top:2px;';
   if(c.kind === 'nova' || c.kind === 'removido'){
     const pill = c.kind === 'nova' ? 'background:#249255;' : 'background:#b3363f;';
@@ -8571,6 +8611,9 @@ async function saveUploadedSchedule(clear){
     version: SU.version || SU.month.replace('-', '.') + '.01',
     uploadedAt: Date.now(), uploadedBy: ADMIN_STAFF_ID
   };
+  // remember last month's headcount for the +/- next to the agents number (a re-upload of the same month keeps the earlier reference)
+  const keepPrev = DATA.month === SU.month ? DATA.prev : { month: DATA.month, count: DATA.workers.length };
+  if(keepPrev && keepPrev.month) sched.prev = { month: keepPrev.month, count: keepPrev.count };
   st.textContent = 'A guardar ponto de restauro…';
   const rp = await suMakeRestorePoint();
   if(!rp.ok){ st.textContent = rp.why + ' Nada foi alterado.'; return; }
@@ -8668,6 +8711,7 @@ function mtListen(){
 }
 function mtUnlisten(){ if(MT_UNSUB){ try{ MT_UNSUB(); } catch(e){} MT_UNSUB = null; } }
 function openMyTasks(){
+  if(GROUP === 'sup'){ openSupTasks(); return; }
   MT_ERR = false;
   if(MT_DOC === null) MT_DOC = null;
   renderMyTasks();
@@ -8677,6 +8721,7 @@ function openMyTasks(){
   if(MT_DOC) mtMarkSeen();
 }
 function closeMyTasks(){
+  if(GROUP === 'sup'){ closeSupTasks(); return; }
   mtMarkSeen();
   if(MT_TICK){ clearInterval(MT_TICK); MT_TICK = null; }
 }
@@ -8821,7 +8866,7 @@ function mtDeskList(v){
 function mtDeskFor(label, deskList){
   // the task label ends with its times ("COM EZY 4ºB 13:15-14:45"): drop them first, as the card does
   const clean = String(label || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim();
-  const m = /^COM\b.*?\s+(\d{1,2})\s?[ºª°]?\s?B$/i.exec(clean);
+  const m = /^COMM?\b.*?\s+(\d{1,2})\s?[ºª°]?\s?B$/i.exec(clean);   // COMM = a typo of COM that does happen
   if(!m || !deskList.length) return null;
   const pos = parseInt(m[1], 10); if(!(pos >= 1 && pos <= deskList.length)) return null;
   return /\bE(ZY|JU|ZS)\b/i.test(clean) ? deskList[deskList.length - pos] : deskList[pos - 1];
@@ -8873,8 +8918,9 @@ function mtIsDly(nk){ return /(^|\s)DLY(\s|$)/i.test(String(nk || '').replace(/\
 function mtNameHtml(nk){
   let n = nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk;
   n = n.replace(/(^|\s)DLY(?=\s|$)/i, '').replace(/\s{2,}/g, ' ').trim() || n;
+  n = n.replace(/^COMM\b/i, 'COM');   // a typo that happens ("COMM HV"): always shown as COM, like all the others
   n = n.replace(/\bCOM\s+EZY\/EJU(\/EZS)?\b/i, 'COM EZY');   // 'COM EZY/EJU' and 'COM EZY/EJU/EZS' both show as 'COM EZY'
-  const m = /^(COM\b.*?)\s+(\d{1,2})\s?[ºª°]?\s?([A-Za-z])$/i.exec(n);   // the coordinator sometimes forgets the º: "4B" and "4ºB" are the same
+  const m = /^(COMM?\b.*?)\s+(\d{1,2})\s?[ºª°]?\s?([A-Za-z])$/i.exec(n);   // the coordinator sometimes forgets the º: "4B" and "4ºB" are the same
   if(m) return '<span class="mt-name" style="min-width:0">' + mtEsc(m[1]) + '</span><span class="mt-pill">' + mtEsc(m[2] + 'º' + m[3].toUpperCase()) + '</span>';
   const pr = /^([A-Z0-9]{2,3}?)\s?(\d{1,4}[A-Z]?)_(\d{1,4}[A-Z]?)$/.exec(n.trim());   // arrival_departure of the same aircraft (acolhimento): one flight per line
   if(pr) return '<span class="mt-name mt-pair"><span>' + mtEsc(pr[1] + ' ' + pr[2]) + '</span><span>' + mtEsc(pr[1] + ' ' + pr[3]) + '</span></span>';
@@ -8892,9 +8938,132 @@ function mtInfoHtml(f, colr){
   return flags.length ? '<div class="mt-info">' + flags.join('') + '</div>' : '';
 }
 function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
+
+// ===== SUPERVISÃO · AS MINHAS TAREFAS: each supervisor picks the flights he/she works today; everybody sees who has what =====
+let SF_UNSUB_FL = null, SF_UNSUB_CL = null, SF_CL = null, SF_TICK = null;
+function sfToday(){ const n = new Date(); return n.getFullYear() + '-' + mtPad(n.getMonth() + 1) + '-' + mtPad(n.getDate()); }
+function sfKey(n){ return String(n || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function sfPerson(id){
+  const w = DATA.workers.find(x => x.id === id);
+  const parts = String((w && w.name) || '').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return { ini: '?', first: id, col: '#8a96b0' };
+  const given = parts[parts.length - 1], sur = parts[0];
+  const pal = ['#FFB400', '#FF7A8A', '#4DA3FF', '#5FD6A0', '#C79BFF', '#FF9F5A', '#6FD3E8', '#E3D45A'];
+  const idx = Math.max(0, DATA.workers.findIndex(x => x.id === id));
+  return { ini: (given[0] + (sur !== given ? sur[0] : '')).toUpperCase(), first: given.charAt(0) + given.slice(1).toLowerCase(), col: pal[idx % pal.length] };
+}
+function sfClaims(){ const t = sfToday(); return (SF_CL && SF_CL.date === t && SF_CL.c) ? SF_CL.c : {}; }
+async function sfSetClaim(key, id){
+  try{
+    const db = await getDb(); if(!db) return;
+    const ref = db.collection('data').doc(gScope('claims'));
+    const t = sfToday();
+    if(!SF_CL || SF_CL.date !== t){ await ref.set({ date: t, c: id ? { [key]: id } : {} }); return; }
+    if(id) await ref.set({ date: t, c: { [key]: id } }, { merge: true });
+    else await ref.update({ ['c.' + key]: firebase.firestore.FieldValue.delete() });
+  }catch(e){}
+}
+function sfTap(key, label){
+  const me = mtStaffId(); if(!me) return;
+  const cur = sfClaims()[key];
+  if(cur === me){ sfSetClaim(key, null); return; }
+  if(!cur){ sfSetClaim(key, me); return; }
+  const o = sfPerson(cur);
+  showConfirmDialog('O voo <b>' + escapeHtml(label) + '</b> já é de <b>' + escapeHtml(o.first) + '</b>. Queres ficar com ele?', () => sfSetClaim(key, me), false, 'Ficar com ele');
+}
+function sfRows(mineOnly){
+  let data = {}; try{ data = JSON.parse(FL_DOC.json) || {}; }catch(e){}
+  const keep = {}; String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keep[c] = 1; });
+  const claims = sfClaims(), me = mtStaffId();
+  const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+  let html = '', n = 0;
+  (data.dep || []).forEach(r => {
+    const f = flSplit(r.n);
+    if(!f.code || !keep[f.code] || !flToday(r.std)) return;
+    const key = sfKey(r.n), who = claims[key];
+    if(mineOnly && who !== me) return;
+    n++;
+    const sched = flTime(r.std), est = flTime(r.etd), sm = flMin(sched);
+    const past = sm !== null && nowMin - sm > 30 && nowMin - sm < 720;
+    const delayed = est && est !== sched;
+    const p = who ? sfPerson(who) : null;
+    const chips = [];
+    if(r.cki) chips.push('<span class="fl-chip">CKI ' + escapeHtml(flMergeRanges(r.cki)) + '</span>');
+    if(r.gt) chips.push('<span class="fl-chip' + (/board|embar/i.test(r.grem || '') ? ' g' : '') + '">GT ' + escapeHtml(r.gt) + '</span>');
+    const label = f.code + ' ' + f.num;
+    html += '<div class="fl-row' + (mineOnly ? '' : ' sf-row') + (who === me ? ' me' : '') + (past ? ' past' : '') + '"' + (mineOnly ? ' style="border-width:2px;"' : ' data-sfk="' + escapeHtml(key) + '" data-sfl="' + escapeHtml(label) + '"') + '>' +
+      '<div class="fl-tm">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
+      '<div><div class="fl-fn">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '</div><div class="fl-ch" style="margin-top:4px;">' + chips.join('') + '</div></div>' +
+      (mineOnly ? '<div></div>' : '<div>' + (p ? '<div class="sf-pick" style="background:' + p.col + '">' + escapeHtml(p.ini) + '</div><div class="sf-who">' + escapeHtml(p.first) + '</div>' : '<div class="sf-pick free">+</div>') + '</div>') + '</div>';
+  });
+  return { html, n };
+}
+function sfState(box){
+  if(FL_DOC === null || SF_CL === null){ box.innerHTML = '<div class="mt-empty">A carregar…</div>'; return false; }
+  if(FL_DOC === false || !FL_DOC.json){ box.innerHTML = '<div class="mt-warn amber">Ainda sem dados de voos.</div>'; return false; }
+  return true;
+}
+function sfDateLine(txt){ return '<div class="sf-hint">' + sfToday().split('-').reverse().join('/') + (txt ? ' · ' + txt : '') + '</div>'; }
+// AS MINHAS TAREFAS: only the flights this supervisor picked
+function renderSupTasks(){
+  const body = document.getElementById('my-tasks-body');
+  if(!body || !mtOpenOverlay() || !sfState(body)) return;
+  const r = sfRows(true);
+  body.innerHTML = sfDateLine(r.n + ' voo' + (r.n === 1 ? '' : 's') + ' teu' + (r.n === 1 ? '' : 's')) +
+    (r.n ? r.html : '<div class="mt-empty">Ainda não escolheste nenhum voo. Vai a <b>LISTA DE VOOS</b> e toca nos voos que vais fazer hoje.</div>');
+}
+// LISTA DE VOOS: everybody picks here and sees who has what
+function renderSupPicker(){
+  const box = document.getElementById('sf-list');
+  const pn = document.getElementById('panel-sup-flights');
+  if(!box || !pn || pn.classList.contains('hidden') || !sfState(box)) return;
+  const r = sfRows(false);
+  box.innerHTML = '<div class="sf-hint">Toca num voo para o escolheres. Toca outra vez para o libertares. Todos vêem quem tem cada voo.</div>' + sfDateLine('') +
+    (r.n ? r.html : '<div class="mt-empty">Sem voos das nossas companhias.</div>');
+}
+function renderSupAll(){ renderSupTasks(); renderSupPicker(); }
+document.addEventListener('click', ev => {
+  const row = ev.target.closest && ev.target.closest('.sf-row');
+  if(row && GROUP === 'sup') sfTap(row.dataset.sfk, row.dataset.sfl);
+});
+async function sfListen(){
+  renderSupAll();
+  if(!SF_TICK) SF_TICK = setInterval(renderSupAll, 60000);
+  try{
+    await loadFlAirlines();
+    const db = await getDb();
+    if(!db){ FL_DOC = false; SF_CL = SF_CL || {}; renderSupAll(); return; }
+    if(!SF_UNSUB_FL) SF_UNSUB_FL = db.collection('data').doc('flightlist').onSnapshot(
+      snap => { FL_DOC = snap.exists ? snap.data() : false; renderSupAll(); }, () => { FL_DOC = false; renderSupAll(); });
+    if(!SF_UNSUB_CL) SF_UNSUB_CL = db.collection('data').doc(gScope('claims')).onSnapshot(
+      snap => { SF_CL = snap.exists ? snap.data() : {}; renderSupAll(); }, () => { SF_CL = SF_CL || {}; renderSupAll(); });
+  }catch(e){ FL_DOC = false; SF_CL = SF_CL || {}; renderSupAll(); }
+}
+function sfStop(){
+  [SF_UNSUB_FL, SF_UNSUB_CL].forEach(u => { if(u){ try{ u(); }catch(e){} } });
+  SF_UNSUB_FL = SF_UNSUB_CL = null;
+  if(SF_TICK){ clearInterval(SF_TICK); SF_TICK = null; }
+}
+function openSupTasks(){ sfListen(); }
+function closeSupTasks(){ sfStop(); }
+function openSupFlights(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector('.tabs').classList.add('hidden');
+  document.getElementById('panel-sup-flights').classList.remove('hidden');
+  sfListen();
+}
+function closeSupFlights(){
+  sfStop();
+  document.querySelector('.tabs').classList.remove('hidden');
+  document.getElementById('panel-sup-flights').classList.add('hidden');
+  switchTab('cover');
+}
+document.getElementById('sf-link').addEventListener('click', openSupFlights);
+document.getElementById('sf-back-btn').addEventListener('click', closeSupFlights);
 function renderMyTasks(){
   const body = document.getElementById('my-tasks-body');
   if(!body || !mtOpenOverlay()) return;
+  if(GROUP === 'sup'){ renderSupTasks(); return; }
   let staffId = null;
   try{ staffId = localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){}
   const me = staffId ? DATA.workers.find(w => w.id === staffId) : null;
@@ -8967,7 +9136,7 @@ function renderMyTasks(){
       }
       html += '<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
-              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COM\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(t[5]), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
+              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(t[5]), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
               '<div class="mt-side">' + chip + bdg + '</div>' + tabHtml + teamHtml + '</div>';
     });
   }
