@@ -1623,16 +1623,12 @@
 
   <!-- EXTRA PANEL (admin only): a second shift to add to my own day -->
   <div class="panel hidden" id="panel-xshift">
-    <div class="extra-seg" id="extra-seg">
-      <div data-m="me" class="on">EU FAÇO O 2º TURNO</div>
-      <div data-m="them">ALGUÉM FAZ O MEU</div>
-    </div>
-    <div class="hint" style="margin:-4px 0 10px;">só para procurar — nada é registado</div>
     <div class="field">
       <label for="extra-day">Data</label>
       <select id="extra-day"></select>
     </div>
     <div id="extra-mine" class="extra-mine"></div>
+    <div class="hint" style="margin:10px 0 0;">Escolhe o dia. Cada pessoa serve nos dois sentidos: tu fazes o turno dela, ou ela faz o teu. O total do dia é o mesmo. Só para procurar — nada é registado.</div>
     <div id="extra-head" class="extra-head"></div>
     <div id="extra-list"></div>
   </div>
@@ -2133,7 +2129,7 @@ function renderExtra(){
   rows.sort((x, y) => x.gap - y.gap || x.a - y.a);
   const MAX_DAY = 600;   // never more than 10h in a day
   const ok = rows.filter(r => r.total <= MAX_DAY), over = rows.filter(r => r.total > MAX_DAY);
-  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">' + (extraMode === 'them' ? 'PODEM FAZER O MEU' : 'QUEM ESTÁ A TRABALHAR') + ' · ' + working + '<span>máx. 10h por dia</span></div>';
+  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">' + 'ENCAIXAM NO MEU TURNO' + ' · ' + working + '<span>máx. 10h por dia</span></div>';
   const addRow = (box, r) => {
     const d = document.createElement('div'); d.className = 'extra-row';
     d.innerHTML = '<div class="en"><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
@@ -2158,11 +2154,7 @@ function renderExtra(){
   }
 }
 document.getElementById('extra-day').addEventListener('change', renderExtra);
-document.querySelectorAll('#extra-seg div').forEach(el => el.addEventListener('click', () => {
-  extraMode = el.getAttribute('data-m');
-  document.querySelectorAll('#extra-seg div').forEach(x => x.classList.toggle('on', x === el));
-  renderExtra();
-}));
+
 
 let legalFooterEnabled = true;
 function applyLegalFooter(){ document.querySelectorAll('.legal-ft').forEach(el => el.classList.toggle('hidden', !legalFooterEnabled)); }
