@@ -13,7 +13,8 @@ const URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databa
 export const sv = (s) => ({ stringValue: String(s) });
 export const iv = (n) => ({ integerValue: String(Math.round(n)) });
 // ---- change detection: compares the new read with the previous one, per agent ----
-const norm = (l) => String(l || '').replace(/^<\s*/, '').trim();
+// COMM is a typo of COM that the coordinators sometimes write and later correct: both count as the same task, so fixing the spelling is not reported as a removed + new task
+const norm = (l) => String(l || '').replace(/^<\s*/, '').trim().replace(/^COMM\b/i, 'COM');
 const tup = (t) => ({ l: norm(t[0]), s: t[1], e: t[2], c: t[4] ? 1 : 0 });
 const key = (x) => [x.l, x.s, x.e, x.c].join('|');
 export function diffTasks(prevT, newT) {
