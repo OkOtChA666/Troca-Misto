@@ -1072,6 +1072,8 @@
   .mt-pop div{ padding:2px 0; }
   .mt-pop .me{ color:#7ef0c4; }
   .mt-pill{ font-family:var(--mono); font-size:12px; font-weight:700; background:#e8eefc; color:#0b1220; padding:2px 10px; border-radius:4px; margin-left:10px; white-space:nowrap; flex:none; }
+  .mt-pop .supn{ color:#FF9F5A; font-weight:700; }
+  .mt-pop .supn + h6{ margin-top:10px; }
   .mt-pop h6.sub{ color:#8fa0c4; margin-top:8px; }
   .mt-pop .off{ opacity:.55; }
   .mt-desk{ font-weight:700; font-size:11px; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center; }
@@ -8733,11 +8735,13 @@ function mtListen(){
           try{ const nm = document.getElementById('notifications-modal'); if(nm && !nm.classList.contains('hidden')) renderNotificationsList(); }catch(e){} },   // bell already open: show the task entries as soon as they arrive
         () => { MT_ERR = true; if(mtOpenOverlay()) renderMyTasks(); }
       );
+      if(GROUP !== 'sup' && !SUPC_UNSUB) SUPC_UNSUB = db.collection('data').doc('sup_claims').onSnapshot(
+        snap => { SUPC = snap.exists ? snap.data() : null; if(mtOpenOverlay()) renderMyTasks(); }, () => {});
       MT_LISTENING = false;
     } catch(e){ MT_ERR = true; MT_LISTENING = false; renderMyTasks(); }
   })();
 }
-function mtUnlisten(){ if(MT_UNSUB){ try{ MT_UNSUB(); } catch(e){} MT_UNSUB = null; } }
+function mtUnlisten(){ if(MT_UNSUB){ try{ MT_UNSUB(); } catch(e){} MT_UNSUB = null; } if(SUPC_UNSUB){ try{ SUPC_UNSUB(); } catch(e){} SUPC_UNSUB = null; } }
 function openMyTasks(){
   if(GROUP === 'sup'){ openSupTasks(); return; }
   MT_ERR = false;
@@ -8838,6 +8842,26 @@ function mtTabInfo(f, colr){
   } else if(reg) bits.push('<span><b style="margin-left:0">' + reg + '</b></span>');
   return bits.join('');
 }
+// Supervisors' picks (SUPERVISÃO's LISTA DE VOOS) shown in the TTAE task cards: read only
+let SUPC = null, SUPC_UNSUB = null, SUP_NAMES = null;
+function sfFullName(nm){
+  const parts = String(nm || '').trim().split(/\s+/).filter(Boolean); if(!parts.length) return '';
+  const cap = w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  return parts.length === 1 ? cap(parts[0]) : cap(parts[parts.length - 1]) + ' ' + cap(parts[0]);
+}
+function sfDepKey(fkey){
+  const head = String(fkey || '').split('@')[0]; if(!head) return '';
+  if(head.indexOf('/') < 0) return head;
+  const q = head.split('/'); return q[0].replace(/\d{1,4}[A-Z]?$/, '') + q[1];
+}
+function sfSupFor(t, colr){
+  try{
+    if(GROUP === 'sup' || (colr !== '#0066cc' && colr !== '#dbffaa') || !SUPC || !SUPC.c || SUPC.date !== sfToday()) return '';
+    const id = SUPC.c[sfDepKey(t[5])]; if(!id) return '';
+    if(!SUP_NAMES){ SUP_NAMES = {}; EMBEDDED_SUP.workers.forEach(w => { SUP_NAMES[w.id] = w.name; }); dbGetShared('schedule', null, 'sup').then(d => { if(d && d.workers){ d.workers.forEach(w => { SUP_NAMES[w.id] = w.name; }); if(mtOpenOverlay()) renderMyTasks(); } }).catch(() => {}); }
+    return sfFullName(SUP_NAMES[id] || '');
+  }catch(e){ return ''; }
+}
 let MT_TEAM_FOR = null, MT_TEAM_ALL = [];
 const mtTeamOpen = {};
 // every check-in / gate task of every agent, read once per data refresh
@@ -8900,8 +8924,9 @@ function mtDeskFor(label, deskList){
   return /\bE(ZY|JU|ZS)\b/i.test(clean) ? deskList[deskList.length - pos] : deskList[pos - 1];
 }
 function mtTeamHtml(t, colr, rowKey){
-  const list = mtTeamFor(t, colr);
-  if(!list) return '';
+  const sup = sfSupFor(t, colr);                                   // name of the supervisor who picked this flight ('' if nobody did)
+  let list = mtTeamFor(t, colr), supOnly = false;
+  if(!list){ if(!sup) return ''; list = []; supOnly = true; }     // arrival (ACOLHIMENTO) cards: a tab only when a supervisor picked the flight
   const me = String(mtStaffId());
   const srt = l => l.slice().sort((p, q) => {
     if(showDesks){ const a = deskOf(p), b = deskOf(q); if(a !== null && b !== null && a !== b) return a - b; if(a !== null && b === null) return -1; if(a === null && b !== null) return 1; }
@@ -8933,10 +8958,11 @@ function mtTeamHtml(t, colr, rowKey){
       head = 'ÀS ' + mtPad(Math.floor((m % 1440) / 60)) + ':' + mtPad(m % 60);
     }
   }
-  if(now.length < 2 && !later.length) return '';                   // alone: nothing to show
+  if(now.length < 2 && !later.length && !sup) return '';           // alone: nothing to show (unless a supervisor picked the flight)
   const icon = '<svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-  return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + '<b>' + now.length + '</b></div>' +
-         '<div class="mt-pop"><h6>' + head + ' · ' + now.length + (now.length === 1 ? ' PESSOA' : ' PESSOAS') + '</h6>' + srt(now).map(x => nm(x)).join('') +
+  return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + (supOnly ? '' : '<b>' + now.length + '</b>') + '</div>' +
+         '<div class="mt-pop">' + (sup ? '<h6>SUPERVISOR</h6><div class="supn">' + mtEsc(sup) + '</div>' : '') +
+         (supOnly ? '' : '<h6>' + head + ' · ' + now.length + (now.length === 1 ? ' PESSOA' : ' PESSOAS') + '</h6>' + srt(now).map(x => nm(x)).join('')) +
          (later.length ? '<h6 class="sub">DEPOIS · ' + later.length + '</h6>' + srt(later).map(x => nm(x, 'off')).join('') : '') +
          (colr === '#0099ff' ? '<div class="mt-desk-toggle" role="switch" aria-checked="' + mtShowDesks() + '"><span>MOSTRAR BALCÕES</span><span class="mt-sw' + (mtShowDesks() ? ' on' : '') + '"></span></div>' : '') + '</div>';
 }
