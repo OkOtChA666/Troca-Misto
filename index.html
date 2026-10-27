@@ -6828,7 +6828,11 @@ function buildTurnaroundField(f, compact){
     regBtn.className = 'confirm-btn';
     regBtn.textContent = val ? 'REGISTAR NOVAMENTE' : 'REGISTAR';
     regBtn.addEventListener('click', async () => {
-      if(!TURNAROUNDS[currentFlight]) TURNAROUNDS[currentFlight] = { _day: todayDateString(), _createdAt: Date.now() };
+      if(!TURNAROUNDS[currentFlight]) {
+        let _sid = ''; try{ _sid = localStorage.getItem('trocaMistoLoginStaffId') || ''; }catch(e){}
+        const _w = DATA.workers.find(w => w.id === _sid);
+        TURNAROUNDS[currentFlight] = { _day: todayDateString(), _createdAt: Date.now(), _by: _w ? _w.name : _sid };
+      }
       const existing = normalizeFieldRecord(TURNAROUNDS[currentFlight][f.key]);
       TURNAROUNDS[currentFlight][f.key] = { value: nowClockTime(), previous: existing ? existing.value : null, ts: Date.now() };
       await saveTurnarounds();
@@ -6963,11 +6967,13 @@ function buildFlightRow(flight, i){
   const flightNum = flight.slice(2);
   const flightHtml = '<span style="color:var(--amber); font-weight:700;">'+escapeHtml(airlineCode)+'</span> <span>'+escapeHtml(flightNum)+'</span>';
   const createdTimeHtml = rec._createdAt
-    ? ' &middot; criado às '+String(new Date(rec._createdAt).getHours()).padStart(2,'0')+':'+String(new Date(rec._createdAt).getMinutes()).padStart(2,'0')
+    ? '<br>criado às '+String(new Date(rec._createdAt).getHours()).padStart(2,'0')+':'+String(new Date(rec._createdAt).getMinutes()).padStart(2,'0')
     : '';
+  // only the admin sees who opened the flight
+  const createdByHtml = (isAdminSession && rec._by) ? ' - <span style="color:var(--cyan);">'+escapeHtml(rec._by)+'</span>' : '';
   const statusText = (isComplete
     ? '<span style="color:var(--go);">Finalizado</span>'
-    : filled+' / '+total+' campos registados') + createdTimeHtml;
+    : filled+' / '+total+' campos registados') + createdTimeHtml + createdByHtml;
   const reportBtnHtml = isComplete
     ? '<button type="button" class="turnaround-view-btn" data-action="report" title="Relatório do voo (temporariamente desativado)" style="opacity:0.45;">'+
       '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 9V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v5M4 17h16M6 9h12a2 2 0 0 1 2 2v4a1 1 0 0 1-1 1h-2M6 9a2 2 0 0 0-2 2v4a1 1 0 0 0 1 1h2M7 14h10v6H7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="2" y1="22" x2="22" y2="2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'+
