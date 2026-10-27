@@ -936,6 +936,7 @@
   html.grp-sup #extra-hours-link{ display:none !important; }
   .sf-row{ cursor:pointer; -webkit-tap-highlight-color:transparent; border-width:2px; }
   .sf-row.me{ border-color:#FF6A00; background:rgba(255,106,0,0.10); }
+  .sf-pickbox{ padding:4px; margin:-4px; cursor:pointer; }
   .sf-pick{ width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font:800 13px var(--mono); color:#111; }
   .sf-pick.free{ border:2px dashed #4a5675; color:#6b7896; font-size:20px; font-weight:400; background:transparent; }
   .sf-who{ text-align:center; font:600 9.5px var(--mono); color:var(--text-dim); margin-top:2px; max-width:56px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -949,6 +950,22 @@
   .sf-pop{ position:absolute; left:12px; bottom:30px; z-index:20; background:#22355c; border:1px solid #8fa0c4; border-radius:10px; padding:10px 14px; min-width:190px; box-shadow:0 8px 24px rgba(0,0,0,.5); font-family:var(--mono); font-size:13px; color:#e8eefc; text-align:left; opacity:1; }
   .sf-pop h6{ margin:0 0 6px; font-size:10px; letter-spacing:.14em; color:#ffb020; }
   .sf-pop div{ padding:2px 0; }
+  .sf-corner{ position:absolute; right:14px; bottom:-1px; display:flex; gap:5px; }
+  .sf-corner span{ height:26px; padding:0 10px; display:flex; align-items:center; font-family:var(--mono); font-size:12px; color:#46526b; background:#e8eefc; border-radius:10px 10px 0 0; white-space:nowrap; }
+  .sf-corner b{ color:#0b1220; margin-left:5px; }
+  .sf-more{ margin-top:10px; border-top:1px solid rgba(138,152,184,.25); padding-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; font-family:var(--mono); font-size:10.5px; color:var(--text-dim); letter-spacing:.06em; }
+  .sf-more b{ display:block; color:var(--text); font-size:13px; letter-spacing:0; margin-top:1px; }
+  .sf-more b.st{ color:#FF9F5A; }
+  .sf-chev{ font-size:9px; color:var(--text-dim); margin-left:6px; }
+  .sf-plus{ position:relative; width:36px; height:36px; border-radius:50%; border:1.5px solid var(--amber); color:var(--amber); background:transparent; display:flex; align-items:center; justify-content:center; font:400 24px/1 var(--mono); cursor:pointer; padding:0; }
+  .sf-plus span{ position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; border-radius:9px; background:#FF6A00; color:#fff; font:800 11px/18px var(--mono); text-align:center; }
+  .sf-sec{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .sf-sec h6{ margin:0 0 6px; font:700 10px var(--mono); letter-spacing:.14em; color:var(--amber); }
+  .sf-opt{ display:flex; align-items:center; gap:10px; padding:8px 0; font-size:14px; border-bottom:1px solid var(--border-soft); cursor:pointer; }
+  .sf-opt:last-child{ border-bottom:0; }
+  .sf-cb{ width:18px; height:18px; border-radius:5px; border:2px solid #4a5675; display:flex; align-items:center; justify-content:center; font-size:12px; color:#0b1220; flex:none; }
+  .sf-cb.on{ background:#FF6A00; border-color:#FF6A00; }
+  .sf-ok{ width:100%; padding:11px; border-radius:9px; border:0; background:var(--amber); color:#1a1200; font:800 12px var(--mono); letter-spacing:.12em; cursor:pointer; }
   .sf-hint{ font-size:12px; color:var(--text-dim); margin:0 2px 10px; line-height:1.45; }
   .su-bk{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:12px; margin-bottom:12px; }
   .su-bk-h{ color:var(--amber); font-weight:700; font-size:15px; }
@@ -1668,7 +1685,8 @@
   <div class="panel hidden" id="panel-sup-flights">
     <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
       <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">LISTA DE VOOS</div>
-      <button type="button" id="sf-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div style="display:flex; align-items:center; gap:14px;"><button type="button" id="sf-plus" class="sf-plus" aria-label="O que quero ver" title="O que quero ver">+<span id="sf-plus-n"></span></button>
+      <button type="button" id="sf-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button></div>
     </div>
     <div id="sf-list"></div>
   </div>
@@ -9008,6 +9026,7 @@ function sfTabsHtml(key, std){
   if(!tm) return '';
   let tabs = '', pop = '';
   [['p', 'PARTIDA', '#0066cc'], ['a', 'ACOLHIMENTO', '#9fe870']].forEach(([r, lab, col]) => {
+    if(!sfPrefs()[r === 'p' ? 'pa' : 'ac']) return;
     const names = Object.keys(tm[r]).map(id => tm[r][id]).sort((x, y) => String(x).localeCompare(String(y)));
     if(!names.length) return;
     const id = key + ':' + r, on = SF_OPEN === id;
@@ -9016,7 +9035,23 @@ function sfTabsHtml(key, std){
   });
   return tabs ? pop + '<div class="sf-tabs">' + tabs + '</div>' : '';
 }
+const SF_OPTS = [
+  ['tabs', 'NO CARTÃO', [['porta','PORTA',1],['ckin','CKIN',1],['pa','Equipa PARTIDA',1],['ac','Equipa ACOLHIMENTO',1]]],
+  ['more', 'AO ABRIR O CARTÃO', [['estado','ESTADO DO VOO',1],['est','HORA ESTIMADA',1],['stand','STAND',0],['reg','MATRÍCULA',0]]],
+  ['list', 'LISTA', [['mine','Mostrar só os meus voos',0],['past','Esconder voos já partidos',0]]]
+];
+let SF_PREFS = null, SF_MENU = false, SF_EXP = {};
+function sfPrefs(){
+  if(SF_PREFS) return SF_PREFS;
+  SF_PREFS = {}; SF_OPTS.forEach(g => g[2].forEach(o => { SF_PREFS[o[0]] = !!o[2]; }));
+  try{ const v = JSON.parse(localStorage.getItem('trocaMistoSfPrefs:' + mtStaffId()) || 'null'); if(v) Object.keys(v).forEach(k => { if(k in SF_PREFS) SF_PREFS[k] = !!v[k]; }); }catch(e){}
+  return SF_PREFS;
+}
+function sfSavePrefs(){ try{ localStorage.setItem('trocaMistoSfPrefs:' + mtStaffId(), JSON.stringify(sfPrefs())); }catch(e){} }
+function sfPrefCount(){ const p = sfPrefs(); return Object.keys(p).filter(k => p[k]).length; }
+function sfSp(v){ return escapeHtml(String(v).replace(/_/g, ' | ').replace(/\s*-\s*/g, ' – ')); }
 function sfRows(mineOnly){
+  const pf = sfPrefs();
   let data = {}; try{ data = JSON.parse(FL_DOC.json) || {}; }catch(e){}
   const keep = {}; String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keep[c] = 1; });
   const claims = sfClaims(), me = mtStaffId();
@@ -9027,21 +9062,34 @@ function sfRows(mineOnly){
     if(!f.code || !keep[f.code] || !flToday(r.std)) return;
     const key = sfKey(r.n), who = claims[key];
     if(mineOnly && who !== me) return;
-    n++;
+    if(!mineOnly && pf.mine && who !== me) return;
     const sched = flTime(r.std), est = flTime(r.etd), sm = flMin(sched);
     const past = sm !== null && nowMin - sm > 30 && nowMin - sm < 720;
+    if(pf.past && past) return;
+    n++;
     const delayed = est && est !== sched;
     const p = who ? sfPerson(who) : null;
-    const chips = [];
-    if(r.cki) chips.push('<span class="fl-chip">CKI ' + escapeHtml(flMergeRanges(r.cki)) + '</span>');
-    if(r.gt) chips.push('<span class="fl-chip' + (/board|embar/i.test(r.grem || '') ? ' g' : '') + '">GT ' + escapeHtml(r.gt) + '</span>');
     const label = f.code + ' ' + f.num;
+    const open = !!SF_EXP[key];
+    // bottom-right tabs
+    const cor = [];
+    if(pf.ckin && r.cki) cor.push('<span>CKIN<b>' + sfSp(mtTidyDesks(flMergeRanges(r.cki))) + '</b></span>');
+    if(pf.porta && r.gt) cor.push('<span>PORTA<b>' + sfSp(r.gt) + '</b></span>');
+    // opened card: extra information
+    let status = r.rem || r.grem || ''; if(/^\s*gate\s*at\s*$/i.test(String(status))) status = '';
+    const more = [];
+    if(pf.estado && status) more.push('<div>ESTADO<b class="st">' + escapeHtml(String(status).toUpperCase()) + '</b></div>');
+    if(pf.est && est) more.push('<div>HORA ESTIMADA<b>' + escapeHtml(est) + '</b></div>');
+    if(pf.stand && r.pos) more.push('<div>STAND<b>' + escapeHtml(r.pos) + '</b></div>');
+    if(pf.reg && r.reg) more.push('<div>MATRÍCULA<b>' + escapeHtml(r.reg) + '</b></div>');
+    const moreH = open ? '<div class="sf-more">' + (more.length ? more.join('') : '<div style="grid-column:1/3">Sem informação</div>') + '</div>' : '';
     const tabsH = sfTabsHtml(key, r.std);
-    const isOpen = !!tabsH && SF_OPEN.indexOf(key + ':') === 0;
-    html += '<div class="fl-row sf-row' + (mineOnly ? ' sf-view' : '') + (isOpen ? ' open' : '') + (who === me ? ' me' : '') + (past ? ' past' : '') + '"' + (mineOnly ? '' : ' data-sfk="' + escapeHtml(key) + '" data-sfl="' + escapeHtml(label) + '"') + '>' +
+    const popOpen = !!tabsH && SF_OPEN.indexOf(key + ':') === 0;
+    html += '<div class="fl-row sf-row' + (popOpen ? ' open' : '') + (who === me ? ' me' : '') + (past ? ' past' : '') + '" data-sfk="' + escapeHtml(key) + '" data-sfl="' + escapeHtml(label) + '">' +
       '<div class="fl-tm">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
-      '<div><div class="fl-fn">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '</div><div class="fl-ch" style="margin-top:4px;">' + chips.join('') + '</div></div>' +
-      (mineOnly ? '<div></div>' : '<div>' + (p ? '<div class="sf-pick" style="background:' + p.col + '">' + escapeHtml(p.ini) + '</div><div class="sf-who">' + escapeHtml(p.first) + '</div>' : '<div class="sf-pick free">+</div>') + '</div>') + tabsH + '</div>';
+      '<div><div class="fl-fn">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '<i class="sf-chev">' + (open ? '▲' : '▼') + '</i></div>' + moreH + '</div>' +
+      (mineOnly ? '<div></div>' : '<div class="sf-pickbox">' + (p ? '<div class="sf-pick" style="background:' + p.col + '">' + escapeHtml(p.ini) + '</div><div class="sf-who">' + escapeHtml(p.first) + '</div>' : '<div class="sf-pick free">+</div>') + '</div>') +
+      tabsH + (cor.length ? '<div class="sf-corner">' + cor.join('') + '</div>' : '') + '</div>';
   });
   return { html, n };
 }
@@ -9057,26 +9105,43 @@ function renderSupTasks(){
   if(!body || !mtOpenOverlay() || !sfState(body)) return;
   const r = sfRows(true);
   body.innerHTML = sfDateLine(r.n + ' voo' + (r.n === 1 ? '' : 's') + ' teu' + (r.n === 1 ? '' : 's')) +
-    (r.n ? r.html : '<div class="mt-empty">Ainda não escolheste nenhum voo. Vai a <b>LISTA DE VOOS</b> e toca nos voos que vais fazer hoje.</div>');
+    (r.n ? r.html : '<div class="mt-empty">Ainda não escolheste nenhum voo. Vai a <b>LISTA DE VOOS</b> e toca no círculo dos voos que vais fazer hoje.</div>');
+}
+function sfMenuHtml(){
+  const pf = sfPrefs();
+  return SF_OPTS.map(g => '<div class="sf-sec"><h6>' + g[1] + '</h6>' + g[2].map(o => '<div class="sf-opt" data-sfo="' + o[0] + '"><div class="sf-cb' + (pf[o[0]] ? ' on' : '') + '">' + (pf[o[0]] ? '✓' : '') + '</div>' + o[1] + '</div>').join('') + '</div>').join('') +
+    '<button type="button" class="sf-ok" id="sf-ok">OK</button>';
 }
 // LISTA DE VOOS: everybody picks here and sees who has what
 function renderSupPicker(){
   const box = document.getElementById('sf-list');
   const pn = document.getElementById('panel-sup-flights');
-  if(!box || !pn || pn.classList.contains('hidden') || !sfState(box)) return;
+  if(!box || !pn || pn.classList.contains('hidden')) return;
+  const nb = document.getElementById('sf-plus-n'); if(nb) nb.textContent = sfPrefCount();
+  if(SF_MENU){ box.innerHTML = sfMenuHtml(); return; }
+  if(!sfState(box)) return;
   const r = sfRows(false);
-  box.innerHTML = '<div class="sf-hint">Toca num voo para o escolheres. Toca outra vez para o libertares. Todos vêem quem tem cada voo.</div>' + sfDateLine('') +
-    (r.n ? r.html : '<div class="mt-empty">Sem voos das nossas companhias.</div>');
+  box.innerHTML = '<div class="sf-hint">Toca no <b style="color:#FF6A00">círculo</b> para escolher o voo. Toca no cartão para ver mais informação.</div>' + sfDateLine('') +
+    (r.n ? r.html : '<div class="mt-empty">Sem voos para mostrar.</div>');
 }
 function renderSupAll(){ renderSupTasks(); renderSupPicker(); }
 document.addEventListener('click', ev => {
   if(GROUP !== 'sup' || !ev.target.closest) return;
-  const tb = ev.target.closest('.sf-tab');
+  const T = ev.target;
+  if(T.closest('#sf-plus')){ SF_MENU = !SF_MENU; renderSupPicker(); return; }
+  if(T.closest('#sf-ok')){ SF_MENU = false; renderSupAll(); return; }
+  const op = T.closest('.sf-opt');
+  if(op){ const k = op.getAttribute('data-sfo'); sfPrefs()[k] = !sfPrefs()[k]; sfSavePrefs(); renderSupPicker(); return; }
+  const tb = T.closest('.sf-tab');
   if(tb){ const id = tb.getAttribute('data-sft'); SF_OPEN = SF_OPEN === id ? '' : id; renderSupAll(); return; }
-  if(ev.target.closest('.sf-pop')) return;
-  const row = ev.target.closest('.sf-row');
-  if(row && row.dataset.sfk) sfTap(row.dataset.sfk, row.dataset.sfl);
-  else if(SF_OPEN){ SF_OPEN = ''; renderSupAll(); }
+  if(T.closest('.sf-pop, .sf-corner')) return;
+  const row = T.closest('.sf-row');
+  if(row){
+    const k = row.dataset.sfk;
+    if(T.closest('.sf-pickbox')){ sfTap(k, row.dataset.sfl); return; }
+    SF_EXP[k] = !SF_EXP[k]; SF_OPEN = ''; renderSupAll(); return;
+  }
+  if(SF_OPEN){ SF_OPEN = ''; renderSupAll(); }
 });
 async function sfListen(){
   renderSupAll();
@@ -9105,6 +9170,7 @@ function openSupFlights(){
   sfListen();
 }
 function closeSupFlights(){
+  SF_MENU = false;
   sfStop();
   document.querySelector('.tabs').classList.remove('hidden');
   document.getElementById('panel-sup-flights').classList.add('hidden');
