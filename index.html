@@ -225,6 +225,20 @@
   }
   .panel + .panel{ margin-top: 14px; }
   .hidden{ display:none !important; }
+  .extra-mine{ background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:12px; }
+  .extra-mine .em-top{ display:flex; justify-content:space-between; align-items:center; font-family:var(--mono); font-size:12px; color:var(--text-dim); }
+  .extra-mine .em-top b{ color:var(--cyan); font-weight:700; }
+  .extra-bar{ height:8px; background:rgba(95,224,255,0.10); border-radius:4px; position:relative; margin:10px 0 3px; }
+  .extra-bar i{ position:absolute; top:0; height:8px; border-radius:4px; }
+  .extra-scale{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:8px; color:var(--text-dim); }
+  .extra-head{ font-family:var(--mono); font-size:12px; letter-spacing:.14em; color:var(--amber); font-weight:700; margin:6px 0 2px; display:flex; justify-content:space-between; }
+  .extra-head span{ font-weight:400; font-size:10px; color:var(--text-dim); letter-spacing:.05em; }
+  .extra-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--border-soft); font-size:13px; }
+  .extra-row .et{ font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-top:3px; }
+  .extra-row .er{ text-align:right; }
+  .extra-row .etot{ font-family:var(--mono); font-size:11px; font-weight:700; color:#2ee58a; }
+  .extra-row .egap{ font-family:var(--mono); font-size:9px; color:var(--text-dim); margin-top:3px; }
+  .extra-row .egap.adj{ color:var(--cyan); }
 
   label{
     display:block;
@@ -1334,6 +1348,7 @@
     <button class="tab-btn active" data-tab="cover" id="tab-cover">Troca Para Folga</button>
     <button class="tab-btn" data-tab="trade" id="tab-trade">Troca de Turno</button>
     <button class="tab-btn" data-tab="requests" id="tab-requests">Pedidos</button>
+    <button class="tab-btn hidden" data-tab="xshift" id="tab-xshift" style="flex:0 0 auto; color:var(--amber);">TURNO DUPLO</button>
   </div>
 
   <!-- FIND COVER PANEL -->
@@ -1594,6 +1609,21 @@
     <div id="area-tab-tasks" class="hidden">
       <div id="my-tasks-body"></div>
     </div>
+  </div>
+
+  <!-- EXTRA PANEL (admin only): a second shift to add to my own day -->
+  <div class="panel hidden" id="panel-xshift">
+    <div class="field">
+      <label for="extra-day">Data</label>
+      <select id="extra-day"></select>
+    </div>
+    <div id="extra-mine" class="extra-mine"></div>
+    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin:12px 0;">
+      <span class="pill-toggle"><input type="checkbox" id="extra-only8" checked><span class="pill-track"></span></span>
+      <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Só turnos que fazem 8h no dia</span>
+    </label>
+    <div id="extra-head" class="extra-head"></div>
+    <div id="extra-list"></div>
   </div>
 
   <!-- PEDIDOS PANEL ("I need a swap" request board) -->
@@ -1890,6 +1920,13 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Link - Apoiar projecto</span>
       </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="extra-feature-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Mostrar botão TURNO DUPLO (só para mim)</span>
+      </label>
       <div style="margin-top:18px; text-transform:none; letter-spacing:normal;">
         <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Companhias nos VOOS (códigos separados por vírgula)</div>
         <textarea id="flight-airlines-input" rows="3" style="width:100%; box-sizing:border-box; font-family:var(--mono); font-size:12px; color:var(--text); background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:10px;"></textarea>
@@ -2031,6 +2068,71 @@ async function saveTrocaFormFeatureEnabled(){
   return await dbSetShared('trocaFormFeatureEnabled', { value: trocaFormFeatureEnabled });
 }
 // Legal footer (copyright + aviso legal): shown or hidden for everyone from RULES. Default: shown.
+// ---------- EXTRA (admin only): find a second shift to add to my own day ----------
+let extraFeatureEnabled = true;   // RULES switch; the button also needs the admin session
+function applyExtraTab(){
+  const b = document.getElementById('tab-xshift'); if(!b) return;
+  const show = extraFeatureEnabled && isAdminSession;
+  b.classList.toggle('hidden', !show);
+  if(!show && b.classList.contains('active')) switchTab('cover');
+}
+async function loadExtraFeatureEnabled(){
+  try{ const doc = await dbGetShared('extraFeatureEnabled', null); extraFeatureEnabled = doc ? !!doc.value : true; }catch(e){ extraFeatureEnabled = true; }
+  applyExtraTab();
+}
+async function saveExtraFeatureEnabled(){ return await dbSetShared('extraFeatureEnabled', { value: extraFeatureEnabled }); }
+function extraMin(hhmm){ return parseInt(hhmm.slice(0,2),10)*60 + parseInt(hhmm.slice(2,4),10); }
+function extraFmt(m){ return String(Math.floor(m/60)%24).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
+function extraDur(min){ const h = Math.floor(min/60), m = min%60; return h + 'h' + (m ? String(m).padStart(2,'0') : ''); }
+function renderExtra(){
+  const sel = document.getElementById('extra-day');
+  if(!sel.options.length){
+    for(let i=0;i<N;i++){ const o = document.createElement('option'); o.value = i; o.textContent = fmtDateLabel(i); sel.appendChild(o); }
+    let first = 0; for(let i=0;i<N;i++){ if(!isPastDay(i)){ first = i; break; } }
+    sel.value = first;
+  }
+  const idx = parseInt(sel.value, 10);
+  const mineBox = document.getElementById('extra-mine'), head = document.getElementById('extra-head'), list = document.getElementById('extra-list');
+  list.innerHTML = ''; head.innerHTML = '';
+  const me = DATA.workers.find(w => w.id === ADMIN_STAFF_ID);
+  const myE = me ? getEffectiveEntry(me, idx) : null;
+  if(!myE || myE.status !== 'work' || !myE.end){
+    mineBox.innerHTML = '<div class="em-top"><span>O MEU TURNO</span><span>' + (me ? 'não trabalhas neste dia' : 'não estás neste horário') + '</span></div>';
+    return;
+  }
+  const ms = extraMin(myE.start), mEnd = extraMin(myE.end), myDur = mEnd - ms;
+  mineBox.innerHTML = '<div class="em-top"><span>O MEU TURNO · ' + escapeHtml(fmtDateLabel(idx)) + '</span><span><b>' + myE.start.slice(0,2)+':'+myE.start.slice(2) + ' – ' + myE.end.slice(0,2)+':'+myE.end.slice(2) + '</b> · ' + extraDur(myDur) + '</span></div>' +
+    '<div class="extra-bar"><i style="left:'+(ms/14.4)+'%; width:'+(myDur/14.4)+'%; background:var(--cyan);"></i></div>' +
+    '<div class="extra-scale"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>';
+  const only8 = document.getElementById('extra-only8').checked;
+  const rows = [];
+  let working = 0;
+  DATA.workers.forEach(w => {
+    if(w.id === ADMIN_STAFF_ID || isBlocked(w.id)) return;
+    const e = getEffectiveEntry(w, idx);
+    if(!e || e.status !== 'work' || !e.end) return;
+    working++;
+    if(hasMedAppointment(w.id, idx)) return;
+    const a = extraMin(e.start), b = extraMin(e.end);
+    if(b <= a || (a < mEnd && b > ms)) return;            // overlaps mine (or overnight) → can't do both
+    const gap = a >= mEnd ? a - mEnd : ms - b;
+    const total = myDur + (b - a);
+    if(only8 && total !== 480) return;
+    rows.push({ w, e, gap, total, a });
+  });
+  rows.sort((x, y) => x.gap - y.gap || x.a - y.a);
+  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">QUEM ESTÁ A TRABALHAR · ' + working + '<span>' + rows.length + ' opções</span></div>';
+  if(!rows.length){ list.innerHTML = '<div class="hint" style="text-align:center;">Nenhum turno encaixa neste dia.</div>'; return; }
+  rows.forEach(r => {
+    const d = document.createElement('div'); d.className = 'extra-row';
+    d.innerHTML = '<div><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
+      '<div class="er"><div class="etot">dia = ' + extraDur(r.total) + '</div><div class="egap' + (r.gap === 0 ? ' adj' : '') + '">' + (r.gap === 0 ? 'logo a seguir' : 'pausa ' + extraDur(r.gap)) + '</div></div>';
+    list.appendChild(d);
+  });
+}
+document.getElementById('extra-day').addEventListener('change', renderExtra);
+document.getElementById('extra-only8').addEventListener('change', renderExtra);
+
 let legalFooterEnabled = true;
 function applyLegalFooter(){ document.querySelectorAll('.legal-ft').forEach(el => el.classList.toggle('hidden', !legalFooterEnabled)); }
 async function loadLegalFooterEnabled(){
@@ -3798,6 +3900,7 @@ async function checkAccessPassword(){
   if(worker && passwordOk){
     isAdminSession = isAdmin;
     isDeptAdminSession = !isAdmin && GROUP === 'sup' && SUP_ADMINS.includes(staffId);
+    try{ applyExtraTab(); }catch(e){}
     await saveRememberedName(worker.name);
     applyRememberedName('cover-name-input', onPickCoverWorker);
     applyRememberedName('trade-a-input', onPickTradeA);
@@ -3969,6 +4072,7 @@ document.getElementById('access-portal-staffnum').addEventListener('input', upda
   if(!worker) return; // roster changed since this device last logged in — fall back to a real login
   isAdminSession = localStorage.getItem('trocaMistoLoginIsAdmin') === 'true';
   isDeptAdminSession = !isAdminSession && GROUP === 'sup' && SUP_ADMINS.includes(savedStaffId);
+  try{ applyExtraTab(); }catch(e){}
   document.getElementById('access-portal').classList.add('hidden');
   applyAdminVisibility();
   updateLoggedInDisplay(savedStaffId, worker.name);
@@ -4752,6 +4856,7 @@ function refreshAllDateSelectCounts(){
 document.getElementById('tab-cover').addEventListener('click', () => switchTab('cover'));
 document.getElementById('tab-trade').addEventListener('click', () => switchTab('trade'));
 document.getElementById('tab-requests').addEventListener('click', () => switchTab('requests'));
+document.getElementById('tab-xshift').addEventListener('click', () => switchTab("xshift"));
 document.getElementById('skills-back-btn').addEventListener('click', () => { openScheduleOverride(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 
 // ADMIN: one-tap switch between TTAE and SUPERVISÃO
@@ -4780,6 +4885,8 @@ function switchTab(name){
   document.getElementById('tab-cover').classList.toggle('active', name==='cover');
   document.getElementById('tab-trade').classList.toggle('active', name==='trade');
   document.getElementById('tab-requests').classList.toggle('active', name==='requests');
+  document.getElementById('tab-xshift').classList.toggle('active', name==="xshift");
+  document.getElementById('panel-xshift').classList.toggle('hidden', name!=="xshift");
   document.getElementById('panel-cover').classList.toggle('hidden', name!=='cover');
   document.getElementById('panel-trade').classList.toggle('hidden', name!=='trade');
   document.getElementById('panel-skills').classList.toggle('hidden', name!=='skills');
@@ -4795,6 +4902,7 @@ function switchTab(name){
   document.getElementById('recent-swaps-turno-chevron').classList.add('collapsed');
   if(name === 'skills') renderSkillsList(document.getElementById('skills-filter').value);
   if(name === 'requests') loadRequests().then(renderOpenRequests);
+  if(name === 'xshift') renderExtra();
 }
 // Horas Extra moved out of the main tab row into the header, alongside PLANEAMENTO and
 // TURNAROUND — same pattern as those two: hides the tab row entirely, dedicated back button.
@@ -7590,6 +7698,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('refresh-button-enabled-toggle').checked = refreshButtonEnabled;
   document.getElementById('legal-footer-enabled-toggle').checked = legalFooterEnabled;
   document.getElementById('support-link-enabled-toggle').checked = supportLinkEnabled;
+  document.getElementById('extra-feature-enabled-toggle').checked = extraFeatureEnabled;
   loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; });
 });
 document.getElementById('flight-airlines-input').addEventListener('change', async (e) => {
@@ -7631,6 +7740,12 @@ document.getElementById('legal-footer-enabled-toggle').addEventListener('change'
     legalFooterEnabled = !newValue; applyLegalFooter(); e.target.checked = legalFooterEnabled;
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
+});
+document.getElementById('extra-feature-enabled-toggle').addEventListener('change', async (e) => {
+  const newValue = e.target.checked;
+  extraFeatureEnabled = newValue; applyExtraTab();
+  const ok = await saveExtraFeatureEnabled();
+  if(!ok){ extraFeatureEnabled = !newValue; applyExtraTab(); e.target.checked = extraFeatureEnabled; }
 });
 document.getElementById('support-link-enabled-toggle').addEventListener('change', async (e) => {
   const newValue = e.target.checked;
@@ -8206,6 +8321,7 @@ Promise.all([
   loadTrocaSobreTrocaEnabled(),
   loadTrocaFormFeatureEnabled(),
   loadLegalFooterEnabled(),
+  loadExtraFeatureEnabled(),
   loadSupportLinkEnabled(),
   loadNotificationsEnabled(),
   loadMilestoneState(),
