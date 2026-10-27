@@ -2126,11 +2126,20 @@ function medKey(workerId, idx){
   const d = realDateForIdx(idx);
   return workerId + ':' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
+// A "MED" in the monthly PDF is read into the day itself (tag MEDhhmm-hhmm, e.g. 'MED1730-1800'); MED_DAYS above stays for manual cases.
+function medFromSchedule(workerId, idx){
+  try{
+    const w = DATA.workers.find(x => x.id === workerId); if(!w) return null;
+    const e = parseEntry(w.s[idx]);
+    for(const c of (e.codes || [])){ const m = /^MED(\d{4})-(\d{4})$/.exec(c); if(m) return { start: m[1], end: m[2] }; }
+  }catch(err){}
+  return null;
+}
 function hasMedAppointment(workerId, idx){
-  return !!MED_DAYS[medKey(workerId, idx)];
+  return !!MED_DAYS[medKey(workerId, idx)] || !!medFromSchedule(workerId, idx);
 }
 function getMedAppointmentTime(workerId, idx){
-  return MED_DAYS[medKey(workerId, idx)] || null;
+  return MED_DAYS[medKey(workerId, idx)] || medFromSchedule(workerId, idx);
 }
 // "LOST" marks a day someone is working Lost & Found rather than PAX/check-in (e.g. Martins
 // Elisabeth, Franck David) — unlike a MED appointment, this is already right there in the
@@ -4361,17 +4370,24 @@ function updateAgentDelta(){
     el.className = 'stat-delta'; el.textContent = ''; el.title = '';
     const pv = DATA.prev;
     if(!pv || !pv.month || !(pv.count > 0) || String(pv.month) >= String(DATA.month)) return;
-    const d = DATA.workers.length - pv.count;
+    const d = DATA.workers.filter(w => !hasLeftToday(w)).length - pv.count;
     if(!d) return;
     el.textContent = (d > 0 ? '+' : '-') + Math.abs(d);
     el.classList.add(d > 0 ? 'up' : 'down');
     el.title = 'Face ao mês anterior (' + pv.count + ')';
   }catch(e){}
 }
+// People already gone today: their cell for today is the purple "/" (no longer with the company). They stop counting in the header number.
+function hasLeftToday(w){
+  try{
+    for(let i = 0; i < DATA.days.length; i++){ if(isTodayDay(i)) return w.s[i] === '/'; }
+  }catch(e){}
+  return false;
+}
 function updateAgentCount(){
   try{ updateAgentDelta(); }catch(e){}
   try{ updateSkillsStats(); }catch(e){}
-  try{ document.getElementById('stat-workers').textContent = DATA.workers.filter(w => !isDismissed(w.id)).length; }catch(e){}
+  try{ document.getElementById('stat-workers').textContent = DATA.workers.filter(w => !isDismissed(w.id) && !hasLeftToday(w)).length; }catch(e){}
 }
 async function loadDcsSystem(sys){
   sys.store = await dbGetShared(sys.key, sys.store);
@@ -8186,8 +8202,8 @@ function schedTime(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t); return m ? m[1].
 function schedMinus6h(hhmm){ let h = parseInt(hhmm.slice(0,2),10) - 6; if(h < 0) h += 24; return String(h).padStart(2,'0') + hhmm.slice(2); }
 // Turns the raw tokens of one cell (top→bottom) into a schedule entry + how sure we are.
 function deriveScheduleEntry(tokens){
-  const times = [], codes = [], tags = []; let note = '', level = 'ok', forSeen = false;
-  tokens.forEach(t => {
+  const times = [], codes = [], tags = []; let note = '', level = 'ok', forSeen = false, splitSeen = false, medAt = null;
+  tokens.forEach((t, ix) => {
     if(/^\d{1,2}:\d{2} F$/.test(t)){ const tf = schedTime(t.split(' ')[0]); if(tf){ times.push(tf); tags.push('F50'); } return; }
     const tm = schedTime(t);
     if(tm){ times.push(tm); return; }
@@ -8195,10 +8211,17 @@ function deriveScheduleEntry(tokens){
     if(SCHED_CODES.includes(t)){ codes.push(t === 'OFF' ? 'Off' : t); return; }
     if(t === 'LOST' || t === 'LOST_'){ tags.push('LOST'); return; }
     if(SCHED_TAGS.includes(t)){ tags.push(t); return; }
-    if(t === '(FOR)'){ forSeen = true; return; }
+    if(t === '(FOR)' || t === '(ACC)'){ forSeen = true; return; }   // FOR = training, ACC = airport-card lecture: both are training days (not swappable)
+    if(t === 'MED'){   // company medical appointment inside the day: the two times just before it are the appointment
+      const tt = tokens.slice(0, ix).map(schedTime).filter(Boolean);
+      if(tt.length >= 2) medAt = 'MED' + tt[tt.length - 2] + '-' + tt[tt.length - 1];
+      splitSeen = true; return;
+    }
+    if(t === 'FRA'){ splitSeen = true; return; }   // split day (fracionado): one day, first start to last end. (BR = reduced hours: only the first block is work, so it is read like any other cell)
     // anything else (BR, "2"...) is ignored
   });
-  if(forSeen) tags.push('FOR');   // training day (Supervisão): kept as a tag, the day cannot be swapped
+  if(forSeen) tags.push('FOR');   // training day: kept as a tag, the day cannot be swapped
+  if(medAt) tags.push(medAt);     // e.g. MED1730-1800
   const uniqTags = [...new Set(tags)];
   if(codes.length){
     if(times.length){ level = 'auto'; note = 'tem código e horas — usei o código'; }
@@ -8209,7 +8232,8 @@ function deriveScheduleEntry(tokens){
   else if(times.length >= 3){
     if(times[0] === times[1]){ return { entry: '', level: 'error', note: 'horas inconsistentes' }; }
     start = times[0]; end = times[1]; level = 'auto'; note = 'mais de duas horas — usei as duas primeiras';
-    if(forSeen){ end = times[times.length - 1]; note = 'turno + formação (FOR): usei do primeiro início ao último fim — confirma'; }
+    if(splitSeen){ end = times[times.length - 1]; note = (medAt ? 'consulta médica (MED) no meio do dia' : 'dia fracionado / pausa') + ': usei do primeiro início ao último fim — confirma'; }
+    if(forSeen){ end = times[times.length - 1]; note = 'turno + formação (FOR/ACC): usei do primeiro início ao último fim — confirma'; }
   }
   else if(times.length === 1){
     if(uniqTags.includes('LH')){ end = times[0]; start = schedMinus6h(end); level = 'auto'; note = 'só uma hora (LH) — assumi 6h de turno'; }
@@ -8219,7 +8243,7 @@ function deriveScheduleEntry(tokens){
   if(start === end) return { entry: '', level: 'error', note: 'início igual ao fim' };
   if(forSeen && level === 'ok'){ level = 'auto'; note = 'tem formação (FOR) — confirma'; }
   let entry = start + '-' + end;
-  if(uniqTags.length) entry += ',' + uniqTags.join(',');
+  if(uniqTags.length) entry += ',' + uniqTags.join(';');
   return { entry, level, note };
 }
 // pages = output of extractSchedulePdfPages. Returns { days:[1..N], weekdays:[...], monthIdx, workers:[{id,name,s:[...]}], cells:[{wi,di,tokens,level,note}], problems:[...] }
@@ -8260,13 +8284,44 @@ function parseSchedulePages(pages){
       cxs.forEach(c => { const g = grp[grp.length - 1]; if(g && c - g[g.length - 1] < 6) g.push(c); else grp.push([c]); });
       if(grp.length === hdr.length) cols = grp.map(g => g.reduce((s, v) => s + v, 0) / g.length);
     }
+    // Row bands. The agent number sits in the middle of its row, so a row's top edge is the previous row's bottom edge and its
+    // bottom edge mirrors the top around the number. That keeps tall rows (a cell with two stacked shifts, e.g. "09:00 13:00 (ACC)" over
+    // "14:00 18:00 (ACC)") together: the text of their other cells is aligned to the top and would otherwise fall into the row above.
+    const gaps = ids.slice(1).map((a, k) => ids[k].y - a.y).sort((u, v) => u - v);
+    const pitch = gaps.length ? gaps[0] : 40;   // the smallest gap = the height of a plain row
+    let bandTop = ids[0].y + pitch / 2;
+    { const above = data.filter(i => i.y > bandTop && Math.abs(i.y - ids[0].y) < 70).map(i => i.y); if(above.length) bandTop = Math.max(...above) + 8; }
+    const bands = [];
     ids.forEach((a, k) => {
-      const hi = k ? (ids[k-1].y + a.y) / 2 : 1e9;
-      const lo = k < ids.length - 1 ? (a.y + ids[k+1].y) / 2 : a.y - 40;   // last worker: ignore page footer text
+      const hi = k ? bandTop : 1e9;
+      let lo;
+      if(k < ids.length - 1){
+        lo = 2 * a.y - bandTop;
+        if(!(lo < a.y && lo > ids[k+1].y)) lo = (a.y + ids[k+1].y) / 2;
+      } else lo = Math.min(a.y - 40, 2 * a.y - bandTop);   // last worker: ignore page footer text
+      bandTop = lo;
+      bands.push([hi, lo]);
+    });
+    const rowOf = y => bands.findIndex(bd => y <= bd[0] && y > bd[1]);
+    // a line of text that sits on a row edge (a cell a little taller than its row spills over) goes with the lines it touches
+    const rowCells = ids.map(() => cols.map(() => []));
+    {
+      const sorted = data.slice().sort((u, v) => v.y - u.y || u.x - v.x);
+      sorted.forEach(i => { i._r = rowOf(i.y); i._c = colOf(i.cx); });
+      sorted.forEach(i => {
+        if(i._r < 0) return;
+        const same = sorted.some(u => u !== i && u._c === i._c && u._r === i._r && Math.abs(u.y - i.y) <= 10);
+        if(same) return;
+        const nb = sorted.filter(u => u !== i && u._c === i._c && u._r >= 0 && u._r !== i._r && Math.abs(u.y - i.y) <= 10).sort((u, v) => Math.abs(u.y - i.y) - Math.abs(v.y - i.y))[0];
+        if(nb) i._r2 = nb._r;
+      });
+      sorted.forEach(i => { const r = i._r2 !== undefined ? i._r2 : i._r; if(r >= 0) rowCells[r][i._c].push(i); });
+    }
+    ids.forEach((a, k) => {
+      const hi = bands[k][0], lo = bands[k][1];
       const inBand = i => i.y <= hi && i.y > lo;
       const nm = names.filter(i => inBand(i) && Math.abs(i.y - a.y) <= 12).sort((u, v) => (Math.abs(v.y - u.y) > 2 ? v.y - u.y : u.x - v.x)).map(i => i.s).join(' ');
-      const cells = cols.map(() => []);
-      data.filter(inBand).sort((u, v) => v.y - u.y || u.x - v.x).forEach(i => cells[colOf(i.cx)].push(i.s));
+      const cells = rowCells[k].map(c => c.map(i => i.s));
       const s = cells.map((c, di) => {
         const r = deriveScheduleEntry(c);
         if(r.level !== 'ok') cellInfo.push({ wi: workers.length, di, tokens: c.join(' '), level: r.level, note: r.note });
