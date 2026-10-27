@@ -8361,7 +8361,7 @@ function suLoadPdfJs(){
     document.head.appendChild(s);
   });
 }
-const SU_ENTRY_RE = /^(\d{4}-\d{4}(,[A-Z0-9]+)*|DC|DS|FO|\/|Off)$/;
+const SU_ENTRY_RE = /^(\d{4}-\d{4}([,;][A-Z0-9]+(-\d{4})?)*|DC|DS|FO|\/|Off)$/;   // tags: F50, FOR, LH… and MEDhhmm-hhmm (the appointment inside the day)
 // ---------- backup of the current month, offered before a new schedule replaces it ----------
 let SU_BACKUP_DONE = false;
 function suBackupLabel(worker, idx){
