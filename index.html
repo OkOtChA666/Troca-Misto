@@ -2129,7 +2129,7 @@ function renderExtra(){
   rows.sort((x, y) => x.gap - y.gap || x.a - y.a);
   const MAX_DAY = 480;   // anything above 8h in a day goes to STAFF EM NÃO CONFORMIDADE
   const ok = rows.filter(r => r.total <= MAX_DAY), over = rows.filter(r => r.total > MAX_DAY);
-  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">' + 'ENCAIXAM NO MEU TURNO' + ' · ' + working + '<span>máx. 8h por dia</span></div>';
+  head.innerHTML = '<div style="display:flex; justify-content:space-between; width:100%;">' + 'ENCAIXAM NO MEU TURNO' + ' · ' + ok.length + '<span>máx. 8h por dia</span></div>';
   const addRow = (box, r) => {
     const d = document.createElement('div'); d.className = 'extra-row';
     d.innerHTML = '<div class="en"><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
@@ -2143,7 +2143,7 @@ function renderExtra(){
     const th = document.createElement('div');
     th.className = 'results-head collapsible-head';
     th.style.cssText = 'margin-top:18px; padding-top:14px; border-top:1px dashed var(--border-soft);';
-    th.innerHTML = '<span>MAIS DE 8H DE TRABALHO!</span><span class="collapse-chevron collapsed">▾</span>';
+    th.innerHTML = '<span>MAIS DE 8H DE TRABALHO! · ' + over.length + '</span><span class="collapse-chevron collapsed">▾</span>';
     const box = document.createElement('div'); box.className = 'hidden';
     list.appendChild(th); list.appendChild(box);
     over.forEach(r => addRow(box, r));
