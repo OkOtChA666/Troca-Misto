@@ -238,16 +238,16 @@
   .extra-head{ font-family:var(--mono); font-size:12px; letter-spacing:.14em; color:var(--amber); font-weight:700; margin:6px 0 2px; display:flex; justify-content:space-between; }
   .extra-head span{ font-weight:400; font-size:10px; color:var(--text-dim); letter-spacing:.05em; }
   .extra-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-top:1px solid var(--border-soft); font-size:13px; }
-  .extra-row .et{ font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-top:3px; }
+  .extra-row .et{ font-family:var(--sans); font-weight:500; font-size:13px; color:#aebdd3; margin-top:3px; }
   .extra-row .en{ flex:1; min-width:0; overflow-wrap:anywhere; }
   .extra-row .ebc{ width:46px; display:flex; justify-content:center; flex:none; }
-  .ebadge{ font-family:var(--mono); font-weight:700; font-size:11px; border-radius:6px; padding:4px 0; width:36px; text-align:center; }
+  .ebadge{ font-family:var(--sans); font-weight:800; font-size:12px; border-radius:6px; padding:4px 0; width:36px; text-align:center; }
   .ebadge.eb4{ background:rgba(25,211,255,.10); color:#19d3ff; border:1px solid rgba(25,211,255,.4); }
   .ebadge.eb6{ background:rgba(255,176,32,.10); color:#ffb020; border:1px solid rgba(255,176,32,.4); }
   .ebadge.eb8{ background:rgba(46,229,138,.10); color:#2ee58a; border:1px solid rgba(46,229,138,.4); }
   .extra-row .er{ text-align:right; width:92px; flex:none; }
-  .extra-row .etot{ font-family:var(--mono); font-size:11px; font-weight:700; color:#2ee58a; }
-  .extra-row .egap{ font-family:var(--mono); font-size:9px; color:var(--text-dim); margin-top:3px; }
+  .extra-row .etot{ font-family:var(--sans); font-size:18px; font-weight:800; letter-spacing:.02em; line-height:1; color:#2ee58a; }
+  .extra-row .egap{ font-family:var(--sans); font-weight:500; font-size:12px; color:#aebdd3; margin-top:4px; }
   .extra-row .egap.adj{ color:var(--cyan); }
 
   label{
@@ -2133,8 +2133,8 @@ function renderExtra(){
   const addRow = (box, r) => {
     const d = document.createElement('div'); d.className = 'extra-row';
     d.innerHTML = '<div class="en"><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
-      '<div class="ebc"><span class="ebadge eb' + (r.dur >= 480 ? '8' : r.dur >= 360 ? '6' : '4') + '">' + extraDur(r.dur) + '</span></div>' +
-      '<div class="er"><div class="etot"' + (r.total > MAX_DAY ? ' style="color:#ff5d6c;"' : '') + '>' + extraDur(r.total) + '</div><div class="egap' + (r.gap === 0 ? ' adj' : '') + '">' + (r.gap === 0 ? 'logo a seguir' : 'Intervalo ' + extraDur(r.gap)) + '</div></div>';
+      '<div class="ebc"><span class="ebadge eb' + (r.dur >= 480 ? '8' : r.dur >= 360 ? '6' : '4') + '">' + extraDur(r.dur).toUpperCase() + '</span></div>' +
+      '<div class="er"><div class="etot"' + (r.total > MAX_DAY ? ' style="color:#ff5d6c;"' : '') + '>' + extraDur(r.total).toUpperCase() + '</div><div class="egap' + (r.gap === 0 ? ' adj' : '') + '">' + (r.gap === 0 ? 'logo a seguir' : 'Intervalo ' + extraDur(r.gap)) + '</div></div>';
     box.appendChild(d);
   };
   if(!ok.length) list.innerHTML = '<div class="hint" style="text-align:center;">Nenhum turno encaixa neste dia.</div>';
