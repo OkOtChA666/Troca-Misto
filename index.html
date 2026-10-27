@@ -5836,15 +5836,14 @@ async function renderMultiDayCalendar(){
     // Same exclamation, placed in the opposite corner to avoid ever colliding with the
     // deadline one above — flags a day where the poster has a fixed medical appointment,
     // which blocks any swap involving that day regardless of type.
-    const medIcon = (!past && hasMedAppointment(requestPosterWorker.id, idx))
-      ? '<span style="position:absolute; top:1px; left:2px; font-size:9px; line-height:1;">❗</span>'
-      : '';
+    const medIcon = '';   // replaced by the MED badge under the number
     // A pending request (already posted, not yet claimed by anyone) takes priority over the
     // SWAP label if a day somehow had both — it's the more directly relevant thing to flag
     // when deciding whether to post another request for this same day.
     const statusLabel = (past) ? ''
       : hasPendingRequest ? '<div style="font-size:6.5px; letter-spacing:0.02em; line-height:1; margin-top:1px;">PENDENTE</div>'
       : hasSwap ? '<div style="font-size:7px; letter-spacing:0.03em; line-height:1; margin-top:1px;">SWAP</div>'
+      : hasMedAppointment(requestPosterWorker.id, idx) ? '<div style="font-size:7px; letter-spacing:0.03em; line-height:1; margin-top:1px; color:#ffb020;">MED</div>'
       : '';
     // A solid white pill (wider than tall) around just today's own number, matching the
     // familiar convention from most calendar apps — filled, not just an outline, with the
