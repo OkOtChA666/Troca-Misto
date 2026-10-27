@@ -933,12 +933,22 @@
   html.grp-sup #tools-link, html.grp-sup #tools-link + .header-divider{ display:none !important; }   /* check-in only: tasks, flights, tools */
   #sf-link, #sf-div{ display:none; }
   html.grp-sup #sf-link{ display:inline-flex; }
-  html.grp-sup #sf-div{ display:inline; }
+  html.grp-sup #extra-hours-link{ display:none !important; }
   .sf-row{ cursor:pointer; -webkit-tap-highlight-color:transparent; border-width:2px; }
   .sf-row.me{ border-color:#FF6A00; background:rgba(255,106,0,0.10); }
   .sf-pick{ width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font:800 13px var(--mono); color:#111; }
   .sf-pick.free{ border:2px dashed #4a5675; color:#6b7896; font-size:20px; font-weight:400; background:transparent; }
   .sf-who{ text-align:center; font:600 9.5px var(--mono); color:var(--text-dim); margin-top:2px; max-width:56px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sf-row{ position:relative; margin-bottom:20px; padding-bottom:30px; }
+  .sf-row.open{ z-index:5; }
+  .sf-tabs{ position:absolute; left:14px; bottom:-1px; display:flex; gap:6px; }
+  .sf-tab{ height:26px; padding:0 9px; background:#e8eefc; color:#46526b; border-radius:10px 10px 0 0; font-family:var(--mono); font-weight:700; font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .sf-tab b{ color:#0b1220; }
+  .sf-tab i{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .sf-tab.on{ background:#fff; box-shadow:0 0 0 2px #FF6A00 inset; }
+  .sf-pop{ position:absolute; left:12px; bottom:30px; z-index:20; background:#22355c; border:1px solid #8fa0c4; border-radius:10px; padding:10px 14px; min-width:190px; box-shadow:0 8px 24px rgba(0,0,0,.5); font-family:var(--mono); font-size:13px; color:#e8eefc; text-align:left; opacity:1; }
+  .sf-pop h6{ margin:0 0 6px; font-size:10px; letter-spacing:.14em; color:#ffb020; }
+  .sf-pop div{ padding:2px 0; }
   .sf-hint{ font-size:12px; color:var(--text-dim); margin:0 2px 10px; line-height:1.45; }
   .su-bk{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:12px; margin-bottom:12px; }
   .su-bk-h{ color:var(--amber); font-weight:700; font-size:15px; }
@@ -8971,6 +8981,41 @@ function sfTap(key, label){
   const o = sfPerson(cur);
   showConfirmDialog('O voo <b>' + escapeHtml(label) + '</b> já é de <b>' + escapeHtml(o.first) + '</b>. Queres ficar com ele?', () => sfSetClaim(key, me), false, 'Ficar com ele');
 }
+let SF_OPEN = '', SF_TEAM_FOR = null, SF_TEAM = {};
+function sfTeams(){
+  if(SF_TEAM_FOR === MT_DOC) return SF_TEAM;
+  SF_TEAM_FOR = MT_DOC; SF_TEAM = {};
+  try{
+    Object.keys((MT_DOC && MT_DOC.a) || {}).forEach(id => {
+      let rec = null; try{ rec = JSON.parse(MT_DOC.a[id]); }catch(e){}
+      if(!rec || !rec.t) return;
+      rec.t.forEach(t => {
+        const colr = mtColor(t[3]);
+        const role = colr === '#0066cc' ? 'p' : (colr === '#dbffaa' ? 'a' : '');
+        if(!role || !t[5]) return;
+        const bits = String(t[5]).split('@'); let head = bits[0];
+        if(head.indexOf('/') >= 0){ const q = head.split('/'); head = q[0].replace(/\d{1,4}[A-Z]?$/, '') + q[1]; }
+        const k = head + '@' + String(bits[1] || '').replace(/\D/g, '');
+        const o = SF_TEAM[k] = SF_TEAM[k] || { p: {}, a: {} };
+        o[role][id] = NAME_FIXES[id] || rec.n || id;
+      });
+    });
+  }catch(e){}
+  return SF_TEAM;
+}
+function sfTabsHtml(key, std){
+  const tm = sfTeams()[key + '@' + String(flTime(std)).replace(/\D/g, '')];
+  if(!tm) return '';
+  let tabs = '', pop = '';
+  [['p', 'PARTIDA', '#0066cc'], ['a', 'ACOLHIMENTO', '#9fe870']].forEach(([r, lab, col]) => {
+    const names = Object.keys(tm[r]).map(id => tm[r][id]).sort((x, y) => String(x).localeCompare(String(y)));
+    if(!names.length) return;
+    const id = key + ':' + r, on = SF_OPEN === id;
+    tabs += '<div class="sf-tab' + (on ? ' on' : '') + '" data-sft="' + escapeHtml(id) + '"><i style="background:' + col + '"></i><svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><b>' + names.length + '</b></div>';
+    if(on) pop = '<div class="sf-pop"><h6>' + lab + ' · ' + names.length + (names.length === 1 ? ' PESSOA' : ' PESSOAS') + '</h6>' + names.map(n => '<div>' + escapeHtml(n) + '</div>').join('') + '</div>';
+  });
+  return tabs ? pop + '<div class="sf-tabs">' + tabs + '</div>' : '';
+}
 function sfRows(mineOnly){
   let data = {}; try{ data = JSON.parse(FL_DOC.json) || {}; }catch(e){}
   const keep = {}; String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keep[c] = 1; });
@@ -8991,10 +9036,12 @@ function sfRows(mineOnly){
     if(r.cki) chips.push('<span class="fl-chip">CKI ' + escapeHtml(flMergeRanges(r.cki)) + '</span>');
     if(r.gt) chips.push('<span class="fl-chip' + (/board|embar/i.test(r.grem || '') ? ' g' : '') + '">GT ' + escapeHtml(r.gt) + '</span>');
     const label = f.code + ' ' + f.num;
-    html += '<div class="fl-row' + (mineOnly ? '' : ' sf-row') + (who === me ? ' me' : '') + (past ? ' past' : '') + '"' + (mineOnly ? ' style="border-width:2px;"' : ' data-sfk="' + escapeHtml(key) + '" data-sfl="' + escapeHtml(label) + '"') + '>' +
+    const tabsH = sfTabsHtml(key, r.std);
+    const isOpen = !!tabsH && SF_OPEN.indexOf(key + ':') === 0;
+    html += '<div class="fl-row sf-row' + (mineOnly ? ' sf-view' : '') + (isOpen ? ' open' : '') + (who === me ? ' me' : '') + (past ? ' past' : '') + '"' + (mineOnly ? '' : ' data-sfk="' + escapeHtml(key) + '" data-sfl="' + escapeHtml(label) + '"') + '>' +
       '<div class="fl-tm">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
       '<div><div class="fl-fn">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '</div><div class="fl-ch" style="margin-top:4px;">' + chips.join('') + '</div></div>' +
-      (mineOnly ? '<div></div>' : '<div>' + (p ? '<div class="sf-pick" style="background:' + p.col + '">' + escapeHtml(p.ini) + '</div><div class="sf-who">' + escapeHtml(p.first) + '</div>' : '<div class="sf-pick free">+</div>') + '</div>') + '</div>';
+      (mineOnly ? '<div></div>' : '<div>' + (p ? '<div class="sf-pick" style="background:' + p.col + '">' + escapeHtml(p.ini) + '</div><div class="sf-who">' + escapeHtml(p.first) + '</div>' : '<div class="sf-pick free">+</div>') + '</div>') + tabsH + '</div>';
   });
   return { html, n };
 }
@@ -9023,8 +9070,13 @@ function renderSupPicker(){
 }
 function renderSupAll(){ renderSupTasks(); renderSupPicker(); }
 document.addEventListener('click', ev => {
-  const row = ev.target.closest && ev.target.closest('.sf-row');
-  if(row && GROUP === 'sup') sfTap(row.dataset.sfk, row.dataset.sfl);
+  if(GROUP !== 'sup' || !ev.target.closest) return;
+  const tb = ev.target.closest('.sf-tab');
+  if(tb){ const id = tb.getAttribute('data-sft'); SF_OPEN = SF_OPEN === id ? '' : id; renderSupAll(); return; }
+  if(ev.target.closest('.sf-pop')) return;
+  const row = ev.target.closest('.sf-row');
+  if(row && row.dataset.sfk) sfTap(row.dataset.sfk, row.dataset.sfl);
+  else if(SF_OPEN){ SF_OPEN = ''; renderSupAll(); }
 });
 async function sfListen(){
   renderSupAll();
@@ -9063,7 +9115,7 @@ document.getElementById('sf-back-btn').addEventListener('click', closeSupFlights
 function renderMyTasks(){
   const body = document.getElementById('my-tasks-body');
   if(!body || !mtOpenOverlay()) return;
-  if(GROUP === 'sup'){ renderSupTasks(); return; }
+  if(GROUP === 'sup'){ renderSupAll(); return; }
   let staffId = null;
   try{ staffId = localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){}
   const me = staffId ? DATA.workers.find(w => w.id === staffId) : null;
