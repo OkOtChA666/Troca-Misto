@@ -639,6 +639,8 @@
   .skills-row-checks{ display:flex; gap:2px; flex:none; }
   .skills-check-cell{ width:30px; display:flex; justify-content:center; }
   .skills-row input[type=checkbox]{ width:15px; height:15px; accent-color: var(--cyan); cursor:pointer; }
+  .so-switch-dept{ display:block; width:100%; margin:14px 0 18px; padding:14px; border:1.5px dashed #ffb020; border-radius:12px; background:rgba(255,176,32,.08); color:#ffb020; font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:.12em; cursor:pointer; }
+  .so-switch-dept small{ display:block; margin-top:5px; font-size:10px; font-weight:400; letter-spacing:.05em; color:var(--text-dim); }
   .skills-col-out{ color:#ff5d6c !important; font-weight:700; }
   .skills-col-lock{ color:#ffb020 !important; font-weight:700; width:54px !important; }
   .skills-lock-cell{ width:54px !important; }
@@ -1760,6 +1762,7 @@
       <div class="tool-card" id="so-card-custom1"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2-2z"/></svg></div><div><div class="tool-name">MAIN</div><div class="tool-desc">Manutenção: bloquear o acesso</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-custom2"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/></svg></div><div><div class="tool-name">RULES</div><div class="tool-desc">Regras das trocas e companhias</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-stats"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 19l5-6 4 3 7-9M16 7h4v4"/></svg></div><div><div class="tool-name">STATS</div><div class="tool-desc">Estatísticas das trocas</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <button type="button" id="so-switch-dept" class="so-switch-dept"></button>
     </div>
     <div id="so-row" style="display:none; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
       <button type="button" class="back-btn" id="schedule-override-back-btn" style="margin-bottom:0;">← Voltar</button>
@@ -4750,6 +4753,19 @@ document.getElementById('tab-cover').addEventListener('click', () => switchTab('
 document.getElementById('tab-trade').addEventListener('click', () => switchTab('trade'));
 document.getElementById('tab-requests').addEventListener('click', () => switchTab('requests'));
 document.getElementById('skills-back-btn').addEventListener('click', () => { openScheduleOverride(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+// ADMIN: one-tap switch between TTAE and SUPERVISÃO
+(function(){
+  const btn = document.getElementById('so-switch-dept'); if(!btn) return;
+  const target = GROUP === 'sup' ? '' : 'sup';
+  btn.innerHTML = '⇄ MUDAR PARA ' + GROUPS[target] + '<small>estás em ' + GROUPS[GROUP] + '</small>';
+  btn.addEventListener('click', () => {
+    showConfirmDialog('Mudar para <b>' + GROUPS[target] + '</b>? A app recarrega nesse departamento.', () => {
+      try{ if(target) localStorage.setItem('trocaMistoGroup', target); else localStorage.removeItem('trocaMistoGroup'); }catch(e){}
+      location.reload();
+    }, false, 'Mudar', false, null, 'Cancelar');
+  });
+})();
 document.getElementById('so-card-agentes').addEventListener('click', () => {
   document.getElementById('panel-schedule-override').classList.add('hidden');
   document.querySelector('.tabs').classList.remove('hidden');
