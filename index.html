@@ -989,6 +989,13 @@
   .sf-more{ margin-top:10px; border-top:1px solid rgba(138,152,184,.25); padding-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; font-family:var(--mono); font-size:10.5px; color:var(--text-dim); letter-spacing:.06em; }
   .sf-more b{ display:block; color:var(--text); font-size:13px; letter-spacing:0; margin-top:1px; }
   .sf-more b.st{ color:#FF9F5A; }
+  .sf-ta-h{ color:var(--amber); letter-spacing:.14em; margin-bottom:5px; }
+  .sf-ta{ padding-bottom:26px; }
+  .sf-ta-g{ display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
+  .sf-ta-c span{ font-size:9px; white-space:nowrap; letter-spacing:.02em; }
+  .sf-ta-c{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; border-bottom:1px dashed rgba(138,152,184,.25); padding:3px 0; }
+  .sf-more .sf-ta-c b{ display:inline; margin:0; font-size:12px; }
+  .sf-more .sf-ta-c b.e{ color:#4a5b75; font-weight:400; }
   .sf-chev{ font-size:9px; color:var(--text-dim); margin-left:6px; }
   .sf-plus{ position:relative; width:36px; height:36px; border-radius:50%; border:1.5px solid var(--amber); color:var(--amber); background:transparent; display:flex; align-items:center; justify-content:center; font:400 24px/1 var(--mono); cursor:pointer; padding:0; }
   .sf-plus span{ position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; border-radius:9px; background:#FF6A00; color:#fff; font:800 11px/18px var(--mono); text-align:center; }
@@ -9245,7 +9252,7 @@ function mtInfoHtml(f, colr){
 function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
 
 // ===== SUPERVISÃO · AS MINHAS TAREFAS: each supervisor picks the flights he/she works today; everybody sees who has what =====
-let SF_UNSUB_FL = null, SF_UNSUB_CL = null, SF_CL = null, SF_TICK = null;
+let SF_UNSUB_FL = null, SF_UNSUB_CL = null, SF_UNSUB_TA = null, SF_CL = null, SF_TA = {}, SF_TICK = null;
 function sfToday(){ const n = new Date(); return n.getFullYear() + '-' + mtPad(n.getMonth() + 1) + '-' + mtPad(n.getDate()); }
 function sfKey(n){ return String(n || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 function sfPerson(id){
@@ -9314,7 +9321,7 @@ function sfTabsHtml(key, std){
 }
 const SF_OPTS = [
   ['tabs', 'NO CARTÃO', [['porta','PORTA',1],['ckin','CKIN',1],['pa','Equipa PARTIDA',1],['ac','Equipa ACOLHIMENTO',1]]],
-  ['more', 'AO ABRIR O CARTÃO', [['estado','ESTADO DO VOO',1],['est','HORA ESTIMADA',1],['stand','STAND',0],['reg','MATRÍCULA',0]]],
+  ['more', 'AO ABRIR O CARTÃO', [['estado','ESTADO DO VOO',1],['est','HORA ESTIMADA',1],['stand','STAND',0],['reg','MATRÍCULA',0],['ta','TURNAROUND',1]]],
   ['list', 'LISTA', [['mine','Mostrar só os meus voos',0],['past','Esconder voos já partidos',0]]]
 ];
 let SF_PREFS = null, SF_MENU = false, SF_EXP = {};
@@ -9327,6 +9334,17 @@ function sfPrefs(){
 function sfSavePrefs(){ try{ localStorage.setItem('trocaMistoSfPrefs:' + mtStaffId(), JSON.stringify(sfPrefs())); }catch(e){} }
 function sfPrefCount(){ const p = sfPrefs(); return Object.keys(p).filter(k => p[k]).length; }
 function sfSp(v){ return escapeHtml(String(v).replace(/_/g, ' | ').replace(/\s*-\s*/g, ' – ')); }
+// TURNAROUND timings of a flight (view only): the six times the TTAE agents register
+function sfTurnaroundHtml(key){
+  let rec = null;
+  try{ Object.keys(SF_TA || {}).forEach(k => { const v = SF_TA[k]; if(v && typeof v === 'object' && sfKey(k) === key && v._day === sfToday()) rec = v; }); }catch(e){}
+  const fields = TURNAROUND_ROWS.flat();
+  if(!rec) return '<div class="sf-ta" style="grid-column:1/3"><div class="sf-ta-h">TURNAROUND</div><div>Ainda sem registos</div></div>';
+  return '<div class="sf-ta" style="grid-column:1/3"><div class="sf-ta-h">TURNAROUND</div><div class="sf-ta-g">' + fields.map(f => {
+    const r = normalizeFieldRecord(rec[f.key]), v = r && r.value ? stripSeconds(r.value) : '';
+    return '<div class="sf-ta-c"><span>' + escapeHtml(f.label) + '</span><b' + (v ? '' : ' class="e"') + '>' + (v ? escapeHtml(v) : '—') + '</b></div>';
+  }).join('') + '</div></div>';
+}
 function sfRows(mineOnly){
   const pf = sfPrefs();
   let data = {}; try{ data = JSON.parse(FL_DOC.json) || {}; }catch(e){}
@@ -9359,6 +9377,7 @@ function sfRows(mineOnly){
     if(pf.est && est) more.push('<div>HORA ESTIMADA<b>' + escapeHtml(est) + '</b></div>');
     if(pf.stand && r.pos) more.push('<div>STAND<b>' + escapeHtml(r.pos) + '</b></div>');
     if(pf.reg && r.reg) more.push('<div>MATRÍCULA<b>' + escapeHtml(r.reg) + '</b></div>');
+    if(pf.ta) more.push(sfTurnaroundHtml(key));
     const moreH = open ? '<div class="sf-more">' + (more.length ? more.join('') : '<div style="grid-column:1/3">Sem informação</div>') + '</div>' : '';
     const tabsH = sfTabsHtml(key, r.std);
     const popOpen = !!tabsH && SF_OPEN.indexOf(key + ':') === 0;
@@ -9429,13 +9448,16 @@ async function sfListen(){
     if(!db){ FL_DOC = false; SF_CL = SF_CL || {}; renderSupAll(); return; }
     if(!SF_UNSUB_FL) SF_UNSUB_FL = db.collection('data').doc('flightlist').onSnapshot(
       snap => { FL_DOC = snap.exists ? snap.data() : false; renderSupAll(); }, () => { FL_DOC = false; renderSupAll(); });
+    // the TURNAROUND timings registered by the TTAE agents: the shared (TTAE) document, read only
+    if(!SF_UNSUB_TA) SF_UNSUB_TA = db.collection('data').doc('turnaround').onSnapshot(
+      snap => { SF_TA = snap.exists ? snap.data() : {}; renderSupAll(); }, () => { SF_TA = SF_TA || {}; });
     if(!SF_UNSUB_CL) SF_UNSUB_CL = db.collection('data').doc(gScope('claims')).onSnapshot(
       snap => { SF_CL = snap.exists ? snap.data() : {}; renderSupAll(); }, () => { SF_CL = SF_CL || {}; renderSupAll(); });
   }catch(e){ FL_DOC = false; SF_CL = SF_CL || {}; renderSupAll(); }
 }
 function sfStop(){
-  [SF_UNSUB_FL, SF_UNSUB_CL].forEach(u => { if(u){ try{ u(); }catch(e){} } });
-  SF_UNSUB_FL = SF_UNSUB_CL = null;
+  [SF_UNSUB_FL, SF_UNSUB_CL, SF_UNSUB_TA].forEach(u => { if(u){ try{ u(); }catch(e){} } });
+  SF_UNSUB_FL = SF_UNSUB_CL = SF_UNSUB_TA = null;
   if(SF_TICK){ clearInterval(SF_TICK); SF_TICK = null; }
 }
 function openSupTasks(){ sfListen(); }
