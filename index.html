@@ -6802,6 +6802,10 @@ function mtNotifDetail(c){
   return '<div style="' + base + ' color:var(--amber);">' + escapeHtml(c.line) + '</div>';
 }
 // "Qui 29 Out" — weekday + day + month, taken from the notification's own date (see getNotificationEventDate).
+// "🕒 recebida Sex, 12:37" — when the notification ARRIVED (dim italic), kept visually apart from the swap's own date.
+function notifLogHtml(when){
+  return '<div style="font-size:10.5px; color:#6f7d99; font-style:italic; margin-top:6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-1px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> recebida ' + escapeHtml(when) + '</div>';
+}
 function notifDayLabel(n, day){
   try{
     const d = getNotificationEventDate(n);
@@ -6851,13 +6855,13 @@ function renderNotificationsList(){
         '<div style="flex:1; min-width:0;">'+
           '<div style="font-size:12.5px; line-height:1.4; '+unreadStyle+'"><b style="color:inherit;">'+escapeHtml(parsed.name)+'</b> '+escapeHtml(parsed.mainText)+'</div>'+
           (parsed.day ? '<div style="font-size:11.5px; color:var(--amber); font-weight:600; margin-top:2px;">'+notifDayLabel(n, parsed.day)+(parsed.time ? ' · '+escapeHtml(parsed.time) : '')+'</div>' : '')+
-          '<div style="font-size:10px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);">'+escapeHtml(when)+'</div>'+
+          (when ? notifLogHtml(when) : '')+
         '</div>';
     } else {
       // Older/unrecognized shape — plain text, no icon, same as before.
       bodyHtml = '<div style="flex:1; min-width:0;">'+
         '<div style="font-size:13px; '+unreadStyle+'">'+escapeHtml(n.body || '')+'</div>'+
-        '<div style="font-size:10px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);">'+escapeHtml(when)+'</div>'+
+        (when ? notifLogHtml(when) : '')+
       '</div>';
     }
     html += '<div style="display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);">'+bodyHtml+
