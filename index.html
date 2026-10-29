@@ -6678,7 +6678,7 @@ let notificationsListenerUnsubscribe = null;
 function renderNotificationsBadge(){
   const badge = document.getElementById('notifications-badge');
   if(!badge) return;
-  let unreadCount = Object.values(NOTIFICATIONS).filter(n => !n.read && !isNotificationEventPast(n)).length;
+  let unreadCount = Object.values(NOTIFICATIONS).filter(n => !n.read && !n.hidden && !isNotificationEventPast(n)).length;
   try{ const sn = mtSeen(); unreadCount += mtChanges().filter(x => x[0] > sn).length; }catch(e){}   // changes to my own tasks (see mtChanges)
   badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
   badge.classList.toggle('hidden', unreadCount === 0);
@@ -6801,12 +6801,20 @@ function mtNotifDetail(c){
   if(c.kind === 'note') return '<div style="' + base + ' color:var(--amber);">' + nm + '</div><div style="' + base + ' margin-top:1px; color:var(--text);">' + escapeHtml(c.note) + '</div>';
   return '<div style="' + base + ' color:var(--amber);">' + escapeHtml(c.line) + '</div>';
 }
+// "Qui 29 Out" — weekday + day + month, taken from the notification's own date (see getNotificationEventDate).
+function notifDayLabel(n, day){
+  try{
+    const d = getNotificationEventDate(n);
+    if(d && !isNaN(d)) return ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][d.getMonth()];
+  }catch(e){}
+  return 'Dia ' + escapeHtml(day);
+}
 function renderNotificationsList(){
   const list = document.getElementById('notifications-modal-list');
   const empty = document.getElementById('notifications-modal-empty');
   if(!list) return;
   const entries = Object.entries(NOTIFICATIONS)
-    .filter(([id, n]) => !isNotificationEventPast(n))
+    .filter(([id, n]) => !n.hidden && !isNotificationEventPast(n))
     .map(([id, n]) => ({ kind:'n', id, n, ts: n.createdAt || 0 }));
   let seenTs = 0; try{ seenTs = mtSeen(); mtChanges().forEach(x => entries.push({ kind:'t', x, ts: x[0] })); }catch(e){}
   entries.sort((a, b) => b.ts - a.ts);
@@ -6842,7 +6850,7 @@ function renderNotificationsList(){
       bodyHtml = '<div class="notif-icon" style="width:26px; height:26px; border-radius:50%; background:'+icon.bg+'; color:'+icon.color+'; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">'+icon.symbol+'</div>'+
         '<div style="flex:1; min-width:0;">'+
           '<div style="font-size:12.5px; line-height:1.4; '+unreadStyle+'"><b style="color:inherit;">'+escapeHtml(parsed.name)+'</b> '+escapeHtml(parsed.mainText)+'</div>'+
-          (parsed.day ? '<div style="font-size:11.5px; color:var(--amber); font-weight:600; margin-top:2px;">Dia '+escapeHtml(parsed.day)+(parsed.time ? ' · '+escapeHtml(parsed.time) : '')+'</div>' : '')+
+          (parsed.day ? '<div style="font-size:11.5px; color:var(--amber); font-weight:600; margin-top:2px;">'+notifDayLabel(n, parsed.day)+(parsed.time ? ' · '+escapeHtml(parsed.time) : '')+'</div>' : '')+
           '<div style="font-size:10px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);">'+escapeHtml(when)+'</div>'+
         '</div>';
     } else {
@@ -6852,7 +6860,8 @@ function renderNotificationsList(){
         '<div style="font-size:10px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);">'+escapeHtml(when)+'</div>'+
       '</div>';
     }
-    html += '<div style="display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);">'+bodyHtml+'</div>';
+    html += '<div style="display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);">'+bodyHtml+
+      '<button type="button" class="notif-hide" data-nid="'+escapeHtml(id)+'" title="Esconder" style="background:none; border:none; color:var(--text-dim); font-size:16px; line-height:1; cursor:pointer; align-self:flex-start; padding:2px 6px;">✕</button></div>';
   }
   list.innerHTML = html;
 }
@@ -6884,6 +6893,14 @@ function openNotificationsModal(){
   try{ if(MT_DOC) mtMarkSeen(); }catch(e){}
 }
 document.getElementById('notifications-bell-link').addEventListener('click', openNotificationsModal);
+// ✕ on a notification: hides it for this person (kept in the database, just no longer shown or counted).
+document.getElementById('notifications-modal-list').addEventListener('click', (e) => {
+  const b = e.target.closest('.notif-hide'); if(!b) return;
+  const id = b.getAttribute('data-nid'); if(!NOTIFICATIONS[id]) return;
+  NOTIFICATIONS[id] = Object.assign({}, NOTIFICATIONS[id], { hidden: true, read: true });
+  renderNotificationsList(); renderNotificationsBadge();
+  dbSetCollectionEntry('notifications', id, NOTIFICATIONS[id]);
+});
 document.getElementById('notifications-modal-close').addEventListener('click', () => {
   document.getElementById('notifications-modal').classList.add('hidden');
 });
