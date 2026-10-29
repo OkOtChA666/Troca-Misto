@@ -6803,7 +6803,13 @@ function mtNotifDetail(c){
 }
 // "Qui 29 Out" — weekday + day + month, taken from the notification's own date (see getNotificationEventDate).
 // "🕒 recebida Sex, 12:37" — when the notification ARRIVED (dim italic), kept visually apart from the swap's own date.
-function notifLogHtml(when){
+function notifLogHtml(when, ts){
+  try{   // older than yesterday: say WHICH day, e.g. "Sex 23 Out, 12:37"
+    const d = new Date(ts), now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+    if(ts && !isSameCalendarDay(d, now) && !isSameCalendarDay(d, y)){
+      when = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][d.getMonth()] + ', ' + d.toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit'});
+    }
+  }catch(e){}
   return '<div style="font-size:10.5px; color:#6f7d99; font-style:italic; margin-top:6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:-1px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> recebida ' + escapeHtml(when) + '</div>';
 }
 function notifDayLabel(n, day){
@@ -6855,13 +6861,13 @@ function renderNotificationsList(){
         '<div style="flex:1; min-width:0;">'+
           '<div style="font-size:12.5px; line-height:1.4; '+unreadStyle+'"><b style="color:inherit;">'+escapeHtml(parsed.name)+'</b> '+escapeHtml(parsed.mainText)+'</div>'+
           (parsed.day ? '<div style="font-size:11.5px; color:var(--amber); font-weight:600; margin-top:2px;">'+notifDayLabel(n, parsed.day)+(parsed.time ? ' · '+escapeHtml(parsed.time) : '')+'</div>' : '')+
-          (when ? notifLogHtml(when) : '')+
+          (when ? notifLogHtml(when, n.createdAt) : '')+
         '</div>';
     } else {
       // Older/unrecognized shape — plain text, no icon, same as before.
       bodyHtml = '<div style="flex:1; min-width:0;">'+
         '<div style="font-size:13px; '+unreadStyle+'">'+escapeHtml(n.body || '')+'</div>'+
-        (when ? notifLogHtml(when) : '')+
+        (when ? notifLogHtml(when, n.createdAt) : '')+
       '</div>';
     }
     html += '<div style="display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);">'+bodyHtml+
