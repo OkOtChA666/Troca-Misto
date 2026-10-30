@@ -8913,7 +8913,7 @@ function renderScheduleCells(){
 }
 function suInvalidEntries(){
   const bad = [];
-  SU.parsed.workers.forEach(w => w.s.forEach((e, di) => { if(!suEntryValid(e)) bad.push({ w, di }); }));
+  SU.parsed.workers.forEach(w => { if(isLockedAgent(w.id)) return; w.s.forEach((e, di) => { if(!suEntryValid(e)) bad.push({ w, di }); }); });   // locked agents are hidden anyway, so their unreadable cells do not block saving
   return bad;
 }
 function refreshScheduleChecks(){
