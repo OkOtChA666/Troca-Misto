@@ -1262,10 +1262,12 @@
 <div class="modal-overlay hidden" id="notifications-modal">
   <div class="modal-box" style="max-width:420px; text-align:left;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-      <span style="font-family:var(--mono); font-size:13px; letter-spacing:1px; color:var(--text-dim);">NOTIFICAÇÕES</span>
+      <span style="font-family:var(--mono); font-size:15px; font-weight:800; letter-spacing:3px; color:var(--amber);">NOTIFICAÇÕES</span>
       <button type="button" id="notifications-modal-close" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1; padding:0;">&times;</button>
     </div>
-    <div id="notifications-modal-list" style="max-height:400px; overflow-y:auto;"></div>
+    <div id="notifications-modal-sub" style="font-family:var(--mono); font-size:10.5px; letter-spacing:1px; color:var(--text-dim); margin:-8px 0 10px;"></div>
+    <div style="height:2px; background:linear-gradient(90deg,var(--amber),transparent); margin-bottom:10px;"></div>
+    <div id="notifications-modal-list" style="max-height:400px; overflow-y:auto; padding:2px;"></div>
     <div id="notifications-modal-empty" class="hidden" style="text-align:center; color:var(--text-dim); font-size:13px; padding:20px 0;">Sem notificações.</div>
   </div>
 </div>
@@ -2060,14 +2062,13 @@ const BASE_DATA = GROUP === 'sup' ? EMBEDDED_SUP : EMBEDDED_DATA;
 // SUPERVISÃO "🔒 LOCKED": the schedule keeps everybody; locked agents are just left out here, so locking and
 // unlocking never needs a new PDF. The ids come from a small local copy of the lock list (refreshed from the
 // database further down; if it changed, the page reloads once so everything is drawn without/with them).
-const SUP_LOCK_DEFAULT = ['5424','4899','3590'];
+const SUP_LOCK_DEFAULT = (GROUP === 'sup') ? ['5424','4899','3590'] : ['3035','4416','4899'];   // SUPERVISÃO: David, Sandrine, Saragoça · TTAE: Godinho Nuno and Martins Elisabeth (Lost & Found), Sandrine (Supervisão)
 let APPLIED_LOCK_IDS = [];
 function readLockCache(){
-  try{ const v = JSON.parse(localStorage.getItem('supLockedIds') || 'null'); if(Array.isArray(v)) return v.map(String); }catch(e){}
+  try{ const v = JSON.parse(localStorage.getItem('lockedIds_' + (GROUP || 'ttae')) || 'null'); if(Array.isArray(v)) return v.map(String); }catch(e){}
   return SUP_LOCK_DEFAULT.slice();
 }
 function withoutLocked(d){
-  if(typeof GROUP === 'undefined' || GROUP !== 'sup') return d;
   APPLIED_LOCK_IDS = readLockCache();
   return Object.assign({}, d, { workers: d.workers.filter(w => !APPLIED_LOCK_IDS.includes(String(w.id))) });
 }
@@ -4504,8 +4505,8 @@ const DCS_SYSTEMS = [
   { key: 'availWK', label: 'WK', abbr: 'WK', store: {} }, // only available on weekends
   { key: 'blocked', label: 'INCOG', abbr: 'INC', store: {} }, // hidden from every search/picker across the app
   { key: 'dismissed', label: 'OUT', abbr: 'OUT', store: {} },  // left the company: hidden like BLOCK, and not counted in AGENTES
-  // SUPERVISÃO only: ignored when a Supervisão month is uploaded (they stay in TTAE). Value = the person's name, so they can still be listed (and unlocked) when they are not on the schedule.
-  { key: 'locked', label: '🔒 LOCKED', abbr: 'LCK', supOnly: true, store: { '5424': 'GUERREIRO DAVID', '4899': 'SANDRINE ISABELLE SANDRINA', '3590': 'SARAGOÇA ANA' } }
+  // LOCKED: left out of this department's schedule on screen (the PDF keeps everybody, so lock/unlock never needs a new upload). Value = the person's name, so they can still be listed (and unlocked) when they are not on the schedule.
+  { key: 'locked', label: '🔒 LOCKED', abbr: 'LCK', store: (GROUP === 'sup') ? { '5424': 'GUERREIRO DAVID', '4899': 'SANDRINE ISABELLE SANDRINA', '3590': 'SARAGOÇA ANA' } : { '3035': 'GODINHO NUNO', '4416': 'MARTINS ELISABETH', '4899': 'SANDRINE ISABELLE SANDRINA' } }
 ];
 function isLockedAgent(id){
   const sys = DCS_SYSTEMS.find(s => s.key === 'locked');
@@ -4564,10 +4565,9 @@ async function toggleDcsSystem(sys, workerId, name){
 // Keeps the local lock list in step with the database; reloads when it no longer matches what this page was drawn with.
 function syncLockedAgents(force){
   try{
-    if(GROUP !== 'sup') return;
     const lk = DCS_SYSTEMS.find(x => x.key === 'locked');
     const now = Object.keys(lk.store).map(String).sort();
-    localStorage.setItem('supLockedIds', JSON.stringify(now));
+    localStorage.setItem('lockedIds_' + (GROUP || 'ttae'), JSON.stringify(now));
     const was = APPLIED_LOCK_IDS.slice().sort();
     if(now.join(',') !== was.join(',')){
       if(!force && sessionStorage.getItem('lockReloaded') === now.join(',')) return;   // never loop
@@ -4608,7 +4608,8 @@ function updateSkillsStats(){
   }
   const count = Object.keys(ALTEA).filter(id => ALTEA[id]).length;
   const nOut = DATA.workers.filter(w => isDismissed(w.id)).length;
-  el.innerHTML = '<b>'+count+'</b> of '+DATA.workers.length+' marked with Altea / all systems' + (nOut ? ' · <b style="color:#ff5d6c">'+nOut+'</b> OUT' : '');
+  const nLk = Object.keys(DCS_SYSTEMS.find(x => x.key === 'locked').store).length;
+  el.innerHTML = '<b>'+count+'</b> of '+DATA.workers.length+' marked with Altea / all systems' + (nLk ? ' · <b style="color:#ffb020">'+nLk+'</b> LOCKED' : '') + (nOut ? ' · <b style="color:#ff5d6c">'+nOut+'</b> OUT' : '');
 }
 function renderSkillsList(filter){
   const box = document.getElementById('skills-list');
@@ -4617,7 +4618,7 @@ function renderSkillsList(filter){
   box.innerHTML = '';
   const isSup = GROUP === 'sup';
   // TTAE: Altea + every system except LOCKED. SUPERVISÃO: only INCOG, OUT and LOCKED.
-  const systems = DCS_SYSTEMS.filter(sys => isSup ? ['blocked','dismissed','locked'].includes(sys.key) : !sys.supOnly);
+  const systems = DCS_SYSTEMS.filter(sys => isSup ? ['blocked','dismissed','locked'].includes(sys.key) : true);
   const cols = (isSup ? [] : [{ altea:true, label:'Altea' }]).concat(systems.map(sys => ({ sys, label: sys.label })));
 
   const header = document.createElement('div');
@@ -4629,7 +4630,7 @@ function renderSkillsList(filter){
 
   function addRow(id, name, offSchedule){
     const row = document.createElement('div');
-    row.className = 'skills-row' + (isSup && isLockedAgent(id) ? ' skills-row-locked' : '');
+    row.className = 'skills-row' + (isLockedAgent(id) ? ' skills-row-locked' : '');
     const checksHtml = cols.map(c => c.altea
       ? '<span class="skills-check-cell"><input type="checkbox" '+(hasAltea(id)?'checked':'')+' data-sys="altea"></span>'
       : '<span class="skills-check-cell'+(c.sys.key==='locked'?' skills-lock-cell':'')+'"><input type="checkbox" '+(hasDcsSystem(c.sys, id)?'checked':'')+' data-sys="'+c.sys.key+'"></span>').join('');
@@ -4654,8 +4655,8 @@ function renderSkillsList(filter){
     .filter(w => !f || w.name.toLowerCase().includes(f))
     .forEach(w => addRow(w.id, w.name, false));
 
-  // SUPERVISÃO: locked people who are not on this month's schedule stay listed so they can be unlocked
-  if(isSup){
+  // locked people who are not on this month's schedule stay listed so they can be unlocked
+  {
     const lk = DCS_SYSTEMS.find(x => x.key === 'locked');
     const onSched = new Set(DATA.workers.map(w => String(w.id)));
     Object.keys(lk.store).filter(id => !onSched.has(id) && (!f || String(lk.store[id]).toLowerCase().includes(f)))
@@ -6728,7 +6729,7 @@ function parseNotificationBody(body){
 }
 const NOTIF_ICONS = {
   claim:   { symbol: '✓', bg: 'rgba(51,214,139,0.12)', color: 'var(--go)' },
-  cover:   { symbol: '→', bg: 'rgba(255,179,0,0.12)',  color: 'var(--amber)' },
+  cover:   { symbol: '→', bg: 'rgba(51,214,139,0.12)', color: 'var(--go)' },
   confirm: { symbol: '⇄', bg: 'rgba(95,224,255,0.12)', color: 'var(--cyan)' },
 };
 const PT_WEEKDAYS_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -6819,6 +6820,9 @@ function notifDayLabel(n, day){
   }catch(e){}
   return 'Dia ' + escapeHtml(day);
 }
+// Which notifications were unread at the moment the bell was opened — kept while it stays open, so the "por ler" dots
+// don't vanish the instant they are marked as read in the database.
+let NOTIF_OPEN_SNAPSHOT = null;
 function renderNotificationsList(){
   const list = document.getElementById('notifications-modal-list');
   const empty = document.getElementById('notifications-modal-empty');
@@ -6826,52 +6830,61 @@ function renderNotificationsList(){
   const entries = Object.entries(NOTIFICATIONS)
     .filter(([id, n]) => !n.hidden && !isNotificationEventPast(n))
     .map(([id, n]) => ({ kind:'n', id, n, ts: n.createdAt || 0 }));
-  let seenTs = 0; try{ seenTs = mtSeen(); mtChanges().forEach(x => entries.push({ kind:'t', x, ts: x[0] })); }catch(e){}
+  let seenTs = 0; try{ seenTs = mtSeen(); }catch(e){}
+  if(NOTIF_OPEN_SNAPSHOT) seenTs = NOTIF_OPEN_SNAPSHOT.seenTs;
+  try{ mtChanges().forEach(x => entries.push({ kind:'t', x, ts: x[0] })); }catch(e){}
   entries.sort((a, b) => b.ts - a.ts);
   empty.classList.toggle('hidden', entries.length > 0);
+  const isUnread = item => item.kind === 't' ? item.x[0] > seenTs
+    : (NOTIF_OPEN_SNAPSHOT ? NOTIF_OPEN_SNAPSHOT.ids.has(item.id) : !item.n.read);
+  const unreadTotal = entries.filter(isUnread).length;
+  const sub = document.getElementById('notifications-modal-sub');
+  if(sub) sub.textContent = entries.length ? (entries.length + (entries.length === 1 ? ' NOTIFICAÇÃO' : ' NOTIFICAÇÕES') + (unreadTotal ? ' · ' + unreadTotal + ' POR LER' : '')) : '';
+  const dotHtml = '<span style="position:absolute; top:7px; right:7px; width:8px; height:8px; border-radius:50%; background:#ff5d6c;"></span>';
+  const card = (bar, unread, inner, hasTrash) => '<div style="position:relative; display:flex; gap:10px; padding:11px 12px; border-radius:12px; margin-bottom:8px; border-left:3px solid ' + bar + '; ' +
+    (unread ? 'background:#1b2742; box-shadow:0 0 0 1px #2b3b5e;' : 'background:#10192b; opacity:.78;') + '">' + inner + (unread ? dotHtml : '') + '</div>';
   let html = '';
   let lastGroup = null;
   for(const item of entries){
     const n = item.kind === 'n' ? item.n : { createdAt: item.ts };
     const group = n.createdAt ? notificationGroupLabel(n.createdAt) : 'Mais antigas';
     if(group !== lastGroup){
-      html += '<div style="font-size:10px; letter-spacing:1px; color:var(--text-dim); text-transform:uppercase; margin:'+(lastGroup===null?'0':'14px')+' 0 6px;">'+escapeHtml(group)+'</div>';
+      html += '<div style="font-size:10px; letter-spacing:2px; color:#5fa8ff; font-weight:700; text-transform:uppercase; margin:'+(lastGroup===null?'4px':'14px')+' 0 8px; display:flex; align-items:center; gap:8px;">'+escapeHtml(group)+'<span style="flex:1; height:1px; background:var(--border-soft);"></span></div>';
       lastGroup = group;
     }
+    const unread = isUnread(item);
+    const st = unread ? 'color:var(--text); font-weight:600;' : 'color:var(--text-dim);';
     if(item.kind === 't'){
-      const c = mtClassify(item.x[1]), unread = item.x[0] > seenTs, whenT = notificationRelativeTime(item.x[0]);
-      const st = unread ? 'color:var(--text); font-weight:600;' : 'color:var(--text-dim);';
+      const c = mtClassify(item.x[1]), whenT = notificationRelativeTime(item.x[0]);
       const ic = c.type === 'delay'
-        ? '<div style="width:26px; height:26px; border-radius:50%; background:rgba(255,179,0,0.12); color:var(--amber); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;">◷</div>'
-        : '<div style="width:26px; height:26px; border-radius:50%; background:rgba(255,93,108,0.15); color:var(--nogo); border:1px solid rgba(255,93,108,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:var(--mono); font-weight:800; font-size:15px;">!</div>';
-      html += '<div style="display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);">' + ic +
+        ? '<div style="width:28px; height:28px; border-radius:50%; background:rgba(255,179,0,0.12); color:var(--amber); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;">◷</div>'
+        : '<div style="width:28px; height:28px; border-radius:50%; background:rgba(255,93,108,0.15); color:var(--nogo); border:1px solid rgba(255,93,108,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">≡</div>';
+      html += card(c.type === 'delay' ? 'var(--amber)' : '#ff5d6c', unread, ic +
         '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + st + '">' + (c.type === 'delay' ? 'Hora alterada · voo' : 'As tuas tarefas mudaram') + '</div>' +
-        mtNotifDetail(c) +
-        '<div style="font-size:10px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);">' + escapeHtml(whenT) + '</div></div></div>';
+        mtNotifDetail(c) + notifLogHtml(whenT, item.x[0]) + '</div>');
       continue;
     }
     const id = item.id;
     const parsed = parseNotificationBody(n.body || '');
     const when = n.createdAt ? notificationRelativeTime(n.createdAt) : '';
-    const unreadStyle = n.read ? 'color:var(--text-dim);' : 'color:var(--text); font-weight:600;';
-    let bodyHtml, dayLineHtml = '';
+    const trash = '<button type="button" class="notif-hide" data-nid="'+escapeHtml(id)+'" title="Esconder" style="background:none; border:none; color:var(--text-dim); line-height:1; cursor:pointer; align-self:flex-start; padding:2px 4px; margin:10px 4px 0 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
+    let inner, bar = 'var(--go)';
     if(parsed){
       const icon = NOTIF_ICONS[parsed.type];
-      bodyHtml = '<div class="notif-icon" style="width:26px; height:26px; border-radius:50%; background:'+icon.bg+'; color:'+icon.color+'; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">'+icon.symbol+'</div>'+
+      bar = parsed.type === 'confirm' ? 'var(--cyan)' : 'var(--go)';
+      inner = '<div class="notif-icon" style="width:28px; height:28px; border-radius:50%; background:'+icon.bg+'; color:'+icon.color+'; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">'+icon.symbol+'</div>'+
         '<div style="flex:1; min-width:0;">'+
-          '<div style="font-size:12.5px; line-height:1.4; '+unreadStyle+'"><b style="color:inherit;">'+escapeHtml(parsed.name)+'</b> '+escapeHtml(parsed.mainText)+'</div>'+
-          (parsed.day ? '<div style="font-size:11.5px; color:var(--amber); font-weight:600; margin-top:2px;">'+notifDayLabel(n, parsed.day)+(parsed.time ? ' · '+escapeHtml(parsed.time) : '')+'</div>' : '')+
+          '<div style="font-size:12.5px; line-height:1.4; '+st+'"><b style="color:inherit;">'+escapeHtml(parsed.name)+'</b> '+escapeHtml(parsed.mainText)+'</div>'+
+          (parsed.day ? '<div style="font-size:11.5px; color:var(--amber); font-weight:700; margin-top:3px;">'+notifDayLabel(n, parsed.day)+(parsed.time ? ' · '+escapeHtml(parsed.time) : '')+'</div>' : '')+
           (when ? notifLogHtml(when, n.createdAt) : '')+
         '</div>';
     } else {
-      // Older/unrecognized shape — plain text, no icon, same as before.
-      bodyHtml = '<div style="flex:1; min-width:0;">'+
-        '<div style="font-size:13px; '+unreadStyle+'">'+escapeHtml(n.body || '')+'</div>'+
+      inner = '<div style="flex:1; min-width:0;">'+
+        '<div style="font-size:13px; '+st+'">'+escapeHtml(n.body || '')+'</div>'+
         (when ? notifLogHtml(when, n.createdAt) : '')+
       '</div>';
     }
-    html += '<div style="display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border-soft);">'+bodyHtml+
-      '<button type="button" class="notif-hide" data-nid="'+escapeHtml(id)+'" title="Esconder" style="background:none; border:none; color:var(--text-dim); line-height:1; cursor:pointer; align-self:flex-start; padding:2px 4px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button></div>';
+    html += card(bar, unread, inner + trash);
   }
   list.innerHTML = html;
 }
@@ -6895,6 +6908,7 @@ function setupNotificationsListener(staffId){
   });
 }
 function openNotificationsModal(){
+  try{ NOTIF_OPEN_SNAPSHOT = { ids: new Set(Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id)), seenTs: (typeof mtSeen === 'function' ? mtSeen() : 0) }; }catch(e){ NOTIF_OPEN_SNAPSHOT = null; }
   renderNotificationsList();
   document.getElementById('notifications-modal').classList.remove('hidden');
   // Opening the list is what counts as "seen" — mark every currently-unread entry as read.
@@ -6913,6 +6927,7 @@ document.getElementById('notifications-modal-list').addEventListener('click', (e
 });
 document.getElementById('notifications-modal-close').addEventListener('click', () => {
   document.getElementById('notifications-modal').classList.add('hidden');
+  NOTIF_OPEN_SNAPSHOT = null;
 });
 loadHideIneligibleRequests().then(() => { updateHideIneligibleIcon(); renderOpenRequests(); });
 // Login (checkAccessPassword / restoreLoginIfPresent) is now the authoritative source of
@@ -8467,6 +8482,7 @@ function deriveScheduleEntry(tokens){
     if(t === 'F' && times.length){ tags.push('F50'); return; }      // "19:00 F" → the F50 tag glued to the time
     if(SCHED_CODES.includes(t)){ codes.push(t === 'OFF' ? 'Off' : t); return; }
     if(t === 'LOST' || t === 'LOST_'){ tags.push('LOST'); return; }
+    if(t === 'BW'){ tags.push('F50'); return; }   // BW = Bonus Winter: extra days off given instead of unscheduled summer holidays, so it counts as vacation (F50)
     if(SCHED_TAGS.includes(t)){ tags.push(t); return; }
     if(t === '(FOR)' || t === '(ACC)'){ forSeen = true; return; }   // FOR = training, ACC = airport-card lecture: both are training days (not swappable)
     if(t === 'MED'){   // company medical appointment inside the day: the two times just before it are the appointment
@@ -8550,17 +8566,38 @@ function parseSchedulePages(pages){
     const pitch = gaps.length ? gaps[0] : 40;   // the smallest gap = the height of a plain row
     let bandTop = ids[0].y + pitch / 2;
     { const above = data.filter(i => i.y > bandTop && Math.abs(i.y - ids[0].y) < 70).map(i => i.y); if(above.length) bandTop = Math.max(...above) + 8; }
-    const bands = [];
-    ids.forEach((a, k) => {
-      const hi = k ? bandTop : 1e9;
-      let lo;
-      if(k < ids.length - 1){
-        lo = 2 * a.y - bandTop;
-        if(!(lo < a.y && lo > ids[k+1].y)) lo = (a.y + ids[k+1].y) / 2;
-      } else lo = Math.min(a.y - 40, 2 * a.y - bandTop);   // last worker: ignore page footer text
-      bandTop = lo;
-      bands.push([hi, lo]);
-    });
+    // The top edge of the first row is only an estimate, and a wrong estimate makes every following edge swing the wrong way
+    // (each edge mirrors the previous one). So try nearby starting points and keep the one that cuts through the fewest lines of text.
+    const mkBands = (top0) => {
+      let bt = top0;
+      const bs = [];
+      ids.forEach((a, k) => {
+        const hi = k ? bt : 1e9;
+        let lo;
+        if(k < ids.length - 1){
+          lo = 2 * a.y - bt;
+          if(!(lo < a.y && lo > ids[k+1].y)) lo = (a.y + ids[k+1].y) / 2;
+        } else lo = Math.min(a.y - 40, 2 * a.y - bt);   // last worker: ignore page footer text
+        bt = lo;
+        bs.push([hi, lo]);
+      });
+      return bs;
+    };
+    const cutPenalty = bs => { let n = 0; for(let k = 1; k < bs.length; k++){ const e = bs[k][0]; for(const it of data){ if(Math.abs(it.y - e) < 3) n++; } } return n; };
+    let bands = mkBands(bandTop);
+    {
+      let bp = cutPenalty(bands);
+      if(bp > 0){
+        let best = bands;
+        for(let d = 0.25; d <= 26; d += 0.25){
+          for(const sg of [-1, 1]){
+            const cand = mkBands(bandTop + sg * d), cp = cutPenalty(cand);
+            if(cp < bp){ bp = cp; best = cand; }
+          }
+        }
+        bands = best;
+      }
+    }
     const rowOf = y => bands.findIndex(bd => y <= bd[0] && y > bd[1]);
     // a line of text that sits on a row edge (a cell a little taller than its row spills over) goes with the lines it touches
     const rowCells = ids.map(() => cols.map(() => []));
@@ -8583,7 +8620,7 @@ function parseSchedulePages(pages){
       const cells = rowCells[k].map(c => c.map(i => i.s));
       const s = cells.map((c, di) => {
         const r = deriveScheduleEntry(c);
-        if(r.level !== 'ok') cellInfo.push({ wi: workers.length, di, tokens: c.join(' '), level: r.level, note: r.note });
+        if(r.level !== 'ok' && !isLockedAgent(a.s)) cellInfo.push({ wi: workers.length, di, tokens: c.join(' '), level: r.level, note: r.note });
         return r.entry;
       });
       workers.push({ id: a.s, name: nm, s });
