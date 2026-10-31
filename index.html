@@ -974,6 +974,8 @@
   .area-card .ac-ic{ flex:none; width:44px; height:44px; border-radius:12px; background:#0f2236; border:1px solid #1f5566; display:flex; align-items:center; justify-content:center; color:#4fd1f0; }
   .area-card .ac-t{ font-family:var(--mono); font-weight:700; letter-spacing:.12em; font-size:15px; color:var(--text); display:flex; align-items:center; gap:8px; }
   .area-card .ac-s{ font-size:13px; color:var(--text-dim); margin-top:4px; }
+  .area-card .ac-cnt{ display:none; font-family:var(--mono); font-size:11px; background:var(--text); color:#0b1220; border-radius:5px; padding:1px 7px; }
+  .area-card .ac-cnt.on{ display:inline-block; }
   .area-card .ac-dot{ width:8px; height:8px; border-radius:50%; background:var(--nogo); display:none; }
   .area-card .ac-dot.on{ display:inline-block; }
   .sf-row{ cursor:pointer; -webkit-tap-highlight-color:transparent; border-width:2px; }
@@ -1626,7 +1628,8 @@
       <div class="swap-sort-tab" id="area-tab-btn-tasks"><span>AS MINHAS TAREFAS<span id="my-tasks-badge"></span></span><div class="dash"></div></div>
     </div>
     <div id="area-hub">
-      <div class="area-card" id="area-card-swaps" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TROCAS</div><div class="ac-s">Os teus pedidos e trocas</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+      <div class="area-card" id="area-card-swaps" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TROCAS</div><div class="ac-s">As trocas em que estás</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+      <div class="area-card" id="area-card-reqs" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3.4 2c-.8.4-1.2.9-1.2 1.6M12 15h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">OS MEUS PEDIDOS<span class="ac-cnt" id="area-reqs-count"></span></div><div class="ac-s">Pedidos de troca que abriste</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-tasks" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TAREFAS<span class="ac-dot" id="area-tasks-dot"></span></div><div class="ac-s">Voos, balcões e portas do dia</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-extra" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">HORAS EXTRA</div><div class="ac-s">As tuas horas extra</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
@@ -1643,6 +1646,9 @@
         <button type="button" class="flag-btn" id="my-swaps-more-btn" style="display:none; margin-top:10px;">VER MAIS</button>
       </div>
     </div>
+    </div>
+    <div id="area-tab-reqs" class="hidden">
+      <div id="my-reqs-list"></div>
     </div>
     <div id="area-tab-tasks" class="hidden">
       <div id="my-tasks-body"></div>
@@ -6299,10 +6305,45 @@ function setReqTypeFilter(t){
   renderOpenRequests();
 }
 ['all','cover','timeswap'].forEach(k => document.getElementById('req-filter-' + k).addEventListener('click', () => setReqTypeFilter(k)));
+// OS MEUS PEDIDOS (inside ÁREA PESSOAL): only the open requests I posted; cancelling works exactly like in PEDIDOS
+function renderMyRequests(){
+  const list = document.getElementById('my-reqs-list'), cnt = document.getElementById('area-reqs-count');
+  const me = String(mtStaffId() || '');
+  const mine = Object.keys(REQUESTS || {}).map(key => Object.assign({key}, REQUESTS[key]))
+    .filter(e => !isPastDay(e.idx) && ((me && String(e.requesterId) === me) || (rememberedName && rememberedName === e.requesterName)))
+    .sort((a,b) => a.idx - b.idx);
+  if(cnt){ cnt.textContent = String(mine.length); cnt.classList.toggle('on', mine.length > 0); }
+  if(!list) return;
+  if(!mine.length){ list.innerHTML = '<div class="empty-state" style="padding:16px 10px;">Não tens pedidos abertos</div>'; return; }
+  list.innerHTML = '';
+  mine.forEach(e => {
+    const w = DATA.workers.find(x => x.id === e.requesterId);
+    const en = w ? getEffectiveEntry(w, e.idx) : null;
+    const label = (en && en.status === 'work') ? fmtHHMM(en.start) + ' - ' + fmtHHMM(en.end) : (e.type === 'cover' ? 'Dia de Folga' : 'Troca de Turno');
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.style.flexDirection = 'column'; row.style.alignItems = 'stretch';
+    row.innerHTML = (e.note ? '<div style="color:var(--text-dim); font-size:14px; font-style:italic; margin-bottom:10px;">"' + escapeHtml(e.note) + '"</div>' : '') +
+      '<div style="display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; font-size:14px; color:var(--text);">' +
+      '<span style="font-family:var(--mono); width:96px; flex-shrink:0;">' + fmtDateLabel(e.idx) + ':</span><span style="font-family:var(--sans); color:var(--amber);">' + label + '</span></div>' +
+      '<button type="button" class="recent-swap-delete" title="Cancelar pedido">✕</button></div>';
+    row.querySelector('.recent-swap-delete').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      showPasswordPrompt(async () => {
+        delete REQUESTS[e.key];
+        await deleteRequestEntry(e.key);
+        renderOpenRequests();
+        renderMultiDayCalendar();
+      }, 'Delete2026');
+    });
+    list.appendChild(row);
+  });
+}
 function renderOpenRequests(){
   const list = document.getElementById('requests-open-list');
   const titleEl = document.getElementById('requests-open-title');
   if(!list) return;
+  try{ renderMyRequests(); }catch(e){}
   const allEntries = Object.keys(REQUESTS).map(key => Object.assign({key}, REQUESTS[key]))
     .filter(e => !isPastDay(e.idx))
     .sort((a,b) => (b.ts||0) - (a.ts||0));
@@ -9132,7 +9173,7 @@ function closeMyTasks(){
 }
 // Tabs inside ÁREA PESSOAL
 let AREA_VIEW = 'hub';
-const AREA_TITLES = { hub: 'ÁREA PESSOAL', swaps: 'AS MINHAS TROCAS', tasks: 'AS MINHAS TAREFAS' };
+const AREA_TITLES = { hub: 'ÁREA PESSOAL', swaps: 'AS MINHAS TROCAS', reqs: 'OS MEUS PEDIDOS', tasks: 'AS MINHAS TAREFAS' };
 function areaSetTitle(v){ AREA_VIEW = v; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; }
 function updateAreaHubDot(){
   const d = document.getElementById('area-tasks-dot'); if(!d) return;
@@ -9144,23 +9185,27 @@ function showAreaHub(){
   closeMyTasks();
   document.getElementById('area-tab-swaps').classList.add('hidden');
   document.getElementById('area-tab-tasks').classList.add('hidden');
+  document.getElementById('area-tab-reqs').classList.add('hidden');
   document.getElementById('area-hub').classList.remove('hidden');
+  try{ renderMyRequests(); }catch(e){}
   areaSetTitle('hub');
   updateAreaHubDot();
   try{ window.scrollTo(0, 0); }catch(e){}
 }
 function showAreaTab(which){
-  const tasks = which === 'tasks';
+  const tasks = which === 'tasks', reqs = which === 'reqs';
   document.getElementById('area-hub').classList.add('hidden');
-  areaSetTitle(tasks ? 'tasks' : 'swaps');
+  document.getElementById('area-tab-reqs').classList.toggle('hidden', !reqs);
+  areaSetTitle(tasks ? 'tasks' : reqs ? 'reqs' : 'swaps');
   document.getElementById('area-tab-btn-swaps').classList.toggle('active', !tasks);
   document.getElementById('area-tab-btn-tasks').classList.toggle('active', tasks);
-  document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks);
+  document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks || reqs);
   document.getElementById('area-tab-tasks').classList.toggle('hidden', !tasks);
-  if(tasks) openMyTasks(); else { closeMyTasks(); renderMySwapsList(myTrocasExpanded); }
+  if(tasks) openMyTasks(); else { closeMyTasks(); if(reqs) renderMyRequests(); else renderMySwapsList(myTrocasExpanded); }
 }
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
 [['area-card-swaps', () => document.getElementById('area-tab-btn-swaps').click()],
+ ['area-card-reqs', () => showAreaTab('reqs')],
  ['area-card-tasks', () => document.getElementById('area-tab-btn-tasks').click()],
  ['area-card-extra', () => { EXTRA_FROM_AREA = true; openExtraHours(); }]].forEach(([id, fn]) => {
   const el = document.getElementById(id);
