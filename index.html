@@ -1066,6 +1066,11 @@
   .mt-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:10px; }
   .mt-title{ font-family:var(--mono); font-size:13px; letter-spacing:0.12em; color:var(--amber); font-weight:700; }
   .mt-who{ font-size:13px; color:var(--text); margin-bottom:4px; }
+  /* shift pill + countdown (admin-only test) */
+  .mt-pills{ display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; margin:0 0 12px; clear:both; }
+  .mt-spill{ display:inline-flex; align-items:center; gap:6px; white-space:nowrap; border:1px solid #1f5566; background:#0f2236; border-radius:999px; padding:3px 12px; font-family:var(--mono); font-size:12px; color:var(--text); }
+  .mt-spill.warn{ border-color:#8a6a14; }
+  .mt-spill.done{ border-color:#27344f; color:var(--text-dim); }
   .mt-upd{ font-family:var(--mono); font-size:11.5px; color:var(--text-dim); margin-bottom:10px; }
   .mt-warn{ font-size:12.5px; line-height:1.45; border-radius:8px; padding:8px 10px; margin-bottom:10px; }
   .mt-warn.amber{ color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.35); }
@@ -9744,6 +9749,29 @@ function closeSupFlights(){
 }
 document.getElementById('sf-link').addEventListener('click', openSupFlights);
 document.getElementById('sf-back-btn').addEventListener('click', closeSupFlights);
+// Admin-only test: today's shift as a pill, plus a live countdown to its end (refreshes with the task list)
+function mtShiftPillsHtml(me, nowMin){
+  try{
+    if(!me) return '';
+    let idx = -1; for(let i = 0; i < N; i++){ if(isTodayDay(i)){ idx = i; break; } }
+    if(idx < 0) return '';
+    const en = getEffectiveEntry(me, idx); if(!en) return '';
+    const clock = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#4fd1f0" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
+    if(en.status !== 'work'){
+      const c = (en.codes || []).join(' · ');
+      return c ? '<div class="mt-pills"><span class="mt-spill">' + clock + mtEsc(c) + '</span></div>' : '';
+    }
+    const toMin = v => parseInt(v.slice(0, 2), 10) * 60 + parseInt(v.slice(2, 4), 10);
+    const s0 = toMin(en.start); let e0 = toMin(en.end); if(e0 <= s0) e0 += 1440;
+    const ring = (p, col) => '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke-width="3"><circle cx="12" cy="12" r="9" stroke="#27405c"/><circle cx="12" cy="12" r="9" stroke="' + col + '" stroke-linecap="round" stroke-dasharray="' + (56.5 * p).toFixed(1) + ' 56.5" transform="rotate(-90 12 12)"/></svg>';
+    const hm = m => Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+    let cd;
+    if(nowMin < s0) cd = '<span class="mt-spill">' + ring(0, '#4fd1f0') + 'começa em <b>' + hm(s0 - nowMin) + '</b></span>';
+    else if(nowMin >= e0) cd = '<span class="mt-spill done">' + ring(1, '#5a6788') + 'turno terminado</span>';
+    else { const left = e0 - nowMin, warn = left <= 60; cd = '<span class="mt-spill' + (warn ? ' warn' : '') + '">' + ring((nowMin - s0) / (e0 - s0), warn ? '#ffb020' : '#4fd1f0') + 'faltam <b>' + hm(left) + '</b></span>'; }
+    return '<div class="mt-pills"><span class="mt-spill">' + clock + fmtHHMM(en.start) + ' – ' + fmtHHMM(en.end) + '</span>' + cd + '</div>';
+  }catch(e){ return ''; }
+}
 function renderMyTasks(){
   const body = document.getElementById('my-tasks-body');
   if(!body || !mtOpenOverlay()) return;
@@ -9768,6 +9796,7 @@ function renderMyTasks(){
     else if(myReq > upAt && Date.now() - myReq < 180000){ label = 'PEDIDO ENVIADO…'; dis = true; }
     html += '<button type="button" id="mt-refresh-btn" class="mt-refresh"' + (dis ? ' disabled' : '') + '>' + label + '</button>';
   }
+  if(staffId === ADMIN_STAFF_ID) html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes());   // admin-only test for now
   if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
   else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
   const sameDay = MT_DOC.date === todayIso;
