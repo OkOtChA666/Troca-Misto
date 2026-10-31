@@ -967,6 +967,15 @@
   #sf-link, #sf-div{ display:none; }
   html.grp-sup #sf-link{ display:inline-flex; }
   html.grp-sup #extra-hours-link{ display:none !important; }
+  #extra-hours-link, #extra-hours-div{ display:none !important; }   /* HORAS EXTRA now lives inside ÁREA PESSOAL */
+  html.grp-sup #area-card-extra{ display:none !important; }
+  .area-card{ display:flex; align-items:center; gap:16px; border:1px solid var(--border); border-radius:16px; background:var(--panel-2); padding:16px 18px; margin:0 0 12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .area-card:active{ border-color:var(--amber); }
+  .area-card .ac-ic{ flex:none; width:44px; height:44px; border-radius:12px; background:#0f2236; border:1px solid #1f5566; display:flex; align-items:center; justify-content:center; color:#4fd1f0; }
+  .area-card .ac-t{ font-family:var(--mono); font-weight:700; letter-spacing:.12em; font-size:15px; color:var(--text); display:flex; align-items:center; gap:8px; }
+  .area-card .ac-s{ font-size:13px; color:var(--text-dim); margin-top:4px; }
+  .area-card .ac-dot{ width:8px; height:8px; border-radius:50%; background:var(--nogo); display:none; }
+  .area-card .ac-dot.on{ display:inline-block; }
   .sf-row{ cursor:pointer; -webkit-tap-highlight-color:transparent; border-width:2px; }
   .sf-row.me{ border-color:#FF6A00; background:rgba(255,106,0,0.10); }
   .sf-pickbox{ padding:4px; margin:-4px; cursor:pointer; }
@@ -1334,7 +1343,7 @@
       <span id="tools-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Ferramentas">
         FERRAMENTAS
       </span>
-      <span class="header-divider">|</span>
+      <span class="header-divider" id="extra-hours-div">|</span>
       <span id="extra-hours-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Horas Extra">
         HORAS EXTRA
       </span>
@@ -1600,7 +1609,7 @@
        through TROCAS RECENTES which shows everyone's. -->
   <div class="panel hidden" id="panel-my-swaps">
     <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
-      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">ÁREA PESSOAL</div>
+      <div id="area-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">ÁREA PESSOAL</div>
       <button type="button" id="my-swaps-back-btn" aria-label="Voltar" title="Voltar" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border-radius:50%; cursor:pointer; color:var(--amber); background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.45);">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg>
       </button>
@@ -1612,11 +1621,16 @@
       </div>
       <button type="button" id="np-btn" class="hidden" style="width:100%; margin-top:10px; padding:11px; border-radius:9px; border:0; background:var(--amber); color:#1a1200; font:800 12px var(--mono); letter-spacing:.12em; cursor:pointer;">ATIVAR NOTIFICAÇÕES</button>
     </div>
-    <div class="swap-sort-toggle" id="area-tabs" style="margin:0 0 14px;">
+    <div class="swap-sort-toggle" id="area-tabs" style="margin:0 0 14px; display:none;">
       <div class="swap-sort-tab active" id="area-tab-btn-swaps"><span>AS MINHAS TROCAS</span><div class="dash"></div></div>
       <div class="swap-sort-tab" id="area-tab-btn-tasks"><span>AS MINHAS TAREFAS<span id="my-tasks-badge"></span></span><div class="dash"></div></div>
     </div>
-    <div id="area-tab-swaps">
+    <div id="area-hub">
+      <div class="area-card" id="area-card-swaps" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TROCAS</div><div class="ac-s">Os teus pedidos e trocas</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+      <div class="area-card" id="area-card-tasks" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TAREFAS<span class="ac-dot" id="area-tasks-dot"></span></div><div class="ac-s">Voos, balcões e portas do dia</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+      <div class="area-card" id="area-card-extra" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">HORAS EXTRA</div><div class="ac-s">As tuas horas extra</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+    </div>
+    <div id="area-tab-swaps" class="hidden">
     <div class="recent-swaps-section">
       <div class="results-head" id="my-swaps-title-head"><span id="my-swaps-title">AS MINHAS TROCAS</span></div>
       <div class="swap-sort-toggle">
@@ -4361,7 +4375,7 @@ function openMySwaps(){
   document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
   document.querySelector('.tabs').classList.add('hidden');
   document.getElementById('panel-my-swaps').classList.remove('hidden');
-  showAreaTab('swaps');
+  showAreaHub();
   npRefresh();
 }
 function closeMySwaps(){
@@ -4371,7 +4385,7 @@ function closeMySwaps(){
   switchTab('cover');
 }
 document.getElementById('my-swaps-link').addEventListener('click', openMySwaps);
-document.getElementById('my-swaps-back-btn').addEventListener('click', closeMySwaps);
+document.getElementById('my-swaps-back-btn').addEventListener('click', () => { if(AREA_VIEW !== 'hub') showAreaHub(); else closeMySwaps(); });   // inside a section: back to the ÁREA PESSOAL menu
 function refreshRecentSwapsLists(){
   renderCoverSwapsList(recentSwapsExpanded);
   renderTurnoSwapsList(recentTurnoSwapsExpanded);
@@ -4967,7 +4981,9 @@ function openExtraHours(){
   document.getElementById('panel-extra').classList.remove('hidden');
   renderExtraHoursList();
 }
+let EXTRA_FROM_AREA = false;
 function closeExtraHours(){
+  if(EXTRA_FROM_AREA){ EXTRA_FROM_AREA = false; document.getElementById('panel-extra').classList.add('hidden'); openMySwaps(); return; }   // opened from ÁREA PESSOAL: back to its menu
   document.querySelector('.tabs').classList.remove('hidden');
   document.getElementById('panel-extra').classList.add('hidden');
   switchTab('cover');
@@ -6688,6 +6704,7 @@ function renderNotificationsBadge(){
   badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
   badge.classList.toggle('hidden', unreadCount === 0);
   const bl = document.getElementById('notifications-bell-link'); if(bl) bl.classList.toggle('has-unread', unreadCount > 0);
+  try{ updateAreaHubDot(); }catch(e){}
 }
 // A notification's own message only ever names a day number ("...no dia 30"), not a full
 // date — but its createdAt timestamp is a real, unambiguous moment in time, always from the
@@ -9114,8 +9131,28 @@ function closeMyTasks(){
   if(MT_TICK){ clearInterval(MT_TICK); MT_TICK = null; }
 }
 // Tabs inside ÁREA PESSOAL
+let AREA_VIEW = 'hub';
+const AREA_TITLES = { hub: 'ÁREA PESSOAL', swaps: 'AS MINHAS TROCAS', tasks: 'AS MINHAS TAREFAS' };
+function areaSetTitle(v){ AREA_VIEW = v; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; }
+function updateAreaHubDot(){
+  const d = document.getElementById('area-tasks-dot'); if(!d) return;
+  let n = 0; try{ const sn = mtSeen(); n = mtChanges().filter(x => x[0] > sn).length; }catch(e){}
+  d.classList.toggle('on', n > 0);
+}
+// ÁREA PESSOAL opens as a menu; each card opens one section, and the back arrow returns to the menu
+function showAreaHub(){
+  closeMyTasks();
+  document.getElementById('area-tab-swaps').classList.add('hidden');
+  document.getElementById('area-tab-tasks').classList.add('hidden');
+  document.getElementById('area-hub').classList.remove('hidden');
+  areaSetTitle('hub');
+  updateAreaHubDot();
+  try{ window.scrollTo(0, 0); }catch(e){}
+}
 function showAreaTab(which){
   const tasks = which === 'tasks';
+  document.getElementById('area-hub').classList.add('hidden');
+  areaSetTitle(tasks ? 'tasks' : 'swaps');
   document.getElementById('area-tab-btn-swaps').classList.toggle('active', !tasks);
   document.getElementById('area-tab-btn-tasks').classList.toggle('active', tasks);
   document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks);
@@ -9123,6 +9160,13 @@ function showAreaTab(which){
   if(tasks) openMyTasks(); else { closeMyTasks(); renderMySwapsList(myTrocasExpanded); }
 }
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
+[['area-card-swaps', () => document.getElementById('area-tab-btn-swaps').click()],
+ ['area-card-tasks', () => document.getElementById('area-tab-btn-tasks').click()],
+ ['area-card-extra', () => { EXTRA_FROM_AREA = true; openExtraHours(); }]].forEach(([id, fn]) => {
+  const el = document.getElementById(id);
+  el.addEventListener('click', fn);
+  el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fn(); } });
+});
 document.getElementById('area-tab-btn-tasks').addEventListener('click', () => {
   showAreaTab('tasks');
   // same as after PROCURAR: bring the tab bar to the top so the tasks fill the screen
