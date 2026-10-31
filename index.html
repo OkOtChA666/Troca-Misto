@@ -974,6 +974,15 @@
   .area-card .ac-ic{ flex:none; width:44px; height:44px; border-radius:12px; background:#0f2236; border:1px solid #1f5566; display:flex; align-items:center; justify-content:center; color:#4fd1f0; }
   .area-card .ac-t{ font-family:var(--mono); font-weight:700; letter-spacing:.12em; font-size:15px; color:var(--text); display:flex; align-items:center; gap:8px; }
   .area-card .ac-s{ font-size:13px; color:var(--text-dim); margin-top:4px; }
+  /* favourites: heart on each card; chosen ones go to the top, set apart, in strong yellow */
+  .area-card .ac-fav{ flex:none; background:none; border:0; padding:6px; margin:-6px 0; cursor:pointer; color:#5a6788; display:inline-flex; -webkit-tap-highlight-color:transparent; }
+  .area-card .ac-fav svg{ fill:none; transition:fill .15s, color .15s; }
+  .area-card.fav{ border-color:var(--amber); background:#1c1608; box-shadow:0 0 0 1px rgba(255,176,32,.25), 0 0 18px rgba(255,176,32,.18); }
+  .area-card.fav .ac-ic{ background:#2a2008; border-color:#8a6a14; color:var(--amber); }
+  .area-card.fav .ac-fav{ color:var(--amber); }
+  .area-card.fav .ac-fav svg{ fill:currentColor; }
+  .area-favlbl{ font-size:10.5px; font-style:italic; letter-spacing:.06em; color:rgba(255,176,32,.6); margin:0 4px 5px; text-align:right; }
+  #area-hub-sep{ height:1px; background:#2b3a5c; margin:6px 4px 18px; }
   .area-card .ac-cnt{ display:none; font-family:var(--mono); font-size:11px; background:var(--text); color:#0b1220; border-radius:5px; padding:1px 7px; }
   .area-card .ac-cnt.on{ display:inline-block; }
   .area-card .ac-dot{ width:8px; height:8px; border-radius:50%; background:var(--nogo); display:none; }
@@ -1628,9 +1637,9 @@
       <div class="swap-sort-tab" id="area-tab-btn-tasks"><span>AS MINHAS TAREFAS<span id="my-tasks-badge"></span></span><div class="dash"></div></div>
     </div>
     <div id="area-hub">
+      <div class="area-card" id="area-card-tasks" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TAREFAS<span class="ac-dot" id="area-tasks-dot"></span></div><div class="ac-s">Voos, balcões e portas do dia</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-swaps" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TROCAS</div><div class="ac-s">As trocas em que estás</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-reqs" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3.4 2c-.8.4-1.2.9-1.2 1.6M12 15h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">OS MEUS PEDIDOS<span class="ac-cnt" id="area-reqs-count"></span></div><div class="ac-s">Pedidos de troca que abriste</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
-      <div class="area-card" id="area-card-tasks" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TAREFAS<span class="ac-dot" id="area-tasks-dot"></span></div><div class="ac-s">Voos, balcões e portas do dia</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-extra" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">HORAS EXTRA</div><div class="ac-s">As tuas horas extra</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
     <div id="area-tab-swaps" class="hidden">
@@ -9189,6 +9198,7 @@ function showAreaHub(){
   document.getElementById('area-hub').classList.remove('hidden');
   try{ renderMyRequests(); }catch(e){}
   areaSetTitle('hub');
+  renderAreaHubOrder();
   updateAreaHubDot();
   try{ window.scrollTo(0, 0); }catch(e){}
 }
@@ -9204,13 +9214,44 @@ function showAreaTab(which){
   if(tasks) openMyTasks(); else { closeMyTasks(); if(reqs) renderMyRequests(); else renderMySwapsList(myTrocasExpanded); }
 }
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
+// favourites (kept on each person's own phone). Nothing saved yet = AS MINHAS TAREFAS is the favourite; the person can remove it.
+const AREA_FAV_KEY = 'trocaMistoAreaFavs';
+const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra']];
+function areaFavs(){ try{ const v = localStorage.getItem(AREA_FAV_KEY); if(v === null) return ['tasks']; const a = JSON.parse(v); return Array.isArray(a) ? a : ['tasks']; }catch(e){ return ['tasks']; } }
+function areaSaveFavs(a){ try{ localStorage.setItem(AREA_FAV_KEY, JSON.stringify(a)); }catch(e){} }
+function renderAreaHubOrder(){
+  const hub = document.getElementById('area-hub'); if(!hub) return;
+  const favs = areaFavs();
+  const list = AREA_CARDS.filter(([k]) => !(k === 'extra' && GROUP === 'sup'));
+  const fav = list.filter(([k]) => favs.indexOf(k) >= 0), rest = list.filter(([k]) => favs.indexOf(k) < 0);
+  const old = document.getElementById('area-hub-sep'); if(old) old.remove();
+  hub.querySelectorAll('.area-favlbl').forEach(e => e.remove());
+  fav.forEach(([k, id]) => { const l = document.createElement('div'); l.className = 'area-favlbl'; l.textContent = 'MARCADO COMO FAVORITO'; hub.appendChild(l); hub.appendChild(document.getElementById(id)); });
+  if(fav.length && rest.length){ const sep = document.createElement('div'); sep.id = 'area-hub-sep'; hub.appendChild(sep); }
+  rest.forEach(([k, id]) => hub.appendChild(document.getElementById(id)));
+  AREA_CARDS.forEach(([k, id]) => { const c = document.getElementById(id), on = favs.indexOf(k) >= 0; c.classList.toggle('fav', on); const b = c.querySelector('.ac-fav'); if(b){ b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = on ? 'Remover dos favoritos' : 'Marcar como favorito'; } });
+}
+AREA_CARDS.forEach(([k, id]) => {
+  const c = document.getElementById(id); if(!c) return;
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'ac-fav'; b.setAttribute('aria-label', 'Favorito');
+  b.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20z"/></svg>';
+  c.insertBefore(b, c.lastElementChild);   // right before the arrow
+  b.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const f = areaFavs(), i = f.indexOf(k);
+    if(i >= 0) f.splice(i, 1); else f.push(k);
+    areaSaveFavs(f); renderAreaHubOrder();
+  });
+});
+renderAreaHubOrder();
 [['area-card-swaps', () => document.getElementById('area-tab-btn-swaps').click()],
  ['area-card-reqs', () => showAreaTab('reqs')],
  ['area-card-tasks', () => document.getElementById('area-tab-btn-tasks').click()],
  ['area-card-extra', () => { EXTRA_FROM_AREA = true; openExtraHours(); }]].forEach(([id, fn]) => {
   const el = document.getElementById(id);
   el.addEventListener('click', fn);
-  el.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fn(); } });
+  el.addEventListener('keydown', e => { if(e.target === el && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fn(); } });
 });
 document.getElementById('area-tab-btn-tasks').addEventListener('click', () => {
   showAreaTab('tasks');
