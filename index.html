@@ -9152,7 +9152,7 @@ document.getElementById('my-tasks-body').addEventListener('click', ev => {
 let MT_FL_AT = -1, MT_FL = {};
 function mtFlightInfo(key){
   if(!key || !MT_DOC || !MT_DOC.flights) return null;
-  if(MT_FL_AT !== MT_DOC.flightsAt){ MT_FL_AT = MT_DOC.flightsAt; try{ MT_FL = JSON.parse(MT_DOC.flights) || {}; } catch(e){ MT_FL = {}; } }
+  if(MT_FL_AT !== MT_DOC.flights){ MT_FL_AT = MT_DOC.flights; try{ MT_FL = JSON.parse(MT_DOC.flights) || {}; } catch(e){ MT_FL = {}; } }
   return MT_FL[key] || null;
 }
 // Flight key of a task. Normally it comes with the task (t[5]); when it is missing (e.g. a task with a remark like "U2 3164 LR")
