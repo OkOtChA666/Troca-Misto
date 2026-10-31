@@ -9350,11 +9350,18 @@ function mtIsDly(nk){ return /(^|\s)DLY(\s|$)/i.test(String(nk || '').replace(/\
 function mtNameHtml(nk){
   let n = nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk;
   n = n.replace(/(^|\s)DLY(?=\s|$)/i, '').replace(/\s{2,}/g, ' ').trim() || n;
-  // FV = FECHAR VOO (close the flight: first desk, last person to leave) — informative only, shown as a badge like the desk number
-  let fvPill = '';
-  // LR = Limited Release (labels): informative only, same badge
-  const mk = n.match(/(^|\s)(FV|LR)$/i);
-  if(mk && n.replace(/\s*(FV|LR)$/i, '').trim()){ n = n.replace(/\s*(FV|LR)$/i, '').trim(); fvPill = '<span class="mt-pill">' + mk[2].toUpperCase() + '</span>'; }
+  // Remarks at the end of the task name, shown as small badges like the desk number:
+  // FV = FECHAR VOO (first desk, last person to leave) · LR = Limited Release (labels) · "(55MNT)" = only 55 minutes at the desk -> 55'
+  const pills = [];
+  for(let i = 0; i < 4; i++){
+    let m;
+    if((m = /(^|\s)(FV|LR)$/i.exec(n)) && n.slice(0, m.index).trim()){ pills.unshift(m[2].toUpperCase()); n = n.slice(0, m.index).trim(); continue; }
+    // minutes: any spelling a coordinator might use (MM, MN, MNT, MIN, MINS, MINUTO(S), MINUTES). A lone "M" only counts inside brackets, because "123M" can be a flight number.
+    const UNIT = 'MM|MN[TS]?|MIN(?:S|UTOS?|UTES?)?';
+    if((m = new RegExp('(^|\\s)\\(\\s*(\\d{1,3})\\s?(?:M|' + UNIT + ")\\.?\\s*\\)$", 'i').exec(n) || new RegExp('(^|\\s)(\\d{1,3})\\s?(?:' + UNIT + ')\\.?$', 'i').exec(n)) && n.slice(0, m.index).trim()){ pills.unshift(m[2] + "'"); n = n.slice(0, m.index).trim(); continue; }
+    break;
+  }
+  const fvPill = pills.map(x => '<span class="mt-pill">' + mtEsc(x) + '</span>').join('');
   n = n.replace(/^COMM\b/i, 'COM');   // a typo that happens ("COMM HV"): always shown as COM, like all the others
   n = n.replace(/\bCOM\s+EZY\/EJU(\/EZS)?\b/i, 'COM EZY');   // 'COM EZY/EJU' and 'COM EZY/EJU/EZS' both show as 'COM EZY'
   const m = /^(COMM?\b.*?)\s+(\d{1,2})\s?[ºª°]?\s?([A-Za-z])$/i.exec(n);   // the coordinator sometimes forgets the º: "4B" and "4ºB" are the same
