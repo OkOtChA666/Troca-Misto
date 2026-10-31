@@ -9292,7 +9292,7 @@ function mtTeamHtml(t, colr, rowKey){
     const badge = colr !== '#0099ff' ? '' : (d !== null ? '<span class="mt-desk' + (isMe ? ' me' : '') + '">' + d + '</span>' : '<span class="mt-desk" style="visibility:hidden;">00</span>');
     return '<div' + ((c || isMe) ? ' class="' + (c || '') + (isMe ? ' me' : '') + '"' : '') + (badge ? ' style="display:flex; justify-content:space-between; align-items:center; gap:14px;"' : '') + '><span>' + mtEsc(x[1]) + '</span>' + badge + '</div>';
   };
-  let now = (function(){ const o = {}; list.forEach(x => { o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); })(), later = [], head = 'NESTE VOO';
+  let now = (function(){ const o = {}; list.forEach(x => { o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); })(), later = [], head = 'NESTE VOO', isCommon = false;
   if(colr === '#0099ff'){
     let s = mtToMin(t[1]), e = mtToMin(t[2]);
     if(s !== null && e !== null){
@@ -9305,7 +9305,10 @@ function mtTeamHtml(t, colr, rowKey){
       const byId = l => { const o = {}; l.forEach(x => { o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); };
       now = byId(known.filter(x => x[2] <= m && m < x[3]));
       const here = {}; now.forEach(x => { here[x[0]] = 1; });
-      later = byId(known.filter(x => x[2] > m && !here[x[0]]));
+      // "DEPOIS" (people who take over the desks later) only for a COMMON check-in: a task named like "COM EZY 4ºB" (a number + º B)
+      const lbl = String(t[0] || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim();
+      isCommon = /^COMM?\b.*?\s+\d{1,2}\s?[ºª°]?\s?B$/i.test(lbl);
+      later = isCommon ? byId(known.filter(x => x[2] > m && !here[x[0]])) : [];
       head = 'ÀS ' + mtPad(Math.floor((m % 1440) / 60)) + ':' + mtPad(m % 60);
     }
   }
@@ -9315,7 +9318,7 @@ function mtTeamHtml(t, colr, rowKey){
          '<div class="mt-pop">' + (sup ? '<h6>SUPERVISOR</h6><div class="supn">' + mtEsc(sup) + '</div>' : '') +
          (supOnly ? '' : (colr === '#0099ff' ? '<h6>' + head + '</h6>' : (sup ? '<div class="supsep"></div>' : '')) + srt(now).map(x => nm(x)).join('')) +
          (later.length ? '<h6 class="sub">DEPOIS · ' + later.length + '</h6>' + srt(later).map(x => nm(x, 'off')).join('') : '') +
-         (colr === '#0099ff' ? '<div class="mt-desk-toggle" role="switch" aria-checked="' + mtShowDesks() + '"><span>MOSTRAR BALCÕES</span><span class="mt-sw' + (mtShowDesks() ? ' on' : '') + '"></span></div>' : '') + '</div>';
+         (colr === '#0099ff' && isCommon ? '<div class="mt-desk-toggle" role="switch" aria-checked="' + mtShowDesks() + '"><span>MOSTRAR BALCÕES</span><span class="mt-sw' + (mtShowDesks() ? ' on' : '') + '"></span></div>' : '') + '</div>';
 }
 // Task name for display only: "COM EZY/EJU(/EZS) 2ºB" -> "COM EZY" + a white pill with "2ºB"
 // a flight task whose name carries "DLY" (delayed): the flag moves next to the time, the flight number stays clean
@@ -9323,13 +9326,18 @@ function mtIsDly(nk){ return /(^|\s)DLY(\s|$)/i.test(String(nk || '').replace(/\
 function mtNameHtml(nk){
   let n = nk.replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '') || nk;
   n = n.replace(/(^|\s)DLY(?=\s|$)/i, '').replace(/\s{2,}/g, ' ').trim() || n;
+  // FV = FECHAR VOO (close the flight: first desk, last person to leave) — informative only, shown as a badge like the desk number
+  let fvPill = '';
+  // LR = Limited Release (labels): informative only, same badge
+  const mk = n.match(/(^|\s)(FV|LR)$/i);
+  if(mk && n.replace(/\s*(FV|LR)$/i, '').trim()){ n = n.replace(/\s*(FV|LR)$/i, '').trim(); fvPill = '<span class="mt-pill">' + mk[2].toUpperCase() + '</span>'; }
   n = n.replace(/^COMM\b/i, 'COM');   // a typo that happens ("COMM HV"): always shown as COM, like all the others
   n = n.replace(/\bCOM\s+EZY\/EJU(\/EZS)?\b/i, 'COM EZY');   // 'COM EZY/EJU' and 'COM EZY/EJU/EZS' both show as 'COM EZY'
   const m = /^(COMM?\b.*?)\s+(\d{1,2})\s?[ºª°]?\s?([A-Za-z])$/i.exec(n);   // the coordinator sometimes forgets the º: "4B" and "4ºB" are the same
-  if(m) return '<span class="mt-name" style="min-width:0">' + mtEsc(m[1]) + '</span><span class="mt-pill">' + mtEsc(m[2] + 'º' + m[3].toUpperCase()) + '</span>';
+  if(m) return '<span class="mt-name" style="min-width:0">' + mtEsc(m[1]) + '</span><span class="mt-pill">' + mtEsc(m[2] + 'º' + m[3].toUpperCase()) + '</span>' + fvPill;
   const pr = /^([A-Z0-9]{2,3}?)\s?(\d{1,4}[A-Z]?)_(\d{1,4}[A-Z]?)$/.exec(n.trim());   // arrival_departure of the same aircraft (acolhimento): one flight per line
-  if(pr) return '<span class="mt-name mt-pair"><span>' + mtEsc(pr[1] + ' ' + pr[2]) + '</span><span>' + mtEsc(pr[1] + ' ' + pr[3]) + '</span></span>';
-  return '<span class="mt-name">' + mtEsc(n) + '</span>';
+  if(pr) return '<span class="mt-name mt-pair"><span>' + mtEsc(pr[1] + ' ' + pr[2]) + '</span><span>' + mtEsc(pr[1] + ' ' + pr[3]) + '</span></span>' + fvPill;
+  return '<span class="mt-name">' + mtEsc(n) + '</span>' + fvPill;
 }
 function mtCornerHtml(f, colr){
   const t = mtTabInfo(f, colr);
