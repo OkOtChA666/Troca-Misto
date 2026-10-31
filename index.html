@@ -969,6 +969,20 @@
   html.grp-sup #extra-hours-link{ display:none !important; }
   #extra-hours-link, #extra-hours-div{ display:none !important; }   /* HORAS EXTRA now lives inside ÁREA PESSOAL */
   html.grp-sup #area-card-extra{ display:none !important; }
+  html.grp-sup #area-card-agenda{ display:none !important; }
+  .ag-nav{ text-align:center; font-family:var(--mono); font-weight:700; letter-spacing:.12em; font-size:15px; margin:2px 0 12px; }
+  .ag-leg{ display:flex; gap:14px; justify-content:center; font-size:12px; margin-bottom:12px; }
+  .ag-leg i{ display:inline-block; width:11px; height:11px; border-radius:3px; border:2px solid; margin-right:5px; vertical-align:-1px; }
+  .ag-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; font-family:var(--mono); }
+  .ag-dw{ text-align:center; font-size:10px; color:var(--text-dim); padding-bottom:4px; }
+  .ag-d{ aspect-ratio:1/1.08; border-radius:9px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:15px; line-height:1.1; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ag-d small{ font-size:8px; margin-top:3px; opacity:.9; letter-spacing:0; }
+  .ag-d.w{ background:#2c1d2e; color:#ff5d73; } .ag-d.o{ background:#14292f; color:#2fd18a; }
+  .ag-d.past{ opacity:.5; } .ag-d.today{ outline:2px solid var(--amber); }
+  .ag-d.sw small{ color:#2fd18a; font-weight:700; } .ag-d.md small, .ag-d.pd small{ color:var(--amber); font-weight:700; }
+  .ag-sum{ display:flex; gap:8px; margin-top:14px; font-family:var(--mono); font-size:12px; text-align:center; }
+  .ag-sum div{ flex:1; border:1px solid var(--border); border-radius:10px; padding:8px; background:var(--panel-2); }
+  .ag-sum b{ display:block; font-size:17px; margin-bottom:2px; }
   .area-card{ display:flex; align-items:center; gap:16px; border:1px solid var(--border); border-radius:16px; background:var(--panel-2); padding:16px 18px; margin:0 0 12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .area-card:active{ border-color:var(--amber); }
   .area-card .ac-ic{ flex:none; width:44px; height:44px; border-radius:12px; background:#0f2236; border:1px solid #1f5566; display:flex; align-items:center; justify-content:center; color:#4fd1f0; }
@@ -1644,6 +1658,7 @@
     <div id="area-hub">
       <div class="area-card" id="area-card-tasks" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TAREFAS<span class="ac-dot" id="area-tasks-dot"></span></div><div class="ac-s">Voos, balcões e portas do dia</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-swaps" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TROCAS</div><div class="ac-s">As trocas em que estás</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+      <div class="area-card" id="area-card-agenda" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">A MINHA AGENDA</div><div class="ac-s">O teu mês de turnos</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-reqs" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3.4 2c-.8.4-1.2.9-1.2 1.6M12 15h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">OS MEUS PEDIDOS<span class="ac-cnt" id="area-reqs-count"></span></div><div class="ac-s">Pedidos de troca que abriste</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-extra" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">HORAS EXTRA</div><div class="ac-s">As tuas horas extra</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
@@ -1666,6 +1681,9 @@
     </div>
     <div id="area-tab-tasks" class="hidden">
       <div id="my-tasks-body"></div>
+    </div>
+    <div id="area-tab-agenda" class="hidden">
+      <div id="agenda-body"></div>
     </div>
   </div>
 
@@ -5942,11 +5960,12 @@ let selectedMultiDays = new Set();
 // A quick glimpse of what a swap actually did on a given day — who it's with, and the
 // before/after change — for tapping a SWAP-labeled day in the Multi-Day calendar, which
 // otherwise wouldn't do anything since that day isn't selectable.
-function showSwapGlimpse(idx){
-  const rec = findSwapRecordFor(requestPosterWorker, idx);
+function showSwapGlimpse(idx, wk){
+  wk = wk || requestPosterWorker;
+  const rec = findSwapRecordFor(wk, idx);
   if(!rec) return;
-  const original = getEntry(requestPosterWorker, idx);
-  const resolved = getEffectiveEntry(requestPosterWorker, idx);
+  const original = getEntry(wk, idx);
+  const resolved = getEffectiveEntry(wk, idx);
   const beforeLabel = original.status === 'work' ? fmtHHMM(original.start)+'-'+fmtHHMM(original.end) : (original.codes[0] || 'Folga');
   const afterLabel = resolved.status === 'work' ? fmtHHMM(resolved.start)+'-'+fmtHHMM(resolved.end) : (resolved.codes[0] || 'Folga');
   const verb = rec.type === 'timeswap' ? 'Troca de turno' : 'Troca';
@@ -9187,12 +9206,55 @@ function closeMyTasks(){
 }
 // Tabs inside ÁREA PESSOAL
 let AREA_VIEW = 'hub';
-const AREA_TITLES = { hub: 'ÁREA PESSOAL', swaps: 'AS MINHAS TROCAS', reqs: 'OS MEUS PEDIDOS', tasks: 'AS MINHAS TAREFAS' };
+const AREA_TITLES = { hub: 'ÁREA PESSOAL', swaps: 'AS MINHAS TROCAS', reqs: 'OS MEUS PEDIDOS', tasks: 'AS MINHAS TAREFAS', agenda: 'A MINHA AGENDA' };
 function areaSetTitle(v){ AREA_VIEW = v; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; }
 function updateAreaHubDot(){
   const d = document.getElementById('area-tasks-dot'); if(!d) return;
   let n = 0; try{ const sn = mtSeen(); n = mtChanges().filter(x => x[0] > sn).length; }catch(e){}
   d.classList.toggle('on', n > 0);
+}
+// A MINHA AGENDA: read-only month of my own shifts (tap a day for its details)
+async function renderAgenda(){
+  const body = document.getElementById('agenda-body'); if(!body) return;
+  let sid = null; try{ sid = localStorage.getItem('trocaMistoLoginStaffId'); }catch(e){}
+  const me = sid ? DATA.workers.find(w => w.id === sid) : null;
+  if(!me){ body.innerHTML = '<div class="mt-empty">Não encontrei os teus turnos neste mês.</div>'; return; }
+  try{ await loadSwaps(); await loadRequests(); }catch(e){}
+  const first = (realDateForIdx(0).getDay() + 6) % 7;
+  const mname = realDateForIdx(0).toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' }).toUpperCase();
+  let h = '<div class="ag-nav">' + mtEsc(mname) + '</div>' +
+    '<div class="ag-leg"><span style="color:#ff5d73"><i></i>Trabalho</span><span style="color:#2fd18a"><i></i>Folga</span><span style="color:#ffb020"><i style="border-radius:50%"></i>Hoje</span></div>' +
+    '<div class="ag-grid">' + ['SEG','TER','QUA','QUI','SEX','SÁB','DOM'].map(x => '<div class="ag-dw">' + x + '</div>').join('');
+  for(let i = 0; i < first; i++) h += '<div></div>';
+  let nWork = 0, nOff = 0, nSwap = 0;
+  DATA.days.forEach((day, idx) => {
+    const en = getEffectiveEntry(me, idx);
+    const work = en && (en.status === 'work' || en.status === 'partial');
+    const swap = !!findSwapRecordFor(me, idx), med = hasMedAppointment(me.id, idx), pend = !!REQUESTS[requestKey(me.id, idx)];
+    if(work) nWork++; else nOff++; if(swap) nSwap++;
+    let lab = work ? (en.start ? fmtHHMM(en.start) : '') : ((en && en.codes && en.codes[0]) || 'F');
+    let cls = work ? 'w' : 'o';
+    if(swap){ lab = 'SWAP'; cls += ' sw'; } else if(med){ lab = 'MED'; cls += ' md'; } else if(pend){ lab = 'PEDIDO'; cls += ' pd'; }
+    if(isPastDay(idx) && !isTodayDay(idx)) cls += ' past';
+    if(isTodayDay(idx)) cls += ' today';
+    h += '<div class="ag-d ' + cls + '" data-idx="' + idx + '">' + day + '<small>' + mtEsc(lab) + '</small></div>';
+  });
+  h += '</div><div class="ag-sum"><div><b style="color:#ff5d73">' + nWork + '</b>dias de trabalho</div><div><b style="color:#2fd18a">' + nOff + '</b>folgas</div><div><b>' + nSwap + '</b>trocas</div></div>';
+  body.innerHTML = h;
+  body.querySelectorAll('.ag-d').forEach(c => c.addEventListener('click', () => agendaDayInfo(me, parseInt(c.dataset.idx, 10))));
+}
+function agendaDayInfo(me, idx){
+  if(findSwapRecordFor(me, idx)){ showSwapGlimpse(idx, me); return; }
+  const en = getEffectiveEntry(me, idx);
+  const work = en && (en.status === 'work' || en.status === 'partial');
+  let main = work ? fmtHHMM(en.start) + ' – ' + fmtHHMM(en.end) : (((en && en.codes) || []).join(' · ') || 'Folga');
+  let extra = '';
+  if(hasMedAppointment(me.id, idx)){
+    const mt = getMedAppointmentTime(me.id, idx);
+    extra += '<div style="font-family:var(--sans); font-size:13px; color:var(--amber); margin-top:6px;">Consulta médica' + (mt && mt.start ? ' · ' + mtEsc(String(mt.start).length === 4 ? fmtHHMM(String(mt.start)) : String(mt.start)) : '') + '</div>';
+  }
+  if(REQUESTS[requestKey(me.id, idx)]) extra += '<div style="font-family:var(--sans); font-size:13px; color:var(--text-dim); margin-top:6px;">Pedido de troca aberto para este dia.</div>';
+  showConfirmDialog('<div style="text-align:left;"><div style="font-family:var(--sans); font-size:12px; color:var(--text-dim); margin-bottom:6px;">' + fmtDateLabel(idx) + '</div><div style="font-family:var(--mono); font-size:15px; color:var(--text);">' + mtEsc(main) + '</div>' + extra + '</div>', () => {}, false, 'OK', false, null, null, true);
 }
 // ÁREA PESSOAL opens as a menu; each card opens one section, and the back arrow returns to the menu
 function showAreaHub(){
@@ -9200,6 +9262,7 @@ function showAreaHub(){
   document.getElementById('area-tab-swaps').classList.add('hidden');
   document.getElementById('area-tab-tasks').classList.add('hidden');
   document.getElementById('area-tab-reqs').classList.add('hidden');
+  document.getElementById('area-tab-agenda').classList.add('hidden');
   document.getElementById('area-hub').classList.remove('hidden');
   try{ renderMyRequests(); }catch(e){}
   areaSetTitle('hub');
@@ -9208,26 +9271,27 @@ function showAreaHub(){
   try{ window.scrollTo(0, 0); }catch(e){}
 }
 function showAreaTab(which){
-  const tasks = which === 'tasks', reqs = which === 'reqs';
+  const tasks = which === 'tasks', reqs = which === 'reqs', agenda = which === 'agenda';
   document.getElementById('area-hub').classList.add('hidden');
+  document.getElementById('area-tab-agenda').classList.toggle('hidden', !agenda);
   document.getElementById('area-tab-reqs').classList.toggle('hidden', !reqs);
-  areaSetTitle(tasks ? 'tasks' : reqs ? 'reqs' : 'swaps');
+  areaSetTitle(tasks ? 'tasks' : reqs ? 'reqs' : agenda ? 'agenda' : 'swaps');
   document.getElementById('area-tab-btn-swaps').classList.toggle('active', !tasks);
   document.getElementById('area-tab-btn-tasks').classList.toggle('active', tasks);
-  document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks || reqs);
+  document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks || reqs || agenda);
   document.getElementById('area-tab-tasks').classList.toggle('hidden', !tasks);
-  if(tasks) openMyTasks(); else { closeMyTasks(); if(reqs) renderMyRequests(); else renderMySwapsList(myTrocasExpanded); }
+  if(tasks) openMyTasks(); else { closeMyTasks(); if(agenda) renderAgenda(); else if(reqs) renderMyRequests(); else renderMySwapsList(myTrocasExpanded); }
 }
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
 // favourites (kept on each person's own phone). Nothing saved yet = AS MINHAS TAREFAS is the favourite; the person can remove it.
 const AREA_FAV_KEY = 'trocaMistoAreaFavs';
-const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra']];
+const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['agenda', 'area-card-agenda'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra']];
 function areaFavs(){ try{ const v = localStorage.getItem(AREA_FAV_KEY); if(v === null) return ['tasks']; const a = JSON.parse(v); return Array.isArray(a) ? a : ['tasks']; }catch(e){ return ['tasks']; } }
 function areaSaveFavs(a){ try{ localStorage.setItem(AREA_FAV_KEY, JSON.stringify(a)); }catch(e){} }
 function renderAreaHubOrder(){
   const hub = document.getElementById('area-hub'); if(!hub) return;
   const favs = areaFavs();
-  const list = AREA_CARDS.filter(([k]) => !(k === 'extra' && GROUP === 'sup'));
+  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'agenda') && GROUP === 'sup'));
   const fav = list.filter(([k]) => favs.indexOf(k) >= 0), rest = list.filter(([k]) => favs.indexOf(k) < 0);
   const old = document.getElementById('area-hub-sep'); if(old) old.remove();
   hub.querySelectorAll('.area-favlbl').forEach(e => e.remove());
@@ -9252,6 +9316,7 @@ AREA_CARDS.forEach(([k, id]) => {
 renderAreaHubOrder();
 [['area-card-swaps', () => document.getElementById('area-tab-btn-swaps').click()],
  ['area-card-reqs', () => showAreaTab('reqs')],
+ ['area-card-agenda', () => showAreaTab('agenda')],
  ['area-card-tasks', () => document.getElementById('area-tab-btn-tasks').click()],
  ['area-card-extra', () => { EXTRA_FROM_AREA = true; openExtraHours(); }]].forEach(([id, fn]) => {
   const el = document.getElementById(id);
