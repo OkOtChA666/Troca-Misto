@@ -9167,7 +9167,13 @@ function mtKey(t){
   if(!MT_DOC || !MT_DOC.flights) return 'NAME:' + m[1] + m[2];
   if(MT_KEYS_SRC !== MT_DOC.flights){ MT_KEYS_SRC = MT_DOC.flights; try{ MT_KEYS = Object.keys(JSON.parse(MT_DOC.flights) || {}); }catch(e){ MT_KEYS = []; } }   // read the day's flight list directly
   const ks = MT_KEYS.filter(k => k.indexOf(m[1]) === 0 && (k.indexOf(m[1] + m[2] + '@') === 0 || k.indexOf('/' + m[2] + '@') > 0));
-  return ks.length === 1 ? ks[0] : 'NAME:' + m[1] + m[2];   // flight not known to the day's list: at least match people on the same flight number
+  if(ks.length === 1) return ks[0];
+  if(ks.length > 1){   // e.g. "U23164@11:45" and the turnaround "U23163/3164@11:00": take the one at the task's end time, else the plain departure
+    const end = String(t[2] || '').replace(/^(\d):/, '0$1:');
+    const byEnd = ks.filter(k => k.split('@')[1] === end); if(byEnd.length === 1) return byEnd[0];
+    const direct = ks.filter(k => k.indexOf(m[1] + m[2] + '@') === 0); if(direct.length === 1) return direct[0];
+  }
+  return 'NAME:' + m[1] + m[2];   // flight not known to the day's list: at least match people on the same flight number
 }
 function mtDestHtml(f, colr){
   if(!f || typeof f !== 'object') return '';
