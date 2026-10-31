@@ -9155,6 +9155,16 @@ function mtFlightInfo(key){
   if(MT_FL_AT !== MT_DOC.flightsAt){ MT_FL_AT = MT_DOC.flightsAt; try{ MT_FL = JSON.parse(MT_DOC.flights) || {}; } catch(e){ MT_FL = {}; } }
   return MT_FL[key] || null;
 }
+// Flight key of a task. Normally it comes with the task (t[5]); when it is missing (e.g. a task with a remark like "U2 3164 LR")
+// the flight number in the task name is looked up among the known flights of the day instead.
+function mtKey(t){
+  if(t[5]) return t[5];
+  const lbl = String(t[0] || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim();
+  const m = /^([A-Z0-9]{2})\s?(\d{1,4}[A-Z]?)(\s|$)/.exec(lbl); if(!m) return '';
+  mtFlightInfo('x');
+  const ks = Object.keys(MT_FL || {}).filter(k => k.indexOf(m[1]) === 0 && (k.indexOf(m[1] + m[2] + '@') === 0 || k.indexOf('/' + m[2] + '@') > 0));
+  return ks.length === 1 ? ks[0] : '';
+}
 function mtDestHtml(f, colr){
   if(!f || typeof f !== 'object') return '';
   const code = colr === '#dbffaa' ? (f.o || f.d) : f.d;       // arrivals: where it came from; others: where it goes
@@ -9226,10 +9236,10 @@ function mtTeamAll(){
       rec.t.forEach(t => {
         const colr = mtColor(t[3]);
         if(colr !== '#0099ff' && colr !== '#0066cc') return;          // only CHECK-IN and PARTIDA
-        const f = mtFlightInfo(t[5]);
+        const f = mtFlightInfo(mtKey(t));
         let s = mtToMin(t[1]), e = mtToMin(t[2]);
         if(s !== null && e !== null && e <= s) e += 1440;
-        MT_TEAM_ALL.push({ id, name: NAME_FIXES[id] || rec.n || id, colr, label: t[0] || '', fkey: t[5] || '', desks: (colr === '#0099ff' && f && f.c) ? mtTidyDesks(f.c) : '', s, e });
+        MT_TEAM_ALL.push({ id, name: NAME_FIXES[id] || rec.n || id, colr, label: t[0] || '', fkey: mtKey(t), desks: (colr === '#0099ff' && f && f.c) ? mtTidyDesks(f.c) : '', s, e });
       });
     });
   }catch(e){}
@@ -9239,15 +9249,15 @@ function mtTeamAll(){
 // Returns [id, name, start, end] for each person; the caller decides who counts.
 function mtTeamFor(t, colr){
   if(colr !== '#0099ff' && colr !== '#0066cc') return null;
-  const f = mtFlightInfo(t[5]);
+  const f = mtFlightInfo(mtKey(t));
   const desks = (colr === '#0099ff' && f && f.c) ? mtTidyDesks(f.c) : '';
   let s = mtToMin(t[1]), e = mtToMin(t[2]); if(s !== null && e !== null && e <= s) e += 1440;
-  if(!t[5] && !desks) return null;
+  if(!mtKey(t) && !desks) return null;
   const isCk = colr === '#0099ff';
   const out = [];
   mtTeamAll().forEach(x => {
     if(x.colr !== colr) return;
-    const sameFlight = !!t[5] && x.fkey === t[5];
+    const sameFlight = !!mtKey(t) && x.fkey === mtKey(t);
     const sameDesks = !!desks && x.desks === desks && s !== null && e !== null && x.s !== null && x.e !== null &&
       (isCk ? (x.s < e + 180) : (s < x.e && x.s < e));                // check-in: also people who take over later
     if(sameFlight || sameDesks) out.push([x.id, x.name, x.s, x.e, x.label]);   // one person can match with several tasks
@@ -9284,7 +9294,7 @@ function mtTeamHtml(t, colr, rowKey){
     return String(p[1]).localeCompare(String(q[1]));
   });
   const showDesks = colr === '#0099ff' && mtShowDesks();
-  const deskList = showDesks ? mtDeskList((mtFlightInfo(t[5]) || {}).c) : [];
+  const deskList = showDesks ? mtDeskList((mtFlightInfo(mtKey(t)) || {}).c) : [];
   const deskOf = x => showDesks ? mtDeskFor(x[4], deskList) : null;
   const nm = (x, c) => {
     const d = deskOf(x), isMe = String(x[0]) === me;
@@ -9644,8 +9654,8 @@ function renderMyTasks(){
       const kindHtml = kind ? '<span class="mt-kind" style="background:' + colr + ';color:' + kind[1] + '">' + kind[0] + '</span>' : '<span class="mt-kind mt-kind-empty"></span>';
       const nk = label.replace(/^<\s*/, '').trim();
       const bdg = badges[nk] ? '<span class="mt-chip chg">' + badges[nk] + '</span>' : '';
-      const tabHtml = mtCornerHtml(mtFlightInfo(t[5]), colr);
-      const rowKey = t[5] + '|' + colr + '|' + start;
+      const tabHtml = mtCornerHtml(mtFlightInfo(mtKey(t)), colr);
+      const rowKey = mtKey(t) + '|' + colr + '|' + start;
       const teamHtml = mtTeamHtml(t, colr, rowKey);
       if(/^(break|pausa|pause)$/i.test(nk)){
         html += '<div class="mt-row mt-break' + cls + '"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
@@ -9654,7 +9664,7 @@ function renderMyTasks(){
       }
       html += '<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
-              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(t[5]), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(t[5]), colr) + '</div>' +
+              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + '</div>' +
               '<div class="mt-side">' + chip + bdg + '</div>' + tabHtml + teamHtml + '</div>';
     });
   }
