@@ -4034,11 +4034,13 @@ function applyAdminVisibility(){
 }
 // Shows who's currently logged in on this device, in the small tab row under the main links —
 // name first (highlighted), then staff number, so it's clear at a glance whose session this is.
+// the platform lists SURNAME FIRST; in the header and the name card only, show FIRST NAME first (last word moves to the front)
+function personalName(n){ const p = String(n || '').trim().split(/\s+/).filter(Boolean); return p.length > 1 ? [p[p.length - 1]].concat(p.slice(0, -1)).join(' ') : (p[0] || ''); }
 function updateLoggedInDisplay(staffId, name){
   const el = document.getElementById('logged-in-as-display');
   if(!el) return;
   window._loggedName = name; window._loggedId = staffId;
-  el._html = '<span style="color:var(--cyan);">' + escapeHtml(name) + '</span> - ' + escapeHtml(staffId);
+  el._html = '<span style="color:var(--cyan);">' + escapeHtml(personalName(name)) + '</span> - ' + escapeHtml(staffId);
   el._built = null;
   nameScrollFit();
 }
@@ -4221,7 +4223,7 @@ function toggleUserMenu(){
       }
     }
   }catch(e){}
-  const nm = window._loggedName || '', ini = nm.split(/\s+/).filter(Boolean).slice(0, 2).reverse().map(x => x[0]).join('').toUpperCase();   // the list shows SURNAME first, initials read given name first
+  const nm = personalName(window._loggedName), ini = nm.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase();
   const grp = (GROUP === 'sup') ? 'SUPERVISÃO · FAO' : 'TTAE · FAO PAX';
   m.style.background = 'radial-gradient(120% 90% at 0 0, #16304a 0, #0f1626 55%)'; m.style.padding = '0'; m.style.overflow = 'hidden'; m.style.minWidth = '290px';
   m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div style="flex:none; width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + escapeHtml(ini) + '</div></div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text);">' + escapeHtml(nm) + '</div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:3px;">Nº ' + escapeHtml(window._loggedId || '') + ' · ' + grp + '</div></div></div>' +
