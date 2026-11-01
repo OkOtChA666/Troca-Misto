@@ -9406,10 +9406,15 @@ function agendaDayInfo(me, idx){
   if(findSwapRecordFor(me, idx)){ showSwapGlimpse(idx, me); return; }
   const dbl = doubleFor(me.id, idx), cvd = doubleCoveredFor(me.id, idx);
   if(dbl || cvd){
-    let main, sub;
-    if(dbl){ const cw = DATA.workers.find(w => w.id === dbl.coversId), t = dblTimes(me, idx, cw); main = t ? t.dash : 'Turno duplo'; sub = 'Turno duplo · a cobrir ' + escapeHtml(dbl.coversName); }
-    else { main = 'Turno coberto'; sub = 'Por ' + escapeHtml(cvd.workerName); }
-    showConfirmDialog('<div style="text-align:left;"><div style="font-family:var(--sans); font-size:12px; color:var(--text-dim); margin-bottom:6px;">' + fmtDateLabel(idx) + '</div><div style="font-family:var(--mono); font-size:15px; color:var(--text);">' + main + '</div><div style="font-family:var(--sans); font-size:13px; color:var(--amber); margin-top:6px;">' + sub + '</div></div>', () => {}, false, 'OK', false, null, null, true);
+    // same look as the regular swap popup: "Troca · date", "Com NAME", "before → after"
+    const orig = getEntry(me, idx), lab = e => (e && e.status === 'work') ? fmtHHMM(e.start) + '-' + fmtHHMM(e.end) : '—';
+    let other, after;
+    if(dbl){ const cw = DATA.workers.find(w => w.id === dbl.coversId), t = dblTimes(me, idx, cw); other = dbl.coversName; after = t ? t.text.replace(/ - /g, '-') : lab(orig); }
+    else { other = cvd.workerName; after = 'FO'; }
+    showConfirmDialog('<div style="text-align:left;">' +
+      '<div style="font-family:var(--sans); font-size:12px; color:var(--text-dim); margin-bottom:6px;">Turno duplo &middot; ' + fmtDateLabel(idx) + '</div>' +
+      '<div style="font-family:var(--sans); font-size:13.5px; margin-bottom:4px;">Com <b>' + escapeHtml(other) + '</b></div>' +
+      '<div style="font-family:var(--mono); font-size:13px; color:var(--text);">' + lab(orig) + ' &rarr; ' + after + '</div></div>', () => {}, false, 'OK', false, null, null, true);
     return;
   }
   const en = getEffectiveEntry(me, idx);
