@@ -2154,6 +2154,68 @@ async function saveTrocaFormFeatureEnabled(){
   return await dbSetShared('trocaFormFeatureEnabled', { value: trocaFormFeatureEnabled });
 }
 // Legal footer (copyright + aviso legal): shown or hidden for everyone from RULES. Default: shown.
+// ---------- TURNO DUPLO flags (admin marks a colleague who takes on my shift on top of theirs) ----------
+// Stored on their own, separate from SWAPS: nothing here changes anyone's roster or the swap logic.
+// A flag only (1) hides the person from Troca de Turno that day and (2) shows a small box on their own day.
+let DOUBLES = {};
+function dblDate(idx){ const d = realDateForIdx(idx); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function doubleFor(workerId, idx){
+  if(!workerId || idx == null || idx < 0 || idx >= N) return null;
+  const dt = dblDate(idx);
+  for(const k in DOUBLES){ const r = DOUBLES[k]; if(r && r.workerId === workerId && r.date === dt) return r; }
+  return null;
+}
+async function loadDoubles(){
+  const doc = await dbGetShared('doubleShifts', null);
+  DOUBLES = (doc && doc.items) ? doc.items : {};
+}
+async function saveDoubles(){ return await dbSetShared('doubleShifts', { items: DOUBLES }); }
+async function setDouble(worker, idx, covers){   // covers = the person who gets the day off
+  await loadDoubles();   // fresh read, so a mark made elsewhere is not overwritten
+  const dt = dblDate(idx), key = worker.id + ':' + dt;
+  DOUBLES[key] = { workerId: worker.id, workerName: worker.name, coversId: covers.id, coversName: covers.name, date: dt, ts: Date.now() };
+  const ok = await saveDoubles();
+  if(!ok) delete DOUBLES[key];
+  return ok;
+}
+async function clearDouble(workerId, idx){
+  await loadDoubles();
+  const dt = dblDate(idx);
+  for(const k in DOUBLES){ if(DOUBLES[k].workerId === workerId && DOUBLES[k].date === dt) delete DOUBLES[k]; }
+  return await saveDoubles();
+}
+// the two shifts, for the box and the confirmation
+function dblTimes(worker, idx, covers){
+  const a = getEffectiveEntry(worker, idx), b = covers ? getEntry(covers, idx) : null;
+  if(!a || a.status !== 'work' || !a.end || !b || b.status !== 'work' || !b.end) return null;
+  const f = e => fmtHHMM(e.start) + ' - ' + fmtHHMM(e.end);
+  const as = extraMin(a.start), ae = extraMin(a.end), bs = extraMin(b.start), be = extraMin(b.end);
+  const gap = as >= be ? as - be : (bs >= ae ? bs - ae : null);
+  return { text: f(a) + ' + ' + f(b), dash: f(a).replace(/ - /g, ' – ') + ' + ' + f(b).replace(/ - /g, ' – '), total: (ae - as) + (be - bs), gap: gap };
+}
+// the "O TEU HORÁRIO" box for a person marked TURNO DUPLO on this day ('' if not marked)
+function doubleBoxHtml(worker, idx){
+  const d = doubleFor(worker.id, idx); if(!d) return '';
+  const covers = DATA.workers.find(w => w.id === d.coversId);
+  const t = dblTimes(worker, idx, covers);
+  return '<b>' + escapeHtml(worker.name) + '</b> está agora<br>' +
+    (t ? '<b style="color:var(--amber); white-space:nowrap;">' + t.dash + '</b>' : '<b style="color:var(--amber);">TURNO DUPLO</b>') +
+    '<br>A COBRIR<br><b>' + escapeHtml(d.coversName) + '</b> está agora <b style="color:var(--amber);">FOLGA</b>' +
+    '<span class="swap-blocked" style="display:block; margin-top:12px; color:#ff5d6c; font-weight:700;">TURNO DUPLO NÃO PERMITE TROCA</span>' +
+    '<div style="text-align:center;"><button type="button" class="flag-btn dbl-clear-btn" style="margin-top:8px;">DESMARCAR</button></div>';
+}
+function wireDoubleClear(ctx, workerId, idx, after){
+  const b = ctx.querySelector('.dbl-clear-btn'); if(!b) return;
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showConfirmDialog('Desmarcar turno duplo?', async () => {
+      b.disabled = true;
+      await clearDouble(workerId, idx);
+      if(after) after();
+      try{ if(!document.getElementById('panel-xshift').classList.contains('hidden')) renderExtra(); }catch(err){}
+    }, false, 'DESMARCAR', false, null, 'CANCELAR');
+  });
+}
 // ---------- EXTRA (admin only): find a second shift to add to my own day ----------
 function extraMin(hhmm){ return parseInt(hhmm.slice(0,2),10)*60 + parseInt(hhmm.slice(2,4),10); }
 function extraFmt(m){ return String(Math.floor(m/60)%24).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
@@ -2202,6 +2264,43 @@ function renderExtra(){
     d.innerHTML = '<div class="en"><div>' + escapeHtml(r.w.name) + '</div><div class="et">' + r.e.start.slice(0,2)+':'+r.e.start.slice(2) + ' – ' + r.e.end.slice(0,2)+':'+r.e.end.slice(2) + '</div></div>' +
       '<div class="ebc"><span class="ebadge eb' + (r.dur >= 480 ? '8' : r.dur >= 360 ? '6' : '4') + '">' + extraDur(r.dur).toUpperCase() + '</span></div>' +
       '<div class="er"><div class="etot"' + (r.total > MAX_DAY ? ' style="color:#ff5d6c;"' : '') + '>' + extraDur(r.total).toUpperCase() + '</div><div class="egap' + (r.gap === 0 ? ' adj' : '') + '">' + (r.gap === 0 ? 'logo a seguir' : 'Intervalo ' + extraDur(r.gap)) + '</div></div>';
+    // tap the name: opens a line with TROCAR (marks them TURNO DUPLO); once marked, the tag + DESMARCAR stay visible
+    d.style.flexWrap = 'wrap'; d.style.cursor = 'pointer';
+    const strip = document.createElement('div');
+    strip.style.cssText = 'flex:0 0 100%; display:none; align-items:center; gap:10px; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-soft);';
+    d.appendChild(strip);
+    const renderStrip = () => {
+      const mk = doubleFor(r.w.id, idx);
+      if(mk){
+        d.style.background = 'rgba(255,176,32,.06)'; d.style.borderRadius = '8px'; d.style.padding = '10px 8px';
+        strip.style.display = 'flex';
+        strip.innerHTML = '<span style="font:700 10px var(--mono); letter-spacing:.1em; color:#ffb020; border:1px solid #8a6a14; background:#2a2008; border-radius:6px; padding:3px 8px; white-space:nowrap;">TURNO DUPLO</span><button type="button" class="flag-btn" style="margin:0;">DESMARCAR</button>';
+        strip.querySelector('button').addEventListener('click', (e) => {
+          e.stopPropagation();
+          showConfirmDialog('Desmarcar turno duplo?', async () => { await clearDouble(r.w.id, idx); renderExtra(); }, false, 'DESMARCAR', false, null, 'CANCELAR');
+        });
+      } else {
+        d.style.background = ''; d.style.borderRadius = ''; d.style.padding = '';
+        strip.innerHTML = '<div style="font-size:13px;">Fica também com o <b style="color:var(--text);">teu turno</b></div><button type="button" class="confirm-btn">TROCAR</button>';
+        strip.querySelector('button').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const t = dblTimes(r.w, idx, me);
+          const dlg = 'Marcar <b>' + escapeHtml(r.w.name) + '</b> em turno duplo?' +
+            '<div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-soft); text-align:left;">' +
+            '<div style="font-family:var(--mono); font-size:12px; color:var(--text-dim); letter-spacing:.06em;">' + escapeHtml(fmtDateLabel(idx)) + '</div>' +
+            '<div style="font-family:var(--sans); font-weight:700; font-size:15px; color:var(--text); margin-top:8px;">' + escapeHtml(r.w.name) + '</div>' +
+            '<div style="font-family:var(--mono); font-size:13px; color:var(--text); margin-top:4px; line-height:1.6;">' + (t ? t.text : '') + ' <span style="color:' + (t && t.total > MAX_DAY ? '#ff5d6c' : '#2ee58a') + '; font-weight:700;">(' + extraDur(r.total) + ')</span></div>' +
+            (t && t.gap != null ? '<div style="font-family:var(--sans); font-size:13px; color:var(--text-dim); margin-top:12px;">Intervalo <b style="color:var(--text);">(' + extraDur(t.gap) + ')</b></div>' : '') + '</div>';
+          showConfirmDialog(dlg, async () => {
+            const ok2 = await setDouble(r.w, idx, me);
+            if(!ok2) showConfirmDialog('Não foi possível guardar agora. Tenta novamente — nada foi alterado.', () => {}, false, 'OK', false, null, null, true);
+            renderExtra();
+          }, false, 'CONFIRMAR', false);
+        });
+      }
+    };
+    d.addEventListener('click', () => { if(doubleFor(r.w.id, idx)) return; strip.style.display = (strip.style.display === 'none') ? 'flex' : 'none'; });
+    renderStrip();
     box.appendChild(d);
   };
   if(!ok.length) list.innerHTML = '<div class="hint" style="text-align:center;">Nenhum turno encaixa neste dia.</div>';
@@ -3681,6 +3780,8 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
   return wrap;
 }
 loadSwaps().then(() => refreshRecentSwapsLists());
+loadDoubles().catch(() => {});
+getDb().then(db => { if(!db) return; try{ db.collection('data').doc(gScope('doubleShifts')).onSnapshot(sn => { DOUBLES = (sn.exists && sn.data().items) ? sn.data().items : {}; }, () => {}); }catch(e){} });
 // ---------- live updates ----------
 // Instead of only ever refreshing SWAPS when something explicitly asks for it, this keeps a
 // standing connection open to Firestore — the callback below fires automatically the instant
@@ -5164,6 +5265,8 @@ function updateCoverContext(){
   const entry = getEffectiveEntry(coverWorker, idx);
   ctx.classList.remove('hidden');
   document.getElementById('cover-context-label').classList.remove('hidden');
+  const dblHtml = doubleBoxHtml(coverWorker, idx);
+  if(dblHtml){ ctx.innerHTML = dblHtml; btn.disabled = true; document.getElementById('cover-search-controls').classList.add('hidden'); wireDoubleClear(ctx, coverWorker.id, idx, updateCoverContext); return; }
   const deleteBtnHtml = '<div style="text-align:center;"><button type="button" id="ctx-delete-swap-btn" class="flag-btn" style="margin-top:8px;">🗑 ELIMINAR TROCA</button></div>';
   let showDeleteBtn = false;
   if(entry.status === 'work'){
@@ -5490,6 +5593,8 @@ function updateTurnoContext(skipSliderReset){
   const idx = parseInt(document.getElementById('trade-a-date').value, 10);
   const entry = getEffectiveEntry(tradeA, idx);
   ctx.classList.remove('hidden');
+  const dblHtmlT = doubleBoxHtml(tradeA, idx);
+  if(dblHtmlT){ ctx.innerHTML = dblHtmlT; btn.disabled = true; searchControls.classList.add('hidden'); wireDoubleClear(ctx, tradeA.id, idx, updateTurnoContext); return; }
   const deleteBtnHtml = '<div style="text-align:center;"><button type="button" id="turno-delete-swap-btn" class="flag-btn" style="margin-top:8px;">🗑 ELIMINAR TROCA</button></div>';
   if(entry.status === 'work'){
     if(entry.covering){
@@ -5602,6 +5707,7 @@ function runTradeSearch(){
     if(theirEntry.codes && theirEntry.codes.includes('F50')) continue; // still F50/vacation-tagged that day — not a genuine normal shift to swap into
     if(trocaSobreTrocaEnabled && findSwapRecordFor(w, idx)) continue; // already committed to a different swap this exact day — can't be offered again
     if(hasLostAndFoundDuty(w.id, idx)) continue; // working Lost & Found that day — not a PAX candidate at all, name shouldn't appear here
+    if(doubleFor(w.id, idx)) continue; // marked TURNO DUPLO that day — already doing two shifts
     if(hourFilters.length > 0 && !hourFilters.includes(TYPICAL_HOURS[w.id])) continue;
     const theirStart = timeToMin(theirEntry.start);
     if(theirStart < desiredMin) continue; // only shifts starting at or after the time you picked
