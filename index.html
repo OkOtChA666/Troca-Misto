@@ -6451,6 +6451,7 @@ function getPossoAjudarState(req){
   if(!me || isBlocked(me.id)) return { disabled: false };
   if(me.id === req.requesterId) return { disabled: false }; // handled separately — this is your own request
   if(trocaSobreTrocaEnabled && findSwapRecordFor(me, req.idx)) return { disabled: true, reason: 'Já tens uma troca marcada para este dia.' };
+  if(doubleFor(me.id, req.idx)) return { disabled: true, reason: 'Estás em turno duplo nesse dia.' };
   if(hasLostAndFoundDuty(me.id, req.idx)) return { disabled: true, reason: (hasTrainingDay(me.id, req.idx) ? 'Estás em formação nesse dia — não disponível para trocas.' : 'Estás escalado(a) para o Lost & Found nesse dia — não disponível para trocas de PAX.') };
   const { hardBlockMsg, issues } = computeClaimIssues(me, req);
   if(hardBlockMsg) return { disabled: true, reason: hardBlockMsg };
