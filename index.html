@@ -2165,6 +2165,12 @@ function doubleFor(workerId, idx){
   for(const k in DOUBLES){ const r = DOUBLES[k]; if(r && r.workerId === workerId && r.date === dt) return r; }
   return null;
 }
+function doubleCoveredFor(workerId, idx){   // someone else does MY shift on this day (a mark that names me as covered)
+  if(!workerId || idx == null || idx < 0 || idx >= N) return null;
+  const dt = dblDate(idx);
+  for(const k in DOUBLES){ const r = DOUBLES[k]; if(r && r.coversId === workerId && r.date === dt) return r; }
+  return null;
+}
 async function loadDoubles(){
   const doc = await dbGetShared('doubleShifts', null);
   DOUBLES = (doc && doc.items) ? doc.items : {};
@@ -9371,7 +9377,7 @@ async function renderAgenda(){
   let sid = null; try{ sid = localStorage.getItem('trocaMistoLoginStaffId'); }catch(e){}
   const me = sid ? DATA.workers.find(w => w.id === sid) : null;
   if(!me){ body.innerHTML = '<div class="mt-empty">Não encontrei os teus turnos neste mês.</div>'; return; }
-  try{ await loadSwaps(); await loadRequests(); }catch(e){}
+  try{ await loadSwaps(); await loadRequests(); await loadDoubles(); }catch(e){}
   const first = (realDateForIdx(0).getDay() + 6) % 7;
   const mname = realDateForIdx(0).toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' }).toUpperCase();
   let h = '<div class="ag-nav">' + mtEsc(mname) + '</div>' +
@@ -9386,7 +9392,8 @@ async function renderAgenda(){
     if(work) nWork++; else nOff++; if(swap) nSwap++;
     let lab = work ? (en.start ? fmtHHMM(en.start) : '') : ((en && en.codes && en.codes[0]) || 'F');
     let cls = work ? 'w' : 'o';
-    if(swap){ lab = 'SWAP'; cls += ' sw'; } else if(med){ lab = 'MED'; cls += ' md'; } else if(pend){ lab = 'PEDIDO'; cls += ' pd'; }
+    const dbl = doubleFor(me.id, idx), cvd = doubleCoveredFor(me.id, idx);   // TURNO DUPLO: I do two shifts / someone does mine
+    if(swap){ lab = 'SWAP'; cls += ' sw'; } else if(dbl){ lab = 'DUPLO'; cls += ' md'; } else if(cvd){ lab = 'SWAP'; cls = 'o sw'; } else if(med){ lab = 'MED'; cls += ' md'; } else if(pend){ lab = 'PEDIDO'; cls += ' pd'; }
     if(isPastDay(idx) && !isTodayDay(idx)) cls += ' past';
     if(isTodayDay(idx)) cls += ' today';
     h += '<div class="ag-d ' + cls + '" data-idx="' + idx + '">' + day + '<small>' + mtEsc(lab) + '</small></div>';
@@ -9397,6 +9404,14 @@ async function renderAgenda(){
 }
 function agendaDayInfo(me, idx){
   if(findSwapRecordFor(me, idx)){ showSwapGlimpse(idx, me); return; }
+  const dbl = doubleFor(me.id, idx), cvd = doubleCoveredFor(me.id, idx);
+  if(dbl || cvd){
+    let main, sub;
+    if(dbl){ const cw = DATA.workers.find(w => w.id === dbl.coversId), t = dblTimes(me, idx, cw); main = t ? t.dash : 'Turno duplo'; sub = 'Turno duplo · a cobrir ' + escapeHtml(dbl.coversName); }
+    else { main = 'Turno coberto'; sub = 'Por ' + escapeHtml(cvd.workerName); }
+    showConfirmDialog('<div style="text-align:left;"><div style="font-family:var(--sans); font-size:12px; color:var(--text-dim); margin-bottom:6px;">' + fmtDateLabel(idx) + '</div><div style="font-family:var(--mono); font-size:15px; color:var(--text);">' + main + '</div><div style="font-family:var(--sans); font-size:13px; color:var(--amber); margin-top:6px;">' + sub + '</div></div>', () => {}, false, 'OK', false, null, null, true);
+    return;
+  }
   const en = getEffectiveEntry(me, idx);
   const work = en && (en.status === 'work' || en.status === 'partial');
   let main = work ? fmtHHMM(en.start) + ' – ' + fmtHHMM(en.end) : (((en && en.codes) || []).join(' · ') || 'Folga');
