@@ -4208,7 +4208,25 @@ function toggleUserMenu(){
   const rc = row.getBoundingClientRect();
   const m = document.createElement('div'); m.id = 'user-menu';
   m.style.cssText = 'position:absolute; left:' + (rc.left + window.scrollX + 10) + 'px; top:' + (rc.bottom + window.scrollY + 6) + 'px; z-index:9999; min-width:200px; background:#0f1626; border:1px solid #2a3b5c; border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,.7); padding:6px; font-family:var(--mono); font-size:12px; letter-spacing:.1em;';
-  m.innerHTML = '<div style="padding:10px 12px; color:#8a96b3;">' + escapeHtml(window._loggedName || '') + '<br><span style="font-size:10px;">Nº ' + escapeHtml(window._loggedId || '') + '</span></div><div style="height:1px; background:#1c2a44; margin:2px 6px;"></div><div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; padding:12px; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
+  const me = DATA.workers.find(w => w.id === window._loggedId);
+  let todayTxt = '—', offTxt = '—';
+  try{
+    if(me){
+      let ti = -1; for(let i = 0; i < N; i++){ if(isTodayDay(i)){ ti = i; break; } }
+      if(ti >= 0){
+        const en = getEffectiveEntry(me, ti);
+        if(en) todayTxt = (en.status === 'work' || en.status === 'partial') ? fmtHHMM(en.start) + ' – ' + fmtHHMM(en.end) : (((en.codes || [])[0]) || 'Folga');
+        const WD = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+        for(let i = ti + 1; i < N; i++){ const e2 = getEffectiveEntry(me, i); if(e2 && e2.status === 'off'){ offTxt = WD[realDateForIdx(i).getDay()] + ' ' + String(DATA.days[i]).padStart(2, '0'); break; } }
+      }
+    }
+  }catch(e){}
+  const nm = window._loggedName || '', ini = nm.split(/\s+/).filter(Boolean).slice(0, 2).reverse().map(x => x[0]).join('').toUpperCase();   // the list shows SURNAME first, initials read given name first
+  const grp = (GROUP === 'sup') ? 'SUPERVISÃO · FAO' : 'TTAE · FAO PAX';
+  m.style.background = 'radial-gradient(120% 90% at 0 0, #16304a 0, #0f1626 55%)'; m.style.padding = '0'; m.style.overflow = 'hidden'; m.style.minWidth = '290px';
+  m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div style="flex:none; width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + escapeHtml(ini) + '</div></div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text);">' + escapeHtml(nm) + '</div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:3px;">Nº ' + escapeHtml(window._loggedId || '') + ' · ' + grp + '</div></div></div>' +
+    '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">HOJE</div><div style="font:700 13px var(--mono); margin-top:2px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:2px;">' + escapeHtml(offTxt) + '</div></div></div>' +
+    '<div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
   document.body.appendChild(m);
   document.getElementById('user-menu-out').addEventListener('click', () => { closeUserMenu(); document.getElementById('logout-link').click(); });
 }
