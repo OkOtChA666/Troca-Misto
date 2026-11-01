@@ -4040,7 +4040,7 @@ function updateLoggedInDisplay(staffId, name){
   const el = document.getElementById('logged-in-as-display');
   if(!el) return;
   window._loggedName = name; window._loggedId = staffId;
-  el._html = '<span style="color:var(--cyan);">' + escapeHtml(personalName(name)) + '</span> - ' + escapeHtml(staffId);
+  el._html = '<span style="color:var(--cyan);">' + escapeHtml(personalName(name)) + '</span>';   // the number lives in the name card
   el._built = null;
   nameScrollFit();
 }
