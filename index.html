@@ -970,6 +970,7 @@
   #extra-hours-link, #extra-hours-div{ display:none !important; }   /* HORAS EXTRA now lives inside ÁREA PESSOAL */
   html.grp-sup #area-card-extra{ display:none !important; }
   html.grp-sup #area-card-agenda{ display:none !important; }
+  html.grp-sup #area-card-double{ display:none !important; }
   .ag-nav{ text-align:center; font-family:var(--mono); font-weight:700; letter-spacing:.12em; font-size:15px; margin:2px 0 12px; }
   .ag-leg{ display:flex; gap:14px; justify-content:center; font-size:12px; margin-bottom:12px; }
   .ag-leg i{ display:inline-block; width:11px; height:11px; border-radius:3px; border:2px solid; margin-right:5px; vertical-align:-1px; }
@@ -1663,6 +1664,7 @@
       <div class="area-card" id="area-card-agenda" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">A MINHA AGENDA</div><div class="ac-s">O teu mês de turnos</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-reqs" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3.4 2c-.8.4-1.2.9-1.2 1.6M12 15h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">OS MEUS PEDIDOS<span class="ac-cnt" id="area-reqs-count"></span></div><div class="ac-s">Pedidos de troca que abriste</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-extra" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">HORAS EXTRA</div><div class="ac-s">As tuas horas extra</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+      <div class="area-card" id="area-card-double" role="button" tabindex="0" style="border:1.5px dashed #a77bff; background:linear-gradient(135deg,#17142b,#111a2c);"><div class="ac-ic" style="background:#1d1740; border-color:#5b44a8; color:#b79bff;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13M13 4l4 4-4 4M20 16H7M11 12l-4 4 4 4"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">TURNO DUPLO<span style="font:700 9px var(--mono); letter-spacing:.12em; color:#1a1200; background:#ffb020; border-radius:5px; padding:2px 7px;">EM TESTE</span></div><div class="ac-s">Outro colega faz o teu turno</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
     <div id="area-logout-wrap" style="text-align:center; margin:18px 0 4px;"><button type="button" id="area-logout-btn" style="display:inline-flex; gap:8px; align-items:center; border:1px solid #5b2330; color:#ff5d73; border-radius:12px; padding:12px 28px; font-family:var(--mono); letter-spacing:.14em; font-size:13px; background:#1a0f16; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</button></div>
     <div id="area-tab-swaps" class="hidden">
@@ -1693,7 +1695,7 @@
   <!-- EXTRA PANEL (admin only): a second shift to add to my own day -->
   <div class="panel hidden" id="panel-xshift">
     <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;">
-      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">TURNO DUPLO</div>
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">TURNO DUPLO <span style="font:700 9px var(--mono); letter-spacing:.12em; color:#1a1200; background:#ffb020; border-radius:5px; padding:2px 7px; vertical-align:middle;">EM TESTE</span></div>
       <button type="button" id="xshift-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
     </div>
     <div class="field">
@@ -1988,6 +1990,13 @@
       </label>
       <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
         <span class="pill-toggle">
+          <input type="checkbox" id="double-shift-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">TURNO DUPLO <span style="font:700 9px var(--mono); letter-spacing:.1em; color:#1a1200; background:#ffb020; border-radius:4px; padding:1px 6px; font-style:normal;">EM TESTE</span></span>
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
           <input type="checkbox" id="legal-footer-enabled-toggle">
           <span class="pill-track"></span>
         </span>
@@ -2154,6 +2163,21 @@ async function saveTrocaFormFeatureEnabled(){
   return await dbSetShared('trocaFormFeatureEnabled', { value: trocaFormFeatureEnabled });
 }
 // Legal footer (copyright + aviso legal): shown or hidden for everyone from RULES. Default: shown.
+// TURNO DUPLO in ÁREA PESSOAL for everyone ("EM TESTE"): switched on/off from RULES. Default: OFF.
+let doubleShiftEnabled = false;
+async function loadDoubleShiftEnabled(){
+  try{ const doc = await dbGetShared('doubleShiftEnabled', null); doubleShiftEnabled = doc ? !!doc.value : false; }catch(e){ doubleShiftEnabled = false; }
+  try{ renderAreaHubOrder(); }catch(e){}
+}
+async function saveDoubleShiftEnabled(){ return await dbSetShared('doubleShiftEnabled', { value: doubleShiftEnabled }); }
+// the card only makes sense for someone with at least one coming working day shorter than 8h (staff on 8h every day have no room)
+function hasShortShiftDays(){
+  let sid = null; try{ sid = localStorage.getItem('trocaMistoLoginStaffId'); }catch(e){}
+  const me = sid ? DATA.workers.find(w => w.id === sid) : null; if(!me) return false;
+  for(let i = 0; i < N; i++){ if(isPastDay(i) && !isTodayDay(i)) continue; const e = getEffectiveEntry(me, i); if(e && e.status === 'work' && e.end && (extraMin(e.end) - extraMin(e.start)) <= 255) return true; }
+  return false;
+}
+let DBL_FROM_AREA = false;   // opened from ÁREA PESSOAL (member view) instead of the admin tools
 // ---------- TURNO DUPLO flags (admin marks a colleague who takes on my shift on top of theirs) ----------
 // Stored on their own, separate from SWAPS: nothing here changes anyone's roster or the swap logic.
 // A flag only (1) hides the person from Troca de Turno that day and (2) shows a small box on their own day.
@@ -2229,17 +2253,25 @@ function extraDur(min){ const h = Math.floor(min/60), m = min%60; if(!h) return 
 let extraMode = 'me';   // 'me' = I do a 2nd shift · 'them' = someone does mine (search only)
 function renderExtra(){
   const sel = document.getElementById('extra-day');
+  let meId = ADMIN_STAFF_ID; try{ meId = localStorage.getItem('trocaMistoLoginStaffId') || ADMIN_STAFF_ID; }catch(e){}
+  const memberMode = DBL_FROM_AREA;   // from ÁREA PESSOAL: only my coming days under 8h, and no "mais de 8h" list
+  const wantMode = memberMode ? 'm' : 'a';
+  if(sel.dataset.mode !== wantMode){ sel.innerHTML = ''; sel.dataset.mode = wantMode; }
   if(!sel.options.length){
-    for(let i=0;i<N;i++){ const o = document.createElement('option'); o.value = i; o.textContent = fmtDateLabel(i); sel.appendChild(o); }
-    const _me = DATA.workers.find(w => w.id === ADMIN_STAFF_ID);
+    const _me = DATA.workers.find(w => w.id === meId);
+    for(let i=0;i<N;i++){
+      if(memberMode){ if(isPastDay(i) && !isTodayDay(i)) continue; const ee = _me ? getEffectiveEntry(_me, i) : null; if(!(ee && ee.status === 'work' && ee.end && (extraMin(ee.end) - extraMin(ee.start)) <= 255)) continue; }
+      const o = document.createElement('option'); o.value = i; o.textContent = fmtDateLabel(i); sel.appendChild(o);
+    }
     let first = -1; for(let i=0;i<N;i++){ if(isPastDay(i)) continue; const e = _me ? getEffectiveEntry(_me, i) : null; if(e && e.status === 'work'){ first = i; break; } }   // first coming day I actually work
     if(first < 0){ first = 0; for(let i=0;i<N;i++){ if(!isPastDay(i)){ first = i; break; } } }
+    if(memberMode && sel.options.length) first = parseInt(sel.options[0].value, 10);
     sel.value = first;
   }
   const idx = parseInt(sel.value, 10);
   const mineBox = document.getElementById('extra-mine'), head = document.getElementById('extra-head'), list = document.getElementById('extra-list');
   list.innerHTML = ''; head.innerHTML = '';
-  const me = DATA.workers.find(w => w.id === ADMIN_STAFF_ID);
+  const me = DATA.workers.find(w => w.id === meId);
   const myE = me ? getEffectiveEntry(me, idx) : null;
   if(!myE || myE.status !== 'work' || !myE.end){
     mineBox.innerHTML = '<div class="em-top"><span>O MEU TURNO</span><span>' + (me ? 'não trabalhas neste dia' : 'não estás neste horário') + '</span></div>';
@@ -2250,7 +2282,7 @@ function renderExtra(){
   const rows = [];
   let working = 0;
   DATA.workers.forEach(w => {
-    if(w.id === ADMIN_STAFF_ID || isBlocked(w.id)) return;
+    if(w.id === meId || isBlocked(w.id)) return;
     const e = getEffectiveEntry(w, idx);
     if(!e || e.status !== 'work' || !e.end) return;
     working++;
@@ -2311,7 +2343,7 @@ function renderExtra(){
   };
   if(!ok.length) list.innerHTML = '<div class="hint" style="text-align:center;">Nenhum turno encaixa neste dia.</div>';
   ok.forEach(r => addRow(list, r));
-  if(over.length){
+  if(over.length && !memberMode){
     const th = document.createElement('div');
     th.className = 'results-head collapsible-head';
     th.style.cssText = 'margin-top:18px; padding-top:14px; border-top:1px dashed var(--border-soft);';
@@ -3787,6 +3819,7 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
 }
 loadSwaps().then(() => refreshRecentSwapsLists());
 loadDoubles().catch(() => {});
+setTimeout(() => { loadDoubleShiftEnabled(); getDb().then(db => { if(!db) return; try{ db.collection('data').doc('doubleShiftEnabled').onSnapshot(sn => { doubleShiftEnabled = sn.exists ? !!sn.data().value : false; try{ renderAreaHubOrder(); }catch(e){} }, () => {}); }catch(e){} }); }, 0);
 getDb().then(db => { if(!db) return; try{ db.collection('data').doc(gScope('doubleShifts')).onSnapshot(sn => { DOUBLES = (sn.exists && sn.data().items) ? sn.data().items : {}; }, () => {}); }catch(e){} });
 // ---------- live updates ----------
 // Instead of only ever refreshing SWAPS when something explicitly asks for it, this keeps a
@@ -5131,7 +5164,7 @@ document.getElementById('so-card-xshift').addEventListener('click', () => {
   switchTab('xshift');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
-document.getElementById('xshift-back-btn').addEventListener('click', () => { openScheduleOverride(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+document.getElementById('xshift-back-btn').addEventListener('click', () => { if(DBL_FROM_AREA){ DBL_FROM_AREA = false; document.getElementById('panel-xshift').classList.add('hidden'); openMySwaps(); return; } openScheduleOverride(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 document.getElementById('so-card-agentes').addEventListener('click', () => {
   document.getElementById('panel-schedule-override').classList.add('hidden');
   document.querySelector('.tabs').classList.remove('hidden');
@@ -8043,6 +8076,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('notifications-enabled-toggle').checked = notificationsEnabled;
   document.getElementById('pwa-install-enabled-toggle').checked = pwaInstallEnabled;
   document.getElementById('refresh-button-enabled-toggle').checked = refreshButtonEnabled;
+  document.getElementById('double-shift-enabled-toggle').checked = doubleShiftEnabled;
   document.getElementById('legal-footer-enabled-toggle').checked = legalFooterEnabled;
   document.getElementById('support-link-enabled-toggle').checked = supportLinkEnabled;
   loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; });
@@ -8095,6 +8129,17 @@ document.getElementById('support-link-enabled-toggle').addEventListener('change'
     supportLinkEnabled = !newValue; applySupportLink(); e.target.checked = supportLinkEnabled;
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
+});
+document.getElementById('double-shift-enabled-toggle').addEventListener('change', async (e) => {
+  const newValue = e.target.checked;
+  doubleShiftEnabled = newValue;
+  const ok = await saveDoubleShiftEnabled();
+  if(!ok){
+    doubleShiftEnabled = !newValue;
+    e.target.checked = doubleShiftEnabled;
+    showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
+  }
+  try{ renderAreaHubOrder(); }catch(err){}
 });
 document.getElementById('refresh-button-enabled-toggle').addEventListener('change', async (e) => {
   const newValue = e.target.checked;
@@ -9458,14 +9503,15 @@ function showAreaTab(which){
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
 // favourites (kept on each person's own phone). Nothing saved yet = AS MINHAS TAREFAS is the favourite; the person can remove it.
 const AREA_FAV_KEY = 'trocaMistoAreaFavs';
-const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['agenda', 'area-card-agenda'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra']];
+const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['agenda', 'area-card-agenda'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra'], ['double', 'area-card-double']];
 function areaFavs(){ try{ const v = localStorage.getItem(AREA_FAV_KEY); if(v === null) return ['tasks']; const a = JSON.parse(v); return Array.isArray(a) ? a : ['tasks']; }catch(e){ return ['tasks']; } }
 function areaSaveFavs(a){ try{ localStorage.setItem(AREA_FAV_KEY, JSON.stringify(a)); }catch(e){} }
 function renderAreaHubOrder(){
   const hub = document.getElementById('area-hub'); if(!hub) return;
   const favs = areaFavs();
-  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'agenda') && GROUP === 'sup'));
+  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'agenda' || k === 'double') && GROUP === 'sup') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays())));
   const fav = list.filter(([k]) => favs.indexOf(k) >= 0), rest = list.filter(([k]) => favs.indexOf(k) < 0);
+  try{ const dc = document.getElementById('area-card-double'); if(dc) dc.style.display = (GROUP !== 'sup' && doubleShiftEnabled && hasShortShiftDays()) ? '' : 'none'; }catch(e){}
   const old = document.getElementById('area-hub-sep'); if(old) old.remove();
   hub.querySelectorAll('.area-favlbl').forEach(e => e.remove());
   fav.forEach(([k, id]) => { const l = document.createElement('div'); l.className = 'area-favlbl'; l.textContent = 'MARCADO COMO FAVORITO'; hub.appendChild(l); hub.appendChild(document.getElementById(id)); });
@@ -9490,6 +9536,7 @@ renderAreaHubOrder();
 [['area-card-swaps', () => document.getElementById('area-tab-btn-swaps').click()],
  ['area-card-reqs', () => showAreaTab('reqs')],
  ['area-card-agenda', () => showAreaTab('agenda')],
+ ['area-card-double', () => { DBL_FROM_AREA = true; document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden')); document.querySelector('.tabs').classList.add('hidden'); document.getElementById('panel-xshift').classList.remove('hidden'); renderExtra(); window.scrollTo({ top: 0 }); }],
  ['area-card-tasks', () => document.getElementById('area-tab-btn-tasks').click()],
  ['area-card-extra', () => { EXTRA_FROM_AREA = true; openExtraHours(); }]].forEach(([id, fn]) => {
   const el = document.getElementById(id);
