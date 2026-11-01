@@ -5127,7 +5127,11 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
   return { refreshTrigger };
 }
 ['cover-date','trade-a-date','extra-date'].forEach(id => populateDateSelect(document.getElementById(id)));
-const coverDateSelectAPI = setupCustomDateSelect('cover-date', 'cover-date-trigger', 'cover-date-list');
+// Days where the picked colleague has no roster ("/" = no longer / not on the team) are not offered
+function coverWorkerNoRosterDay(idx){
+  try{ if(!coverWorker) return false; const e = getEffectiveEntry(coverWorker, idx); return !!(e && e.status !== 'work' && e.codes && e.codes[0] === '/'); }catch(err){ return false; }
+}
+const coverDateSelectAPI = setupCustomDateSelect('cover-date', 'cover-date-trigger', 'cover-date-list', false, coverWorkerNoRosterDay);
 const tradeDateSelectAPI = setupCustomDateSelect('trade-a-date', 'trade-a-date-trigger', 'trade-a-date-list');
 const extraDateSelectAPI = setupCustomDateSelect('extra-date', 'extra-date-trigger', 'extra-date-list');
 function refreshAllDateSelectCounts(){
@@ -5229,6 +5233,16 @@ function onPickCoverWorker(w){
       cb.checked = !!(typical && cb.value === String(typical));
     });
   }
+  // if the day currently selected has no roster for this person, jump to the first day that does
+  try{
+    if(w){
+      const dsel = document.getElementById('cover-date');
+      if(coverWorkerNoRosterDay(parseInt(dsel.value, 10))){
+        for(let i = 0; i < N; i++){ if(!isBookingBlocked(i) && !coverWorkerNoRosterDay(i)){ dsel.value = i; break; } }
+      }
+      coverDateSelectAPI.refreshTrigger();
+    }
+  }catch(err){}
   updateCoverContext();
 }
 const coverCombo = setupCombo('cover-name-input','cover-name-list', onPickCoverWorker, (w) => !isBlocked(w.id) && isSelfOrAdmin(w));
