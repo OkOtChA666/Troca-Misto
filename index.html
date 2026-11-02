@@ -3539,14 +3539,27 @@ async function saveRememberedName(name){
 }
 // Pre-fills a "who am I" combo with the remembered name and runs its own onPick, so it
 // behaves exactly as if the person had typed and selected it themselves.
+// A regular person is always searching as themselves, so once their own name is filled in the box has
+// nothing left to do: it is hidden (the name stays in the header). Admins keep it. If the name could
+// not be filled in as the logged-in person, the box stays so nobody is stuck.
+function hideOwnNameField(input, worker){
+  try{
+    if(!input || !worker || isAdminSession || isDeptAdminSession) return;
+    let sid = window._loggedId; if(!sid){ try{ sid = localStorage.getItem('trocaMistoLoginStaffId'); }catch(e){} }
+    if(!sid || worker.id !== sid) return;
+    const box = input.closest('.field'); if(box) box.style.display = 'none';
+  }catch(e){}
+}
 function applyRememberedName(inputId, onPick){
   if(!rememberedName) return;
   const worker = DATA.workers.find(w => w.name === rememberedName);
   if(!worker) return;
   const input = document.getElementById(inputId);
-  if(!input || input.value) return; // don't overwrite something already typed this session
+  if(!input) return;
+  if(input.value){ hideOwnNameField(input, worker); return; } // don't overwrite something already typed this session
   input.value = worker.name;
   onPick(worker);
+  hideOwnNameField(input, worker);
 }
 // ---------- favorites (personal, per-device — never shared between users) ----------
 // Same privacy model as the remembered name: this is who YOU tend to swap with, visible only
