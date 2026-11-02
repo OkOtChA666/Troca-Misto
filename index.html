@@ -2795,7 +2795,7 @@ const MONTH_ABBR = MONTH_NAMES[(DATA.month||'2026-09').split('-')[1]] || 'Sep';
 document.getElementById('stat-workers').textContent = DATA.workers.length;
 updateAgentDelta();
 document.getElementById('stat-range').textContent = MONTH_FULL[(DATA.month||'2026-09').split('-')[1]] || 'SETEMBRO';
-if(DATA.version) document.getElementById('stat-rules').textContent = DATA.version;
+// VERSÃO is the app version written in the header HTML; the roster's own version (month.01) no longer overrides it
 
 function fmtDateLabel(i){
   return WEEKDAYS[i] + ' ' + String(DATA.days[i]).padStart(2,'0') + ' ' + MONTH_ABBR;
