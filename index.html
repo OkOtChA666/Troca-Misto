@@ -4652,7 +4652,13 @@ function closeMySwaps(){
   document.getElementById('panel-my-swaps').classList.add('hidden');
   switchTab('cover');
 }
-document.getElementById('my-swaps-link').addEventListener('click', openMySwaps);
+document.getElementById('my-swaps-link').addEventListener('click', () => {
+  openMySwaps();
+  // like after PROCURAR: glide up so the ÁREA PESSOAL card sits at the top (its top edge still visible)
+  const goTop = () => { try{ const p = document.getElementById('panel-my-swaps'); window.scrollTo({ top: Math.max(0, p.getBoundingClientRect().top + window.scrollY - 14), behavior: 'smooth' }); }catch(e){} };
+  setTimeout(goTop, 60);
+  setTimeout(() => { try{ const p = document.getElementById('panel-my-swaps'); const t = p.getBoundingClientRect().top; if(t > 28 && document.documentElement.scrollHeight - window.innerHeight - window.scrollY > 4) goTop(); }catch(e){} }, 700);
+});
 document.getElementById('my-swaps-back-btn').addEventListener('click', () => { if(AREA_VIEW !== 'hub') showAreaHub(); else closeMySwaps(); });   // inside a section: back to the ÁREA PESSOAL menu
 function refreshRecentSwapsLists(){
   renderCoverSwapsList(recentSwapsExpanded);
