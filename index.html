@@ -7310,15 +7310,18 @@ async function loadTurnarounds(){
   TURNAROUNDS = await dbGetShared('turnaround', TURNAROUNDS);
   await purgeStaleFlights();
 }
-async function saveTurnarounds(){
-  // Strip anything stale from the LOCAL copy before every save — not just at load — so a
-  // browser tab left open since before midnight can't resurrect yesterday's flights by
-  // saving its outdated in-memory copy over a version someone else already cleaned up.
-  const today = todayDateString();
-  Object.keys(TURNAROUNDS).forEach(flight => {
-    if(TURNAROUNDS[flight]._day !== today) delete TURNAROUNDS[flight];
-  });
-  await dbSetShared('turnaround', TURNAROUNDS);
+// Saves ONE field of ONE flight (merge write) — never the whole list — so a phone with an old
+// copy can't erase flights/times that other phones registered in the meantime.
+async function saveTurnaroundField(flight, key, value, meta){
+  try{
+    const db = await getDb();
+    if(!db) return false;
+    const rec = Object.assign({}, meta || {});
+    rec[key] = value;
+    const patch = {}; patch[flight] = rec;
+    await db.collection('data').doc(gScope('turnaround')).set(patch, { merge:true });
+    return true;
+  }catch(e){ return false; }
 }
 function todayDateString(){
   const d = new Date();
@@ -7328,15 +7331,26 @@ function todayDateString(){
 // in-progress turnaround) — instead, any flight record left over from a previous calendar
 // day is cleared out automatically the next time anyone opens the board or the panel.
 async function purgeStaleFlights(){
+  // Local view: only today's flights (device clock only affects this phone's own screen).
+  // Database: a flight is removed only if it belongs to an EARLIER day AND was created more than
+  // 12h ago, so a phone with a wrong clock can never delete other people's current flights.
   const today = todayDateString();
-  let changed = false;
+  const dead = [];
   Object.keys(TURNAROUNDS).forEach(flight => {
-    if(TURNAROUNDS[flight]._day !== today){
+    const r = TURNAROUNDS[flight] || {};
+    if(r._day !== today){
+      if(typeof r._day === 'string' && r._day < today && (!r._createdAt || Date.now() - r._createdAt > 12*3600*1000)) dead.push(flight);
       delete TURNAROUNDS[flight];
-      changed = true;
     }
   });
-  if(changed) await saveTurnarounds();
+  if(!dead.length) return;
+  try{
+    const db = await getDb(); if(!db) return;
+    const ref = db.collection('data').doc(gScope('turnaround'));
+    const args = [];
+    dead.forEach(f => { args.push(new firebase.firestore.FieldPath(f)); args.push(firebase.firestore.FieldValue.delete()); });
+    await ref.update(...args);
+  }catch(e){}
 }
 function nowClockTime(){
   const d = new Date();
@@ -7386,14 +7400,17 @@ function buildTurnaroundField(f, compact){
     regBtn.className = 'confirm-btn';
     regBtn.textContent = val ? 'REGISTAR NOVAMENTE' : 'REGISTAR';
     regBtn.addEventListener('click', async () => {
+      let _meta = null;
       if(!TURNAROUNDS[currentFlight]) {
         let _sid = ''; try{ _sid = localStorage.getItem('trocaMistoLoginStaffId') || ''; }catch(e){}
         const _w = DATA.workers.find(w => w.id === _sid);
-        TURNAROUNDS[currentFlight] = { _day: todayDateString(), _createdAt: Date.now(), _by: _w ? _w.name : _sid };
+        _meta = { _day: todayDateString(), _createdAt: Date.now(), _by: _w ? _w.name : _sid };
+        TURNAROUNDS[currentFlight] = Object.assign({}, _meta);
       }
       const existing = normalizeFieldRecord(TURNAROUNDS[currentFlight][f.key]);
-      TURNAROUNDS[currentFlight][f.key] = { value: nowClockTime(), previous: existing ? existing.value : null, ts: Date.now() };
-      await saveTurnarounds();
+      const _val = { value: nowClockTime(), previous: existing ? existing.value : null, ts: Date.now() };
+      TURNAROUNDS[currentFlight][f.key] = _val;
+      await saveTurnaroundField(currentFlight, f.key, _val, _meta);
       renderTurnaroundFields();
     });
     right.appendChild(regBtn);
