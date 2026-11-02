@@ -2068,6 +2068,14 @@
             <input type="time" id="schedule-override-end-input">
           </div>
         </div>
+        <div style="margin:12px 0 4px;">
+          <div class="turnaround-field-label" style="margin-bottom:6px;">Observação</div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" id="so-for-on" style="font:700 12px var(--mono); letter-spacing:.1em; padding:8px 16px; border-radius:10px; cursor:pointer;">FOR</button>
+            <button type="button" id="so-for-off" style="font:700 12px var(--mono); letter-spacing:.1em; padding:8px 16px; border-radius:10px; cursor:pointer;">NENHUMA</button>
+          </div>
+          <div style="font:11px var(--sans); color:var(--text-dim); margin-top:6px;">FOR = formação. O turno mantém-se; a pessoa deixa de estar disponível para trocas nesse dia.</div>
+        </div>
         <button type="button" class="btn" id="schedule-override-save-btn" style="margin-top:6px;">Guardar Alteração</button>
       </div>
 
@@ -2202,6 +2210,26 @@ async function loadDoubles(){
   DOUBLES = (doc && doc.items) ? doc.items : {};
 }
 async function saveDoubles(){ return await dbSetShared('doubleShifts', { items: DOUBLES }); }
+// ---------- FOR remark (formação) set by the admin in ALTERAÇÃO DE HORÁRIOS ----------
+// Kept on its own, separate from the roster, the overrides and the swaps: the shift stays as it is;
+// the person is only treated as "in training" that day (no swaps) and shows FOR in the agenda.
+let FOR_REMARKS = {};
+function forRemarkFor(workerId, idx){
+  if(!workerId || idx == null || idx < 0 || idx >= N) return false;
+  return !!FOR_REMARKS[workerId + ':' + dblDate(idx)];
+}
+async function loadForRemarks(){
+  const doc = await dbGetShared('forRemarks', null);
+  FOR_REMARKS = (doc && doc.items) ? doc.items : {};
+}
+async function setForRemark(worker, idx, on){
+  await loadForRemarks();   // fresh read, so a change made elsewhere is not overwritten
+  const dt = dblDate(idx), key = worker.id + ':' + dt, prev = FOR_REMARKS[key];
+  if(on) FOR_REMARKS[key] = { workerName: worker.name, date: dt, ts: Date.now() }; else delete FOR_REMARKS[key];
+  const ok = await dbSetShared('forRemarks', { items: FOR_REMARKS });
+  if(!ok){ if(prev) FOR_REMARKS[key] = prev; else delete FOR_REMARKS[key]; }
+  return ok;
+}
 async function setDouble(worker, idx, covers){   // covers = the person who gets the day off
   await loadDoubles();   // fresh read, so a mark made elsewhere is not overwritten
   const dt = dblDate(idx), key = worker.id + ':' + dt;
@@ -2489,13 +2517,13 @@ function getMedAppointmentTime(workerId, idx){
 function hasLostAndFoundDuty(workerId, idx){
   const worker = DATA.workers.find(w => w.id === workerId);
   const entry = worker ? getEntry(worker, idx) : null;
-  return !!(entry && entry.codes && (entry.codes.includes('LOST') || entry.codes.includes('FOR')));   // FOR = training: not available either
+  return !!(entry && entry.codes && (entry.codes.includes('LOST') || entry.codes.includes('FOR'))) || forRemarkFor(workerId, idx);   // FOR = training: not available either
 }
 // FOR (formação, Supervisão): a training day cannot be swapped, neither given away nor taken
 function hasTrainingDay(workerId, idx){
   const worker = DATA.workers.find(w => w.id === workerId);
   const entry = worker ? getEntry(worker, idx) : null;
-  return !!(entry && entry.codes && entry.codes.includes('FOR'));
+  return !!(entry && entry.codes && entry.codes.includes('FOR')) || forRemarkFor(workerId, idx);
 }
 // Declared here (very early) rather than near its load/save functions further down, because
 // getEntry() reads it and getEntry() gets called synchronously during initial page setup —
@@ -3821,8 +3849,10 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
 }
 loadSwaps().then(() => refreshRecentSwapsLists());
 loadDoubles().catch(() => {});
+loadForRemarks().catch(() => {});
 setTimeout(() => { loadDoubleShiftEnabled(); getDb().then(db => { if(!db) return; try{ db.collection('data').doc('doubleShiftEnabled').onSnapshot(sn => { doubleShiftEnabled = sn.exists ? !!sn.data().value : false; try{ renderAreaHubOrder(); }catch(e){} }, () => {}); }catch(e){} }); }, 0);
 getDb().then(db => { if(!db) return; try{ db.collection('data').doc(gScope('doubleShifts')).onSnapshot(sn => { DOUBLES = (sn.exists && sn.data().items) ? sn.data().items : {}; }, () => {}); }catch(e){} });
+getDb().then(db => { if(!db) return; try{ db.collection('data').doc(gScope('forRemarks')).onSnapshot(sn => { FOR_REMARKS = (sn.exists && sn.data().items) ? sn.data().items : {}; }, () => {}); }catch(e){} });
 // ---------- live updates ----------
 // Instead of only ever refreshing SWAPS when something explicitly asks for it, this keeps a
 // standing connection open to Firestore — the callback below fires automatically the instant
@@ -6222,8 +6252,11 @@ async function renderMultiDayCalendar(){
   for(let i=0; i<firstWeekday; i++) html += '<div></div>';
   DATA.days.forEach((day, idx) => {
     const entry = getEffectiveEntry(requestPosterWorker, idx);
-    const isWorking = entry.status === 'work';
-    const hasSwap = !!findSwapRecordFor(requestPosterWorker, idx);
+    // TURNO DUPLO (read-only look): if someone does my shift this day I am off (shown like a swap),
+    // and if I am the one doing the double the day is not offered for a new request
+    const dblCovered = !!doubleCoveredFor(requestPosterWorker.id, idx), dblDoing = !!doubleFor(requestPosterWorker.id, idx);
+    const isWorking = entry.status === 'work' && !dblCovered;
+    const hasSwap = !!findSwapRecordFor(requestPosterWorker, idx) || dblCovered;
     const hasPendingRequest = !!REQUESTS[requestKey(requestPosterWorker.id, idx)];
     // Both request types require the poster to actually be working that day — matches the
     // exact same rule the single-day form already enforces (cover: gives the shift away and
@@ -6232,7 +6265,7 @@ async function renderMultiDayCalendar(){
     // that already has a pending request isn't selectable either — posting another one for
     // the exact same day doesn't make sense while the first is still open (this naturally
     // also covers an expired request that's now disabled but still sitting there unclaimed).
-    const selectable = isWorking && !hasPendingRequest && !isTodayDay(idx) && !isPedidosDayTooLateToRequest(idx) && !hasMedAppointment(requestPosterWorker.id, idx) && !hasTrainingDay(requestPosterWorker.id, idx) && !(trocaSobreTrocaEnabled && hasSwap); // same-day is too last-minute; tomorrow-past-17:00 would be born already expired; a fixed medical appointment can't move for a swap; already having a swap this day (while the rule is on) shouldn't have been clickable at all — matches every other search/claim path's own trocaSobreTroca check
+    const selectable = isWorking && !hasPendingRequest && !isTodayDay(idx) && !isPedidosDayTooLateToRequest(idx) && !hasMedAppointment(requestPosterWorker.id, idx) && !hasTrainingDay(requestPosterWorker.id, idx) && !dblDoing && !(trocaSobreTrocaEnabled && hasSwap); // same-day is too last-minute; tomorrow-past-17:00 would be born already expired; a fixed medical appointment can't move for a swap; already having a swap this day (while the rule is on) shouldn't have been clickable at all — matches every other search/claim path's own trocaSobreTroca check
     const selected = selectedMultiDays.has(idx);
     const past = isPastDay(idx);
     const clickable = selectable && !past;
@@ -6269,6 +6302,7 @@ async function renderMultiDayCalendar(){
     const statusLabel = (past) ? ''
       : hasPendingRequest ? '<div style="font-size:6.5px; letter-spacing:0.02em; line-height:1; margin-top:1px;">PENDENTE</div>'
       : hasSwap ? '<div style="font-size:7px; letter-spacing:0.03em; line-height:1; margin-top:1px;">SWAP</div>'
+      : dblDoing ? '<div style="font-size:7px; letter-spacing:0.03em; line-height:1; margin-top:1px; color:#ffb020;">DUPLO</div>'
       : hasMedAppointment(requestPosterWorker.id, idx) ? '<div style="font-size:7px; letter-spacing:0.03em; line-height:1; margin-top:1px; color:#ffb020;">MED</div>'
       : '';
     // A solid white pill (wider than tall) around just today's own number, matching the
@@ -6283,12 +6317,16 @@ async function renderMultiDayCalendar(){
   grid.querySelectorAll('.multiday-cell').forEach(cell => {
     const idx = parseInt(cell.dataset.idx, 10);
     const entry = getEffectiveEntry(requestPosterWorker, idx);
-    const isWorking = entry.status === 'work';
     const past = isPastDay(idx);
+    const dblCovered = !!doubleCoveredFor(requestPosterWorker.id, idx), dblDoing = !!doubleFor(requestPosterWorker.id, idx);   // TURNO DUPLO
+    const isWorking = entry.status === 'work' && !dblCovered;
     const hasSwap = !!findSwapRecordFor(requestPosterWorker, idx);
     const hasPendingRequest = !!REQUESTS[requestKey(requestPosterWorker.id, idx)];
     if(past) return;
-    if(isWorking && hasPendingRequest){
+    if(dblCovered || dblDoing){
+      // a TURNO DUPLO day: not selectable for a request; a tap just shows what is marked
+      cell.addEventListener('click', () => agendaDayInfo(requestPosterWorker, idx));
+    } else if(isWorking && hasPendingRequest){
       // Already has an open request for this exact day — not selectable for a new one, but
       // worth a quick reminder of that rather than the tap doing nothing at all.
       cell.addEventListener('click', () => showPendingRequestGlimpse(idx));
@@ -7898,7 +7936,24 @@ function updateScheduleOverrideContext(){
   inputsBox.classList.remove('hidden');
   document.getElementById('schedule-override-start-input').value = entry.start.slice(0,2)+':'+entry.start.slice(2,4);
   document.getElementById('schedule-override-end-input').value = entry.end.slice(0,2)+':'+entry.end.slice(2,4);
+  soPaintForChips(forRemarkFor(scheduleOverrideWorker.id, idx));
 }
+function soPaintForChips(on){
+  const a = document.getElementById('so-for-on'), b = document.getElementById('so-for-off');
+  if(!a || !b) return;
+  const act = 'background:#e8eefc; color:#0b1220; border:1px solid #e8eefc;', idle = 'background:transparent; color:#8a96b3; border:1px solid #2a3b5c;';
+  a.style.cssText += ';' + (on ? act : idle); b.style.cssText += ';' + (on ? idle : act);
+}
+async function soSetFor(on){
+  if(!scheduleOverrideWorker) return;
+  const idx = parseInt(document.getElementById('schedule-override-date').value, 10);
+  const ok = await setForRemark(scheduleOverrideWorker, idx, on);
+  if(!ok){ showConfirmDialog('Não foi possível guardar agora.', () => {}, false, 'OK', false, null, null, true); return; }
+  soPaintForChips(on);
+  try{ if(typeof refreshRecentSwapsLists === 'function') refreshRecentSwapsLists(); if(coverWorker) updateCoverContext(); if(tradeA) updateTurnoContext(); }catch(e){}
+}
+document.getElementById('so-for-on').addEventListener('click', () => soSetFor(true));
+document.getElementById('so-for-off').addEventListener('click', () => soSetFor(false));
 document.getElementById('schedule-override-save-btn').addEventListener('click', async () => {
   if(!scheduleOverrideWorker) return;
   const idx = parseInt(document.getElementById('schedule-override-date').value, 10);
@@ -9456,7 +9511,7 @@ async function renderAgenda(){
     let lab = work ? (en.start ? fmtHHMM(en.start) : '') : ((en && en.codes && en.codes[0]) || 'F');
     let cls = work ? 'w' : 'o';
     const dbl = doubleFor(me.id, idx), cvd = doubleCoveredFor(me.id, idx);   // TURNO DUPLO: I do two shifts / someone does mine
-    if(swap){ lab = 'SWAP'; cls += ' sw'; } else if(dbl){ lab = 'DUPLO'; cls += ' md'; } else if(cvd){ lab = 'SWAP'; cls = 'o sw'; } else if(med){ lab = 'MED'; cls += ' md'; } else if(pend){ lab = 'PEDIDO'; cls += ' pd'; }
+    if(swap){ lab = 'SWAP'; cls += ' sw'; } else if(dbl){ lab = 'DUPLO'; cls += ' md'; } else if(cvd){ lab = 'SWAP'; cls = 'o sw'; } else if(forRemarkFor(me.id, idx)){ lab = 'FOR'; cls += ' md'; } else if(med){ lab = 'MED'; cls += ' md'; } else if(pend){ lab = 'PEDIDO'; cls += ' pd'; }
     if(isPastDay(idx) && !isTodayDay(idx)) cls += ' past';
     if(isTodayDay(idx)) cls += ' today';
     h += '<div class="ag-d ' + cls + '" data-idx="' + idx + '">' + day + '<small' + (/^(\d{1,2}:\d{2}|DC|DS|FO)$/.test(String(lab).trim()) || !String(lab).trim() ? '' : ' class="bd"') + '>' + mtEsc(lab) + '</small></div>';
@@ -9503,6 +9558,7 @@ function agendaDayInfo(me, idx){
   const work = en && (en.status === 'work' || en.status === 'partial');
   let main = work ? fmtHHMM(en.start) + ' – ' + fmtHHMM(en.end) : (((en && en.codes) || []).join(' · ') || 'Folga');
   let extra = '';
+  if(forRemarkFor(me.id, idx)) extra += '<div style="font-family:var(--sans); font-size:13px; color:var(--amber); margin-top:6px;">Formação (FOR)</div>';
   if(hasMedAppointment(me.id, idx)){
     const mt = getMedAppointmentTime(me.id, idx);
     extra += '<div style="font-family:var(--sans); font-size:13px; color:var(--amber); margin-top:6px;">Consulta médica' + (mt && mt.start ? ' · ' + mtEsc(String(mt.start).length === 4 ? fmtHHMM(String(mt.start)) : String(mt.start)) : '') + '</div>';
