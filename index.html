@@ -7152,7 +7152,10 @@ function mtNotifDetail(c){
   const base = 'font-size:11.5px; font-weight:600; margin-top:2px;';
   if(c.kind === 'nova' || c.kind === 'removido'){
     const pill = c.kind === 'nova' ? 'background:#249255;' : 'background:#b3363f;';
-    const kd = c.kind === 'nova' ? mtKindFor(c) : null;   // what kind the new task is (ACOLHIMENTO, PARTIDA, CHECK-IN), shown under NOVA
+    // what kind the task is (ACOLHIMENTO, PARTIDA, CHECK-IN), shown under NOVA / REMOVIDO. The real colour is looked up in the person's task list;
+    // if it can't be found (e.g. the task was removed), two flight numbers joined by "_" (3620_3621 = arrival + departure of the same aircraft) mean ACOLHIMENTO
+    let kd = c.kind === 'nova' ? mtKindFor(c) : null;
+    if(!kd && /\d+_\d+/.test(String(c.name || ''))) kd = { label:'ACOLHIMENTO', bg:'#dbffaa', fg:'#111' };
     const kdHtml = kd ? '<span style="background:' + kd.bg + '; color:' + kd.fg + '; font-family:var(--mono); font-weight:700; font-size:9.5px; letter-spacing:0.06em; padding:3px 0; border-radius:4px; text-align:center;">' + escapeHtml(kd.label) + '</span>' : '<span></span>';
     return '<div style="display:grid; grid-template-columns:78px 1fr; column-gap:8px; row-gap:3px; align-items:center; margin-top:3px; font-size:11.5px; font-weight:600; margin-bottom:6px;">' +
       '<span style="' + pill + ' color:#fff; font-family:var(--mono); font-weight:700; font-size:9.5px; letter-spacing:0.08em; padding:3px 0; border-radius:4px; text-align:center;">' + (c.kind === 'nova' ? 'NOVA' : 'REMOVIDO') + '</span>' +
