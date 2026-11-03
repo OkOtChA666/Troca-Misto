@@ -4205,7 +4205,7 @@ function applyAdminVisibility(){
   const adminLink = document.getElementById('schedule-override-link');
   if(adminLink) adminLink.style.display = 'none';   // ADMIN now lives in the name card (user menu)
   const verWrap = document.getElementById('stat-version-wrap');
-  if(verWrap) verWrap.style.display = '';
+  if(verWrap) verWrap.style.display = (isAdminSession || isDeptAdminSession) ? '' : 'none';   // version only matters to the admin
   // The divider right after ADMIN needs to hide along with it — otherwise a non-admin
   // session would show a stray "|" with nothing before it.
   const adminDivider = document.getElementById('admin-turnaround-divider');
