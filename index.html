@@ -1391,7 +1391,7 @@
         <span id="logged-in-clip" style="display:block; flex:0 1 auto; min-width:0; max-width:250px; overflow:hidden; white-space:nowrap;"><span id="logged-in-as-display" style="display:inline-block; white-space:nowrap;"></span></span>
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M6 9l6 6 6-6"/></svg>
       </span>
-      <span id="notif-count" title="Notificações" style="margin-left:auto; min-width:24px; text-align:center; font:700 11px var(--mono); border-radius:999px; padding:3px 8px; color:#5a6788; background:#0f1626; border:1px solid #1c2a44; cursor:pointer; transition:color .2s, background .2s, border-color .2s;">0</span>
+      <span id="notif-count" title="Notificações" style="margin-left:auto; min-width:24px; text-align:center; font:700 11px var(--mono); border-radius:999px; padding:3px 8px; color:#5a6788; background:#0f1626; border:1px solid #1c2a44; cursor:default; transition:color .2s, background .2s, border-color .2s;">0</span>
       <span id="notifications-bell-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); position:relative; cursor:pointer;" title="Notificações">
         <svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle;">
           <path d="M4 19l1.5-2V11a6.5 6.5 0 0 1 13 0v6L20 19H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -7281,7 +7281,7 @@ function openNotificationsModal(){
   try{ if(MT_DOC) mtMarkSeen(); }catch(e){}
 }
 document.getElementById('notifications-bell-link').addEventListener('click', openNotificationsModal);
-document.getElementById('notif-count').addEventListener('click', openNotificationsModal);
+// only the bell opens the notifications; the number next to it is display-only
 // ✕ on a notification: hides it for this person (kept in the database, just no longer shown or counted).
 document.getElementById('notifications-modal-list').addEventListener('click', (e) => {
   const b = e.target.closest('.notif-hide'); if(!b) return;
