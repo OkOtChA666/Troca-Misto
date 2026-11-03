@@ -4215,7 +4215,7 @@ function applyAdminVisibility(){
     // the AGENTES list now lives in ADMIN → AGENTES; the header number is display-only for everyone
     agentesLink.style.cursor = 'default';
     agentesLink.style.pointerEvents = 'none';
-    agentesLink.style.opacity = isAdminSession ? '' : '0.6';
+    agentesLink.style.opacity = '';   // same brightness as HORÁRIO for everyone
   }
 }
 // Shows who's currently logged in on this device, in the small tab row under the main links —
