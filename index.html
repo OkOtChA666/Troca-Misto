@@ -358,6 +358,10 @@
     border-bottom: 1px solid var(--border-soft);
   }
   .custom-select-row:last-child{ border-bottom:none; }
+  .csr-hide-bar{ position:sticky; top:0; z-index:2; display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:#0f1a2e; border-bottom:1px solid #27344f; font:700 11px var(--mono); letter-spacing:.1em; color:var(--cyan); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .csr-sw{ position:relative; width:38px; height:22px; border-radius:11px; background:#27344f; flex:none; transition:background .15s; }
+  .csr-sw::after{ content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#8fa0c4; transition:left .15s, background .15s; }
+  .csr-sw.on{ background:#1f7a52; } .csr-sw.on::after{ left:19px; background:#fff; }
   .custom-select-row:hover, .custom-select-row.selected{ background: rgba(95,224,255,0.08); }
   .custom-select-row.disabled-row{ cursor: not-allowed; opacity: 0.4; }
   .custom-select-row.disabled-row:hover{ background: none; }
@@ -5101,7 +5105,11 @@ function populateDateSelect(sel, allowToday, extraBlockedFn){
   }
   sel.value = defaultDayIdx(allowToday, extraBlockedFn);
 }
-function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlockedFn){
+// "OCULTAR FOLGAS" switch (inside the date menus of the swap screens): when ON, the days on which the person is off are left out of the list.
+// The choice is remembered on this phone.
+let HIDE_OFF_DAYS = false;
+try{ HIDE_OFF_DAYS = localStorage.getItem('trocaMistoHideOffDays') === '1'; }catch(e){}
+function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlockedFn, workerFn){
   const sel = document.getElementById(selectId);
   const trigger = document.getElementById(triggerId);
   const list = document.getElementById(listId);
@@ -5150,8 +5158,26 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
     recomputeCounts();
     list.innerHTML = '';
     const current = parseInt(sel.value, 10) || 0;
+    let hideW = null;
+    if(workerFn){
+      try{ hideW = workerFn(); }catch(e){ hideW = null; }
+      if(hideW){
+        const bar = document.createElement('div');
+        bar.className = 'csr-hide-bar';
+        bar.innerHTML = '<span>OCULTAR FOLGAS</span><span class="csr-sw' + (HIDE_OFF_DAYS ? ' on' : '') + '"></span>';
+        bar.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        bar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          HIDE_OFF_DAYS = !HIDE_OFF_DAYS;
+          try{ localStorage.setItem('trocaMistoHideOffDays', HIDE_OFF_DAYS ? '1' : '0'); }catch(err){}
+          const keep = list.scrollTop; renderList(); list.scrollTop = keep;
+        });
+        list.appendChild(bar);
+      }
+    }
     for(let i=0;i<N;i++){
       if(isBlocked(i)) continue; // no point listing days that can't be picked
+      if(hideW && HIDE_OFF_DAYS && i !== current){ try{ const he = getEffectiveEntry(hideW, i); if(he && he.status === 'off') continue; }catch(e){} }
       const r = rowLabel(i);
       const row = document.createElement('div');
       row.className = 'custom-select-row' + (i === current ? ' selected' : '');
@@ -5184,8 +5210,8 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
 function coverWorkerNoRosterDay(idx){
   try{ if(!coverWorker) return false; const e = getEffectiveEntry(coverWorker, idx); return !!(e && e.status !== 'work' && e.codes && e.codes[0] === '/'); }catch(err){ return false; }
 }
-const coverDateSelectAPI = setupCustomDateSelect('cover-date', 'cover-date-trigger', 'cover-date-list', false, coverWorkerNoRosterDay);
-const tradeDateSelectAPI = setupCustomDateSelect('trade-a-date', 'trade-a-date-trigger', 'trade-a-date-list');
+const coverDateSelectAPI = setupCustomDateSelect('cover-date', 'cover-date-trigger', 'cover-date-list', false, coverWorkerNoRosterDay, () => coverWorker);
+const tradeDateSelectAPI = setupCustomDateSelect('trade-a-date', 'trade-a-date-trigger', 'trade-a-date-list', false, null, () => tradeA);
 const extraDateSelectAPI = setupCustomDateSelect('extra-date', 'extra-date-trigger', 'extra-date-list');
 function refreshAllDateSelectCounts(){
   coverDateSelectAPI.refreshTrigger();
@@ -6196,7 +6222,7 @@ document.getElementById('requests-hide-ineligible-btn').addEventListener('click'
 });
 document.getElementById('request-date').addEventListener('change', updateRequestContext);
 populateDateSelect(document.getElementById('request-date'), false, isPedidosDayTooLateToRequest);
-setupCustomDateSelect('request-date', 'request-date-trigger', 'request-date-list', false, isPedidosDayTooLateToRequest);
+setupCustomDateSelect('request-date', 'request-date-trigger', 'request-date-list', false, isPedidosDayTooLateToRequest, () => requestPosterWorker);
 document.getElementById('request-type-cover').addEventListener('click', () => {
   requestType = 'cover';
   document.getElementById('request-type-cover').classList.add('active');
