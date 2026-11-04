@@ -249,7 +249,7 @@
   /* ---- Pro: day strip + boarding-pass shift card (TROCA PARA FOLGA) ---- */
   .pds{ display:none; }
   html.theme-pro #cover-date-field .custom-select, html.theme-pro #panel-trade .field:has(#trade-a-date) .custom-select, html.theme-pro #request-date-single-wrap{ display:none; }
-  html.theme-pro .pds{ display:flex; gap:8px; overflow-x:auto; position:relative; padding:2px 2px 6px; margin:0 -2px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  html.theme-pro .pds{ cursor:grab; display:flex; gap:8px; overflow-x:auto; position:relative; padding:2px 2px 6px; margin:0 -2px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
   html.theme-pro .pds::-webkit-scrollbar{ display:none; }
   html.theme-pro .pds-chip{ flex:0 0 52px; display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 0 10px; border-radius:12px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); cursor:pointer; font-family:var(--sans); }
   html.theme-pro .pds-chip .w{ font-size:11px; font-weight:600; color:var(--text-dim); }
@@ -1486,7 +1486,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.07</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.08</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -5604,6 +5604,18 @@ document.addEventListener('click', e => {
   sel.dispatchEvent(new Event('change'));
   try{ const api = { 'cover-date':coverDateSelectAPI, 'trade-a-date':tradeDateSelectAPI }[c.dataset.sel]; if(api) api.refreshTrigger(); }catch(err){}
 });
+// day strips on a computer: mouse wheel and click-and-drag also move the strip sideways (phones just swipe)
+(function(){
+  let drag = null, moved = false;
+  document.addEventListener('wheel', e => {
+    const st = e.target.closest && e.target.closest('.pds'); if(!st || st.scrollWidth <= st.clientWidth) return;
+    if(Math.abs(e.deltaY) > Math.abs(e.deltaX)){ st.scrollLeft += e.deltaY; e.preventDefault(); }
+  }, { passive:false });
+  document.addEventListener('mousedown', e => { const st = e.target.closest && e.target.closest('.pds'); if(!st) return; drag = { st, x:e.clientX, left:st.scrollLeft }; moved = false; });
+  document.addEventListener('mousemove', e => { if(!drag) return; const dx = e.clientX - drag.x; if(Math.abs(dx) > 4) moved = true; if(moved) drag.st.scrollLeft = drag.left - dx; });
+  document.addEventListener('mouseup', () => { drag = null; });
+  document.addEventListener('click', e => { if(moved && e.target.closest && e.target.closest('.pds')){ e.stopPropagation(); e.preventDefault(); } moved = false; }, true);
+})();
 function proThemeRefresh(){ try{ updateCoverContext(); }catch(e){} try{ updateTurnoContext(true); }catch(e){} try{ updateRequestContext(); }catch(e){} }
 function dayDifficultyHtml(count){
   if(GROUP) return '';   // thresholds are percentages of a large team; meaningless for a small department
