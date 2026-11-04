@@ -245,6 +245,34 @@
   html.theme-pro .tabs{ gap:0; border-bottom:1px solid var(--border); margin-bottom:18px; }
   html.theme-pro .tab-btn{ background:transparent; border:none; border-bottom:2px solid transparent; border-radius:0; font-family:var(--sans); font-weight:600; font-size:11.5px; letter-spacing:.03em; padding:12px 2px; margin-bottom:-1px; white-space:nowrap; color:var(--text-dim); }
   html.theme-pro .tab-btn.active{ background:transparent; border-bottom-color:var(--amber); color:var(--text); box-shadow:none; }
+  /* ---- Pro: day strip + boarding-pass shift card (TROCA PARA FOLGA) ---- */
+  .pds{ display:none; }
+  html.theme-pro #cover-date-field .custom-select{ display:none; }
+  html.theme-pro .pds{ display:flex; gap:8px; overflow-x:auto; position:relative; padding:2px 2px 6px; margin:0 -2px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  html.theme-pro .pds::-webkit-scrollbar{ display:none; }
+  html.theme-pro .pds-chip{ flex:0 0 52px; display:flex; flex-direction:column; align-items:center; gap:2px; padding:9px 0 10px; border-radius:12px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); cursor:pointer; font-family:var(--sans); }
+  html.theme-pro .pds-chip .w{ font-size:11px; font-weight:600; color:var(--text-dim); }
+  html.theme-pro .pds-chip .n{ font:800 26px/1.05 'Big Shoulders Display',var(--sans); }
+  html.theme-pro .pds-chip .b{ width:18px; height:3px; border-radius:2px; background:#33D68B; margin-top:3px; }
+  html.theme-pro .pds-chip.t-med .b{ background:#ffb81c; }
+  html.theme-pro .pds-chip.t-low .b{ background:#ff5c6c; }
+  html.theme-pro .pds-chip.off{ opacity:.45; }
+  html.theme-pro .pds-chip.on{ background:#ffb81c; border-color:#ffb81c; color:#0d1217; opacity:1; }
+  html.theme-pro .pds-chip.on .w{ color:#3b2a00; }
+  html.theme-pro .pds-chip.on .b{ background:#0d1217; }
+  html.theme-pro #cover-context-label{ display:none !important; }
+  html.theme-pro #cover-context.pro-ticket{ position:relative; overflow:hidden; background:#e9eef2; color:#0d1217; border:none; border-radius:16px; padding:16px 18px 0; text-align:left; margin:12px 0 20px; }
+  html.theme-pro #cover-context.pro-ticket b{ color:inherit; }
+  .pt-top{ display:flex; justify-content:space-between; gap:4px 10px; flex-wrap:wrap; font:600 12px var(--sans); color:#4a5866; }
+  .pt-time{ font:800 clamp(44px,13.5vw,62px)/1 'Big Shoulders Display',var(--sans); white-space:nowrap; text-align:center; color:#0d1217; padding:8px 0 16px; letter-spacing:.01em; }
+  .pt-time i{ font-style:normal; color:#9aa6b2; margin:0 .18em; }
+  .pt-perf{ border-top:2px dashed #b4bec8; margin:0 -18px; position:relative; }
+  .pt-perf::before,.pt-perf::after{ content:""; position:absolute; top:-12px; width:22px; height:22px; border-radius:50%; background:var(--panel); }
+  .pt-perf::before{ left:-11px; } .pt-perf::after{ right:-11px; }
+  .pt-foot{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 0 16px; font:600 13px var(--sans); color:#0d1217; }
+  .pt-foot .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:8px; }
+  .pt-n{ font:600 12px var(--sans); color:#4a5866; white-space:nowrap; }
+  .pt-n b{ font:800 24px 'Big Shoulders Display',var(--sans); color:#0d1217; margin-right:3px; }
   /* theme picker (ÁREA PESSOAL → TEMAS) */
   .th-card{ display:flex; gap:14px; align-items:center; padding:12px; margin-bottom:12px; border-radius:12px; background:var(--panel-2); border:1.5px solid var(--border-soft); cursor:pointer; }
   .th-card.on{ border-color:#ffb81c; }
@@ -1482,13 +1510,14 @@
       <input type="text" id="cover-name-input" placeholder="O teu nome…" autocomplete="off">
       <div class="combo-list hidden" id="cover-name-list"></div>
     </div>
-    <div class="field">
+    <div class="field" id="cover-date-field">
       <label for="cover-date">Data</label>
       <select id="cover-date" style="display:none;"></select>
       <div class="custom-select">
         <button type="button" class="custom-select-trigger" id="cover-date-trigger"></button>
         <div class="custom-select-list hidden" id="cover-date-list"></div>
       </div>
+      <div id="pro-daystrip" class="pds"></div>
     </div>
 
     <label id="cover-context-label" class="hidden" style="text-align:center; margin-bottom:6px;">O TEU HORÁRIO</label>
@@ -4281,7 +4310,7 @@ async function loadThemeProEnabled(){
 }
 function themeFlagChanged(){
   try{ localStorage.setItem('trocaMistoProOn', themeProEnabled ? '1' : '0'); }catch(e){}
-  applyTheme(); try{ renderAreaHubOrder(); }catch(e){} try{ renderThemePicker(); }catch(e){}
+  applyTheme(); try{ renderAreaHubOrder(); }catch(e){} try{ renderThemePicker(); }catch(e){} try{ updateCoverContext(); }catch(e){}
 }
 function themeProAvailable(){ return themeProEnabled || isAdminSession; }
 function currentTheme(){ let t='classic'; try{ t = localStorage.getItem('trocaMistoTheme')==='pro' ? 'pro' : 'classic'; }catch(e){} return (t==='pro' && themeProAvailable()) ? 'pro' : 'classic'; }
@@ -4298,7 +4327,7 @@ function renderThemePicker(){
 document.addEventListener('click', e => {
   const c = e.target.closest && e.target.closest('.th-card'); if(!c) return;
   try{ localStorage.setItem('trocaMistoTheme', c.dataset.theme === 'pro' ? 'pro' : 'classic'); }catch(_){}
-  applyTheme(); renderThemePicker();
+  applyTheme(); renderThemePicker(); try{ updateCoverContext(); }catch(e){}
 });
 function applyAdminVisibility(){
   applyTheme();
@@ -5462,6 +5491,43 @@ function countCleanCoverCandidates(myEntry, excludeWorkerId, idx){
   }
   return count;
 }
+function dayDifficultyInfo(count){
+  if(GROUP) return null;
+  const totalStaff = DATA.workers.length;
+  if(count >= Math.round(totalStaff * 0.10)) return { color:'#33D68B', text:'Muitas pessoas disponíveis' };
+  if(count >= Math.round(totalStaff * 0.035)) return { color:'#ffb81c', text:'Poucas pessoas disponíveis' };
+  return { color:'#ff5c6c', text:'Dia muito preenchido' };
+}
+function isProTheme(){ return document.documentElement.classList.contains('theme-pro'); }
+function proTicketHtml(entry, idx){
+  const info = dayDifficultyInfo(countCleanCoverCandidates(entry, coverWorker.id, idx));
+  return '<div class="pt-top"><span>O teu turno</span><span>' + fmtDateLong(idx) + '</span></div>'
+    + '<div class="pt-time">' + fmtHHMM(entry.start) + '<i>–</i>' + fmtHHMM(entry.end) + '</div><div class="pt-perf"></div>'
+    + '<div class="pt-foot"><span>' + (info ? '<i class="dot" style="background:' + info.color + ';"></i>' + info.text : '') + '</span><span class="pt-n"><b>' + countWorking(idx) + '</b>agentes</span></div>';
+}
+const PT_WD = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+let _proStripLast = -1;
+function renderProStrip(){
+  const box = document.getElementById('pro-daystrip'); if(!box || !isProTheme()) return;
+  const sel = document.getElementById('cover-date'); const cur = parseInt(sel.value, 10) || 0;
+  const cs = []; for(let i = 0; i < N; i++) cs.push(countWorking(i));
+  const mn = Math.min(...cs), mx = Math.max(...cs);
+  const tier = c => mx === mn ? 'med' : ((c - mn) / (mx - mn) > 2/3 ? 'high' : ((c - mn) / (mx - mn) > 1/3 ? 'med' : 'low'));
+  let h = '';
+  for(let i = 0; i < N; i++){
+    if(isBookingBlocked(i) || coverWorkerNoRosterDay(i)) continue;
+    let off = false; try{ if(coverWorker){ const e = getEffectiveEntry(coverWorker, i); off = !!e && e.status !== 'work'; } }catch(err){}
+    const d = realDateForIdx(i);
+    h += '<button type="button" class="pds-chip t-' + tier(cs[i]) + (i === cur ? ' on' : '') + (off ? ' off' : '') + '" data-i="' + i + '"><span class="w">' + PT_WD[d.getDay()] + '</span><span class="n">' + d.getDate() + '</span><span class="b"></span></button>';
+  }
+  box.innerHTML = h;
+  if(cur !== _proStripLast){ _proStripLast = cur; const on = box.querySelector('.on'); if(on) box.scrollLeft = Math.max(0, on.offsetLeft - 14); }
+}
+document.getElementById('pro-daystrip').addEventListener('click', e => {
+  const c = e.target.closest('.pds-chip'); if(!c) return;
+  const sel = document.getElementById('cover-date'); sel.value = c.dataset.i;
+  sel.dispatchEvent(new Event('change')); try{ coverDateSelectAPI.refreshTrigger(); }catch(err){}
+});
 function dayDifficultyHtml(count){
   if(GROUP) return '';   // thresholds are percentages of a large team; meaningless for a small department
   // Percentage-of-total-staff, not a fixed headcount — so this stays correctly calibrated
@@ -5477,6 +5543,8 @@ function dayDifficultyHtml(count){
 }
 function updateCoverContext(){
   const ctx = document.getElementById('cover-context');
+  ctx.classList.remove('pro-ticket');
+  try{ renderProStrip(); }catch(e){}
   const btn = document.getElementById('cover-search-btn');
   document.getElementById('cover-results').innerHTML = '';
   document.getElementById('cover-clear-btn').classList.add('hidden');
@@ -5504,7 +5572,8 @@ function updateCoverContext(){
       if(ov && ov.originalStart && (ov.originalStart !== ov.start || ov.originalEnd !== ov.end)){
         ctx.innerHTML = '<b><span class="old-time-strike">'+fmtHHMM(ov.originalStart)+'-'+fmtHHMM(ov.originalEnd)+'</span> → '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>';
       } else {
-        ctx.innerHTML = '<b>'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>' + dayDifficultyHtml(countCleanCoverCandidates(entry, coverWorker.id, idx));
+        if(isProTheme()){ ctx.innerHTML = proTicketHtml(entry, idx); ctx.classList.add('pro-ticket'); }
+        else ctx.innerHTML = '<b>'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>' + dayDifficultyHtml(countCleanCoverCandidates(entry, coverWorker.id, idx));
       }
       btn.disabled = false;
     }
