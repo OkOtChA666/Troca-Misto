@@ -1556,7 +1556,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.09</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.10</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -4661,7 +4661,7 @@ function toggleUserMenu(){
   const grp = (GROUP === 'sup') ? 'SUPERVISÃO · FAO' : 'TTAE · FAO · PAX';
   m.style.background = 'radial-gradient(120% 90% at 0 0, #16304a 0, #0f1626 55%)'; m.style.padding = '0'; m.style.overflow = 'hidden'; m.style.minWidth = '290px';
   m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div style="flex:none; width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + escapeHtml(ini) + '</div></div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text);">' + escapeHtml(nm) + '</div><div style="margin-top:6px;"><span style="display:inline-block; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center;">' + escapeHtml(window._loggedId || '') + '</span></div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:8px;">' + grp + '</div></div></div>' +
-    '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">HOJE</div><div style="font:700 13px var(--mono); margin-top:2px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:2px;">' + escapeHtml(offTxt) + '</div></div></div>' +
+    '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">HOJE</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px;">' + escapeHtml(offTxt) + '</div></div></div>' +
     proMenuLinksHtml() +
     ((isAdminSession || isDeptAdminSession) ? '<div id="user-menu-admin" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ffb020; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>ADMIN</div>' : '') +
     '<div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
@@ -4673,10 +4673,17 @@ function toggleUserMenu(){
 // Pro: the header no longer has the ÁREA PESSOAL / FERRAMENTAS links, so they live in the name menu
 function proMenuLinksHtml(){
   if(!isProTheme()) return '';
+  const ic = d => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+  const ICONS = {
+    'my-swaps-link': ic('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/>'),
+    'sf-link': ic('<path d="M3 13l18-8-6 15-3-6-9-1z"/>'),
+    'tools-link': ic('<path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2-2z"/>'),
+    'extra-hours-link': ic('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>')
+  };
   let h = '';
   [['my-swaps-link','ÁREA PESSOAL'],['sf-link','LISTA DE VOOS'],['tools-link','FERRAMENTAS'],['extra-hours-link','HORAS EXTRA']].forEach(([id, lab]) => {
     const el = document.getElementById(id); if(!el || getComputedStyle(el).display === 'none') return;
-    h += '<div data-go="' + id + '" role="button" tabindex="0" style="padding:13px 16px; border-top:1px solid #1c2a44; color:#e9eef2; cursor:pointer; font:600 13px var(--sans); letter-spacing:.04em;">' + lab + '</div>';
+    h += '<div data-go="' + id + '" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#e9eef2; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;">' + ICONS[id] + lab + '</div>';
   });
   return h;
 }
