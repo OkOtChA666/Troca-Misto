@@ -3849,7 +3849,7 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
       const medTime = getMedAppointmentTime(workerId, idx) || getMedAppointmentTime(partnerId, idx);
       const hasMedIssue = !!medTime;
       const medRemarkHtml = hasMedIssue ? '<div style="margin-top:8px;">Remarks: <span style="color:#5FA8FF;">Consulta médica - '+fmtHHMM(medTime.start)+'-'+fmtHHMM(medTime.end)+'</span></div>' : '';
-      showConfirmDialog('Confirmar troca com <b>'+escapeHtml(candidateName)+'</b>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
+      showConfirmDialog('Confirmar troca com:<b style="display:block; margin-top:2px;">'+escapeHtml(candidateName)+(candidateWorker && candidateWorker.id ? ' <span style="display:inline-block; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; margin-left:6px; font:700 11px var(--mono); vertical-align:1px;">'+escapeHtml(String(candidateWorker.id))+'</span>' : '')+'</b>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
         const anonymous = document.getElementById('confirm-modal-anon-checkbox').checked;
         btn.disabled = true;
         await setSwapPartner(workerId, idx, {id: partnerId, name: partnerName}, onDone, type, anonymous);
