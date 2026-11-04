@@ -990,7 +990,7 @@
   /* labels: plain off-white for times, a badge for codes (DC, DS, SWAP, DUPLO, MED...) */
   .ag-sum{ display:flex; gap:8px; margin-top:14px; font-family:'Outfit', var(--sans); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#8fa0c4; text-align:center; }
   .ag-sum div{ flex:1; border:1px solid var(--border); border-radius:10px; padding:9px 6px; background:var(--panel-2); }
-  .ag-sum b{ display:block; font-size:26px; font-weight:700; letter-spacing:0; line-height:1.1; margin-bottom:2px; }
+  .ag-sum b{ display:block; font-size:21px; font-weight:700; letter-spacing:0; line-height:1.1; margin-bottom:2px; }
   .area-card{ display:flex; align-items:center; gap:16px; border:1px solid var(--border); border-radius:16px; background:var(--panel-2); padding:16px 18px; margin:0 0 12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .area-card:active{ border-color:var(--amber); }
   .area-card .ac-ic{ flex:none; width:44px; height:44px; border-radius:12px; background:#0f2236; border:1px solid #1f5566; display:flex; align-items:center; justify-content:center; color:#4fd1f0; }
@@ -9581,7 +9581,7 @@ async function renderAgenda(){
     if(isTodayDay(idx)) cls += ' today';
     h += '<div class="ag-d ' + cls + '" data-idx="' + idx + '">' + day + '<small' + (/^(\d{1,2}:\d{2}|DC|DS|FO)$/.test(String(lab).trim()) || !String(lab).trim() ? '' : ' class="bd"') + '>' + mtEsc(lab) + '</small></div>';
   });
-  h += '</div><div class="ag-sum"><div><b style="color:#ff5d73">' + nWork + '</b>dias de trabalho</div><div><b style="color:#2fd18a">' + nOff + '</b>folgas</div><div><b>' + nSwap + '</b>trocas</div></div>';
+  h += '</div><div class="ag-sum"><div><b style="color:#ff5d73">' + nWork + '</b>trabalho</div><div><b style="color:#2fd18a">' + nOff + '</b>folgas</div><div><b>' + nSwap + '</b>trocas</div></div>';
   body.innerHTML = h;
   body.querySelectorAll('.ag-d').forEach(c => c.addEventListener('click', () => agendaDayInfo(me, parseInt(c.dataset.idx, 10))));
 }
