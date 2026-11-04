@@ -11,8 +11,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TROCA-MISTO">
 <title>Troca-Misto: A tua plataforma para procura de trocas e muito mais!</title>
+<script>try{if(localStorage.getItem("trocaMistoTheme")==="pro"&&(localStorage.getItem("trocaMistoLoginIsAdmin")==="true"||localStorage.getItem("trocaMistoProOn")==="1"))document.documentElement.classList.add("theme-pro")}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&family=Outfit:wght@400;500;600&family=Big+Shoulders+Display:wght@700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#080B14;
@@ -217,6 +218,42 @@
   }
   .tab-btn:focus-visible{ outline: 2px solid var(--cyan); outline-offset: 2px; }
 
+
+  /* ================= THEME "PRO" (admin preview) — only active when <html> has .theme-pro ================= */
+  html.theme-pro{
+    --bg:#0d1217; --panel:#161e27; --panel-2:#11181f; --border:#26323f; --border-soft:#1d2833;
+    --amber:#ffb81c; --amber-dim:#7a5a10; --amber-glow:transparent;
+    --text:#e9eef2; --text-dim:#8795a3; --cyan:#e9eef2;
+    --sans:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif;
+  }
+  html.theme-pro body{ background:#0d1217; font-family:var(--sans); }
+  html.theme-pro .bg-fx{ display:none; }
+  html.theme-pro .board-header{ background:transparent; border:none; border-radius:0; padding:6px 2px 0; }
+  html.theme-pro .board-header::after{ display:none; }
+  html.theme-pro .board-logo{ top:2px; right:2px; transform-origin:top right; }
+  html.theme-pro .board-logo svg{ width:44px; height:44px; }
+  html.theme-pro .eyebrow{ display:none; }
+  html.theme-pro h1{ font-family:'Big Shoulders Display',var(--sans); font-weight:800; font-size:clamp(34px,9vw,44px); letter-spacing:.01em; line-height:1; color:#e9eef2; text-shadow:none; margin:0 0 10px; }
+  html.theme-pro .board-stats{ font-family:var(--sans); font-size:12px; letter-spacing:.02em; }
+  html.theme-pro .board-stats b{ color:#e9eef2; font-weight:600; }
+  html.theme-pro .board-stats-top{ border:none; padding:0 0 12px; justify-content:flex-start; gap:18px; }
+  html.theme-pro .header-divider{ display:none; }
+  html.theme-pro #planeamento-turnaround-row{ background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; border:none !important; border-top:1px solid var(--border) !important; border-bottom:1px solid var(--border) !important; border-radius:0 !important; padding:12px 0 !important; margin-top:4px !important; }
+  html.theme-pro #planeamento-turnaround-row .stat-link{ color:var(--text) !important; font-family:var(--sans); font-weight:600; font-size:12px; letter-spacing:.08em; }
+  html.theme-pro #planeamento-turnaround-row #my-swaps-link{ color:var(--amber) !important; }
+  html.theme-pro #logged-in-tab-row{ background:transparent !important; border:none !important; border-radius:0 !important; padding:12px 0 !important; font-family:var(--sans) !important; }
+  html.theme-pro .tabs{ gap:0; border-bottom:1px solid var(--border); margin-bottom:18px; }
+  html.theme-pro .tab-btn{ background:transparent; border:none; border-bottom:2px solid transparent; border-radius:0; font-family:var(--sans); font-weight:600; font-size:11.5px; letter-spacing:.03em; padding:12px 2px; margin-bottom:-1px; white-space:nowrap; color:var(--text-dim); }
+  html.theme-pro .tab-btn.active{ background:transparent; border-bottom-color:var(--amber); color:var(--text); box-shadow:none; }
+  /* theme picker (ÁREA PESSOAL → TEMAS) */
+  .th-card{ display:flex; gap:14px; align-items:center; padding:12px; margin-bottom:12px; border-radius:12px; background:var(--panel-2); border:1.5px solid var(--border-soft); cursor:pointer; }
+  .th-card.on{ border-color:#ffb81c; }
+  .th-prev{ width:84px; height:62px; border-radius:8px; border:1px solid #2a3446; padding:8px; flex:none; }
+  .th-n{ font:700 13px var(--mono); letter-spacing:.1em; color:var(--text); }
+  .th-s{ font:12px var(--sans); color:var(--text-dim); margin-top:2px; }
+  .th-radio{ width:20px; height:20px; border-radius:50%; border:2px solid #3a475c; display:flex; align-items:center; justify-content:center; flex:none; }
+  .th-radio i{ display:none; width:10px; height:10px; border-radius:50%; background:#ffb81c; }
+  .th-card.on .th-radio{ border-color:#ffb81c; } .th-card.on .th-radio i{ display:block; }
   .panel{
     background: var(--panel);
     border: 1px solid var(--border);
@@ -1686,6 +1723,7 @@
       <div class="area-card" id="area-card-reqs" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9.8 9.4a2.3 2.3 0 1 1 3.4 2c-.8.4-1.2.9-1.2 1.6M12 15h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">OS MEUS PEDIDOS<span class="ac-cnt" id="area-reqs-count"></span></div><div class="ac-s">Pedidos de troca que abriste</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-extra" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">HORAS EXTRA</div><div class="ac-s">As tuas horas extra</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-double" role="button" tabindex="0" style="border:1.5px dashed #a77bff; background:linear-gradient(135deg,#17142b,#111a2c);"><div class="ac-ic" style="background:#1d1740; border-color:#5b44a8; color:#b79bff;"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6.5"/><path d="M9 5.5V9l2.2 1.4"/><circle cx="15" cy="15" r="6.5" fill="#1d1740"/><path d="M15 11.5V15l2.2 1.4"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">TURNO DUPLO<span style="font:700 9px var(--mono); letter-spacing:.12em; color:#1a1200; background:#ffb020; border-radius:5px; padding:2px 7px;">EM TESTE</span></div><div class="ac-s">Outro colega faz o teu turno</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+      <div class="area-card" id="area-card-themes" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.5-.8 1.2-1.6-.4-1 .1-2 1.3-2H17a4 4 0 0 0 4-4c0-5-4-10.4-9-10.4z"/><circle cx="7.5" cy="11.5" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="8" r="1"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">TEMAS</div><div class="ac-s">Escolhe o aspeto da app</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
     <div id="area-logout-wrap" style="text-align:center; margin:18px 0 4px;"><button type="button" id="area-logout-btn" style="display:inline-flex; gap:8px; align-items:center; border:1px solid #5b2330; color:#ff5d73; border-radius:12px; padding:12px 28px; font-family:var(--mono); letter-spacing:.14em; font-size:13px; background:#1a0f16; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</button></div>
     <div id="area-tab-swaps" class="hidden">
@@ -1708,6 +1746,7 @@
     <div id="area-tab-tasks" class="hidden">
       <div id="my-tasks-body"></div>
     </div>
+    <div id="area-tab-themes" class="hidden"><div id="theme-picker"></div></div>
     <div id="area-tab-agenda" class="hidden">
       <div id="agenda-body"></div>
     </div>
@@ -2007,6 +2046,13 @@
           <span class="pill-track"></span>
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Botão ATUALIZAR (Tarefas)</span>
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="theme-pro-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Tema PRO para todos (ÁREA PESSOAL → Temas)</span>
       </label>
       <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
         <span class="pill-toggle">
@@ -4227,7 +4273,35 @@ async function checkAccessPassword(){
 }
 // Hides the ADMIN header link entirely for non-admin sessions, and leaves the AGENTES count
 // visible but not clickable — admin (Gonçalo) sees everything exactly as before.
+// Themes: Clássico is always there; Pro appears for everyone only when switched on in RULES (admin always sees it, to test)
+let themeProEnabled = false;
+async function loadThemeProEnabled(){
+  try{ const doc = await dbGetShared('themeProEnabled', null); themeProEnabled = doc ? !!doc.value : false; }catch(e){ themeProEnabled = false; }
+  themeFlagChanged();
+}
+function themeFlagChanged(){
+  try{ localStorage.setItem('trocaMistoProOn', themeProEnabled ? '1' : '0'); }catch(e){}
+  applyTheme(); try{ renderAreaHubOrder(); }catch(e){} try{ renderThemePicker(); }catch(e){}
+}
+function themeProAvailable(){ return themeProEnabled || isAdminSession; }
+function currentTheme(){ let t='classic'; try{ t = localStorage.getItem('trocaMistoTheme')==='pro' ? 'pro' : 'classic'; }catch(e){} return (t==='pro' && themeProAvailable()) ? 'pro' : 'classic'; }
+function applyTheme(){ document.documentElement.classList.toggle('theme-pro', currentTheme()==='pro'); }
+setTimeout(() => { loadThemeProEnabled(); getDb().then(db => { if(!db) return; try{ db.collection('data').doc('themeProEnabled').onSnapshot(sn => { themeProEnabled = sn.exists ? !!sn.data().value : false; themeFlagChanged(); }, () => {}); }catch(e){} }); }, 0);
+function renderThemePicker(){
+  const box = document.getElementById('theme-picker'); if(!box) return;
+  const cur = currentTheme();
+  const card = (id, name, sub, bg, fg, ac) => '<div class="th-card' + (cur === id ? ' on' : '') + '" data-theme="' + id + '" role="button" tabindex="0"><div class="th-prev" style="background:' + bg + ';"><div style="font:800 13px \'Big Shoulders Display\',var(--sans); color:' + fg + ';">TROCA</div><div style="height:2px; width:30px; background:' + ac + '; margin-top:6px;"></div><div style="height:4px; width:54px; background:' + fg + '; opacity:.25; margin-top:8px; border-radius:2px;"></div><div style="height:4px; width:40px; background:' + fg + '; opacity:.25; margin-top:4px; border-radius:2px;"></div></div><div style="flex:1; min-width:0;"><div class="th-n">' + name + '</div><div class="th-s">' + sub + '</div></div><div class="th-radio"><i></i></div></div>';
+  box.innerHTML = '<div style="font:12px/1.45 var(--sans); color:var(--text-dim); margin:0 0 14px;">A tua escolha fica guardada neste telemóvel.</div>'
+    + card('classic', 'CLÁSSICO', 'O aspeto de sempre', '#0a1120', '#ffb300', '#5fe0ff')
+    + (themeProAvailable() ? card('pro', 'PRO', 'Limpo, fontes grandes, âmbar', '#0d1217', '#e9eef2', '#ffb81c') : '');
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest && e.target.closest('.th-card'); if(!c) return;
+  try{ localStorage.setItem('trocaMistoTheme', c.dataset.theme === 'pro' ? 'pro' : 'classic'); }catch(_){}
+  applyTheme(); renderThemePicker();
+});
 function applyAdminVisibility(){
+  applyTheme();
   const adminLink = document.getElementById('schedule-override-link');
   if(adminLink) adminLink.style.display = 'none';   // ADMIN now lives in the name card (user menu)
   const verWrap = document.getElementById('stat-version-wrap');
@@ -8236,6 +8310,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('pwa-install-enabled-toggle').checked = pwaInstallEnabled;
   document.getElementById('refresh-button-enabled-toggle').checked = refreshButtonEnabled;
   document.getElementById('double-shift-enabled-toggle').checked = doubleShiftEnabled;
+  document.getElementById('theme-pro-enabled-toggle').checked = themeProEnabled;
   document.getElementById('legal-footer-enabled-toggle').checked = legalFooterEnabled;
   document.getElementById('support-link-enabled-toggle').checked = supportLinkEnabled;
   loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; });
@@ -8286,6 +8361,15 @@ document.getElementById('support-link-enabled-toggle').addEventListener('change'
   const ok = await saveSupportLinkEnabled();
   if(!ok){
     supportLinkEnabled = !newValue; applySupportLink(); e.target.checked = supportLinkEnabled;
+    showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
+  }
+});
+document.getElementById('theme-pro-enabled-toggle').addEventListener('change', async (e) => {
+  const newValue = e.target.checked;
+  themeProEnabled = newValue; themeFlagChanged();
+  const ok = await dbSetShared('themeProEnabled', { value: newValue });
+  if(!ok){
+    themeProEnabled = !newValue; e.target.checked = themeProEnabled; themeFlagChanged();
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
 });
@@ -9569,7 +9653,7 @@ function closeMyTasks(){
 }
 // Tabs inside ÁREA PESSOAL
 let AREA_VIEW = 'hub';
-const AREA_TITLES = { hub: 'ÁREA PESSOAL', swaps: 'AS MINHAS TROCAS', reqs: 'OS MEUS PEDIDOS', tasks: 'AS MINHAS TAREFAS', agenda: 'A MINHA AGENDA' };
+const AREA_TITLES = { hub: 'ÁREA PESSOAL', swaps: 'AS MINHAS TROCAS', reqs: 'OS MEUS PEDIDOS', tasks: 'AS MINHAS TAREFAS', agenda: 'A MINHA AGENDA', themes: 'TEMAS' };
 function areaSetTitle(v){ AREA_VIEW = v; const lw = document.getElementById('area-logout-wrap'); if(lw) lw.style.display = (v === 'hub') ? '' : 'none'; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; }
 function updateAreaHubDot(){
   const d = document.getElementById('area-tasks-dot'); if(!d) return;
@@ -9660,6 +9744,7 @@ function showAreaHub(){
   document.getElementById('area-tab-tasks').classList.add('hidden');
   document.getElementById('area-tab-reqs').classList.add('hidden');
   document.getElementById('area-tab-agenda').classList.add('hidden');
+  document.getElementById('area-tab-themes').classList.add('hidden');
   document.getElementById('area-hub').classList.remove('hidden');
   try{ renderMyRequests(); }catch(e){}
   areaSetTitle('hub');
@@ -9668,29 +9753,31 @@ function showAreaHub(){
   try{ window.scrollTo(0, 0); }catch(e){}
 }
 function showAreaTab(which){
-  const tasks = which === 'tasks', reqs = which === 'reqs', agenda = which === 'agenda';
+  const tasks = which === 'tasks', reqs = which === 'reqs', agenda = which === 'agenda', themes = which === 'themes';
   document.getElementById('area-hub').classList.add('hidden');
   document.getElementById('area-tab-agenda').classList.toggle('hidden', !agenda);
   document.getElementById('area-tab-reqs').classList.toggle('hidden', !reqs);
-  areaSetTitle(tasks ? 'tasks' : reqs ? 'reqs' : agenda ? 'agenda' : 'swaps');
+  document.getElementById('area-tab-themes').classList.toggle('hidden', !themes);
+  areaSetTitle(tasks ? 'tasks' : reqs ? 'reqs' : agenda ? 'agenda' : themes ? 'themes' : 'swaps');
   document.getElementById('area-tab-btn-swaps').classList.toggle('active', !tasks);
   document.getElementById('area-tab-btn-tasks').classList.toggle('active', tasks);
-  document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks || reqs || agenda);
+  document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks || reqs || agenda || themes);
   document.getElementById('area-tab-tasks').classList.toggle('hidden', !tasks);
-  if(tasks) openMyTasks(); else { closeMyTasks(); if(agenda) renderAgenda(); else if(reqs) renderMyRequests(); else renderMySwapsList(myTrocasExpanded); }
+  if(tasks) openMyTasks(); else { closeMyTasks(); if(themes) renderThemePicker(); else if(agenda) renderAgenda(); else if(reqs) renderMyRequests(); else renderMySwapsList(myTrocasExpanded); }
 }
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
 // favourites (kept on each person's own phone). Nothing saved yet = AS MINHAS TAREFAS is the favourite; the person can remove it.
 const AREA_FAV_KEY = 'trocaMistoAreaFavs';
-const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['agenda', 'area-card-agenda'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra'], ['double', 'area-card-double']];
+const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['agenda', 'area-card-agenda'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra'], ['double', 'area-card-double'], ['themes', 'area-card-themes']];
 function areaFavs(){ try{ const v = localStorage.getItem(AREA_FAV_KEY); if(v === null) return ['tasks']; const a = JSON.parse(v); return Array.isArray(a) ? a : ['tasks']; }catch(e){ return ['tasks']; } }
 function areaSaveFavs(a){ try{ localStorage.setItem(AREA_FAV_KEY, JSON.stringify(a)); }catch(e){} }
 function renderAreaHubOrder(){
   const hub = document.getElementById('area-hub'); if(!hub) return;
   const favs = areaFavs();
-  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'agenda' || k === 'double') && GROUP === 'sup') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays())));
+  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'agenda' || k === 'double') && GROUP === 'sup') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays())) && !(k === 'themes' && !themeProAvailable()));
   const fav = list.filter(([k]) => favs.indexOf(k) >= 0), rest = list.filter(([k]) => favs.indexOf(k) < 0);
   try{ const dc = document.getElementById('area-card-double'); if(dc) dc.style.display = (GROUP !== 'sup' && doubleShiftEnabled && hasShortShiftDays()) ? '' : 'none'; }catch(e){}
+  try{ const tc = document.getElementById('area-card-themes'); if(tc) tc.style.display = themeProAvailable() ? '' : 'none'; }catch(e){}
   const old = document.getElementById('area-hub-sep'); if(old) old.remove();
   hub.querySelectorAll('.area-favlbl').forEach(e => e.remove());
   fav.forEach(([k, id]) => { const l = document.createElement('div'); l.className = 'area-favlbl'; l.textContent = 'MARCADO COMO FAVORITO'; hub.appendChild(l); hub.appendChild(document.getElementById(id)); });
@@ -9715,6 +9802,7 @@ renderAreaHubOrder();
 [['area-card-swaps', () => document.getElementById('area-tab-btn-swaps').click()],
  ['area-card-reqs', () => showAreaTab('reqs')],
  ['area-card-agenda', () => showAreaTab('agenda')],
+ ['area-card-themes', () => showAreaTab('themes')],
  ['area-card-double', () => { DBL_FROM_AREA = true; document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden')); document.querySelector('.tabs').classList.add('hidden'); document.getElementById('panel-xshift').classList.remove('hidden'); renderExtra(); window.scrollTo({ top: 0 }); }],
  ['area-card-tasks', () => document.getElementById('area-tab-btn-tasks').click()],
  ['area-card-extra', () => { EXTRA_FROM_AREA = true; openExtraHours(); }]].forEach(([id, fn]) => {
