@@ -9562,9 +9562,8 @@ async function renderAgenda(){
   if(!me){ body.innerHTML = '<div class="mt-empty">Não encontrei os teus turnos neste mês.</div>'; return; }
   try{ await loadSwaps(); await loadRequests(); await loadDoubles(); }catch(e){}
   const first = (realDateForIdx(0).getDay() + 6) % 7;
-  const mname = realDateForIdx(0).toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' }).toUpperCase();
+  const mname = realDateForIdx(0).toLocaleDateString('pt-PT', { month: 'long' }).toUpperCase();
   let h = '<div class="ag-nav">' + mtEsc(mname) + '</div>' +
-    '<div class="ag-leg"><span style="color:#ff5d73"><i></i>Trabalho</span><span style="color:#2fd18a"><i></i>Folga</span><span style="color:#ffb020"><i style="border-radius:50%"></i>Hoje</span></div>' +
     '<div class="ag-grid">' + ['SEG','TER','QUA','QUI','SEX','SÁB','DOM'].map(x => '<div class="ag-dw">' + x + '</div>').join('');
   for(let i = 0; i < first; i++) h += '<div></div>';
   let nWork = 0, nOff = 0, nSwap = 0;
