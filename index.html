@@ -912,6 +912,20 @@
   .modal-error{ color: var(--nogo); font-size: 12.5px; margin: -4px 0 10px; }
   .modal-error.hidden{ display:none; }
   .modal-actions{ display:flex; gap:10px; justify-content:center; }
+  /* polished swap confirmation (class .swc is set by showConfirmDialog when the message is the swap card) */
+  .modal-box.swc{ display:flex; flex-direction:column; font-family:'Outfit', var(--sans); padding:22px 20px; }
+  .swc #confirm-modal-message{ order:1; margin-bottom:0 !important; }
+  .swc #confirm-modal-anon-toggle{ order:2; display:flex; align-items:center; gap:10px; justify-content:flex-start !important; margin-top:16px !important; padding-top:16px; border-top:1px solid #1c2a44; font-family:'Outfit', var(--sans); }
+  .swc #confirm-modal-anon-toggle.hidden{ display:none; }
+  .swc #confirm-modal-anon-toggle svg{ order:1; width:18px; height:18px; color:#8fa0c4; }
+  .swc #confirm-modal-anon-toggle span{ order:2; flex:1; font-family:'Outfit', var(--sans) !important; font-size:14px !important; color:#c5cfe6 !important; }
+  .swc #confirm-modal-anon-checkbox{ order:3; -webkit-appearance:none; appearance:none; position:relative; width:38px !important; height:22px; border-radius:11px; background:#27344f; border:0; margin:0 !important; padding:0; flex:none; cursor:pointer; transition:background .15s; }
+  .swc #confirm-modal-anon-checkbox::after{ content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#8fa0c4; transition:left .15s, background .15s; }
+  .swc #confirm-modal-anon-checkbox:checked{ background:#1f7a52; }
+  .swc #confirm-modal-anon-checkbox:checked::after{ left:19px; background:#fff; }
+  .swc .modal-actions{ order:3; flex-direction:column-reverse; gap:10px; margin-top:18px; }
+  .swc #confirm-modal-confirm{ width:100%; padding:13px !important; font:700 14px 'Outfit', var(--sans) !important; letter-spacing:.08em; border-radius:12px; box-shadow:0 4px 14px rgba(255,176,32,.25); }
+  .swc #confirm-modal-cancel{ background:none !important; border:0 !important; box-shadow:none !important; color:#8fa0c4 !important; font:600 14px 'Outfit', var(--sans) !important; letter-spacing:normal !important; text-transform:none !important; padding:6px !important; width:100%; text-align:center; display:flex !important; justify-content:center !important; }
   .dot{ display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; vertical-align:middle; }
   .dot-white{ background: var(--text); }
   .dot-purple{ background: var(--swap); }
@@ -3741,6 +3755,12 @@ function copyPreviewText(btn){
     legacyFallback();
   }
 }
+// "Quinta-feira, 5 de Novembro"
+function fmtDateLong(idx){
+  const d = realDateForIdx(idx);
+  return ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'][d.getDay()] + ', ' + d.getDate() + ' de ' + ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][d.getMonth()];
+}
+function spacedHours(h){ return String(h).replace(/(\d{1,2}:\d{2})-(\d{1,2}:\d{2})/g, '$1 - $2'); }
 function buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type, senderIsWorker){
   const candidateWorker = DATA.workers.find(w => w.id === workerId);
   const partnerWorker = DATA.workers.find(w => w.id === partnerId);
@@ -3780,10 +3800,11 @@ function buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type, sende
     candidateWorker.name+': '+candidateBefore+' → '+plainNowDisplay(candidateAfter)+'\n\n'+
     'Obrigado.\n'+senderName;
 
+  const _pn = 'display:block; font-weight:700; color:var(--text);', _pt = 'display:block; color:#d3d9e6; margin-top:2px;';
   return '<div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border-soft); text-align:left; font-family:var(--mono); font-size:12px;">'+
-    '<div style="color:var(--text-dim); margin-bottom:6px;">'+fmtDateLabel(idx)+'</div>'+
-    '<div style="color:var(--text-dim);"><b style="color:var(--text);">'+escapeHtml(partnerName)+':</b> '+escapeHtml(partnerBefore)+' → '+nowDisplay(partnerAfter)+'</div>'+
-    '<div style="color:var(--text-dim);"><b style="color:var(--text);">'+escapeHtml(candidateWorker.name)+':</b> '+escapeHtml(candidateBefore)+' → '+nowDisplay(candidateAfter)+'</div>'+
+    '<div style="font-family:\'Outfit\', var(--sans); font-size:14px; color:var(--text-dim); margin-bottom:12px;">'+fmtDateLong(idx)+'</div>'+
+    '<div style="margin-bottom:12px;"><b style="'+_pn+'">'+escapeHtml(partnerName)+'</b><span style="'+_pt+'">'+spacedHours(escapeHtml(partnerBefore))+' → '+spacedHours(nowDisplay(partnerAfter))+'</span></div>'+
+    '<div><b style="'+_pn+'">'+escapeHtml(candidateWorker.name)+'</b><span style="'+_pt+'">'+spacedHours(escapeHtml(candidateBefore))+' → '+spacedHours(nowDisplay(candidateAfter))+'</span></div>'+
     '</div>';
 }
 // Shows a simple yes/no prompt to actually open WhatsApp with the message pre-filled (via
@@ -3849,7 +3870,7 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
       const medTime = getMedAppointmentTime(workerId, idx) || getMedAppointmentTime(partnerId, idx);
       const hasMedIssue = !!medTime;
       const medRemarkHtml = hasMedIssue ? '<div style="margin-top:8px;">Remarks: <span style="color:#5FA8FF;">Consulta médica - '+fmtHHMM(medTime.start)+'-'+fmtHHMM(medTime.end)+'</span></div>' : '';
-      showConfirmDialog('Confirmar troca com:<b style="display:block; margin-top:2px;">'+escapeHtml(candidateName)+(candidateWorker && candidateWorker.id ? ' <span style="display:inline-block; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; margin-left:6px; font:700 11px var(--mono); vertical-align:1px;">'+escapeHtml(String(candidateWorker.id))+'</span>' : '')+'</b>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
+      showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5;">Confirmar troca com<b style="display:block; margin-top:2px; font-size:16px;">'+escapeHtml(candidateName)+(candidateWorker && candidateWorker.id ? ' <span style="display:inline-block; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; margin-left:6px; font:700 11px var(--mono); vertical-align:1px;">'+escapeHtml(String(candidateWorker.id))+'</span>' : '')+'</b></div>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
         const anonymous = document.getElementById('confirm-modal-anon-checkbox').checked;
         btn.disabled = true;
         await setSwapPartner(workerId, idx, {id: partnerId, name: partnerName}, onDone, type, anonymous);
@@ -3998,6 +4019,7 @@ function showConfirmDialog(message, onConfirm, disableConfirmBtn, confirmLabel, 
   confirmModalCallback = onConfirm;
   confirmModalOnClose = onClose || null;
   document.getElementById('confirm-modal-message').innerHTML = message;
+  const _cbox = document.querySelector('#confirm-modal .modal-box'); if(_cbox) _cbox.classList.toggle('swc', String(message).indexOf('swc-title') >= 0);
   document.getElementById('confirm-modal-confirm').disabled = !!disableConfirmBtn;
   document.getElementById('confirm-modal-confirm').textContent = confirmLabel || 'Continuar';
   document.getElementById('confirm-modal-cancel').textContent = cancelLabel || 'Cancelar';
