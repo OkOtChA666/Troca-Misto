@@ -823,6 +823,8 @@
 
   /* ---- Clássico only: joined hour bar (4H|6H|8H) + solid-amber selected buttons ---- */
   html:not(.themed) .hour-filter-row{ gap:0; }
+  html:not(.themed) .field > label:has(+ .hour-filter-row){ display:flex; align-items:center; justify-content:center; gap:14px; }
+  html:not(.themed) .field > label:has(+ .hour-filter-row)::before, html:not(.themed) .field > label:has(+ .hour-filter-row)::after{ content:""; flex:1; height:1px; background:var(--border); }
   html:not(.themed) .chip-checkbox{ flex:1; justify-content:center; border-radius:0; border-width:1px 0 1px 1px; padding:11px 0; font-weight:600; letter-spacing:.06em; position:relative; }
   html:not(.themed) .chip-checkbox:first-child{ border-radius:10px 0 0 10px; }
   html:not(.themed) .chip-checkbox:last-child{ border-radius:0 10px 10px 0; border-right-width:1px; }
@@ -1570,7 +1572,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.14</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.15</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
