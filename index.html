@@ -802,23 +802,24 @@
   .chip-checkbox{
     display:flex; align-items:center; gap:6px;
     background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 7px; padding: 8px 12px; cursor:pointer;
-    font-size: 13px; color: var(--text-dim);
+    border-radius: 7px; padding: 10px 20px; cursor:pointer;
+    font-size: 14px; color: var(--text-dim);
     text-transform:none; letter-spacing:normal;
   }
-  .chip-checkbox input{ accent-color: var(--amber); cursor:pointer; }
-  .chip-checkbox:has(input:checked){ border-color: var(--amber-dim); color: var(--amber); background: rgba(255,179,0,0.06); }
+  .chip-checkbox input{ display:none; }   /* no tick square: the whole chip is the button */
+  .chip-checkbox:has(input:checked){ border-color: var(--amber); color: var(--amber); background: rgba(255,179,0,0.10); }
 
   /* ---- checkbox field ---- */
   .checkbox-field{ margin-bottom: 14px; }
   .checkbox-label{
-    display:flex; align-items:center; justify-content:flex-start; gap:9px;
+    display:inline-flex; align-items:center; justify-content:flex-start; gap:8px;
     font-family: var(--sans); font-size: 13.5px; text-transform:none; letter-spacing:normal;
     color: var(--text); cursor:pointer;
+    padding: 7px 14px 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--panel-2);
   }
-  .checkbox-label input[type=checkbox]{
-    width:18px; height:18px; margin-top:1px; accent-color: var(--amber); flex-shrink:0; cursor:pointer;
-  }
+  .checkbox-label input[type=checkbox]{ display:none; }   /* no tick square: the whole chip is the button */
+  .checkbox-label:has(input:checked){ border-color: var(--amber); background: rgba(255,179,0,0.10); }
+  .checkbox-label:has(input:checked) .mono-label{ color: var(--amber); }
 
   /* ---- skills list ---- */
   .skills-stats{
@@ -1556,7 +1557,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.10</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.11</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
