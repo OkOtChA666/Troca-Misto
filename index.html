@@ -339,7 +339,7 @@
   html.themed input[type=text], html.themed input[type=number], html.themed input[type=time], html.themed select{ border-radius:var(--r); font-family:var(--sans); }
   html.themed .request-type-chip, html.themed .chip-checkbox{ border-radius:var(--r); font-family:var(--sans); font-weight:600; letter-spacing:.02em; }
   /* Pro: no "Data" label above the day strip; hour and company options are tap-to-select chips (no tick boxes) */
-  html.theme-pro label[for="cover-date"], html.theme-pro label[for="trade-a-date"], html.theme-pro label[for="request-date"]{ display:none; }
+  label[for="cover-date"], label[for="trade-a-date"], label[for="request-date"]{ display:none; }
   html.theme-pro .field > label:has(+ .hour-filter-row){ display:none; }
   html.theme-pro .chip-checkbox input, html.theme-pro .checkbox-label input[type=checkbox]{ display:none; }
   html.theme-pro .chip-checkbox{ padding:10px 20px; font-size:14px; }
@@ -1570,7 +1570,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.12</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.14</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -3021,8 +3021,10 @@ updateAgentDelta();
 document.getElementById('stat-range').textContent = MONTH_FULL[(DATA.month||'2026-09').split('-')[1]] || 'SETEMBRO';
 // VERSÃO is the app version written in the header HTML; the roster's own version (month.01) no longer overrides it
 
+const WD_PT = {Sun:'Dom',Mon:'Seg',Tue:'Ter',Wed:'Qua',Thu:'Qui',Fri:'Sex',Sat:'Sáb'};
+const MON_PT = {Jan:'Jan',Feb:'Fev',Mar:'Mar',Apr:'Abr',May:'Mai',Jun:'Jun',Jul:'Jul',Aug:'Ago',Sep:'Set',Oct:'Out',Nov:'Nov',Dec:'Dez'};
 function fmtDateLabel(i){
-  return WEEKDAYS[i] + ' ' + String(DATA.days[i]).padStart(2,'0') + ' ' + MONTH_ABBR;
+  return (WD_PT[WEEKDAYS[i]] || WEEKDAYS[i]) + ' ' + String(DATA.days[i]).padStart(2,'0') + ' ' + (MON_PT[MONTH_ABBR] || MONTH_ABBR);
 }
 // A swap's idx is only ever a position within WHATEVER month is currently loaded — it means
 // nothing on its own once a different month's schedule replaces the one it was created under.
@@ -3035,8 +3037,8 @@ function fmtSwapDateRobust(swapData, idx){
   if(swapData && swapData.calendarDate){
     const [y, m, d] = swapData.calendarDate.split('-').map(Number);
     const dateObj = new Date(y, m - 1, d);
-    const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const weekdayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     return weekdayNames[dateObj.getDay()] + ' ' + String(d).padStart(2,'0') + ' ' + monthNames[m-1];
   }
   return fmtDateLabel(idx);
