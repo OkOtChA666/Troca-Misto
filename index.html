@@ -800,6 +800,8 @@
   }
   .request-type-chip.active{ background:#1A1200; border-color:var(--amber); color:var(--amber); }
 
+  /* NOME box: hidden for everyone except the main admin (the name is already in the header) */
+  html:not(.main-admin) #combo-cover-name, html:not(.main-admin) #combo-trade-a, html:not(.main-admin) #combo-request-name{ display:none; }
   /* ---- PEDIDOS inside ÁREA PESSOAL → OS MEUS PEDIDOS ---- */
   .reqs-new-btn{ display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:15px; margin:0 0 16px; border:0; border-radius:12px; background:linear-gradient(180deg,#ffc933,#ffb000); color:#1a1200; font:800 14px var(--mono); letter-spacing:.14em; cursor:pointer; box-shadow:0 6px 18px rgba(255,179,0,.25); }
   .req-type-row{ display:flex; gap:10px; }
@@ -1190,8 +1192,8 @@
   html.grp-sup #extra-hours-link{ display:none !important; }
   #extra-hours-link, #extra-hours-div{ display:none !important; }   /* HORAS EXTRA now lives inside ÁREA PESSOAL */
   html.grp-sup #area-card-extra{ display:none !important; }
-  html.grp-sup #area-card-agenda{ display:none !important; }
   html.grp-sup #area-card-double{ display:none !important; }
+  html.grp-sup #area-card-reqs{ display:none !important; }   /* PEDIDOS is not used in SUPERVISÃO */
   .ag-nav{ text-align:center; font-family:var(--mono); font-weight:700; letter-spacing:.12em; font-size:15px; margin:2px 0 12px; }
   .ag-leg{ display:flex; gap:14px; justify-content:center; font-size:12px; margin-bottom:12px; }
   .ag-leg i{ display:inline-block; width:11px; height:11px; border-radius:3px; border:2px solid; margin-right:5px; vertical-align:-1px; }
@@ -1579,7 +1581,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.17</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.19</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -4481,6 +4483,7 @@ document.addEventListener('click', e => {
 });
 function applyAdminVisibility(){
   applyTheme();
+  document.documentElement.classList.toggle('main-admin', !!isAdminSession);   // only the main admin still sees the NOME box (staff can only ever see their own name)
   const adminLink = document.getElementById('schedule-override-link');
   if(adminLink) adminLink.style.display = 'none';   // ADMIN now lives in the name card (user menu)
   const verWrap = document.getElementById('stat-version-wrap');
@@ -10071,7 +10074,7 @@ function areaSaveFavs(a){ try{ localStorage.setItem(AREA_FAV_KEY, JSON.stringify
 function renderAreaHubOrder(){
   const hub = document.getElementById('area-hub'); if(!hub) return;
   const favs = areaFavs();
-  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'agenda' || k === 'double') && GROUP === 'sup') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays())) && !(k === 'themes' && !themeProAvailable()));
+  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'double' || k === 'reqs') && GROUP === 'sup') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays())) && !(k === 'themes' && !themeProAvailable()));
   const fav = list.filter(([k]) => favs.indexOf(k) >= 0), rest = list.filter(([k]) => favs.indexOf(k) < 0);
   try{ const dc = document.getElementById('area-card-double'); if(dc) dc.style.display = (GROUP !== 'sup' && doubleShiftEnabled && hasShortShiftDays()) ? '' : 'none'; }catch(e){}
   try{ const tc = document.getElementById('area-card-themes'); if(tc) tc.style.display = themeProAvailable() ? '' : 'none'; }catch(e){}
