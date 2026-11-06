@@ -1581,7 +1581,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.19</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.20</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -9954,6 +9954,14 @@ function closeMyTasks(){
 // Tabs inside ÁREA PESSOAL
 let AREA_VIEW = 'hub';
 const AREA_TITLES = { hub: 'ÁREA PESSOAL', swaps: 'AS MINHAS TROCAS', reqs: 'OS MEUS PEDIDOS', tasks: 'AS MINHAS TAREFAS', agenda: 'A MINHA AGENDA', themes: 'TEMAS' };
+// SUPERVISÃO: the same screen is called OS MEUS VOOS (the flights each supervisor picks)
+if(GROUP === 'sup'){
+  AREA_TITLES.tasks = 'OS MEUS VOOS';
+  try{
+    const ct = document.querySelector('#area-card-tasks .ac-t'); if(ct && ct.firstChild) ct.firstChild.textContent = 'OS MEUS VOOS';
+    const tb = document.querySelector('#area-tab-btn-tasks > span'); if(tb && tb.firstChild) tb.firstChild.textContent = 'OS MEUS VOOS';
+  }catch(e){}
+}
 function areaSetTitle(v){ AREA_VIEW = v; const lw = document.getElementById('area-logout-wrap'); if(lw) lw.style.display = (v === 'hub') ? '' : 'none'; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; }
 function updateAreaHubDot(){
   const d = document.getElementById('area-tasks-dot'); if(!d) return;
