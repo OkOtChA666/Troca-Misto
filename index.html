@@ -1329,8 +1329,10 @@
   .mt-time{ font-family:var(--mono); font-weight:700; font-size:14px; color:var(--text); min-width:98px; white-space:nowrap; }
   .mt-label{ flex:1; font-size:14px; color:var(--text); word-break:break-word; }
   .mt-chip{ font-family:var(--mono); font-size:10px; letter-spacing:0.08em; padding:3px 7px; border-radius:5px; white-space:nowrap; }
-  .mt-chip.now{ color:var(--go); background:var(--go-dim); border:1px solid rgba(51,214,139,0.35); }
-  .mt-chip.next{ color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.35); }
+  .mt-chip.now, .mt-chip.next{ position:absolute; top:-1px; right:-1px; font-family:var(--disp),'Big Shoulders Display',sans-serif; font-weight:800; font-size:13px; letter-spacing:.14em; padding:5px 12px 4px 14px; border:0; border-radius:0 10px 0 10px; color:#0b1220; z-index:2; }   /* status tab fixed to the card's top-right corner */
+  .mt-chip.now{ background:#4fd1f0; }
+  .mt-chip.next{ background:#ffb020; }
+  .mt-row.has-status .mt-side{ margin-top:22px; }
   .mt-chip.chg{ color:var(--swap); background:var(--swap-dim); border:1px solid rgba(185,140,255,0.35); }
   .mt-row{ border-left-width:5px; }
   .mt-kind{ font-family:var(--mono); font-size:10px; letter-spacing:0.08em; padding:2px 6px; border-radius:4px; white-space:nowrap; color:#fff; margin-right:8px; font-weight:700; }
@@ -1593,7 +1595,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.31</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.32</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -10791,13 +10793,13 @@ function renderMyTasks(){
       const teamHtml = mtTeamHtml(t, colr, rowKey);
       if(/^(break|pausa|pause)$/i.test(nk)){
         html += '<div class="mt-row mt-break' + cls + '"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
-                '<div class="mt-break-word">BREAK</div><div class="mt-side">' + chip + bdg + '</div></div>';
+                '<div class="mt-break-word">BREAK</div>' + chip + '<div class="mt-side">' + bdg + '</div></div>';
         return;
       }
       html += '<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
               '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + '</div>' +
-              '<div class="mt-side">' + chip + bdg + '</div>' + tabHtml + teamHtml + '</div>';
+              chip + '<div class="mt-side">' + bdg + '</div>' + tabHtml + teamHtml + '</div>';
     });
   }
   html += '<div class="mt-foot"><span style="color:var(--amber);">' + updTxt + '.</span><div style="height:12px;"></div>Em caso de dúvida, confirma sempre na plataforma oficial.</div>';
