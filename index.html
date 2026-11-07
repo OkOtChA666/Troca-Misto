@@ -1595,7 +1595,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.39</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.40</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2269,6 +2269,17 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Link - Apoiar projecto</span>
       </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="swap-warning-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Aviso antes de submeter uma troca</span>
+      </label>
+      <div style="margin-top:10px; text-transform:none; letter-spacing:normal;">
+        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Destino indicado no aviso</div>
+        <input type="text" id="swap-warning-dest-input" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--sans); font-size:13px;">
+      </div>
       <div style="margin-top:18px; text-transform:none; letter-spacing:normal;">
         <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Companhias nos VOOS (códigos separados por vírgula)</div>
         <textarea id="flight-airlines-input" rows="3" style="width:100%; box-sizing:border-box; font-family:var(--mono); font-size:12px; color:var(--text); background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:10px;"></textarea>
@@ -4125,6 +4136,7 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
     btn.textContent = 'TROCAR';
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      mtSwapWarning(() => {
       const medTime = getMedAppointmentTime(workerId, idx) || getMedAppointmentTime(partnerId, idx);
       const hasMedIssue = !!medTime;
       const medRemarkHtml = hasMedIssue ? '<div style="margin-top:8px;">Remarks: <span style="color:#5FA8FF;">Consulta médica - '+fmtHHMM(medTime.start)+'-'+fmtHHMM(medTime.end)+'</span></div>' : '';
@@ -4136,6 +4148,7 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
           maybeOfferTrocaForm(workerId, idx, partnerId, partnerName, type, showSwapSuccessMessage);
         });
       }, hasMedIssue, 'CONFIRMAR', true);
+      });   // end of the warning step
     });
     row.appendChild(info);
     row.appendChild(btn);
@@ -8774,6 +8787,40 @@ document.getElementById('support-email-test-btn').addEventListener('click', asyn
   const ok = await sendSupportEmail({ 'Mensagem': 'Email de teste da plataforma TROCA-MISTO.', 'Enviado em': new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' }) }, 'TESTE · TROCA-MISTO');
   st.style.color = ok ? 'var(--go)' : 'var(--nogo)';
   st.textContent = (ok ? 'Pedido aceite. ' : 'Não foi possível enviar. ') + SUPPORT_EMAIL_LAST;   // stays on screen so the real answer can be read
+});
+// ---------- AVISO ANTES DE SUBMETER UMA TROCA: warning with a 5-second countdown after pressing TROCAR (switched on/off and addressed from RULES, admin only) ----------
+let swapWarning = { enabled:false, dest:'-----------' };
+async function loadSwapWarning(){
+  try{ const doc = await dbGetShared('swapWarning', null); if(doc){ swapWarning = { enabled: !!doc.enabled, dest: String(doc.dest || swapWarning.dest) }; } }catch(e){}
+  try{ document.getElementById('swap-warning-enabled-toggle').checked = swapWarning.enabled; document.getElementById('swap-warning-dest-input').value = swapWarning.dest; }catch(e){}
+}
+setTimeout(loadSwapWarning, 0);
+async function mtSwapWarning(next){
+  try{ await loadSwapWarning(); }catch(e){}
+  if(!swapWarning.enabled){ next(); return; }
+  const ic = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v5M12 18.2v.1"/></svg>';
+  let left = 5, timer = null;
+  const stop = () => { if(timer){ clearInterval(timer); timer = null; } const b = document.getElementById('confirm-modal-confirm'); if(b){ b.style.opacity = ''; b.style.filter = ''; } };
+  showConfirmDialog('<div style="text-align:center;">' + ic + '<div style="font-family:var(--mono); font-weight:700; letter-spacing:.14em; color:var(--amber); font-size:15px; margin:6px 0 12px;">ATENÇÃO</div>' +
+    '<div style="text-align:left; font-size:13.5px; line-height:1.55; color:var(--text);">Com a plataforma Troca-Misto, submeter um pedido de troca é cada vez mais simples e rápido.<br><br>' +
+    'Após a submissão, o teu pedido será automaticamente encaminhado para:<div style="margin-top:8px;"><b>' + escapeHtml(swapWarning.dest) + '</b></div><br>' +
+    'Pedimos que confirmes todas as informações antes de submeteres o pedido, de forma a evitar trocas desnecessárias ou pedidos submetidos por engano.<br><br>' +
+    'Agradecemos a tua atenção e colaboração!</div></div>', () => { stop(); next(); }, true, 'CONTINUAR · 5', false, stop, 'VOLTAR');
+  const btn = document.getElementById('confirm-modal-confirm');
+  btn.style.opacity = '.35'; btn.style.filter = 'grayscale(.6)';
+  timer = setInterval(() => {
+    const b = document.getElementById('confirm-modal-confirm'), m = document.getElementById('confirm-modal');
+    if(!b || !m || m.classList.contains('hidden')){ stop(); if(b){ b.style.opacity = ''; b.style.filter = ''; } return; }
+    left--;
+    if(left > 0){ b.textContent = 'CONTINUAR · ' + left; }
+    else { stop(); b.textContent = 'CONTINUAR'; b.disabled = false; b.style.opacity = ''; b.style.filter = ''; }
+  }, 1000);
+}
+document.getElementById('swap-warning-enabled-toggle').addEventListener('change', async (e) => {
+  swapWarning.enabled = e.target.checked; await dbSetShared('swapWarning', swapWarning);
+});
+document.getElementById('swap-warning-dest-input').addEventListener('change', async (e) => {
+  swapWarning.dest = e.target.value.trim() || '-----------'; e.target.value = swapWarning.dest; await dbSetShared('swapWarning', swapWarning);
 });
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
