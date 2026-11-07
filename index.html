@@ -1332,7 +1332,7 @@
   .rules-tab-btn{ flex:1; text-align:center; padding:10px 0 9px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--text-dim); border-bottom:2px solid transparent; cursor:pointer; user-select:none; }
   .rules-tab-btn.on{ color:var(--amber); border-bottom-color:var(--amber); }
   .rules-tab > :first-child{ margin-top:0 !important; border-top:0 !important; padding-top:0 !important; }
-  .mt-chip.now, .mt-chip.next{ position:absolute; top:-1px; right:-1px; font-family:var(--disp),'Big Shoulders Display',sans-serif; font-weight:800; font-size:13px; letter-spacing:.14em; padding:5px 12px 4px 14px; border:0; border-radius:0 10px 0 10px; color:#0b1220; z-index:2; }   /* status tab fixed to the card's top-right corner */
+  .mt-chip.now, .mt-chip.next{ position:absolute; top:-1px; right:-1px; font-family:var(--disp),'Big Shoulders Display',sans-serif; font-weight:800; font-size:9.5px; letter-spacing:.14em; padding:2px 7px 2px 9px; border:0; border-radius:0 10px 0 10px; color:#0b1220; z-index:2; }   /* status tab fixed to the card's top-right corner */
   .mt-chip.now{ background:#4fd1f0; }
   .mt-chip.next{ background:#ffb020; }
   .mt-row.has-status .mt-side{ margin-top:22px; }
@@ -1386,6 +1386,13 @@
   .mt-team{ position:absolute; left:14px; bottom:-1px; height:26px; padding:0 9px; background:#e8eefc; color:#46526b; border-radius:10px 10px 0 0; font-family:var(--mono); font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px; cursor:pointer; }
   .mt-team b{ color:#0b1220; }
   .mt-row.team-open{ z-index:5; }
+  /* finished tasks (5+ min ago) fold into a stack of overlapping cards; one tap opens it, a tap on a card folds it back */
+  .mt-pstack{ position:relative; margin-bottom:8px; cursor:pointer; }
+  .mt-pstack:not(.open) .mt-row{ position:relative; opacity:1; height:34px; min-height:0; overflow:hidden; margin-bottom:-8px; box-sizing:border-box; box-shadow:0 -4px 10px rgba(0,0,0,.45); background:var(--panel-2); }
+  .mt-pstack:not(.open) .mt-row:not(.mt-break){ background:var(--panel-2); }
+  .mt-pstack:not(.open) .mt-row.mt-break{ background:#101b30; }
+  .mt-pstack:not(.open) .mt-row:last-child{ height:auto; min-height:115px; margin-bottom:0; overflow:visible; }
+  .mt-pstack:not(.open) .mt-row:not(:last-child) .mt-label, .mt-pstack:not(.open) .mt-row:not(:last-child) .mt-break-word, .mt-pstack:not(.open) .mt-row:not(:last-child) .mt-info, .mt-pstack:not(.open) .mt-row:not(:last-child) .mt-side{ display:none; }
   .mt-pop{ display:none; position:absolute; left:12px; bottom:30px; z-index:20; background:#22355c; border:1px solid #8fa0c4; border-radius:10px; padding:10px 14px; min-width:190px; box-shadow:0 8px 24px rgba(0,0,0,.5); font-family:var(--mono); font-size:13px; color:#e8eefc; text-align:left; }
   .mt-row.team-open .mt-pop{ display:block; }
   .mt-pop h6{ margin:0 0 6px; font-size:10px; letter-spacing:.14em; color:#ffb020; }
@@ -1598,7 +1605,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.48</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.50</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -11115,15 +11122,16 @@ function renderMyTasks(){
       if(m){ badges[m[1]] = 'TAREFA NOVA'; return; }
       // only genuinely new tasks get the badge (time changes / updates / removals do not)
     });
+    const stackRows = [], liveRows = [];
     const items = rec.t.slice();
     items.sort((p, q) => String(p[1]).localeCompare(String(q[1])));
     items.forEach(t => {
       const label = String(t[0] || ''), start = t[1], end = t[2], changed = !!t[4] || label.startsWith('<');
       const s = mtToMin(start); let e = mtToMin(end);
       if(s !== null && e !== null && e <= s) e += 1440;               // crosses midnight
-      let cls = '', chip = '';
+      let cls = '', chip = '', stacked = false;
       if(sameDay && s !== null && e !== null){
-        if(nowMin >= e) cls = ' past';
+        if(nowMin >= e){ cls = ' past'; stacked = nowMin >= e + 5; }
         else if(nowMin >= s){ cls = ' now'; chip = '<span class="mt-chip now">A DECORRER</span>'; }
         else if(!nextMarked && nextOk){ nextMarked = true; chip = '<span class="mt-chip next">A SEGUIR</span>'; }
       }
@@ -11136,20 +11144,25 @@ function renderMyTasks(){
       const rowKey = mtKey(t) + '|' + colr + '|' + start;
       const teamHtml = mtTeamHtml(t, colr, rowKey);
       if(/^(break|pausa|pause)$/i.test(nk)){
-        html += '<div class="mt-row mt-break' + cls + '"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
-                '<div class="mt-break-word">BREAK</div>' + chip + '<div class="mt-side">' + bdg + '</div></div>';
+        (stacked ? stackRows : liveRows).push('<div class="mt-row mt-break' + cls + '"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
+                '<div class="mt-break-word">BREAK</div>' + chip + '<div class="mt-side">' + bdg + '</div></div>');
         return;
       }
-      html += '<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
+      (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
               '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + '</div>' +
-              chip + '<div class="mt-side">' + bdg + '</div>' + tabHtml + teamHtml + '</div>';
+              chip + '<div class="mt-side">' + bdg + '</div>' + tabHtml + teamHtml + '</div>');
     });
+    if(stackRows.length) html += '<div class="mt-pstack' + (mtPastOpen ? ' open' : '') + '">' + stackRows.join('') + '</div>';
+    html += liveRows.join('');
   }
   html += '<div class="mt-foot"><span style="color:var(--amber);">' + updTxt + '.</span><div style="height:12px;"></div>Em caso de dúvida, confirma sempre na plataforma oficial.</div>';
   body.innerHTML = html;
 }
+let mtPastOpen = false;
 document.addEventListener('click', ev => {
+  const ps = ev.target.closest && ev.target.closest('.mt-pstack');
+  if(ps && !(ev.target.closest('.mt-team, .mt-pop, a, button') && ps.classList.contains('open'))){ mtPastOpen = !mtPastOpen; ps.classList.toggle('open', mtPastOpen); return; }
   const tb = ev.target.closest && ev.target.closest('.mt-team');
   if(!tb) return;
   const row = tb.closest('.mt-row'), k = tb.getAttribute('data-k');
