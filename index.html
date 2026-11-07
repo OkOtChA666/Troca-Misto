@@ -1533,7 +1533,10 @@
   <div class="modal-box" style="max-width:420px; text-align:left;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
       <span style="font-family:var(--mono); font-size:15px; font-weight:800; letter-spacing:3px; color:var(--amber);">NOTIFICAÇÕES</span>
+      <span style="display:flex; align-items:center; gap:14px;">
+      <button type="button" id="notif-coord-toggle" role="switch" aria-checked="true" title="Esconder avisos «alterada pelo coordenador»" style="position:relative; width:26px; height:14px; border-radius:7px; border:0; padding:0; cursor:pointer; background:var(--amber); flex-shrink:0;"><i style="position:absolute; top:2px; left:14px; width:10px; height:10px; border-radius:50%; background:#1a1200; transition:left .15s;"></i></button>
       <button type="button" id="notifications-modal-close" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1; padding:0;">&times;</button>
+      </span>
     </div>
     <div id="notifications-modal-sub" style="font-family:var(--mono); font-size:10.5px; letter-spacing:1px; color:var(--text-dim); margin:-8px 0 10px;"></div>
     <div style="height:2px; background:linear-gradient(90deg,var(--amber),transparent); margin-bottom:10px;"></div>
@@ -1581,7 +1584,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.24</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.25</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -7707,7 +7710,7 @@ function setupNotificationsListener(staffId){
 }
 function openNotificationsModal(){
   try{ NOTIF_OPEN_SNAPSHOT = { ids: new Set(Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id)), seenTs: (typeof mtSeen === 'function' ? mtSeen() : 0) }; }catch(e){ NOTIF_OPEN_SNAPSHOT = null; }
-  renderNotificationsList();
+  mtCoordToggleSync(); renderNotificationsList();
   document.getElementById('notifications-modal').classList.remove('hidden');
   // Opening the list is what counts as "seen" — mark every currently-unread entry as read.
   const unreadIds = Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id);
@@ -7715,6 +7718,10 @@ function openNotificationsModal(){
   try{ if(MT_DOC) mtMarkSeen(); }catch(e){}
 }
 document.getElementById('notifications-bell-link').addEventListener('click', openNotificationsModal);
+document.getElementById('notif-coord-toggle').addEventListener('click', () => {
+  try{ localStorage.setItem('trocaMistoShowCoord', mtHideCoord() ? '1' : '0'); }catch(e){}
+  mtCoordToggleSync(); renderNotificationsList(); renderNotificationsBadge();
+});
 // only the bell opens the notifications; the number next to it is display-only
 // ✕ on a notification: hides it for this person (kept in the database, just no longer shown or counted).
 document.getElementById('notifications-modal-list').addEventListener('click', (e) => {
@@ -9912,7 +9919,16 @@ function mtEsc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&
 function mtToMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
 function mtPad(n){ return String(n).padStart(2, '0'); }
 function mtStaffId(){ try{ return localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){ return null; } }
-function mtChanges(){ return mtChangesSplit().keep; }
+// small switch in the bell: ON (default) hides the "alterada pelo coordenador" notes; the choice is kept on this phone only
+function mtHideCoord(){ try{ return localStorage.getItem('trocaMistoShowCoord') !== '1'; }catch(e){ return true; } }
+function mtCoordToggleSync(){
+  const b = document.getElementById('notif-coord-toggle'); if(!b) return;
+  const on = mtHideCoord();
+  b.setAttribute('aria-checked', on ? 'true' : 'false');
+  b.style.background = on ? 'var(--amber)' : '#2a3550';
+  const k = b.firstElementChild; if(k){ k.style.left = on ? '14px' : '2px'; k.style.background = on ? '#1a1200' : '#8a94a8'; }
+}
+function mtChanges(){ return mtChangesSplit().keep.filter(x => !(mtHideCoord() && /: alterada pelo coordenador$/.test(String(x[1] || '')))); }
 function mtFalseAlarms(){ return mtChangesSplit().notes; }
 function mtChangesSplit(){
   const none = { keep:[], notes:[] };
