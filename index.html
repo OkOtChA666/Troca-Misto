@@ -1598,7 +1598,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.43</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.45</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2092,9 +2092,14 @@
 
     <div id="turnaround-flight-picker">
       <div class="field combo" id="combo-turnaround-flight">
-        <label for="turnaround-flight-input">VOO</label>
-        <input type="text" id="turnaround-flight-input" placeholder="Ex: TP1234" autocomplete="off" maxlength="6" style="text-transform:uppercase;">
+        <label for="turnaround-flight-input">VOO DE CHEGADA</label>
+        <input type="text" id="turnaround-flight-input" placeholder="Ex: SK1937" autocomplete="off" maxlength="6" style="text-transform:uppercase;">
       </div>
+      <div class="field combo" id="combo-turnaround-flight2" style="margin-top:12px;">
+        <label for="turnaround-flight-input2">VOO DE PARTIDA</label>
+        <input type="text" id="turnaround-flight-input2" placeholder="Ex: SK1938" autocomplete="off" maxlength="6" style="text-transform:uppercase;">
+      </div>
+      <div class="hint" id="turnaround-pair-hint" style="margin:8px 0 12px; min-height:18px; color:var(--cyan);">Preenche pelo menos um dos dois.</div>
       <button type="button" class="btn" id="turnaround-flight-open-btn" disabled>Abrir</button>
       <div class="recent-swaps-section" id="turnaround-active-section">
         <div id="turnaround-active-list"></div>
@@ -7919,7 +7924,11 @@ function buildTurnaroundField(f, compact){
         let _sid = ''; try{ _sid = localStorage.getItem('trocaMistoLoginStaffId') || ''; }catch(e){}
         const _w = DATA.workers.find(w => w.id === _sid);
         _meta = { _day: todayDateString(), _createdAt: Date.now(), _by: _w ? _w.name : _sid };
+        if(currentPair){ _meta._arr = currentPair.arr; _meta._dep = currentPair.dep; }
         TURNAROUNDS[currentFlight] = Object.assign({}, _meta);
+      } else if(currentPair && !TURNAROUNDS[currentFlight]._dep){
+        _meta = { _arr: currentPair.arr, _dep: currentPair.dep };   // older record: link the two numbers now
+        Object.assign(TURNAROUNDS[currentFlight], _meta);
       }
       const existing = normalizeFieldRecord(TURNAROUNDS[currentFlight][f.key]);
       const _val = { value: nowClockTime(), previous: existing ? existing.value : null, ts: Date.now() };
@@ -8054,7 +8063,8 @@ function buildFlightRow(flight, i){
   row.style.animationDelay = (i*20)+'ms';
   const airlineCode = flight.slice(0, 2);
   const flightNum = flight.slice(2);
-  const flightHtml = '<span style="color:var(--amber); font-weight:700;">'+escapeHtml(airlineCode)+'</span> <span>'+escapeHtml(flightNum)+'</span>';
+  const _f1 = k => '<span style="color:var(--amber); font-weight:700;">'+escapeHtml(k.slice(0,2))+'</span> <span>'+escapeHtml(k.slice(2))+'</span>';
+  const flightHtml = (rec._arr && rec._dep) ? _f1(rec._arr)+' → '+_f1(rec._dep) : _f1(flight);
   const createdTimeHtml = rec._createdAt
     ? '<br>criado às '+String(new Date(rec._createdAt).getHours()).padStart(2,'0')+':'+String(new Date(rec._createdAt).getMinutes()).padStart(2,'0')
     : '';
@@ -8148,15 +8158,20 @@ function renderActiveFlights(){
   }
 }
 let turnaroundLiveRefreshTimer = null;
-function openFlight(flight){
+let currentPair = null;   // {arr, dep} chosen on the picker, saved with the record at first registration
+function openFlight(flight, pair){
   currentFlight = flight;
+  currentPair = pair && pair.arr && pair.dep ? pair : null;
   document.getElementById('turnaround-flight-picker').classList.add('hidden');
   document.getElementById('turnaround-flight-view').classList.remove('hidden');
   document.getElementById('turnaround-switch-flight-btn').classList.remove('hidden');
   const airlineCode = flight.slice(0, 2);
   const flightNum = flight.slice(2);
-  document.getElementById('turnaround-flight-title').innerHTML =
-    '<span style="color:var(--amber); text-shadow: 0 0 14px var(--amber-glow);">'+escapeHtml(airlineCode)+'</span> <span style="color:var(--text);">'+escapeHtml(flightNum)+'</span>';
+  const _pr = Object.assign({}, TURNAROUNDS[flight] || {}); if(!_pr._arr && currentPair){ _pr._arr = currentPair.arr; _pr._dep = currentPair.dep; }
+  const _ft = k => '<span style="color:var(--amber); text-shadow: 0 0 14px var(--amber-glow);">'+escapeHtml(k.slice(0,2))+'</span> <span style="color:var(--text);">'+escapeHtml(k.slice(2))+'</span>';
+  document.getElementById('turnaround-flight-title').innerHTML = (_pr._arr && _pr._dep)
+    ? _ft(_pr._arr)+' <span style="opacity:.5; font-size:20px;">→</span> '+_ft(_pr._dep)
+    : _ft(flight);
   renderTurnaroundFields();
 }
 // True only when every field is both filled in AND past its lock threshold — at that
@@ -8170,15 +8185,25 @@ function isFlightFullyLockedAndComplete(flight){
     return fr.ts && (Date.now() - fr.ts) > f.lockAfterMinutes*60*1000;
   });
 }
-function selectFlight(flight){
+// A record may be saved under one number but linked to both (_arr / _dep): find it from either.
+function taAlias(flight){
+  if(TURNAROUNDS[flight]) return flight;
+  const k = Object.keys(TURNAROUNDS).find(x => { const v = TURNAROUNDS[x] || {}; return v._arr === flight || v._dep === flight; });
+  return k || flight;
+}
+function selectFlight(flight, pair){
+  if(pair && pair.arr && pair.dep){
+    const a = TURNAROUNDS[pair.arr] ? pair.arr : (TURNAROUNDS[pair.dep] ? pair.dep : taAlias(pair.arr));
+    flight = TURNAROUNDS[a] ? a : pair.arr;
+  } else flight = taAlias(flight);
   const rec = TURNAROUNDS[flight] || {};
   const hasExisting = TURNAROUND_ROWS.flat().some(f => normalizeFieldRecord(rec[f.key]));
   if(hasExisting && !isFlightFullyLockedAndComplete(flight)){
     showConfirmDialog('O voo "'+flight+'" já tem horários registados, queres continuar este voo?', () => {
-      openFlight(flight);
+      openFlight(flight, pair);
     });
   } else {
-    openFlight(flight);
+    openFlight(flight, pair);
   }
 }
 function backToFlightPicker(){
@@ -8187,7 +8212,8 @@ function backToFlightPicker(){
   document.getElementById('turnaround-switch-flight-btn').classList.add('hidden');
   document.getElementById('turnaround-flight-picker').classList.remove('hidden');
   document.getElementById('turnaround-flight-input').value = '';
-  document.getElementById('turnaround-flight-open-btn').disabled = true;
+  document.getElementById('turnaround-flight-input2').value = '';
+  taPickerUpdate();
   renderActiveFlights();
 }
 function openTurnaround(){
@@ -8345,27 +8371,62 @@ function setFlightsTab(t){
 document.getElementById('flights-tab-dep').addEventListener('click', () => setFlightsTab('dep'));
 document.getElementById('flights-tab-arr').addEventListener('click', () => setFlightsTab('arr'));
 
-document.getElementById('turnaround-flight-input').addEventListener('input', (e) => {
-  const before = e.target.value;
-  const lengthBefore = before.length;
-  const cursorBefore = e.target.selectionStart;
-  // IATA-style: 2-character airline code, then up to 4 digits — nothing else
-  const cleaned = before.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const prefix = cleaned.slice(0, 2);
-  const digits = cleaned.slice(2).replace(/[^0-9]/g, '').slice(0, 4);
-  const finalVal = prefix + digits;
-  e.target.value = finalVal;
-  const newPos = Math.max(0, cursorBefore - (lengthBefore - finalVal.length));
-  e.target.setSelectionRange(newPos, newPos);
-  document.getElementById('turnaround-flight-open-btn').disabled = finalVal.length !== 6;
+// Finds the other half of a rotation in the flight list: same registration, else same airline and number +/- 1 (only if unique)
+function taPairLookup(key, side){
+  try{
+    const data = JSON.parse(FL_DOC.json) || {};
+    const mine = (side === 'arr' ? data.arr : data.dep) || [], other = (side === 'arr' ? data.dep : data.arr) || [];
+    const me = mine.find(r => sfKey(r.n) === key); if(!me) return null;
+    const reg = String(me.reg || '').trim().toUpperCase(), f = flSplit(me.n);
+    let m = reg ? other.filter(r => String(r.reg || '').trim().toUpperCase() === reg) : [], how = 'mesma matrícula (' + reg + ')';
+    if(!m.length){
+      const num = parseInt(f.num, 10) + (side === 'arr' ? 1 : -1);
+      m = other.filter(r => { const g = flSplit(r.n), rr = String(r.reg || '').trim().toUpperCase(); return g.code === f.code && parseInt(g.num, 10) === num && (!reg || !rr || rr === reg); });
+      how = 'número seguinte do mesmo voo';
+    }
+    return m.length === 1 ? { key: sfKey(m[0].n), how } : null;
+  }catch(e){ return null; }
+}
+function taCleanFlight(v){
+  const cleaned = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return cleaned.slice(0, 2) + cleaned.slice(2).replace(/[^0-9]/g, '').slice(0, 4);
+}
+function taFmt(k){ return k.replace(/^([A-Z0-9]{2})/, '$1 '); }
+function taPickerUpdate(){
+  const i1 = document.getElementById('turnaround-flight-input'), i2 = document.getElementById('turnaround-flight-input2');
+  const hint = document.getElementById('turnaround-pair-hint'), btn = document.getElementById('turnaround-flight-open-btn');
+  const a = i1.value.trim(), d = i2.value.trim();
+  const okA = a.length === 6, okD = d.length === 6;
+  const bad = (a && !okA) || (d && !okD);
+  btn.disabled = bad || (!okA && !okD);
+  let h = 'Preenche pelo menos um dos dois.', sug = null;
+  if(okA && okD){
+    const p = taPairLookup(a, 'arr');
+    h = p && p.key === d ? '✓ Encontrado na lista de voos · ' + p.how : '';
+  } else if(okA){
+    const p = taPairLookup(a, 'arr'); if(p){ sug = { box: 2, key: p.key }; h = 'Sugestão partida: ' + taFmt(p.key) + ' — ' + p.how + '. '; } else h = '';
+  } else if(okD){
+    const p = taPairLookup(d, 'dep'); if(p){ sug = { box: 1, key: p.key }; h = 'Sugestão chegada: ' + taFmt(p.key) + ' — ' + p.how + '. '; } else h = '';
+  }
+  hint.textContent = h;
+  if(sug){
+    const u = document.createElement('a'); u.href = '#'; u.textContent = 'Usar'; u.style.cssText = 'color:var(--amber); text-decoration:underline; font-weight:700;';
+    u.addEventListener('click', ev => { ev.preventDefault(); (sug.box === 1 ? i1 : i2).value = sug.key; taPickerUpdate(); });
+    hint.appendChild(u);
+  }
+}
+function taPickerOpen(){
+  const a = document.getElementById('turnaround-flight-input').value.trim(), d = document.getElementById('turnaround-flight-input2').value.trim();
+  if(document.getElementById('turnaround-flight-open-btn').disabled) return;
+  if(a.length === 6 && d.length === 6) selectFlight(normalizeFlightId(a), { arr: normalizeFlightId(a), dep: normalizeFlightId(d) });
+  else selectFlight(normalizeFlightId(a.length === 6 ? a : d));
+}
+['turnaround-flight-input', 'turnaround-flight-input2'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => { el.value = taCleanFlight(el.value); taPickerUpdate(); });
+  el.addEventListener('keydown', e => { if(e.key === 'Enter') taPickerOpen(); });
 });
-document.getElementById('turnaround-flight-input').addEventListener('keydown', (e) => {
-  if(e.key === 'Enter' && e.target.value.trim().length === 6) selectFlight(normalizeFlightId(e.target.value));
-});
-document.getElementById('turnaround-flight-open-btn').addEventListener('click', () => {
-  const val = document.getElementById('turnaround-flight-input').value.trim();
-  if(val.length === 6) selectFlight(normalizeFlightId(val));
-});
+document.getElementById('turnaround-flight-open-btn').addEventListener('click', taPickerOpen);
 loadTurnarounds().then(() => {
   if(!document.getElementById('panel-turnaround').classList.contains('hidden')){
     if(currentFlight) renderTurnaroundFields();
@@ -10774,12 +10835,32 @@ function sfSavePrefs(){ try{ localStorage.setItem('trocaMistoSfPrefs:' + mtStaff
 function sfPrefCount(){ const p = sfPrefs(); return Object.keys(p).filter(k => p[k]).length; }
 function sfSp(v){ return escapeHtml(String(v).replace(/_/g, ' | ').replace(/\s*-\s*/g, ' – ')); }
 // TURNAROUND timings of a flight (view only): the six times the TTAE agents register
+// Safety net: the agent may have saved the times under the ARRIVAL number (SK1937) of the same aircraft.
+// Finds that arrival: same registration first, else same airline + number one lower. Never guesses between several.
+function sfArrivalKeys(depKey){
+  const out = [];
+  try{
+    const data = JSON.parse(FL_DOC.json) || {};
+    const dep = (data.dep || []).find(r => sfKey(r.n) === depKey); if(!dep) return out;
+    const df = flSplit(dep.n), arrs = data.arr || [];
+    const reg = String(dep.reg || '').trim().toUpperCase();
+    let m = reg ? arrs.filter(a => String(a.reg || '').trim().toUpperCase() === reg) : [];
+    if(!m.length){
+      const num = parseInt(df.num, 10);
+      m = arrs.filter(a => { const f = flSplit(a.n); const ar = String(a.reg || '').trim().toUpperCase(); return f.code === df.code && parseInt(f.num, 10) === num - 1 && (!reg || !ar || ar === reg); });
+    }
+    if(m.length === 1) out.push(sfKey(m[0].n));
+  }catch(e){}
+  return out;
+}
 function sfTurnaroundHtml(key){
-  let rec = null;
-  try{ Object.keys(SF_TA || {}).forEach(k => { const v = SF_TA[k]; if(v && typeof v === 'object' && sfKey(k) === key && v._day === sfToday()) rec = v; }); }catch(e){}
+  let rec = null, via = '';
+  const find = kk => { let r = null; try{ Object.keys(SF_TA || {}).forEach(k => { const v = SF_TA[k]; if(v && typeof v === 'object' && (sfKey(k) === kk || sfKey(v._arr) === kk || sfKey(v._dep) === kk) && v._day === sfToday()) r = v; }); }catch(e){} return r; };
+  rec = find(key);
+  if(!rec){ sfArrivalKeys(key).forEach(ak => { if(!rec){ const r = find(ak); if(r){ rec = r; via = ak; } } }); }
   const fields = TURNAROUND_ROWS.flat();
   if(!rec) return '<div class="sf-ta" style="grid-column:1/3"><div class="sf-ta-h">TURNAROUND</div><div>Ainda sem registos</div></div>';
-  return '<div class="sf-ta" style="grid-column:1/3"><div class="sf-ta-h">TURNAROUND</div><div class="sf-ta-g">' + fields.map(f => {
+  return '<div class="sf-ta" style="grid-column:1/3"><div class="sf-ta-h">TURNAROUND' + (via ? ' <span style="font-weight:600;opacity:.7;text-transform:none">· registado como ' + escapeHtml(via.replace(/^([A-Z0-9]{2})(\d)/, '$1 $2')) + '</span>' : '') + '</div><div class="sf-ta-g">' + fields.map(f => {
     const r = normalizeFieldRecord(rec[f.key]), v = r && r.value ? stripSeconds(r.value) : '';
     return '<div class="sf-ta-c"><span>' + escapeHtml(f.label) + '</span><b' + (v ? '' : ' class="e"') + '>' + (v ? escapeHtml(v) : '—') + '</b></div>';
   }).join('') + '</div></div>';
