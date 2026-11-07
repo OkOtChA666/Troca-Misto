@@ -1610,7 +1610,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.59</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.61</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2330,7 +2330,8 @@
         <div id="airline-count" style="font:italic 13px var(--sans); color:var(--text-dim); margin-bottom:12px;"></div>
         <textarea id="flight-airlines-input" rows="3" style="display:none;"></textarea>
         <div id="airline-groups" style="display:flex; flex-direction:column; margin-bottom:14px;"></div>
-        <div style="display:flex; gap:10px;"><input type="text" id="airline-add-input" placeholder="Novo código, ex: FR" maxlength="3" autocomplete="off" style="flex:1; min-width:0; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font:14px var(--mono); text-transform:uppercase;"><button type="button" class="btn" id="airline-add-btn" style="width:auto; margin:0; padding:0 22px;">Adicionar</button></div>
+        <div style="display:flex; gap:10px;"><div style="flex:1; min-width:0;"><div style="font:italic 13px var(--sans); color:var(--text-dim); margin-bottom:6px;">Companhia</div><input type="text" id="airline-name-input" placeholder="Ex: Ryanair" maxlength="30" autocomplete="off" list="airline-name-list" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font:14px var(--mono);"><datalist id="airline-name-list"></datalist></div><div style="width:116px;"><div style="font:italic 13px var(--sans); color:var(--text-dim); margin-bottom:6px; white-space:nowrap;">Código IATA</div><input type="text" id="airline-add-input" placeholder="FR" maxlength="3" autocomplete="off" style="width:100%; text-align:center; text-transform:uppercase; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font:14px var(--mono);"></div></div>
+        <button type="button" class="btn" id="airline-add-btn" style="margin:10px 0 0; width:100%;">Adicionar</button>
         <div id="flight-airlines-status" style="font-family:var(--sans); font-size:11px; color:var(--text-dim); margin-top:6px; min-height:14px;"></div>
       </div>
       </div>
@@ -8252,9 +8253,12 @@ document.getElementById('flights-back-btn').addEventListener('click', openTools)
 const FL_AIRLINES_DEFAULT = 'HV,TO,U2,EC,DS,AY,SK,DY,D8,DX,V7,SN,EW,E4,W6,W4,W9,LG,TB,X3,6B,OR,BY,FI,TS,BT,QS';
 const FL_NAMES = { HV:'Transavia', TO:'Transavia France', U2:'EasyJet', EC:'EasyJet Europe', DS:'EasyJet Switzerland', AY:'Finnair', SK:'SAS', DY:'Norwegian', D8:'Norwegian', DX:'Norwegian', V7:'Volotea', SN:'Brussels Airlines', EW:'Eurowings', E4:'Enter Air', W6:'Wizz Air', W4:'Wizz Air Malta', W9:'Wizz Air UK', LG:'Luxair', TB:'TUI fly', X3:'TUI fly', '6B':'TUI fly', OR:'TUI fly', BY:'TUI', FI:'Icelandair', TS:'Air Transat', BT:'airBaltic', QS:'Smartwings' };
 let flAirlines = FL_AIRLINES_DEFAULT;
+let flAirlineNames = {};   // names given by the admin to codes he added: { 'FR': 'Ryanair' }
 async function loadFlAirlines(){
   const d = await dbGetShared('flightairlines', null);
   if(d && typeof d.codes === 'string') flAirlines = d.codes;
+  const n = await dbGetShared('airlinenames', null);
+  if(n && n.map && typeof n.map === 'object') flAirlineNames = n.map;
 }
 let FL_DOC = null, FL_UNSUB = null, FL_TAB = 'dep', FL_TICK = null;
 function flSplit(n){
@@ -8762,21 +8766,33 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
 // AIRLINES tab: the airline codes shown as chips grouped by company (the hidden textarea keeps the list, as before)
 const AIRLINE_GROUPS = [['Transavia',['HV','TO']],['easyJet',['U2','EC','DS']],['TUI',['X3','TB','6B','OR','BY']],['Norwegian',['DY','D8']],['Wizz Air',['W6','W4','W9']],['Eurowings',['EW']],['SAS',['SK']],['Finnair',['AY']],['Icelandair',['FI']],['Volotea',['V7']],['Brussels Airlines',['SN']],['Enter Air',['E4']],['Luxair',['LG']],['Air Transat',['TS']],['airBaltic',['BT']],['Smartwings',['QS']],['AirPost',['5O']]];
 function airlineList(){ return String(flAirlines).split(/[\s,;]+/).map(x => x.trim().toUpperCase()).filter(Boolean).filter((c, i, a) => a.indexOf(c) === i); }
+function airlineNameOf(c){
+  if(flAirlineNames[c]) return flAirlineNames[c];
+  const g = AIRLINE_GROUPS.find(x => x[1].indexOf(c) >= 0); return g ? g[0] : 'Outras';
+}
 function renderAirlineChips(){
   const box = document.getElementById('airline-groups'); if(!box) return;
-  const codes = airlineList(), known = {};
-  AIRLINE_GROUPS.forEach(g => g[1].forEach(c => { known[c] = 1; }));
-  const groups = AIRLINE_GROUPS.map(g => [g[0], g[1].filter(c => codes.indexOf(c) >= 0)]);
-  const other = codes.filter(c => !known[c]); groups.push(['Outras', other]);
+  const codes = airlineList(), order = [], byKey = {};
+  AIRLINE_GROUPS.forEach(g => { order.push(g[0].toLowerCase()); byKey[g[0].toLowerCase()] = { name: g[0], codes: [] }; });
+  const extra = [];
+  codes.forEach(c => {
+    const nm = airlineNameOf(c), k = nm.toLowerCase();
+    if(!byKey[k]){ byKey[k] = { name: nm, codes: [] }; if(k !== 'outras') extra.push(k); }
+    byKey[k].codes.push(c);
+  });
+  const keys = order.concat(extra); if(byKey.outras) keys.push('outras');
+  const groups = keys.filter((k, i) => byKey[k] && keys.indexOf(k) === i).map(k => [byKey[k].name, byKey[k].codes]);
   const nGroups = groups.filter(g => g[1].length).length;
   document.getElementById('airline-count').textContent = nGroups + (nGroups === 1 ? ' companhia / ' : ' companhias / ') + codes.length + (codes.length === 1 ? ' código ativo' : ' códigos ativos');
-  box.innerHTML = groups.filter(g => g[1].length).map(g => '<div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft);"><div style="flex:1; min-width:0; font:italic 14px var(--sans); color:var(--text);">' + g[0] + '</div><div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">' +
+  const dl = document.getElementById('airline-name-list'); if(dl) dl.innerHTML = groups.filter(g => g[0] !== 'Outras').map(g => '<option value="' + g[0].replace(/"/g, '') + '">').join('');
+  box.innerHTML = groups.filter(g => g[1].length).map(g => '<div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft);"><div style="flex:1; min-width:0; font:italic 14px var(--sans); color:var(--text);">' + g[0].replace(/</g, '&lt;') + '</div><div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">' +
     g[1].map(c => '<span style="display:inline-flex; align-items:center; gap:6px; padding:5px 5px 5px 10px; border:1px solid var(--border); border-radius:999px; background:var(--panel); font:700 13px var(--mono); color:var(--text);">' + c + '<button type="button" data-air-del="' + c + '" aria-label="Retirar ' + c + '" style="width:17px; height:17px; border:0; border-radius:50%; background:rgba(255,255,255,.08); display:inline-flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-dim); cursor:pointer; padding:0;">×</button></span>').join('') + '</div></div>').join('');
 }
-async function saveAirlines(list){
+async function saveAirlines(list, names){
   const v = list.join(','), st = document.getElementById('flight-airlines-status');
-  const ok = await dbSetShared('flightairlines', { codes: v });
-  if(ok){ flAirlines = v; document.getElementById('flight-airlines-input').value = v; renderAirlineChips(); st.style.color = 'var(--go)'; st.textContent = 'Guardado.'; }
+  const nm = {}; Object.keys(names || flAirlineNames).forEach(c => { if(list.indexOf(c) >= 0) nm[c] = (names || flAirlineNames)[c]; });
+  const ok = await dbSetShared('flightairlines', { codes: v }) && await dbSetShared('airlinenames', { map: nm });
+  if(ok){ flAirlines = v; flAirlineNames = nm; document.getElementById('flight-airlines-input').value = v; renderAirlineChips(); st.style.color = 'var(--go)'; st.textContent = 'Guardado.'; }
   else { st.style.color = 'var(--nogo)'; st.textContent = 'Não foi possível guardar agora.'; }
   setTimeout(() => { st.textContent = ''; }, 2500);
   return ok;
@@ -8786,14 +8802,17 @@ document.getElementById('airline-groups').addEventListener('click', (e) => {
   const c = b.getAttribute('data-air-del'); saveAirlines(airlineList().filter(x => x !== c));
 });
 async function addAirlineFromInput(){
-  const inp = document.getElementById('airline-add-input'), st = document.getElementById('flight-airlines-status');
-  const c = inp.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if(c.length < 2){ st.style.color = 'var(--nogo)'; st.textContent = 'Escreve um código com 2 ou 3 caracteres.'; return; }
-  const list = airlineList(); if(list.indexOf(c) >= 0){ st.style.color = 'var(--text-dim)'; st.textContent = c + ' já está na lista.'; return; }
-  if(await saveAirlines(list.concat([c]))) inp.value = '';
+  const inp = document.getElementById('airline-add-input'), nmI = document.getElementById('airline-name-input'), st = document.getElementById('flight-airlines-status');
+  const c = inp.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''), nm = nmI.value.trim();
+  const say = (t, col) => { st.style.color = col; st.textContent = t; };
+  if(!c){ say(nm ? 'Escreve o código da companhia.' : 'Escreve o código da companhia (2 ou 3 caracteres).', 'var(--nogo)'); return; }
+  if(c.length < 2){ say('O código tem 2 ou 3 caracteres.', 'var(--nogo)'); return; }
+  const list = airlineList(); if(list.indexOf(c) >= 0){ say(c + ' já está na lista.', 'var(--text-dim)'); return; }
+  const names = Object.assign({}, flAirlineNames); if(nm) names[c] = nm;
+  if(await saveAirlines(list.concat([c]), names)){ inp.value = ''; nmI.value = ''; }
 }
 document.getElementById('airline-add-btn').addEventListener('click', addAirlineFromInput);
-document.getElementById('airline-add-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') addAirlineFromInput(); });
+['airline-add-input', 'airline-name-input'].forEach(id => document.getElementById(id).addEventListener('keydown', (e) => { if(e.key === 'Enter') addAirlineFromInput(); }));
 // ---------- EMAIL PARA SUPORTE: summary email sent whenever a swap is confirmed (switched on/off and addressed from RULES, admin only) ----------
 let supportEmail = { enabled:false, key:'389d0f7f-e499-415d-967f-c27b12fe9ef4' };   // Web3Forms access key — the emails arrive at the address the key was created with
 async function loadSupportEmail(){
