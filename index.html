@@ -1595,7 +1595,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.33</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.35</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -1712,7 +1712,7 @@
         <div class="field-row">
           <div class="field">
             <label for="rule-rest">Min rest between shifts (hrs)</label>
-            <input type="number" id="rule-rest" value="10" min="0" max="24" step="0.5">
+            <input type="number" id="rule-rest" value="11" min="0" max="24" step="0.5">
           </div>
           <div class="field">
             <label for="rule-consec">Max consecutive work days</label>
@@ -1790,7 +1790,7 @@
         <div class="field-row">
           <div class="field">
             <label for="rule-rest-2">Min rest between shifts (hrs)</label>
-            <input type="number" id="rule-rest-2" value="10" min="0" max="24" step="0.5">
+            <input type="number" id="rule-rest-2" value="11" min="0" max="24" step="0.5">
           </div>
           <div class="field">
             <label for="rule-consec-2">Max consecutive work days</label>
@@ -2273,6 +2273,17 @@
         <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Companhias nos VOOS (códigos separados por vírgula)</div>
         <textarea id="flight-airlines-input" rows="3" style="width:100%; box-sizing:border-box; font-family:var(--mono); font-size:12px; color:var(--text); background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:10px;"></textarea>
         <div id="flight-airlines-status" style="font-family:var(--sans); font-size:11px; color:var(--text-dim); margin-top:4px; min-height:14px;"></div>
+      </div>
+      <div style="border-top:1px solid var(--border-soft); margin-top:24px; padding-top:16px; text-transform:none; letter-spacing:normal;">
+        <div style="font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.12em; color:var(--amber); margin-bottom:14px;">EMAIL PARA SUPORTE</div>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal;">
+          <span class="pill-toggle"><input type="checkbox" id="support-email-enabled-toggle"><span class="pill-track"></span></span>
+          <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Enviar email quando uma troca é confirmada</span>
+        </label>
+        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin:16px 0 6px;">Enviar para</div>
+        <input type="email" id="support-email-input" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:13px;">
+        <div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn" id="support-email-save-btn" style="flex:1; margin:0;">Guardar</button><button type="button" class="btn" id="support-email-test-btn" style="flex:1; margin:0;">Enviar teste</button></div>
+        <div id="support-email-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px;"></div>
       </div>
     </div>
 
@@ -3934,6 +3945,7 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
   if(partner){
     checkAndTriggerMilestones();
     renderEndOfMonthWarning();
+    mtMailSwap(workerId, idx, partner);   // summary email to support (only if switched on in RULES)
   }
   // If either person now has this exact day resolved, any open PEDIDOS request either of
   // them posted for it is stale — remove it automatically rather than leaving it sitting
@@ -5641,7 +5653,7 @@ document.querySelectorAll('.hour-filter').forEach(cb => {
 
 function currentRules(){
   return {
-    minRest: parseFloat(document.getElementById('rule-rest').value) || 10,
+    minRest: parseFloat(document.getElementById('rule-rest').value) || 11,
     maxConsec: parseInt(document.getElementById('rule-consec').value) || 6
   };
 }
@@ -6176,7 +6188,7 @@ function updateTurnoContext(skipSliderReset){
 }
 function tradeRules(){
   return {
-    minRest: parseFloat(document.getElementById('rule-rest-2').value) || 10,
+    minRest: parseFloat(document.getElementById('rule-rest-2').value) || 11,
     maxConsec: parseInt(document.getElementById('rule-consec-2').value) || 6
   };
 }
@@ -8654,6 +8666,96 @@ document.getElementById('flight-airlines-input').addEventListener('change', asyn
   const ok = await dbSetShared('flightairlines', { codes: v });
   if(ok){ flAirlines = v; st.textContent = 'Guardado.'; } else { st.textContent = 'Não foi possível guardar agora.'; }
   setTimeout(() => { st.textContent = ''; }, 2500);
+});
+// ---------- EMAIL PARA SUPORTE: summary email sent whenever a swap is confirmed (switched on/off and addressed from RULES, admin only) ----------
+let supportEmail = { enabled:false, to:'papip50733@boffweb.com' };
+async function loadSupportEmail(){
+  try{ const doc = await dbGetShared('supportEmail', null); if(doc){ supportEmail = { enabled: !!doc.enabled, to: String(doc.to || supportEmail.to) }; } }catch(e){}
+  try{ document.getElementById('support-email-enabled-toggle').checked = supportEmail.enabled; document.getElementById('support-email-input').value = supportEmail.to; }catch(e){}
+}
+setTimeout(loadSupportEmail, 0);
+function mtMailShift(w, idx){
+  const e = getEffectiveEntry(w, idx);
+  if(e && e.status === 'work' && e.start && e.end) return fmtHHMM(e.start) + ' – ' + fmtHHMM(e.end);
+  return (e && e.codes && e.codes[0]) ? e.codes[0] : 'Folga';
+}
+// longest run of working days touching this day, and the shortest rest next to it — same logic as the app's rule check
+function mtMailRules(w, idx){
+  const N = DATA.days.length;
+  const working = i => { if(i < 0 || i >= N) return false; const e = getEffectiveEntry(w, i); return !!(e && (e.status === 'work' || e.status === 'partial')); };
+  let streak = 0;
+  if(working(idx)){ let a = idx, b = idx; while(working(a - 1)) a--; while(working(b + 1)) b++; streak = b - a + 1; }
+  let rest = null;
+  for(const [a, b] of [[idx - 1, idx], [idx, idx + 1]]){
+    if(a < 0 || b >= N || !working(a) || !working(b)) continue;
+    const ea = getEffectiveEntry(w, a), eb = getEffectiveEntry(w, b);
+    if(ea.end && eb.start){ const g = restGapHours(ea.end, eb.start); if(rest === null || g < rest) rest = g; }
+  }
+  return { streak, rest };
+}
+async function sendSupportEmail(fields, subject, force){
+  const to = supportEmail.to;
+  if(!to || !/^\S+@\S+\.\S+$/.test(to)) return false;
+  try{
+    const r = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(to), { method:'POST', headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+      body: JSON.stringify(Object.assign({ _subject: subject, _template: 'table', _captcha: 'false' }, fields)) });
+    return r.ok;
+  }catch(e){ return false; }
+}
+function mtMailFields(w1, w2, idx){
+  const maxConsec = parseFloat(document.getElementById('rule-consec').value) || 6, minRest = parseFloat(document.getElementById('rule-rest').value) || 11;
+  const d = realDateForIdx(idx);
+  const dayTxt = d.toLocaleDateString('pt-PT', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const r1 = mtMailRules(w1, idx), r2 = mtMailRules(w2, idx);
+  const okC = r1.streak <= maxConsec && r2.streak <= maxConsec;
+  const okR = (r1.rest === null || r1.rest >= minRest) && (r2.rest === null || r2.rest >= minRest);
+  const rt = r => r.rest === null ? 'sem turno colado' : fmtHours(r.rest);
+  const nowTxt = new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' });
+  return { dayTxt, fields: {
+    'Data': dayTxt,
+    'Requerente': w1.name + ' (n.º ' + w1.id + ')',
+    'Substituto': w2.name + ' (n.º ' + w2.id + ')',
+    'Requerente passa a fazer': mtMailShift(w1, idx),
+    'Substituto passa a fazer': mtMailShift(w2, idx),
+    'Confirmada em': nowTxt,
+    'Máximo de dias seguidos': (okC ? 'OK ✓' : 'ATENÇÃO ✗') + ' (limite ' + maxConsec + ')',
+    ['· dias · ' + w1.name]: r1.streak + (r1.streak === 1 ? ' dia' : ' dias'),
+    ['· dias · ' + w2.name]: r2.streak + (r2.streak === 1 ? ' dia' : ' dias'),
+    'Horas de descanso': (okR ? 'OK ✓' : 'ATENÇÃO ✗') + ' (mínimo ' + fmtHours(minRest) + ')',
+    ['· descanso · ' + w1.name]: rt(r1),
+    ['· descanso · ' + w2.name]: rt(r2)
+  }, a: w1.name, b: w2.name };
+}
+async function mtMailSwap(workerId, idx, partner){
+  try{
+    await loadSupportEmail();
+    if(!supportEmail.enabled) return;
+    const wk = DATA.workers.find(w => w.id === workerId), pt = DATA.workers.find(w => w.id === partner.id);
+    if(!wk || !pt) return;
+    // Requerente = the one who asked (was working and gets covered); Substituto = the one who covers. Normally the person saved here is the one covering.
+    const rec = SWAPS[swapKey(workerId, idx)] || {};
+    const workerIsRequester = !!rec.workerWasWorking && !rec.partnerShiftTimeText;
+    const w1 = workerIsRequester ? wk : pt, w2 = workerIsRequester ? pt : wk;
+    const m = mtMailFields(w1, w2, idx);
+    await sendSupportEmail(m.fields, 'Troca confirmada · ' + m.dayTxt + ' · ' + m.a + ' ⇄ ' + m.b);
+  }catch(e){}
+}
+document.getElementById('support-email-enabled-toggle').addEventListener('change', async (e) => {
+  supportEmail.enabled = e.target.checked; await dbSetShared('supportEmail', supportEmail);
+});
+document.getElementById('support-email-save-btn').addEventListener('click', async () => {
+  const st = document.getElementById('support-email-status'), v = document.getElementById('support-email-input').value.trim();
+  if(!/^\S+@\S+\.\S+$/.test(v)){ st.style.color = 'var(--nogo)'; st.textContent = 'Email inválido.'; return; }
+  supportEmail.to = v; const ok = await dbSetShared('supportEmail', supportEmail);
+  st.style.color = ok ? 'var(--go)' : 'var(--nogo)'; st.textContent = ok ? 'Guardado.' : 'Não foi possível guardar agora.';
+  setTimeout(() => { st.textContent = ''; }, 2500);
+});
+document.getElementById('support-email-test-btn').addEventListener('click', async () => {
+  const st = document.getElementById('support-email-status'); st.style.color = 'var(--text-dim)'; st.textContent = 'A enviar…';
+  supportEmail.to = document.getElementById('support-email-input').value.trim() || supportEmail.to;
+  const ok = await sendSupportEmail({ 'Mensagem': 'Email de teste da plataforma TROCA-MISTO.', 'Enviado em': new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' }) }, 'TESTE · TROCA-MISTO');
+  st.style.color = ok ? 'var(--go)' : 'var(--nogo)'; st.textContent = ok ? 'Teste enviado. (Na primeira vez, abre o email de ativação que chega a esta caixa.)' : 'Não foi possível enviar.';
+  setTimeout(() => { st.textContent = ''; }, 6000);
 });
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
