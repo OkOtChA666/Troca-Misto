@@ -1610,7 +1610,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.57</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.59</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2326,7 +2326,7 @@
       </div>
       <div class="rules-tab" data-rt="mais" style="display:none;">
       <div style="text-transform:none; letter-spacing:normal;">
-        <div style="font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.14em; color:var(--amber); margin-bottom:6px;">COMPANHIAS NOS VOOS</div>
+        <div style="font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.14em; color:var(--amber); margin-bottom:6px;">AS NOSSAS COMPANHIAS</div>
         <div id="airline-count" style="font:italic 13px var(--sans); color:var(--text-dim); margin-bottom:12px;"></div>
         <textarea id="flight-airlines-input" rows="3" style="display:none;"></textarea>
         <div id="airline-groups" style="display:flex; flex-direction:column; margin-bottom:14px;"></div>
@@ -8760,7 +8760,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; renderAirlineChips(); });
 });
 // AIRLINES tab: the airline codes shown as chips grouped by company (the hidden textarea keeps the list, as before)
-const AIRLINE_GROUPS = [['Transavia',['HV','TO']],['easyJet',['U2','EC','DS']],['TUI',['X3','TB','6B','OR','BY']],['Norwegian',['DY','D8']],['Wizz Air',['W6','W4','W9']],['Eurowings',['EW']],['SAS',['SK']],['Finnair',['AY']],['Icelandair',['FI']],['Volotea',['V7']],['Brussels Airlines',['SN']],['Enter Air',['E4']],['Luxair',['LG']],['Air Transat',['TS']],['airBaltic',['BT']],['Smartwings',['QS']]];
+const AIRLINE_GROUPS = [['Transavia',['HV','TO']],['easyJet',['U2','EC','DS']],['TUI',['X3','TB','6B','OR','BY']],['Norwegian',['DY','D8']],['Wizz Air',['W6','W4','W9']],['Eurowings',['EW']],['SAS',['SK']],['Finnair',['AY']],['Icelandair',['FI']],['Volotea',['V7']],['Brussels Airlines',['SN']],['Enter Air',['E4']],['Luxair',['LG']],['Air Transat',['TS']],['airBaltic',['BT']],['Smartwings',['QS']],['AirPost',['5O']]];
 function airlineList(){ return String(flAirlines).split(/[\s,;]+/).map(x => x.trim().toUpperCase()).filter(Boolean).filter((c, i, a) => a.indexOf(c) === i); }
 function renderAirlineChips(){
   const box = document.getElementById('airline-groups'); if(!box) return;
@@ -8768,7 +8768,8 @@ function renderAirlineChips(){
   AIRLINE_GROUPS.forEach(g => g[1].forEach(c => { known[c] = 1; }));
   const groups = AIRLINE_GROUPS.map(g => [g[0], g[1].filter(c => codes.indexOf(c) >= 0)]);
   const other = codes.filter(c => !known[c]); groups.push(['Outras', other]);
-  document.getElementById('airline-count').textContent = codes.length + (codes.length === 1 ? ' código ativo.' : ' códigos ativos.') + ' Toca no × para retirar.';
+  const nGroups = groups.filter(g => g[1].length).length;
+  document.getElementById('airline-count').textContent = nGroups + (nGroups === 1 ? ' companhia / ' : ' companhias / ') + codes.length + (codes.length === 1 ? ' código ativo' : ' códigos ativos');
   box.innerHTML = groups.filter(g => g[1].length).map(g => '<div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft);"><div style="flex:1; min-width:0; font:italic 14px var(--sans); color:var(--text);">' + g[0] + '</div><div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">' +
     g[1].map(c => '<span style="display:inline-flex; align-items:center; gap:6px; padding:5px 5px 5px 10px; border:1px solid var(--border); border-radius:999px; background:var(--panel); font:700 13px var(--mono); color:var(--text);">' + c + '<button type="button" data-air-del="' + c + '" aria-label="Retirar ' + c + '" style="width:17px; height:17px; border:0; border-radius:50%; background:rgba(255,255,255,.08); display:inline-flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-dim); cursor:pointer; padding:0;">×</button></span>').join('') + '</div></div>').join('');
 }
