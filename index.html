@@ -1595,7 +1595,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.35</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.37</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2283,7 +2283,7 @@
         <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin:16px 0 6px;">Enviar para</div>
         <input type="email" id="support-email-input" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:13px;">
         <div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn" id="support-email-save-btn" style="flex:1; margin:0;">Guardar</button><button type="button" class="btn" id="support-email-test-btn" style="flex:1; margin:0;">Enviar teste</button></div>
-        <div id="support-email-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px;"></div>
+        <div id="support-email-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px; word-break:break-word;"></div>
       </div>
     </div>
 
@@ -3898,7 +3898,9 @@ function showRequestNote(req){
 }
 function swapKey(workerId, idx){ return workerId + ':' + idx; }
 function isSwapped(workerId, idx){ return !!SWAPS[swapKey(workerId, idx)]; }
+let LAST_SWAP = { saved:false, email:null, wa:'skipped' };   // real outcome of the swap being confirmed right now — shown on the final screen
 async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, fromRequest){
+  LAST_SWAP = { saved:false, email:Promise.resolve('off'), wa:'skipped' };
   const key = swapKey(workerId, idx);
   const previousValue = SWAPS[key]; // kept so a failed save can be reverted to exactly what was there before, not just deleted
   // workerName is stored alongside withName so anything reading this document later (like the
@@ -3943,9 +3945,10 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
     return;
   }
   if(partner){
+    LAST_SWAP.saved = true;
     checkAndTriggerMilestones();
     renderEndOfMonthWarning();
-    mtMailSwap(workerId, idx, partner);   // summary email to support (only if switched on in RULES)
+    LAST_SWAP.email = mtMailSwap(workerId, idx, partner);   // summary email to support (only if switched on in RULES)
   }
   // If either person now has this exact day resolved, any open PEDIDOS request either of
   // them posted for it is stale — remove it automatically rather than leaving it sitting
@@ -4073,6 +4076,7 @@ function offerWhatsAppMessage(partnerName, onClose){
     // api.whatsapp.com send URL skips that redirect entirely, and a real, user-clicked <a>
     // element is a more reliable way to open a new tab from inside a sandbox than a
     // programmatic window.open() call.
+    LAST_SWAP.wa = 'opened';
     const url = 'https://api.whatsapp.com/send?text='+encodeURIComponent(previewCopyText);
     const link = document.createElement('a');
     link.href = url;
@@ -8395,22 +8399,31 @@ function maybeOfferTrocaForm(candidateWorkerId, idx, requerenteId, requerenteNam
 // success signal instead of ending on Mod. 625's "PENDENTE" message, which reads as
 // unresolved rather than "you're done."
 function showSwapSuccessMessage(){
-  showConfirmDialog('<div id="swap-success-content" style="text-align:center; min-height:70px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;">'+
-    '<div style="width:24px; height:24px; border:3px solid var(--border); border-top-color:var(--cyan); border-radius:50%; animation:spin 0.8s linear infinite;"></div>'+
-    '</div>', () => {}, true, 'OK', false, null, null, true);
-  document.getElementById('confirm-modal-confirm').classList.add('hidden');
-  setTimeout(() => {
-    const el = document.getElementById('swap-success-content');
-    if(el){
-      el.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" style="color:var(--go);"><path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
-        '<div>Troca submetida com sucesso</div>';
-    }
-    const confirmBtn = document.getElementById('confirm-modal-confirm');
-    if(confirmBtn){
-      confirmBtn.disabled = false;
-      confirmBtn.classList.remove('hidden');
-    }
-  }, 2000);
+  const IC = {
+    ok:'<svg viewBox="0 0 24 24" width="18" height="18" style="color:var(--go); flex:none;"><path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    bad:'<svg viewBox="0 0 24 24" width="18" height="18" style="color:var(--nogo); flex:none;"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>',
+    no:'<svg viewBox="0 0 24 24" width="18" height="18" style="color:var(--text-dim); flex:none;"><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>',
+    spin:'<div style="width:16px; height:16px; border:3px solid var(--border); border-top-color:var(--cyan); border-radius:50%; animation:spin 0.8s linear infinite; margin:1px; flex:none;"></div>'
+  };
+  const sw = LAST_SWAP, showEmail = !!supportEmail.enabled;
+  const row = (ic, txt) => '<div style="display:flex; align-items:center; gap:12px; font-size:14px; color:var(--text);">' + ic + '<span>' + txt + '</span></div>';
+  const paint = (emailState) => {   // emailState: 'wait' | 'ok' | 'fail' | 'off'
+    const el = document.getElementById('swap-success-content'); if(!el) return;
+    let h = '<div style="display:flex; flex-direction:column; gap:12px; padding:6px 4px; text-align:left; width:100%;">';
+    h += row(sw.saved ? IC.ok : IC.bad, sw.saved ? 'Troca guardada' : 'Troca não guardada');
+    if(showEmail && emailState !== 'off') h += row(emailState === 'wait' ? IC.spin : emailState === 'ok' ? IC.ok : IC.bad, emailState === 'wait' ? 'A enviar email ao suporte…' : emailState === 'ok' ? 'Email enviado ao suporte' : 'Email não enviado');
+    h += row(sw.wa === 'opened' ? IC.ok : IC.no, sw.wa === 'opened' ? 'WhatsApp aberto' : 'WhatsApp não enviado');
+    h += '</div>';
+    if(emailState !== 'wait') h += '<div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft); display:flex; align-items:center; justify-content:center; gap:8px; color:' + (sw.saved ? 'var(--go)' : 'var(--nogo)') + '; font-weight:700; font-size:14px; width:100%; box-sizing:border-box;">' + (sw.saved ? IC.ok + 'Troca submetida com sucesso' : IC.bad + 'Troca não submetida') + '</div>';
+    el.innerHTML = h;
+  };
+  showConfirmDialog('<div id="swap-success-content" style="text-align:center; min-height:70px; display:flex; flex-direction:column; align-items:center; justify-content:center;"></div>', () => {}, true, 'OK', false, null, null, true);
+  const confirmBtn = () => document.getElementById('confirm-modal-confirm');
+  const finish = (st) => { paint(st); const c = confirmBtn(); if(c){ c.disabled = false; c.classList.remove('hidden'); } };
+  confirmBtn().classList.add('hidden');
+  if(!showEmail){ finish('off'); return; }
+  paint('wait');
+  Promise.resolve(sw.email).then(r => finish(r === 'ok' ? 'ok' : r === 'off' ? 'off' : 'fail'), () => finish('fail'));
 }
 
 // ---------- BETA: schedule override panel ----------
@@ -8693,14 +8706,18 @@ function mtMailRules(w, idx){
   }
   return { streak, rest };
 }
+let SUPPORT_EMAIL_LAST = '';
 async function sendSupportEmail(fields, subject, force){
   const to = supportEmail.to;
   if(!to || !/^\S+@\S+\.\S+$/.test(to)) return false;
   try{
-    const r = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(to), { method:'POST', headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 12000);
+    const r = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(to), { signal: ctl.signal, method:'POST', headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
       body: JSON.stringify(Object.assign({ _subject: subject, _template: 'table', _captcha: 'false' }, fields)) });
+    let txt = ''; try{ txt = (await r.text()).slice(0, 300); }catch(e){}
+    SUPPORT_EMAIL_LAST = 'Resposta ' + r.status + (txt ? ': ' + txt : '');
     return r.ok;
-  }catch(e){ return false; }
+  }catch(e){ SUPPORT_EMAIL_LAST = (e && e.name === 'AbortError') ? 'Sem resposta do serviço (tempo esgotado).' : 'Erro de rede: ' + ((e && e.message) || e); return false; }
 }
 function mtMailFields(w1, w2, idx){
   const maxConsec = parseFloat(document.getElementById('rule-consec').value) || 6, minRest = parseFloat(document.getElementById('rule-rest').value) || 11;
@@ -8729,16 +8746,17 @@ function mtMailFields(w1, w2, idx){
 async function mtMailSwap(workerId, idx, partner){
   try{
     await loadSupportEmail();
-    if(!supportEmail.enabled) return;
+    if(!supportEmail.enabled) return 'off';
     const wk = DATA.workers.find(w => w.id === workerId), pt = DATA.workers.find(w => w.id === partner.id);
-    if(!wk || !pt) return;
+    if(!wk || !pt) return 'fail';
     // Requerente = the one who asked (was working and gets covered); Substituto = the one who covers. Normally the person saved here is the one covering.
     const rec = SWAPS[swapKey(workerId, idx)] || {};
     const workerIsRequester = !!rec.workerWasWorking && !rec.partnerShiftTimeText;
     const w1 = workerIsRequester ? wk : pt, w2 = workerIsRequester ? pt : wk;
     const m = mtMailFields(w1, w2, idx);
-    await sendSupportEmail(m.fields, 'Troca confirmada · ' + m.dayTxt + ' · ' + m.a + ' ⇄ ' + m.b);
-  }catch(e){}
+    const ok = await sendSupportEmail(m.fields, 'Troca confirmada · ' + m.dayTxt + ' · ' + m.a + ' ⇄ ' + m.b);
+    return ok ? 'ok' : 'fail';
+  }catch(e){ return 'fail'; }
 }
 document.getElementById('support-email-enabled-toggle').addEventListener('change', async (e) => {
   supportEmail.enabled = e.target.checked; await dbSetShared('supportEmail', supportEmail);
@@ -8754,8 +8772,8 @@ document.getElementById('support-email-test-btn').addEventListener('click', asyn
   const st = document.getElementById('support-email-status'); st.style.color = 'var(--text-dim)'; st.textContent = 'A enviar…';
   supportEmail.to = document.getElementById('support-email-input').value.trim() || supportEmail.to;
   const ok = await sendSupportEmail({ 'Mensagem': 'Email de teste da plataforma TROCA-MISTO.', 'Enviado em': new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' }) }, 'TESTE · TROCA-MISTO');
-  st.style.color = ok ? 'var(--go)' : 'var(--nogo)'; st.textContent = ok ? 'Teste enviado. (Na primeira vez, abre o email de ativação que chega a esta caixa.)' : 'Não foi possível enviar.';
-  setTimeout(() => { st.textContent = ''; }, 6000);
+  st.style.color = ok ? 'var(--go)' : 'var(--nogo)';
+  st.textContent = (ok ? 'Pedido aceite. ' : 'Não foi possível enviar. ') + SUPPORT_EMAIL_LAST;   // stays on screen so the real answer can be read
 });
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
