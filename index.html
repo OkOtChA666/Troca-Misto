@@ -1595,7 +1595,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.38</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.39</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -8411,8 +8411,8 @@ function showSwapSuccessMessage(){
     const el = document.getElementById('swap-success-content'); if(!el) return;
     let h = '<div style="display:flex; flex-direction:column; gap:12px; padding:6px 4px; text-align:left; width:100%;">';
     h += row(sw.saved ? IC.ok : IC.bad, sw.saved ? 'Troca guardada' : 'Troca não guardada');
-    if(showEmail && emailState !== 'off') h += row(emailState === 'wait' ? IC.spin : emailState === 'ok' ? IC.ok : IC.bad, emailState === 'wait' ? 'A enviar email ao suporte…' : emailState === 'ok' ? 'Email enviado ao suporte' : 'Email não enviado');
-    h += row(sw.wa === 'opened' ? IC.ok : IC.no, sw.wa === 'opened' ? 'WhatsApp aberto' : 'WhatsApp não enviado');
+    if(showEmail && emailState !== 'off') h += row(emailState === 'wait' ? IC.spin : emailState === 'ok' ? IC.ok : IC.bad, emailState === 'wait' ? 'A enviar email para trocamisto@proton.me…' : emailState === 'ok' ? 'Email enviado para trocamisto@proton.me' : 'Email não enviado');
+    h += row(sw.wa === 'opened' ? IC.ok : IC.bad, sw.wa === 'opened' ? 'WhatsApp enviado' : 'WhatsApp não enviado');
     h += '</div>';
     if(emailState !== 'wait') h += '<div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-soft); display:flex; align-items:center; justify-content:center; gap:8px; color:' + (sw.saved ? 'var(--go)' : 'var(--nogo)') + '; font-weight:700; font-size:14px; width:100%; box-sizing:border-box;">' + (sw.saved ? IC.ok + 'Troca submetida com sucesso' : IC.bad + 'Troca não submetida') + '</div>';
     el.innerHTML = h;
