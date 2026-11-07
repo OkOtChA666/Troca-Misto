@@ -1595,7 +1595,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.32</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.33</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -7663,7 +7663,7 @@ function renderNotificationsList(){
         '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + st + '">Corrigido automaticamente</div>' +
         '<div style="font-size:11.5px; font-weight:600; margin-top:2px; color:var(--amber);">' + nm + (tm ? ' · <span style="color:var(--text);">' + tm + '</span>' : '') + '</div>' +
         '<div style="font-size:11.5px; margin-top:2px; color:var(--text-dim);">Saiu e voltou. Nada mudou.</div>' +
-        notifLogHtml(notificationRelativeTime(item.x[0]), item.x[0]) + '</div>');
+        notifLogRow(notifLogHtml(notificationRelativeTime(item.x[0]), item.x[0]), 'data-note="' + escapeHtml(mtNoteId(item.x)) + '"') + '</div>');
       continue;
     }
     if(item.kind === 't'){
@@ -7679,7 +7679,7 @@ function renderNotificationsList(){
     const id = item.id;
     const parsed = parseNotificationBody(n.body || '');
     const when = n.createdAt ? notificationRelativeTime(n.createdAt) : '';
-    const trash = '<button type="button" class="notif-hide" data-nid="'+escapeHtml(id)+'" title="Esconder" style="background:none; border:none; color:var(--text-dim); line-height:1; cursor:pointer; align-self:flex-start; padding:2px 4px; margin:10px 4px 0 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>';
+    const nattr = 'data-nid="' + escapeHtml(id) + '"';
     let inner, bar = 'var(--go)';
     if(parsed){
       const icon = NOTIF_ICONS[parsed.type];
@@ -7688,15 +7688,15 @@ function renderNotificationsList(){
         '<div style="flex:1; min-width:0;">'+
           '<div style="font-size:12.5px; line-height:1.4; '+st+'"><b style="color:inherit;">'+escapeHtml(parsed.name)+'</b> '+escapeHtml(parsed.mainText)+'</div>'+
           (parsed.day ? '<div style="font-size:11.5px; color:var(--amber); font-weight:700; margin-top:3px;">'+notifDayLabel(n, parsed.day)+(parsed.time ? ' · '+escapeHtml(parsed.time) : '')+'</div>' : '')+
-          (when ? notifLogHtml(when, n.createdAt) : '')+
+          notifLogRow(when ? notifLogHtml(when, n.createdAt) : '', nattr)+
         '</div>';
     } else {
       inner = '<div style="flex:1; min-width:0;">'+
         '<div style="font-size:13px; '+st+'">'+escapeHtml(n.body || '')+'</div>'+
-        (when ? notifLogHtml(when, n.createdAt) : '')+
+        notifLogRow(when ? notifLogHtml(when, n.createdAt) : '', nattr)+
       '</div>';
     }
-    html += card(bar, unread, inner + trash);
+    html += card(bar, unread, inner);
   }
   list.innerHTML = html;
 }
@@ -7737,6 +7737,8 @@ document.getElementById('notif-coord-toggle').addEventListener('click', () => {
 // ✕ on a notification: hides it for this person (kept in the database, just no longer shown or counted).
 document.getElementById('notifications-modal-list').addEventListener('click', (e) => {
   const b = e.target.closest('.notif-hide'); if(!b) return;
+  const nk = b.getAttribute('data-note');
+  if(nk){ const h = mtNoteHidden(); h.push(nk); try{ localStorage.setItem('trocaMistoHiddenNotes', JSON.stringify(h.slice(-200))); }catch(e){} renderNotificationsList(); renderNotificationsBadge(); return; }
   const id = b.getAttribute('data-nid'); if(!NOTIFICATIONS[id]) return;
   NOTIFICATIONS[id] = Object.assign({}, NOTIFICATIONS[id], { hidden: true, read: true });
   renderNotificationsList(); renderNotificationsBadge();
@@ -9940,7 +9942,14 @@ function mtCoordToggleSync(){
   const k = b.firstElementChild; if(k){ k.style.left = on ? '14px' : '2px'; k.style.background = on ? '#1a1200' : '#8a94a8'; }
 }
 function mtChanges(){ return mtChangesSplit().keep.filter(x => !(mtHideCoord() && /: alterada pelo coordenador$/.test(String(x[1] || '')))); }
-function mtFalseAlarms(){ return mtChangesSplit().notes; }
+function mtNoteHidden(){ try{ return JSON.parse(localStorage.getItem('trocaMistoHiddenNotes') || '[]'); }catch(e){ return []; } }
+function mtNoteId(x){ return mtStaffId() + '|' + x[0] + '|' + x[1]; }
+const NOTIF_TRASH_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
+function notifLogRow(logHtml, attr){   // "recebida há X" on the left, trash icon at the right end of the same line
+  return '<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:8px;"><div>' + logHtml + '</div>' +
+    '<button type="button" class="notif-hide" ' + attr + ' title="Esconder" style="background:none; border:none; color:var(--text-dim); line-height:1; cursor:pointer; padding:0 2px; margin:0 0 -1px 0;">' + NOTIF_TRASH_SVG + '</button></div>';
+}
+function mtFalseAlarms(){ const h = mtNoteHidden(); return mtChangesSplit().notes.filter(x => h.indexOf(mtNoteId(x)) < 0); }
 function mtChangesSplit(){
   const none = { keep:[], notes:[] };
   const id = mtStaffId(); if(!id || !MT_DOC || !MT_DOC.a || !MT_DOC.ch || !MT_DOC.ch[id]) return none;
