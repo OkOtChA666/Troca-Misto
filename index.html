@@ -1329,6 +1329,9 @@
   .mt-time{ font-family:var(--mono); font-weight:700; font-size:14px; color:var(--text); min-width:98px; white-space:nowrap; }
   .mt-label{ flex:1; font-size:14px; color:var(--text); word-break:break-word; }
   .mt-chip{ font-family:var(--mono); font-size:10px; letter-spacing:0.08em; padding:3px 7px; border-radius:5px; white-space:nowrap; }
+  .rules-tab-btn{ flex:1; text-align:center; padding:10px 0 9px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--text-dim); border-bottom:2px solid transparent; cursor:pointer; user-select:none; }
+  .rules-tab-btn.on{ color:var(--amber); border-bottom-color:var(--amber); }
+  .rules-tab > :first-child{ margin-top:0 !important; border-top:0 !important; padding-top:0 !important; }
   .mt-chip.now, .mt-chip.next{ position:absolute; top:-1px; right:-1px; font-family:var(--disp),'Big Shoulders Display',sans-serif; font-weight:800; font-size:13px; letter-spacing:.14em; padding:5px 12px 4px 14px; border:0; border-radius:0 10px 0 10px; color:#0b1220; z-index:2; }   /* status tab fixed to the card's top-right corner */
   .mt-chip.now{ background:#4fd1f0; }
   .mt-chip.next{ background:#ffb020; }
@@ -1595,7 +1598,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.40</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.42</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2110,7 +2113,7 @@
   <!-- BETA: SCHEDULE OVERRIDE PANEL -->
   <div class="panel hidden" id="panel-schedule-override">
     <div id="so-head" style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;">
-      <div id="so-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">ADMIN</div>
+      <div id="so-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">DEFINIÇÕES</div>
       <button type="button" id="so-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
     </div>
     <div id="so-sched" class="hidden">
@@ -2199,6 +2202,13 @@
     </div>
 
     <div id="custom2-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
+      <div id="rules-tabs" style="display:flex; border-bottom:1px solid var(--border-soft); margin-bottom:14px;">
+        <div class="rules-tab-btn on" data-rt="trocas">TROCAS</div>
+        <div class="rules-tab-btn" data-rt="app">APP</div>
+        <div class="rules-tab-btn" data-rt="email">EMAIL</div>
+        <div class="rules-tab-btn" data-rt="mais">MAIS</div>
+      </div>
+      <div class="rules-tab" data-rt="trocas">
       <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal;">
         <span class="pill-toggle">
           <input type="checkbox" id="pedidos-deadline-enabled-toggle">
@@ -2220,6 +2230,26 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Formulário Mod. 625 pré-preenchido</span>
       </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="double-shift-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">TURNO DUPLO <span style="font:700 9px var(--mono); letter-spacing:.1em; color:#1a1200; background:#ffb020; border-radius:4px; padding:1px 6px; font-style:normal;">EM TESTE</span></span>
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+        <span class="pill-toggle">
+          <input type="checkbox" id="swap-warning-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Aviso antes de submeter uma troca</span>
+      </label>
+      <div style="margin-top:10px; text-transform:none; letter-spacing:normal;">
+        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Destino indicado no aviso</div>
+        <input type="text" id="swap-warning-dest-input" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--sans); font-size:13px;">
+      </div>
+      </div>
+      <div class="rules-tab" data-rt="app" style="display:none;">
       <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
         <span class="pill-toggle">
           <input type="checkbox" id="notifications-enabled-toggle">
@@ -2248,13 +2278,21 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Tema PRO para todos (ÁREA PESSOAL → Temas)</span>
       </label>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
-        <span class="pill-toggle">
-          <input type="checkbox" id="double-shift-enabled-toggle">
-          <span class="pill-track"></span>
-        </span>
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">TURNO DUPLO <span style="font:700 9px var(--mono); letter-spacing:.1em; color:#1a1200; background:#ffb020; border-radius:4px; padding:1px 6px; font-style:normal;">EM TESTE</span></span>
-      </label>
+      </div>
+      <div class="rules-tab" data-rt="email" style="display:none;">
+      <div style="border-top:1px solid var(--border-soft); margin-top:24px; padding-top:16px; text-transform:none; letter-spacing:normal;">
+        <div style="font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.12em; color:var(--amber); margin-bottom:14px;">EMAIL PARA SUPORTE</div>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal;">
+          <span class="pill-toggle"><input type="checkbox" id="support-email-enabled-toggle"><span class="pill-track"></span></span>
+          <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Enviar email quando uma troca é confirmada</span>
+        </label>
+        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin:16px 0 6px;">Chave Web3Forms (os emails chegam ao email com que a chave foi criada)</div>
+        <input type="text" id="support-email-input" autocomplete="off" spellcheck="false" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:13px;">
+        <div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn" id="support-email-save-btn" style="flex:1; margin:0;">Guardar</button><button type="button" class="btn" id="support-email-test-btn" style="flex:1; margin:0;">Enviar teste</button></div>
+        <div id="support-email-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px; word-break:break-word;"></div>
+      </div>
+      </div>
+      <div class="rules-tab" data-rt="mais" style="display:none;">
       <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
         <span class="pill-toggle">
           <input type="checkbox" id="legal-footer-enabled-toggle">
@@ -2269,32 +2307,11 @@
         </span>
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Link - Apoiar projecto</span>
       </label>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
-        <span class="pill-toggle">
-          <input type="checkbox" id="swap-warning-enabled-toggle">
-          <span class="pill-track"></span>
-        </span>
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Aviso antes de submeter uma troca</span>
-      </label>
-      <div style="margin-top:10px; text-transform:none; letter-spacing:normal;">
-        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Destino indicado no aviso</div>
-        <input type="text" id="swap-warning-dest-input" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--sans); font-size:13px;">
-      </div>
       <div style="margin-top:18px; text-transform:none; letter-spacing:normal;">
         <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Companhias nos VOOS (códigos separados por vírgula)</div>
         <textarea id="flight-airlines-input" rows="3" style="width:100%; box-sizing:border-box; font-family:var(--mono); font-size:12px; color:var(--text); background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:10px;"></textarea>
         <div id="flight-airlines-status" style="font-family:var(--sans); font-size:11px; color:var(--text-dim); margin-top:4px; min-height:14px;"></div>
       </div>
-      <div style="border-top:1px solid var(--border-soft); margin-top:24px; padding-top:16px; text-transform:none; letter-spacing:normal;">
-        <div style="font-family:var(--mono); font-size:13px; font-weight:700; letter-spacing:0.12em; color:var(--amber); margin-bottom:14px;">EMAIL PARA SUPORTE</div>
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal;">
-          <span class="pill-toggle"><input type="checkbox" id="support-email-enabled-toggle"><span class="pill-track"></span></span>
-          <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Enviar email quando uma troca é confirmada</span>
-        </label>
-        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin:16px 0 6px;">Chave Web3Forms (os emails chegam ao email com que a chave foi criada)</div>
-        <input type="text" id="support-email-input" autocomplete="off" spellcheck="false" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:13px;">
-        <div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn" id="support-email-save-btn" style="flex:1; margin:0;">Guardar</button><button type="button" class="btn" id="support-email-test-btn" style="flex:1; margin:0;">Enviar teste</button></div>
-        <div id="support-email-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px; word-break:break-word;"></div>
       </div>
     </div>
 
@@ -4742,7 +4759,7 @@ function toggleUserMenu(){
   m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div style="flex:none; width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + escapeHtml(ini) + '</div></div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text);">' + escapeHtml(nm) + '</div><div style="margin-top:6px;"><span style="display:inline-block; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center;">' + escapeHtml(window._loggedId || '') + '</span></div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:8px;">' + grp + '</div></div></div>' +
     '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">HOJE</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px;">' + escapeHtml(offTxt) + '</div></div></div>' +
     proMenuLinksHtml() +
-    ((isAdminSession || isDeptAdminSession) ? '<div id="user-menu-admin" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ffb020; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>ADMIN</div>' : '') +
+    ((isAdminSession || isDeptAdminSession) ? '<div id="user-menu-admin" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ffb020; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>DEFINIÇÕES</div>' : '') +
     '<div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
   document.body.appendChild(m);
   document.getElementById('user-menu-out').addEventListener('click', () => { closeUserMenu(); document.getElementById('logout-link').click(); });
@@ -8560,14 +8577,14 @@ function renderScheduleOverrideList(){
 const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO' };
 function soApplyCards(){
   ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
-  const t = document.getElementById('so-title'); if(t && GROUP && isAdminSession) t.textContent = 'ADMIN · ' + GROUP_LABEL;
+  const t = document.getElementById('so-title'); if(t && GROUP && isAdminSession) t.textContent = 'DEFINIÇÕES · ' + GROUP_LABEL;
 }
 function soShowMenu(){
   closeAllMsgPanels();
   document.getElementById('schedule-override-normal-content').classList.add('hidden');
   document.getElementById('so-menu').classList.remove('hidden');
   document.getElementById('so-head').classList.remove('hidden');
-  document.getElementById('so-title').textContent = 'ADMIN';
+  document.getElementById('so-title').textContent = 'DEFINIÇÕES';
   document.getElementById('so-sched').classList.add('hidden');
   soApplyCards();
 }
@@ -8575,7 +8592,7 @@ function soOpen(key){
   if(!isAdminSession && key !== 'ah') return;
   document.getElementById('so-menu').classList.add('hidden');
   document.getElementById('so-head').classList.remove('hidden');
-  document.getElementById('so-title').textContent = SO_TITLES[key] || 'ADMIN';
+  document.getElementById('so-title').textContent = SO_TITLES[key] || 'DEFINIÇÕES';
   if(key === 'sched'){
     document.getElementById('so-sched-month').innerHTML = 'Mês atual: <b style="color:var(--cyan)">' + suEsc((['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][Number(String(DATA.month||'').split('-')[1]) - 1] || '') + ' ' + String(DATA.month||'').split('-')[0]) + '</b>';
     document.getElementById('so-sched').classList.remove('hidden');
@@ -8821,6 +8838,12 @@ document.getElementById('swap-warning-enabled-toggle').addEventListener('change'
 });
 document.getElementById('swap-warning-dest-input').addEventListener('change', async (e) => {
   swapWarning.dest = e.target.value.trim() || '-----------'; e.target.value = swapWarning.dest; await dbSetShared('swapWarning', swapWarning);
+});
+document.getElementById('rules-tabs').addEventListener('click', (e) => {
+  const t = e.target.closest('.rules-tab-btn'); if(!t) return;
+  const k = t.getAttribute('data-rt');
+  document.querySelectorAll('#rules-tabs .rules-tab-btn').forEach(x => x.classList.toggle('on', x === t));
+  document.querySelectorAll('#custom2-panel .rules-tab').forEach(x => { x.style.display = x.getAttribute('data-rt') === k ? '' : 'none'; });
 });
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
