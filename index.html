@@ -1581,7 +1581,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.20</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.23</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -7619,9 +7619,10 @@ function renderNotificationsList(){
   let seenTs = 0; try{ seenTs = mtSeen(); }catch(e){}
   if(NOTIF_OPEN_SNAPSHOT) seenTs = NOTIF_OPEN_SNAPSHOT.seenTs;
   try{ mtChanges().forEach(x => entries.push({ kind:'t', x, ts: x[0] })); }catch(e){}
+  try{ mtFalseAlarms().forEach(x => entries.push({ kind:'f', x, ts: x[0] })); }catch(e){}   // removed + new again with identical details: one short note instead of two alarms
   entries.sort((a, b) => b.ts - a.ts);
   empty.classList.toggle('hidden', entries.length > 0);
-  const isUnread = item => item.kind === 't' ? item.x[0] > seenTs
+  const isUnread = item => item.kind === 'f' ? false : item.kind === 't' ? item.x[0] > seenTs
     : (NOTIF_OPEN_SNAPSHOT ? NOTIF_OPEN_SNAPSHOT.ids.has(item.id) : !item.n.read);
   const unreadTotal = entries.filter(isUnread).length;
   const sub = document.getElementById('notifications-modal-sub');
@@ -7640,6 +7641,17 @@ function renderNotificationsList(){
     }
     const unread = isUnread(item);
     const st = unread ? 'color:var(--text); font-weight:600;' : 'color:var(--text-dim);';
+    if(item.kind === 'f'){
+      const mm = /^(.+) (\d\d:\d\d–\d\d:\d\d)$/.exec(String(item.x[1] || '')) || [0, item.x[1], ''];
+      const nm = escapeHtml(String(mm[1]).replace(/^<\s*/, '').trim()), tm = escapeHtml(String(mm[2]).replace(/–/g, ' – '));
+      html += card('var(--go)', false,
+        '<div style="width:28px; height:28px; border-radius:50%; background:rgba(60,200,120,0.15); color:var(--go); border:1px solid rgba(60,200,120,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3"/><circle cx="12" cy="2.6" r=".6" fill="currentColor"/><rect x="4" y="7" width="16" height="13" rx="3"/><circle cx="9" cy="13" r="1.3" fill="currentColor"/><circle cx="15" cy="13" r="1.3" fill="currentColor"/><path d="M9.5 17h5"/></svg></div>' +
+        '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + st + '">Tarefa corrigida automaticamente</div>' +
+        '<div style="font-size:11.5px; font-weight:600; margin-top:2px; color:var(--amber);">' + nm + (tm ? ' · <span style="color:var(--text);">' + tm + '</span>' : '') + '</div>' +
+        '<div style="font-size:11.5px; margin-top:2px; color:var(--text-dim);">Saiu e voltou. Nada mudou.</div>' +
+        notifLogHtml(notificationRelativeTime(item.x[0]), item.x[0]) + '</div>');
+      continue;
+    }
     if(item.kind === 't'){
       const c = mtClassify(item.x[1]), whenT = notificationRelativeTime(item.x[0]);
       const ic = c.type === 'delay'
@@ -9900,9 +9912,23 @@ function mtEsc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&
 function mtToMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
 function mtPad(n){ return String(n).padStart(2, '0'); }
 function mtStaffId(){ try{ return localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){ return null; } }
-function mtChanges(){
-  const id = mtStaffId(); if(!id || !MT_DOC || !MT_DOC.a || !MT_DOC.ch || !MT_DOC.ch[id]) return [];
-  try{ const l = JSON.parse(MT_DOC.ch[id]); return Array.isArray(l) ? l : []; } catch(e){ return []; }
+function mtChanges(){ return mtChangesSplit().keep; }
+function mtFalseAlarms(){ return mtChangesSplit().notes; }
+function mtChangesSplit(){
+  const none = { keep:[], notes:[] };
+  const id = mtStaffId(); if(!id || !MT_DOC || !MT_DOC.a || !MT_DOC.ch || !MT_DOC.ch[id]) return none;
+  try{
+    const l = JSON.parse(MT_DOC.ch[id]); if(!Array.isArray(l)) return none;
+    // a task that was "Removida" and then "Nova" again with the exact same name and times never really changed (Planete briefly dropped it): hide both
+    const drop = new Set(), notes = [];
+    l.forEach((a, i) => {
+      const m = /^(Nova|Removida): (.+)$/.exec(String(a[1] || '')); if(!m || drop.has(i)) return;
+      const other = (m[1] === 'Nova' ? 'Removida: ' : 'Nova: ') + m[2];
+      const j = l.findIndex((b, k) => k !== i && !drop.has(k) && String(b[1] || '') === other);
+      if(j >= 0){ drop.add(i); drop.add(j); notes.push([Math.max(a[0], l[j][0]), m[2]]); }
+    });
+    return { keep: l.filter((x, i) => !drop.has(i)), notes };
+  } catch(e){ return none; }
 }
 function mtSeenKey(){ return 'trocaMistoMtSeen:' + (MT_DOC && MT_DOC.date || '') + ':' + mtStaffId(); }
 function mtSeen(){ try{ return parseInt(localStorage.getItem(mtSeenKey()) || '0', 10) || 0; } catch(e){ return 0; } }
