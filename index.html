@@ -1610,7 +1610,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.55</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.57</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2223,7 +2223,7 @@
         <div class="rules-tab-btn on" data-rt="trocas">TROCAS</div>
         <div class="rules-tab-btn" data-rt="app">APP</div>
         <div class="rules-tab-btn" data-rt="email">EMAIL</div>
-        <div class="rules-tab-btn" data-rt="mais">MAIS</div>
+        <div class="rules-tab-btn" data-rt="mais">AIRLINES</div>
       </div>
       <div class="rules-tab" data-rt="trocas">
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; justify-content:space-between;">
@@ -2275,33 +2275,40 @@
       </div>
       </div>
       <div class="rules-tab" data-rt="app" style="display:none;">
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Notificações push</span>
         <span class="pill-toggle">
           <input type="checkbox" id="notifications-enabled-toggle">
           <span class="pill-track"></span>
         </span>
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Notificações push</span>
       </label>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">App instalável</span>
         <span class="pill-toggle">
           <input type="checkbox" id="pwa-install-enabled-toggle">
           <span class="pill-track"></span>
         </span>
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">App instalável</span>
       </label>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
-        <span class="pill-toggle">
-          <input type="checkbox" id="refresh-button-enabled-toggle">
-          <span class="pill-track"></span>
-        </span>
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Botão ATUALIZAR (Tarefas)</span>
-      </label>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Tema PRO para todos (ÁREA PESSOAL → Temas)</span>
         <span class="pill-toggle">
           <input type="checkbox" id="theme-pro-enabled-toggle">
           <span class="pill-track"></span>
         </span>
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Tema PRO para todos (ÁREA PESSOAL → Temas)</span>
+      </label>
+            <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Mostrar aviso legal no fundo da app</span>
+        <span class="pill-toggle">
+          <input type="checkbox" id="legal-footer-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+      </label>
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Link - Apoiar projecto</span>
+        <span class="pill-toggle">
+          <input type="checkbox" id="support-link-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
       </label>
       </div>
       <div class="rules-tab" data-rt="email" style="display:none;">
@@ -2318,24 +2325,13 @@
       </div>
       </div>
       <div class="rules-tab" data-rt="mais" style="display:none;">
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
-        <span class="pill-toggle">
-          <input type="checkbox" id="legal-footer-enabled-toggle">
-          <span class="pill-track"></span>
-        </span>
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Mostrar aviso legal no fundo da app</span>
-      </label>
-      <label style="display:flex; align-items:center; gap:10px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px;">
-        <span class="pill-toggle">
-          <input type="checkbox" id="support-link-enabled-toggle">
-          <span class="pill-track"></span>
-        </span>
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Link - Apoiar projecto</span>
-      </label>
-      <div style="margin-top:18px; text-transform:none; letter-spacing:normal;">
-        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Companhias nos VOOS (códigos separados por vírgula)</div>
-        <textarea id="flight-airlines-input" rows="3" style="width:100%; box-sizing:border-box; font-family:var(--mono); font-size:12px; color:var(--text); background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:10px;"></textarea>
-        <div id="flight-airlines-status" style="font-family:var(--sans); font-size:11px; color:var(--text-dim); margin-top:4px; min-height:14px;"></div>
+      <div style="text-transform:none; letter-spacing:normal;">
+        <div style="font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.14em; color:var(--amber); margin-bottom:6px;">COMPANHIAS NOS VOOS</div>
+        <div id="airline-count" style="font:italic 13px var(--sans); color:var(--text-dim); margin-bottom:12px;"></div>
+        <textarea id="flight-airlines-input" rows="3" style="display:none;"></textarea>
+        <div id="airline-groups" style="display:flex; flex-direction:column; margin-bottom:14px;"></div>
+        <div style="display:flex; gap:10px;"><input type="text" id="airline-add-input" placeholder="Novo código, ex: FR" maxlength="3" autocomplete="off" style="flex:1; min-width:0; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font:14px var(--mono); text-transform:uppercase;"><button type="button" class="btn" id="airline-add-btn" style="width:auto; margin:0; padding:0 22px;">Adicionar</button></div>
+        <div id="flight-airlines-status" style="font-family:var(--sans); font-size:11px; color:var(--text-dim); margin-top:6px; min-height:14px;"></div>
       </div>
       </div>
     </div>
@@ -2728,27 +2724,8 @@ async function loadSupportLinkEnabled(){
   applySupportLink();
 }
 async function saveSupportLinkEnabled(){ return await dbSetShared('supportLinkEnabled', { value: supportLinkEnabled }); }
-// "Botão ATUALIZAR" in TAREFAS: shown or hidden for everyone from RULES. Default: shown.
-let refreshButtonEnabled = true;
-async function loadRefreshButtonEnabled(){
-  const doc = await dbGetShared('refreshButtonEnabled', null);
-  refreshButtonEnabled = doc ? !!doc.value : true;
-  try{ if(typeof renderMyTasks === 'function' && typeof MT_DOC !== 'undefined' && mtOpenOverlay()) renderMyTasks(); }catch(e){}
-}
-async function saveRefreshButtonEnabled(){
-  return await dbSetShared('refreshButtonEnabled', { value: refreshButtonEnabled });
-}
-// Started after the whole script has been read (the database helpers further down must exist first).
-setTimeout(() => {
-  loadRefreshButtonEnabled();
-  getDb().then(db => {
-    if(!db) return;
-    db.collection('data').doc('refreshButtonEnabled').onSnapshot(snap => {
-      refreshButtonEnabled = snap.exists ? !!snap.data().value : true;
-      try{ if(mtOpenOverlay() && typeof renderMyTasks === 'function') renderMyTasks(); }catch(e){}
-    }, () => {});
-  });
-}, 0);
+// "Botão ATUALIZAR" in TAREFAS: always shown (the on/off switch in RULES was removed — the update works well).
+const refreshButtonEnabled = true;
 // "App instalável": when on, the page links its manifest so Chrome offers "Install app"; when off the
 // link is removed and the offer disappears. Already-installed apps are not affected. Default: on.
 let pwaInstallEnabled = true;
@@ -8776,21 +8753,46 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('troca-form-feature-enabled-toggle').checked = trocaFormFeatureEnabled;
   document.getElementById('notifications-enabled-toggle').checked = notificationsEnabled;
   document.getElementById('pwa-install-enabled-toggle').checked = pwaInstallEnabled;
-  document.getElementById('refresh-button-enabled-toggle').checked = refreshButtonEnabled;
   document.getElementById('double-shift-enabled-toggle').checked = doubleShiftEnabled;
   document.getElementById('theme-pro-enabled-toggle').checked = themeProEnabled;
   document.getElementById('legal-footer-enabled-toggle').checked = legalFooterEnabled;
   document.getElementById('support-link-enabled-toggle').checked = supportLinkEnabled;
-  loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; });
+  loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; renderAirlineChips(); });
 });
-document.getElementById('flight-airlines-input').addEventListener('change', async (e) => {
-  const v = e.target.value.split(/[\s,;]+/).map(x => x.trim().toUpperCase()).filter(Boolean).join(',');
-  e.target.value = v;
-  const st = document.getElementById('flight-airlines-status');
+// AIRLINES tab: the airline codes shown as chips grouped by company (the hidden textarea keeps the list, as before)
+const AIRLINE_GROUPS = [['Transavia',['HV','TO']],['easyJet',['U2','EC','DS']],['TUI',['X3','TB','6B','OR','BY']],['Norwegian',['DY','D8']],['Wizz Air',['W6','W4','W9']],['Eurowings',['EW']],['SAS',['SK']],['Finnair',['AY']],['Icelandair',['FI']],['Volotea',['V7']],['Brussels Airlines',['SN']],['Enter Air',['E4']],['Luxair',['LG']],['Air Transat',['TS']],['airBaltic',['BT']],['Smartwings',['QS']]];
+function airlineList(){ return String(flAirlines).split(/[\s,;]+/).map(x => x.trim().toUpperCase()).filter(Boolean).filter((c, i, a) => a.indexOf(c) === i); }
+function renderAirlineChips(){
+  const box = document.getElementById('airline-groups'); if(!box) return;
+  const codes = airlineList(), known = {};
+  AIRLINE_GROUPS.forEach(g => g[1].forEach(c => { known[c] = 1; }));
+  const groups = AIRLINE_GROUPS.map(g => [g[0], g[1].filter(c => codes.indexOf(c) >= 0)]);
+  const other = codes.filter(c => !known[c]); groups.push(['Outras', other]);
+  document.getElementById('airline-count').textContent = codes.length + (codes.length === 1 ? ' código ativo.' : ' códigos ativos.') + ' Toca no × para retirar.';
+  box.innerHTML = groups.filter(g => g[1].length).map(g => '<div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-soft);"><div style="flex:1; min-width:0; font:italic 14px var(--sans); color:var(--text);">' + g[0] + '</div><div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">' +
+    g[1].map(c => '<span style="display:inline-flex; align-items:center; gap:6px; padding:5px 5px 5px 10px; border:1px solid var(--border); border-radius:999px; background:var(--panel); font:700 13px var(--mono); color:var(--text);">' + c + '<button type="button" data-air-del="' + c + '" aria-label="Retirar ' + c + '" style="width:17px; height:17px; border:0; border-radius:50%; background:rgba(255,255,255,.08); display:inline-flex; align-items:center; justify-content:center; font-size:12px; color:var(--text-dim); cursor:pointer; padding:0;">×</button></span>').join('') + '</div></div>').join('');
+}
+async function saveAirlines(list){
+  const v = list.join(','), st = document.getElementById('flight-airlines-status');
   const ok = await dbSetShared('flightairlines', { codes: v });
-  if(ok){ flAirlines = v; st.textContent = 'Guardado.'; } else { st.textContent = 'Não foi possível guardar agora.'; }
+  if(ok){ flAirlines = v; document.getElementById('flight-airlines-input').value = v; renderAirlineChips(); st.style.color = 'var(--go)'; st.textContent = 'Guardado.'; }
+  else { st.style.color = 'var(--nogo)'; st.textContent = 'Não foi possível guardar agora.'; }
   setTimeout(() => { st.textContent = ''; }, 2500);
+  return ok;
+}
+document.getElementById('airline-groups').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-air-del]'); if(!b) return;
+  const c = b.getAttribute('data-air-del'); saveAirlines(airlineList().filter(x => x !== c));
 });
+async function addAirlineFromInput(){
+  const inp = document.getElementById('airline-add-input'), st = document.getElementById('flight-airlines-status');
+  const c = inp.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if(c.length < 2){ st.style.color = 'var(--nogo)'; st.textContent = 'Escreve um código com 2 ou 3 caracteres.'; return; }
+  const list = airlineList(); if(list.indexOf(c) >= 0){ st.style.color = 'var(--text-dim)'; st.textContent = c + ' já está na lista.'; return; }
+  if(await saveAirlines(list.concat([c]))) inp.value = '';
+}
+document.getElementById('airline-add-btn').addEventListener('click', addAirlineFromInput);
+document.getElementById('airline-add-input').addEventListener('keydown', (e) => { if(e.key === 'Enter') addAirlineFromInput(); });
 // ---------- EMAIL PARA SUPORTE: summary email sent whenever a swap is confirmed (switched on/off and addressed from RULES, admin only) ----------
 let supportEmail = { enabled:false, key:'389d0f7f-e499-415d-967f-c27b12fe9ef4' };   // Web3Forms access key — the emails arrive at the address the key was created with
 async function loadSupportEmail(){
@@ -9016,16 +9018,6 @@ document.getElementById('double-shift-enabled-toggle').addEventListener('change'
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
   try{ renderAreaHubOrder(); }catch(err){}
-});
-document.getElementById('refresh-button-enabled-toggle').addEventListener('change', async (e) => {
-  const newValue = e.target.checked;
-  refreshButtonEnabled = newValue;
-  const ok = await saveRefreshButtonEnabled();
-  if(!ok){
-    refreshButtonEnabled = !newValue;
-    e.target.checked = refreshButtonEnabled;
-    showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
-  }
 });
 document.getElementById('pwa-install-enabled-toggle').addEventListener('change', async (e) => {
   const newValue = e.target.checked;
