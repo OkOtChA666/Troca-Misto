@@ -1388,13 +1388,14 @@
   .mt-row.team-open{ z-index:5; }
   /* finished tasks (5+ min ago) fold into a stack of overlapping cards; one tap opens it, a tap on a card folds it back */
   .mt-pstack{ position:relative; margin-bottom:8px; cursor:pointer; }
-  .mt-pstack .mt-row.past{ opacity:1; filter:brightness(.6) saturate(.55); }   /* greyed out like every finished task, but solid so the cards behind do not show through */
-  .mt-pstack .mt-row.past.team-open{ filter:none; }
-  .mt-pstack .mt-row.past:not(.mt-break){ background:var(--panel-2); }
+  /* finished tasks keep the soft faded look they always had, but solid (colours pre-mixed with the panel) so the cards behind do not show through */
+  .mt-pstack .mt-row.past{ opacity:1; background:color-mix(in srgb, var(--panel-2) 45%, var(--panel)); border-color:color-mix(in srgb, var(--border) 45%, var(--panel)); border-left-color:color-mix(in srgb, var(--c, var(--border)) 45%, var(--panel)) !important; }
+  .mt-pstack .mt-row.past.mt-break{ background:repeating-linear-gradient(135deg, color-mix(in srgb, #101b30 45%, var(--panel)) 0 14px, color-mix(in srgb, #13223d 45%, var(--panel)) 14px 28px); }
+  .mt-pstack .mt-row.past > *{ opacity:.45; }
+  .mt-pstack .mt-row.past.team-open{ background:var(--panel-2); border-color:var(--border); border-left-color:var(--c, var(--border)) !important; }
+  .mt-pstack .mt-row.past.team-open > *{ opacity:1; }
   .mt-pstack.anim .mt-row{ overflow:hidden !important; min-height:0 !important; transition:height .32s ease, margin-bottom .32s ease; }
-  .mt-pstack:not(.open) .mt-row{ position:relative; opacity:1; height:34px; min-height:0; overflow:hidden; margin-bottom:-8px; box-sizing:border-box; box-shadow:0 -4px 10px rgba(0,0,0,.45); background:var(--panel-2); }
-  .mt-pstack:not(.open) .mt-row:not(.mt-break){ background:var(--panel-2); }
-  .mt-pstack:not(.open) .mt-row.mt-break{ background:#101b30; }
+  .mt-pstack:not(.open) .mt-row{ position:relative; opacity:1; height:34px; min-height:0; overflow:hidden; margin-bottom:-8px; box-sizing:border-box; box-shadow:0 -4px 10px rgba(0,0,0,.45); }
   .mt-pstack:not(.open) .mt-row:last-child{ height:auto; min-height:115px; margin-bottom:0; overflow:visible; }
   .mt-pstack:not(.open) .mt-row:not(:last-child) .mt-label, .mt-pstack:not(.open) .mt-row:not(:last-child) .mt-break-word, .mt-pstack:not(.open) .mt-row:not(:last-child) .mt-info, .mt-pstack:not(.open) .mt-row:not(:last-child) .mt-side{ display:none; }
   .mt-pop{ display:none; position:absolute; left:12px; bottom:30px; z-index:20; background:#22355c; border:1px solid #8fa0c4; border-radius:10px; padding:10px 14px; min-width:190px; box-shadow:0 8px 24px rgba(0,0,0,.5); font-family:var(--mono); font-size:13px; color:#e8eefc; text-align:left; }
@@ -1609,7 +1610,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.52</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.53</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -11152,7 +11153,7 @@ function renderMyTasks(){
                 '<div class="mt-break-word">BREAK</div>' + chip + '<div class="mt-side">' + bdg + '</div></div>');
         return;
       }
-      (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + '"' : '') + '>' +
+      (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + ';--c:' + colr + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
               '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + '</div>' +
               chip + '<div class="mt-side">' + bdg + '</div>' + tabHtml + teamHtml + '</div>');
