@@ -1584,7 +1584,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.28</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.29</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -10717,8 +10717,9 @@ function renderMyTasks(){
   const todayIso = now.getFullYear() + '-' + mtPad(now.getMonth() + 1) + '-' + mtPad(now.getDate());
   const ageMin = MT_DOC.updatedAt ? Math.max(0, Math.round((Date.now() - MT_DOC.updatedAt) / 60000)) : null;
   const upd = MT_DOC.updatedAt ? new Date(MT_DOC.updatedAt) : null;
-  html += '<div class="mt-upd">Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
-          (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '') + '</div>';
+  // the "Atualizado às X (há X min)" line now lives at the bottom, above the note (see mt-foot)
+  const updTxt = 'Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
+          (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '');
   if(refreshButtonEnabled){ const upAt = MT_DOC.updatedAt || 0, myReq = mtMyReq();
     let label = 'ATUALIZAR', dis = false;
     if(Date.now() - upAt < 60000){ label = 'ATUALIZADO'; dis = true; }
@@ -10782,7 +10783,7 @@ function renderMyTasks(){
               '<div class="mt-side">' + chip + bdg + '</div>' + tabHtml + teamHtml + '</div>';
     });
   }
-  html += '<div class="mt-foot">Pode ter algum atraso. Em caso de dúvida, confirma sempre na plataforma oficial.</div>';
+  html += '<div class="mt-foot"><span style="color:var(--amber);">' + updTxt + '.</span><div style="height:12px;"></div>Em caso de dúvida, confirma sempre na plataforma oficial.</div>';
   body.innerHTML = html;
 }
 document.addEventListener('click', ev => {
