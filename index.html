@@ -1595,7 +1595,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.37</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.38</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2280,8 +2280,8 @@
           <span class="pill-toggle"><input type="checkbox" id="support-email-enabled-toggle"><span class="pill-track"></span></span>
           <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Enviar email quando uma troca é confirmada</span>
         </label>
-        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin:16px 0 6px;">Enviar para</div>
-        <input type="email" id="support-email-input" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:13px;">
+        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin:16px 0 6px;">Chave Web3Forms (os emails chegam ao email com que a chave foi criada)</div>
+        <input type="text" id="support-email-input" autocomplete="off" spellcheck="false" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:13px;">
         <div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn" id="support-email-save-btn" style="flex:1; margin:0;">Guardar</button><button type="button" class="btn" id="support-email-test-btn" style="flex:1; margin:0;">Enviar teste</button></div>
         <div id="support-email-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px; word-break:break-word;"></div>
       </div>
@@ -8681,10 +8681,10 @@ document.getElementById('flight-airlines-input').addEventListener('change', asyn
   setTimeout(() => { st.textContent = ''; }, 2500);
 });
 // ---------- EMAIL PARA SUPORTE: summary email sent whenever a swap is confirmed (switched on/off and addressed from RULES, admin only) ----------
-let supportEmail = { enabled:false, to:'papip50733@boffweb.com' };
+let supportEmail = { enabled:false, key:'389d0f7f-e499-415d-967f-c27b12fe9ef4' };   // Web3Forms access key — the emails arrive at the address the key was created with
 async function loadSupportEmail(){
-  try{ const doc = await dbGetShared('supportEmail', null); if(doc){ supportEmail = { enabled: !!doc.enabled, to: String(doc.to || supportEmail.to) }; } }catch(e){}
-  try{ document.getElementById('support-email-enabled-toggle').checked = supportEmail.enabled; document.getElementById('support-email-input').value = supportEmail.to; }catch(e){}
+  try{ const doc = await dbGetShared('supportEmail', null); if(doc){ supportEmail = { enabled: !!doc.enabled, key: String(doc.key || supportEmail.key) }; } }catch(e){}
+  try{ document.getElementById('support-email-enabled-toggle').checked = supportEmail.enabled; document.getElementById('support-email-input').value = supportEmail.key; }catch(e){}
 }
 setTimeout(loadSupportEmail, 0);
 function mtMailShift(w, idx){
@@ -8707,16 +8707,16 @@ function mtMailRules(w, idx){
   return { streak, rest };
 }
 let SUPPORT_EMAIL_LAST = '';
-async function sendSupportEmail(fields, subject, force){
-  const to = supportEmail.to;
-  if(!to || !/^\S+@\S+\.\S+$/.test(to)) return false;
+async function sendSupportEmail(fields, subject){
+  const key = supportEmail.key;
+  if(!key || !/^[0-9a-f-]{30,40}$/i.test(key)){ SUPPORT_EMAIL_LAST = 'Chave inválida.'; return false; }
   try{
     const ctl = new AbortController(); setTimeout(() => ctl.abort(), 12000);
-    const r = await fetch('https://formsubmit.co/ajax/' + encodeURIComponent(to), { signal: ctl.signal, method:'POST', headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
-      body: JSON.stringify(Object.assign({ _subject: subject, _template: 'table', _captcha: 'false' }, fields)) });
-    let txt = ''; try{ txt = (await r.text()).slice(0, 300); }catch(e){}
-    SUPPORT_EMAIL_LAST = 'Resposta ' + r.status + (txt ? ': ' + txt : '');
-    return r.ok;
+    const r = await fetch('https://api.web3forms.com/submit', { signal: ctl.signal, method:'POST', headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+      body: JSON.stringify(Object.assign({ access_key: key, subject: subject, from_name: 'TROCA-MISTO' }, fields)) });
+    let j = null, txt = ''; try{ txt = await r.text(); j = JSON.parse(txt); }catch(e){}
+    SUPPORT_EMAIL_LAST = 'Resposta ' + r.status + ((j && j.message) ? ': ' + j.message : (txt ? ': ' + txt.slice(0, 200) : ''));
+    return !!(r.ok && j && j.success);
   }catch(e){ SUPPORT_EMAIL_LAST = (e && e.name === 'AbortError') ? 'Sem resposta do serviço (tempo esgotado).' : 'Erro de rede: ' + ((e && e.message) || e); return false; }
 }
 function mtMailFields(w1, w2, idx){
@@ -8763,14 +8763,14 @@ document.getElementById('support-email-enabled-toggle').addEventListener('change
 });
 document.getElementById('support-email-save-btn').addEventListener('click', async () => {
   const st = document.getElementById('support-email-status'), v = document.getElementById('support-email-input').value.trim();
-  if(!/^\S+@\S+\.\S+$/.test(v)){ st.style.color = 'var(--nogo)'; st.textContent = 'Email inválido.'; return; }
-  supportEmail.to = v; const ok = await dbSetShared('supportEmail', supportEmail);
+  if(!/^[0-9a-f-]{30,40}$/i.test(v)){ st.style.color = 'var(--nogo)'; st.textContent = 'Chave inválida.'; return; }
+  supportEmail.key = v; const ok = await dbSetShared('supportEmail', supportEmail);
   st.style.color = ok ? 'var(--go)' : 'var(--nogo)'; st.textContent = ok ? 'Guardado.' : 'Não foi possível guardar agora.';
   setTimeout(() => { st.textContent = ''; }, 2500);
 });
 document.getElementById('support-email-test-btn').addEventListener('click', async () => {
   const st = document.getElementById('support-email-status'); st.style.color = 'var(--text-dim)'; st.textContent = 'A enviar…';
-  supportEmail.to = document.getElementById('support-email-input').value.trim() || supportEmail.to;
+  supportEmail.key = document.getElementById('support-email-input').value.trim() || supportEmail.key;
   const ok = await sendSupportEmail({ 'Mensagem': 'Email de teste da plataforma TROCA-MISTO.', 'Enviado em': new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' }) }, 'TESTE · TROCA-MISTO');
   st.style.color = ok ? 'var(--go)' : 'var(--nogo)';
   st.textContent = (ok ? 'Pedido aceite. ' : 'Não foi possível enviar. ') + SUPPORT_EMAIL_LAST;   // stays on screen so the real answer can be read
