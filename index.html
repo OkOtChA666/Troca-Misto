@@ -1598,7 +1598,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.42</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.43</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2247,6 +2247,11 @@
       <div style="margin-top:10px; text-transform:none; letter-spacing:normal;">
         <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Destino indicado no aviso</div>
         <input type="text" id="swap-warning-dest-input" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--sans); font-size:13px;">
+      </div>
+      <div style="border-top:1px solid var(--border-soft); margin-top:18px; padding-top:14px; text-transform:none; letter-spacing:normal;">
+        <div style="font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.14em; color:var(--amber); margin-bottom:12px;">LIMITES DAS TROCAS</div>
+        <div style="display:flex; gap:12px;"><div style="flex:1; min-width:0;"><div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Descanso mínimo (horas)</div><input type="number" id="swap-limit-rest" value="11" min="0" max="24" step="0.5" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:14px;"></div><div style="flex:1; min-width:0;"><div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin-bottom:6px;">Máximo de dias seguidos</div><input type="number" id="swap-limit-consec" value="6" min="1" max="14" step="1" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:14px;"></div></div>
+        <div id="swap-limits-status" style="font-family:var(--sans); font-size:11px; color:var(--text-dim); margin-top:8px; min-height:14px;">Uma troca que desrespeite estes limites é bloqueada, e o email de suporte usa os mesmos valores.</div>
       </div>
       </div>
       <div class="rules-tab" data-rt="app" style="display:none;">
@@ -8845,6 +8850,29 @@ document.getElementById('rules-tabs').addEventListener('click', (e) => {
   document.querySelectorAll('#rules-tabs .rules-tab-btn').forEach(x => x.classList.toggle('on', x === t));
   document.querySelectorAll('#custom2-panel .rules-tab').forEach(x => { x.style.display = x.getAttribute('data-rt') === k ? '' : 'none'; });
 });
+// ---------- LIMITES DAS TROCAS: minimum rest and maximum consecutive days, adjustable from RULES (shared by everyone) ----------
+let swapLimits = { minRest:11, maxConsec:6 };
+function applySwapLimits(){
+  ['rule-rest','rule-rest-2'].forEach(id => { const el = document.getElementById(id); if(el) el.value = swapLimits.minRest; });
+  ['rule-consec','rule-consec-2'].forEach(id => { const el = document.getElementById(id); if(el) el.value = swapLimits.maxConsec; });
+  try{ document.getElementById('swap-limit-rest').value = swapLimits.minRest; document.getElementById('swap-limit-consec').value = swapLimits.maxConsec; }catch(e){}
+  try{ updateStatBadge(); }catch(e){}
+}
+async function loadSwapLimits(){
+  try{ const doc = await dbGetShared('swapLimits', null); if(doc){ const r = parseFloat(doc.minRest), c = parseInt(doc.maxConsec); if(r >= 0 && r <= 24) swapLimits.minRest = r; if(c >= 1 && c <= 14) swapLimits.maxConsec = c; } }catch(e){}
+  applySwapLimits();
+}
+setTimeout(loadSwapLimits, 0);
+async function saveSwapLimitsFromInputs(){
+  const st = document.getElementById('swap-limits-status'), r = parseFloat(document.getElementById('swap-limit-rest').value), c = parseInt(document.getElementById('swap-limit-consec').value);
+  if(!(r >= 0 && r <= 24) || !(c >= 1 && c <= 14)){ st.style.color = 'var(--nogo)'; st.textContent = 'Valores inválidos (descanso 0–24 h, dias 1–14).'; return; }
+  swapLimits = { minRest:r, maxConsec:c }; applySwapLimits();
+  const ok = await dbSetShared('swapLimits', swapLimits);
+  st.style.color = ok ? 'var(--go)' : 'var(--nogo)'; st.textContent = ok ? 'Guardado.' : 'Não foi possível guardar agora.';
+  setTimeout(() => { st.style.color = 'var(--text-dim)'; st.textContent = 'Uma troca que desrespeite estes limites é bloqueada, e o email de suporte usa os mesmos valores.'; }, 2500);
+}
+document.getElementById('swap-limit-rest').addEventListener('change', saveSwapLimitsFromInputs);
+document.getElementById('swap-limit-consec').addEventListener('change', saveSwapLimitsFromInputs);
 document.getElementById('pedidos-deadline-enabled-toggle').addEventListener('change', async (e) => {
   pedidosDeadlineEnabled = e.target.checked;
   await savePedidosDeadlineEnabled();
