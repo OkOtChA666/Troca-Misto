@@ -44,6 +44,16 @@ export function parseRegulation(html) {
     a.tasks.push({ label, start, end, post: m[2], changed: /\bis-edit\b/.test(attrs) || label.startsWith('<'), fkey, fparts });
     taskCount++;
   }
+  // 3) clock-in / clock-out dots (green "debut" / red "fin") of each agent's timeline row; rows come in the same order as the agents
+  const rows = html.split(/<div class="agent-timeline" data-index="(\d+)"/);
+  const list = [...agents.values()];
+  for (let i = 1; i < rows.length; i += 2) {
+    const ag = list[parseInt(rows[i], 10)]; if (!ag) continue;
+    const blk = rows[i + 1].split('<div class="agent-timeline"')[0];
+    const ins = [], outs = [];
+    for (const d of blk.matchAll(/class="pointage (debut|fin)" data-time="(\d{1,2}:\d{2})"/g)) (d[1] === 'debut' ? ins : outs).push(hhmm(d[2]));
+    ag.punch = [ins[0] || '', outs.length ? outs[outs.length - 1] : ''];
+  }
   agents.forEach((a) => a.tasks.sort((x, y) => String(x.start).localeCompare(String(y.start))));
   return { date, agents: [...agents.values()], taskCount, orphan };
 }
