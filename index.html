@@ -1313,7 +1313,7 @@
   .mt-lab{ font-size:9.5px; letter-spacing:.16em; color:#7d89a3; margin-bottom:5px; }
   .mt-big{ font-size:18px; font-weight:700; line-height:1; color:var(--text); }
   .mt-big.mt-cd{ color:#4fd1f0; } .mt-big.warn{ color:#ffb020; } .mt-big.done{ color:#6b7898; } .mt-big.off{ color:var(--text-dim); }
-  .mt-punch{ display:flex; gap:18px; margin-top:9px; font-family:var(--mono); font-size:11px; color:#8fa0c4; }
+  .mt-punch{ display:flex; gap:18px; justify-content:space-between; margin-top:9px; font-family:var(--mono); font-size:11px; color:#8fa0c4; }
   .mt-punch b{ color:var(--text); font-weight:700; }
   .mt-pd{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:0; }
   .mt-pd.in{ background:#2ecc71; } .mt-pd.out{ background:#ef4444; }
@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.78</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.79</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -11097,7 +11097,7 @@ function mtShiftBounds(me){
 function mtMyPunch(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; return r && r.p ? r.p : null; }catch(e){ return null; } }
 function mtPunchHtml(p){
   if(!p || (!p[0] && !p[1])) return '';
-  return '<div class="mt-punch">' + (p[0] ? '<span><i class="mt-pd in"></i>Entrada <b>' + mtEsc(p[0]) + '</b></span>' : '') + (p[1] ? '<span><i class="mt-pd out"></i>Saída <b>' + mtEsc(p[1]) + '</b></span>' : '') + '</div>';
+  return '<div class="mt-punch">' + (p[0] ? '<span><i class="mt-pd in"></i><b>' + mtEsc(p[0]) + '</b></span>' : '') + (p[1] ? '<span style="margin-left:auto;"><i class="mt-pd out"></i><b>' + mtEsc(p[1]) + '</b></span>' : '') + '</div>';
 }
 function mtShiftPillsHtml(me, nowMin, punch){
   try{
