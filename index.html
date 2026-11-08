@@ -1313,6 +1313,10 @@
   .mt-lab{ font-size:9.5px; letter-spacing:.16em; color:#7d89a3; margin-bottom:5px; }
   .mt-big{ font-size:18px; font-weight:700; line-height:1; color:var(--text); }
   .mt-big.mt-cd{ color:#4fd1f0; } .mt-big.warn{ color:#ffb020; } .mt-big.done{ color:#6b7898; } .mt-big.off{ color:var(--text-dim); }
+  .mt-punch{ display:flex; gap:18px; margin-top:9px; font-family:var(--mono); font-size:11px; color:#8fa0c4; }
+  .mt-punch b{ color:var(--text); font-weight:700; }
+  .mt-pd{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:0; }
+  .mt-pd.in{ background:#2ecc71; } .mt-pd.out{ background:#ef4444; }
   .mt-vdiv{ width:1px; align-self:stretch; background:#243457; margin:0 14px; }
   .mt-rail{ height:3px; border-radius:2px; background:#1c2842; margin-top:11px; position:relative; overflow:hidden; }
   .mt-rail i{ position:absolute; left:0; top:0; bottom:0; background:#4fd1f0; }
@@ -1610,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.74</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.76</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -11086,18 +11090,24 @@ function mtShiftBounds(me){
   }catch(e){ return null; }
 }
 // slim strip under the title: shift hours on the left, countdown on the right, a thin progress bar underneath
-function mtShiftPillsHtml(me, nowMin){
+// real clock-in / clock-out times (green / red dots in planete), saved by the sync next to the person's tasks
+function mtMyPunch(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; return r && r.p ? r.p : null; }catch(e){ return null; } }
+function mtPunchHtml(p){
+  if(!p || (!p[0] && !p[1])) return '';
+  return '<div class="mt-punch">' + (p[0] ? '<span><i class="mt-pd in"></i>Entrada <b>' + mtEsc(p[0]) + '</b></span>' : '') + (p[1] ? '<span><i class="mt-pd out"></i>Saída <b>' + mtEsc(p[1]) + '</b></span>' : '') + '</div>';
+}
+function mtShiftPillsHtml(me, nowMin, punch){
   try{
     const sh = mtShiftBounds(me); if(!sh) return '';
     if(!sh.work) return sh.codes ? '<div class="mt-strip"><div class="mt-srow"><div><div class="mt-lab">HOJE</div><div class="mt-big">Dia de folga</div></div><div class="mt-big off">' + mtEsc(sh.codes) + '</div></div></div>' : '';
     const hm = m => m < 60 ? m + 'm' : Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
     let lab, val, cls = '', pct = 0;
     if(nowMin < sh.s0){ lab = 'COMEÇA EM'; val = hm(sh.s0 - nowMin); }
-    else if(nowMin >= sh.e0){ lab = ''; val = 'terminado'; cls = ' done'; pct = 100; }
+    else if(nowMin >= sh.e0){ lab = ''; val = 'Terminado'; cls = ' done'; pct = 100; }
     else { const left = sh.e0 - nowMin; lab = 'FALTAM'; val = hm(left); if(left <= 60) cls = ' warn'; pct = Math.round((nowMin - sh.s0) / (sh.e0 - sh.s0) * 100); }
     return '<div class="mt-strip"><div class="mt-srow"><div><div class="mt-lab">TURNO</div><div class="mt-big">' + fmtHHMM(sh.start) + ' – ' + fmtHHMM(sh.end) + '</div></div>' +
            '<div class="mt-vdiv"></div><div style="text-align:right;"><div class="mt-lab">' + (lab || '&nbsp;') + '</div><div class="mt-big mt-cd' + cls + '">' + val + '</div></div></div>' +
-           '<div class="mt-rail"><i class="' + cls.trim() + '" style="width:' + pct + '%;"></i></div></div>';
+           (cls === ' done' ? '' : '<div class="mt-rail"><i class="' + cls.trim() + '" style="width:' + pct + '%;"></i></div>') + mtPunchHtml(punch) + '</div>';   // shift over: no bar
   }catch(e){ return ''; }
 }
 function renderMyTasks(){
@@ -11119,7 +11129,7 @@ function renderMyTasks(){
   // the "Atualizado às X (há X min)" line now lives at the bottom, above the note (see mt-foot)
   const updTxt = 'Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
           (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '');
-  html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes());   // TURNO bar (shift, countdown / day off) for everybody
+  html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes(), mtMyPunch(staffId));   // TURNO bar (shift, countdown / day off) for everybody
   if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
   else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
   const sameDay = MT_DOC.date === todayIso;
