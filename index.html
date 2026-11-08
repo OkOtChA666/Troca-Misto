@@ -1351,8 +1351,6 @@
   .mt-ch-time{ font-family:var(--mono); color:var(--swap); min-width:40px; }
   #my-area-badge{ display:none; background:var(--nogo); color:#fff; font-family:var(--mono); font-size:10px; font-weight:700; border-radius:9px; padding:1px 6px; margin-left:2px; }
   #my-tasks-badge{ display:none; background:var(--nogo); color:#fff; font-family:var(--mono); font-size:10px; font-weight:700; border-radius:9px; padding:1px 6px; margin-left:2px; }
-  .mt-refresh{ float:right; margin-top:-30px; font-family:var(--mono); font-size:10.5px; letter-spacing:0.08em; font-weight:700; color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.4); border-radius:6px; padding:5px 9px; cursor:pointer; }
-  .mt-refresh:disabled{ opacity:0.5; cursor:default; }
   .mt-note{ font-size:12px; color:var(--swap); background:rgba(185,140,255,0.10); border:1px solid rgba(185,140,255,0.3); border-radius:6px; padding:4px 8px; align-self:flex-start; line-height:1.35; }
   .mt-note.new{ font-weight:700; background:rgba(185,140,255,0.2); }
   .mt-note b{ font-family:var(--mono); margin-right:4px; }
@@ -1610,7 +1608,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.61</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.62</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2725,8 +2723,6 @@ async function loadSupportLinkEnabled(){
   applySupportLink();
 }
 async function saveSupportLinkEnabled(){ return await dbSetShared('supportLinkEnabled', { value: supportLinkEnabled }); }
-// "Botão ATUALIZAR" in TAREFAS: always shown (the on/off switch in RULES was removed — the update works well).
-const refreshButtonEnabled = true;
 // "App instalável": when on, the page links its manifest so Chrome offers "Install app"; when off the
 // link is removed and the offer disappears. Already-installed apps are not affected. Default: on.
 let pwaInstallEnabled = true;
@@ -10521,8 +10517,6 @@ async function mtRequestRefresh(){
 document.getElementById('my-tasks-body').addEventListener('click', ev => {
   if(ev.target.closest && ev.target.closest('.mt-desk-toggle')){ try{ localStorage.setItem('trocaMistoShowDesks', mtShowDesks() ? '0' : '1'); }catch(e){} renderMyTasks(); return; }
   const alt = ev.target.closest && ev.target.closest('.mt-alt'); if(alt) alt.classList.toggle('paused');   // tap the STAND/registration tab to hold it still
-  const b = ev.target.closest && ev.target.closest('#mt-refresh-btn');
-  if(b && !b.disabled) mtRequestRefresh();
 });
 let MT_FL_AT = -1, MT_FL = {};
 function mtFlightInfo(key){
@@ -11115,12 +11109,6 @@ function renderMyTasks(){
   // the "Atualizado às X (há X min)" line now lives at the bottom, above the note (see mt-foot)
   const updTxt = 'Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
           (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '');
-  if(refreshButtonEnabled){ const upAt = MT_DOC.updatedAt || 0, myReq = mtMyReq();
-    let label = 'ATUALIZAR', dis = false;
-    if(Date.now() - upAt < 60000){ label = 'ATUALIZADO'; dis = true; }
-    else if(myReq > upAt && Date.now() - myReq < 180000){ label = 'PEDIDO ENVIADO…'; dis = true; }
-    html += '<button type="button" id="mt-refresh-btn" class="mt-refresh"' + (dis ? ' disabled' : '') + '>' + label + '</button>';
-  }
   if(staffId === ADMIN_STAFF_ID) html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes());   // admin-only test for now
   if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
   else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
