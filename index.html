@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.79</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.81</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2308,6 +2308,13 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Pesquisa: ponto verde = no aeroporto agora</span>
+        <span class="pill-toggle">
+          <input type="checkbox" id="live-search-look-toggle">
+          <span class="pill-track"></span>
+        </span>
+      </label>
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Link - Apoiar projecto</span>
         <span class="pill-toggle">
           <input type="checkbox" id="support-link-enabled-toggle">
@@ -2722,6 +2729,11 @@ async function loadLegalFooterEnabled(){
 async function saveLegalFooterEnabled(){ return await dbSetShared('legalFooterEnabled', { value: legalFooterEnabled }); }
 document.addEventListener('click', (e) => { const lk = e.target.closest('.legal-lk'); if(lk) lk.parentNode.classList.toggle('open'); });
 // "Apoiar o projeto" link in the footer: shown or hidden for everyone from RULES. Default: shown.
+// Search list look: ON = green dot only for people at the airport now (clocked in) + the code in white bold on the first grey line, no badge; OFF = the old look (green dot + small code for everybody available). Default: on.
+let liveSearchLook = true;
+async function loadLiveSearchLook(){
+  try{ const doc = await dbGetShared('liveSearchLook', null); liveSearchLook = doc ? !!doc.value : true; }catch(e){ liveSearchLook = true; }
+}
 let supportLinkEnabled = true;
 function applySupportLink(){ document.querySelectorAll('.support-wrap').forEach(el => el.classList.toggle('hidden', !supportLinkEnabled)); }
 async function loadSupportLinkEnabled(){
@@ -6038,7 +6050,7 @@ function renderCoverResults(results, idx){
     }
     const partner = swapped ? SWAPS[swapKey(r.worker.id, idx)] : null;
     const codeBadge = (!swapped && r.go)
-      ? ' <span style="display:inline-flex; align-items:flex-start; vertical-align:middle;"><span style="width:9px; height:9px; border-radius:50%; background:var(--go); display:inline-block; flex-shrink:0;"></span><sup style="font-size:9px; color:var(--text); font-weight:700; margin-left:2px; line-height:1;">'+escapeHtml(codeLabel.toUpperCase())+'</sup></span>'
+      ? ' <span style="display:inline-flex; align-items:flex-start; vertical-align:middle;">'+(liveSearchLook ? (mtIsLive(r.worker.id) ? '<span title="No aeroporto agora" style="width:9px; height:9px; border-radius:50%; background:var(--go); box-shadow:0 0 0 3px rgba(46,204,113,.2); display:inline-block; flex-shrink:0;"></span>' : '') : '<span style="width:9px; height:9px; border-radius:50%; background:var(--go); display:inline-block; flex-shrink:0;"></span><sup style="font-size:9px; color:var(--text); font-weight:700; margin-left:2px; line-height:1;">'+escapeHtml(codeLabel.toUpperCase())+'</sup>')+'</span>'
       : '';
     const hasAvailConflict = r.issues && r.issues.some(i => i.type === 'availability');
     const issueBadge = (!swapped && hasAvailConflict)
@@ -6064,7 +6076,7 @@ function renderCoverResults(results, idx){
       subHtml = '<span class="dot dot-white"></span>'+codeLabel+' → '+ownNow+
         '<br><span class="dot dot-purple"></span>'+(partnerHadShift ? ownNow : '—')+' → '+nowDisplay(partnerNow);
     } else {
-      subHtml = codeLabel+' on '+fmtDateLabel(idx)+(nextDayText?'<br>'+nextDayText:'');
+      subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<b style="color:#fff; font-weight:700;">'+escapeHtml(codeLabel)+'</b>' : codeLabel)+' on '+fmtDateLabel(idx)+(nextDayText?'<br>'+nextDayText:'');
     }
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
       '<div class="row-sub">'+subHtml+'</div></div>'+
@@ -8766,6 +8778,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   document.getElementById('theme-pro-enabled-toggle').checked = themeProEnabled;
   document.getElementById('legal-footer-enabled-toggle').checked = legalFooterEnabled;
   document.getElementById('support-link-enabled-toggle').checked = supportLinkEnabled;
+  document.getElementById('live-search-look-toggle').checked = liveSearchLook;
   loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; renderAirlineChips(); });
 });
 // AIRLINES tab: the airline codes shown as chips grouped by company (the hidden textarea keeps the list, as before)
@@ -9012,6 +9025,15 @@ document.getElementById('legal-footer-enabled-toggle').addEventListener('change'
   const ok = await saveLegalFooterEnabled();
   if(!ok){
     legalFooterEnabled = !newValue; applyLegalFooter(); e.target.checked = legalFooterEnabled;
+    showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
+  }
+});
+document.getElementById('live-search-look-toggle').addEventListener('change', async (e) => {
+  const newValue = e.target.checked;
+  liveSearchLook = newValue;
+  const ok = await dbSetShared('liveSearchLook', { value: newValue });
+  if(!ok){
+    liveSearchLook = !newValue; e.target.checked = liveSearchLook;
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
 });
@@ -9600,6 +9622,7 @@ Promise.all([
   loadTrocaFormFeatureEnabled(),
   loadLegalFooterEnabled(),
   loadSupportLinkEnabled(),
+  loadLiveSearchLook(),
   loadNotificationsEnabled(),
   loadMilestoneState(),
   loadTempMessage(),
@@ -11095,6 +11118,9 @@ function mtShiftBounds(me){
 // slim strip under the title: shift hours on the left, countdown on the right, a thin progress bar underneath
 // real clock-in / clock-out times (green / red dots in planete), saved by the sync next to the person's tasks
 function mtMyPunch(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; return r && r.p ? r.p : null; }catch(e){ return null; } }
+// live: clocked in today (planete) and not clocked out yet = at the airport right now (any date being searched)
+function mtIsLive(id){ try{ if(!MT_DOC || MT_DOC.date !== sfToday()) return false; const p = mtPunchOf(id); return !!(p && p[0] && !p[1]); }catch(e){ return false; } }
+function mtPunchOf(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; return r && r.p ? r.p : null; }catch(e){ return null; } }
 function mtPunchHtml(p){
   if(!p || (!p[0] && !p[1])) return '';
   return '<div class="mt-punch">' + (p[0] ? '<span><i class="mt-pd in"></i><b>' + mtEsc(p[0]) + '</b></span>' : '') + (p[1] ? '<span style="margin-left:auto;"><i class="mt-pd out"></i><b>' + mtEsc(p[1]) + '</b></span>' : '') + '</div>';
