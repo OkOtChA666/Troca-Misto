@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.83</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.84</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -6005,7 +6005,8 @@ function renderCoverResults(results, idx){
   box.appendChild(preNote);
   const head = document.createElement('div');
   head.className = 'results-head';
-  head.innerHTML = '<span>'+results.length+' CANDIDATES</span><span>'+results.filter(r=>r.go && !isFlagged(r.worker.id, idx) && !isSwapped(r.worker.id, idx)).length+' AVAILABLE</span>';
+  { const nAvail = results.filter(r=>r.go && !isFlagged(r.worker.id, idx) && !isSwapped(r.worker.id, idx)).length;
+    head.innerHTML = '<span>'+results.length+' '+(results.length === 1 ? 'CANDIDATO' : 'CANDIDATOS')+'</span><span>'+nAvail+' '+(nAvail === 1 ? 'DISPONÍVEL' : 'DISPONÍVEIS')+'</span>'; }
   box.appendChild(head);
   let dividerShown = false;
   let issueDividerShown = false;
