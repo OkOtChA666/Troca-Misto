@@ -67,7 +67,9 @@ export function readPrev(json) {
 export function buildDoc(parsed, now = Date.now(), changes = {}, fl = null) {
   const a = {};
   parsed.agents.forEach((ag) => {
-    a[ag.id] = sv(JSON.stringify({ n: ag.name, t: ag.tasks.map(t => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0, t.fkey || '']) }));
+    const rec = { n: ag.name, t: ag.tasks.map(t => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0, t.fkey || '']) };
+    if (ag.punch && (ag.punch[0] || ag.punch[1])) rec.p = ag.punch;      // real clock-in / clock-out times (green / red dots in planete)
+    a[ag.id] = sv(JSON.stringify(rec));
   });
   return {
     fields: {
