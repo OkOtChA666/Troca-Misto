@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.81</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.82</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -6076,7 +6076,7 @@ function renderCoverResults(results, idx){
       subHtml = '<span class="dot dot-white"></span>'+codeLabel+' → '+ownNow+
         '<br><span class="dot dot-purple"></span>'+(partnerHadShift ? ownNow : '—')+' → '+nowDisplay(partnerNow);
     } else {
-      subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<b style="color:#fff; font-weight:700;">'+escapeHtml(codeLabel)+'</b>' : codeLabel)+' on '+fmtDateLabel(idx)+(nextDayText?'<br>'+nextDayText:'');
+      subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<span style="background:#e8eefc; color:#0b1220; font-size:10px; font-weight:700; line-height:1; padding:3px 6px 2px; border-radius:5px; display:inline-block; margin-right:0; vertical-align:middle;">'+escapeHtml(codeLabel)+'</span>' : codeLabel)+' on '+fmtDateLabel(idx)+(nextDayText?'<br>'+nextDayText:'');
     }
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
       '<div class="row-sub">'+subHtml+'</div></div>'+
