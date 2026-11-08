@@ -1610,7 +1610,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.73</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.74</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -11119,7 +11119,7 @@ function renderMyTasks(){
   // the "Atualizado às X (há X min)" line now lives at the bottom, above the note (see mt-foot)
   const updTxt = 'Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
           (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '');
-  if(staffId === ADMIN_STAFF_ID) html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes());   // admin-only test for now
+  html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes());   // TURNO bar (shift, countdown / day off) for everybody
   if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
   else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
   const sameDay = MT_DOC.date === todayIso;
