@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.87</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.88</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2151,6 +2151,7 @@
       <div class="tool-card" id="so-card-custom1"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2-2z"/></svg></div><div><div class="tool-name">MAIN</div><div class="tool-desc">Manutenção: bloquear o acesso</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-custom2"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/></svg></div><div><div class="tool-name">RULES</div><div class="tool-desc">Regras das trocas e companhias</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-stats"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 19l5-6 4 3 7-9M16 7h4v4"/></svg></div><div><div class="tool-name">STATS</div><div class="tool-desc">Estatísticas das trocas</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-qw"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="18.5" cy="6.5" r="2.5" fill="#2ecc71" stroke="#2ecc71"/></svg></div><div><div class="tool-name">QUEM ESTÁ A TRABALHAR</div><div class="tool-desc">Quem está no aeroporto agora</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <button type="button" id="so-switch-dept" class="so-switch-dept"></button>
     </div>
     <div id="so-row" style="display:none; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
@@ -2158,6 +2159,7 @@
       <button type="button" class="btn" id="msg-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">MSG</button>
       <button type="button" class="btn" id="custom1-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">MAIN</button>
       <button type="button" class="btn" id="custom2-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">RULES</button>
+      <button type="button" class="btn" id="qw-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">QUEM</button>
       <button type="button" class="btn" id="stats-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">STATS</button>
       <button type="button" class="btn" id="aistaff-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">PREVISÃO</button>
     </div>
@@ -2321,12 +2323,6 @@
           <span class="pill-track"></span>
         </span>
       </label>
-      <div id="qw-box" style="margin-top:26px; padding-top:18px; border-top:1px solid var(--border); text-transform:none; letter-spacing:normal;">
-        <div style="font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--amber); margin-bottom:10px;">QUEM ESTÁ A TRABALHAR</div>
-        <select id="qw-select" style="width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:12px; font-family:var(--sans); font-size:14px;"></select>
-        <div id="qw-card"></div>
-        <div style="font-size:11px; color:var(--text-dim); margin-top:8px; font-style:italic;">Só aparece para ti. A lista mostra quem já picou entrada hoje e ainda não saiu.</div>
-      </div>
       </div>
       <div class="rules-tab" data-rt="email" style="display:none;">
       <div style="border-top:1px solid var(--border-soft); margin-top:24px; padding-top:16px; text-transform:none; letter-spacing:normal;">
@@ -2354,6 +2350,11 @@
       </div>
     </div>
 
+    <div id="qw-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px; text-transform:none; letter-spacing:normal;">
+      <select id="qw-select" style="width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:12px; font-family:var(--sans); font-size:14px;"></select>
+      <div id="qw-card"></div>
+      <div style="font-size:11px; color:var(--text-dim); margin-top:8px; font-style:italic;">Só aparece para ti. A lista mostra quem já picou entrada hoje e ainda não saiu.</div>
+    </div>
     <div id="stats-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
       <div class="swap-sort-toggle">
         <div class="swap-sort-tab active" id="stats-tab-trocas"><span>TOP TROCAS</span><div class="dash"></div></div>
@@ -8665,9 +8666,9 @@ function renderScheduleOverrideList(){
   });
 }
 // ---------- ADMIN menu: stacked cards, one section open at a time ----------
-const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO' };
+const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR' };
 function soApplyCards(){
-  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
+  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
   const t = document.getElementById('so-title'); if(t && GROUP && isAdminSession) t.textContent = 'DEFINIÇÕES · ' + GROUP_LABEL;
 }
 function soShowMenu(){
@@ -8694,7 +8695,7 @@ function soOpen(key){
   document.getElementById(key + '-toggle-btn').click();
   if(key === 'aistaff') document.getElementById('so-head').classList.add('hidden');
 }
-['ah','sched','aistaff','msg','custom1','custom2','stats'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
+['ah','sched','aistaff','msg','custom1','custom2','stats','qw'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
 document.getElementById('so-back-btn').addEventListener('click', () => {
   if(!document.getElementById('so-menu').classList.contains('hidden')) closeScheduleOverride();
   else soShowMenu();
@@ -8712,7 +8713,7 @@ function openScheduleOverride(){
 // Generalized helpers for the message panels (currently just msg) — only one
 // can be open at a time, and opening any of them hides the other 3 buttons + the normal
 // PLANEAMENTO content, leaving only "← Voltar" visible until you back out of it.
-const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff'];
+const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff', 'qw'];
 function closeAllMsgPanels(){
   document.getElementById('so-row').classList.remove('hidden');
   ALL_MSG_PANEL_KEYS.forEach(key => {
@@ -8984,7 +8985,6 @@ document.getElementById('rules-tabs').addEventListener('click', (e) => {
   const k = t.getAttribute('data-rt');
   document.querySelectorAll('#rules-tabs .rules-tab-btn').forEach(x => x.classList.toggle('on', x === t));
   document.querySelectorAll('#custom2-panel .rules-tab').forEach(x => { x.style.display = x.getAttribute('data-rt') === k ? '' : 'none'; });
-  if(k === 'app'){ try{ mtListen(); qwRender(); }catch(e){} }
 });
 // ---------- LIMITES DAS TROCAS: minimum rest and maximum consecutive days, adjustable from RULES (shared by everyone) ----------
 let swapLimits = { minRest:11, maxConsec:6 };
@@ -9509,6 +9509,11 @@ async function openAiStaff(){
 document.getElementById('aistaff-toggle-btn').addEventListener('click', openAiStaff);
 document.getElementById('ai-back-btn').addEventListener('click', () => soShowMenu());
 document.getElementById('ai-rh').addEventListener('click', () => document.getElementById('ai-rl2').classList.toggle('open'));
+document.getElementById('qw-toggle-btn').addEventListener('click', () => {
+  openMsgPanel('qw'); qwSel = ''; qwOpen = false;
+  try{ mtListen(); }catch(e){}
+  qwRender();
+});
 document.getElementById('stats-toggle-btn').addEventListener('click', () => {
   openMsgPanel('stats');
 
