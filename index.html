@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.84</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.85</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -6056,7 +6056,7 @@ function renderCoverResults(results, idx){
     }
     const partner = swapped ? SWAPS[swapKey(r.worker.id, idx)] : null;
     const codeBadge = (!swapped && r.go)
-      ? ' <span style="display:inline-flex; align-items:flex-start; vertical-align:middle;">'+(liveSearchLook ? (mtIsLive(r.worker.id) ? '<span title="No aeroporto agora" style="width:9px; height:9px; border-radius:50%; background:var(--go); box-shadow:0 0 0 3px rgba(46,204,113,.2); display:inline-block; flex-shrink:0;"></span>' : '') : '<span style="width:9px; height:9px; border-radius:50%; background:var(--go); display:inline-block; flex-shrink:0;"></span><sup style="font-size:9px; color:var(--text); font-weight:700; margin-left:2px; line-height:1;">'+escapeHtml(codeLabel.toUpperCase())+'</sup>')+'</span>'
+      ? ' <span style="display:inline-flex; align-items:flex-start; vertical-align:middle;">'+(liveSearchLook ? (mtIsLive(r.worker.id) ? '<span title="No aeroporto agora" style="width:9px; height:9px; border-radius:50%; background:var(--go); box-shadow:0 0 0 3px rgba(46,204,113,.2); display:inline-block; flex-shrink:0; position:relative; top:-2px;"></span>' : '') : '<span style="width:9px; height:9px; border-radius:50%; background:var(--go); display:inline-block; flex-shrink:0;"></span><sup style="font-size:9px; color:var(--text); font-weight:700; margin-left:2px; line-height:1;">'+escapeHtml(codeLabel.toUpperCase())+'</sup>')+'</span>'
       : '';
     const hasAvailConflict = r.issues && r.issues.some(i => i.type === 'availability');
     const issueBadge = (!swapped && hasAvailConflict)
