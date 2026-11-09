@@ -1626,7 +1626,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.97</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.20</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -6678,15 +6678,27 @@ function updateExtraContext(){
   const entry = getEffectiveEntry(extraWorker, idx);
   ctx.classList.remove('hidden');
   const already = isExtraHours(extraWorker.id, idx);
-  if(entry.status === 'work'){
-    ctx.innerHTML = '<b>'+escapeHtml(extraWorker.name)+'</b> already works '+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+' on '+fmtDateLabel(idx)+' — no need to mark horas extra.';
+  // short shifts (4h or 6h) can still take horas extra on the same day; 8h shifts cannot
+  let workMins = 0;
+  if(entry.status === 'work' && entry.start && entry.end){
+    workMins = (parseInt(entry.end.slice(0,2),10)*60 + parseInt(entry.end.slice(2,4),10)) - (parseInt(entry.start.slice(0,2),10)*60 + parseInt(entry.start.slice(2,4),10));
+    if(workMins <= 0) workMins += 24*60;
+  }
+  const isOwnExtra = extraWorker.name === rememberedName; // admin picking someone else still sees the name
+  const shortShift = entry.status === 'work' && workMins > 0 && workMins <= 6*60;
+  if(entry.status === 'work' && !shortShift){
+    ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Não podes fazer Horas-Extra</div>';
     btn.disabled = true;
   } else if(already){
     ctx.innerHTML = '<b>'+escapeHtml(extraWorker.name)+'</b> is already marked as doing horas extra on '+fmtDateLabel(idx)+'.';
     btn.disabled = true;
   } else {
+    if(shortShift){
+      ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Ainda podes fazer Horas-Extra</div>';
+    } else {
     const codeLabel = (entry.codes && entry.codes[0]) ? entry.codes[0] : 'off';
     ctx.innerHTML = '<b>'+escapeHtml(extraWorker.name)+'</b> is scheduled <b>'+escapeHtml(codeLabel)+'</b> on '+fmtDateLabel(idx)+'.';
+    }
     btn.disabled = false;
   }
 }
