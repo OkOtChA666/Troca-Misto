@@ -6408,7 +6408,7 @@ function renderCoverResults(results, idx){
       subHtml = '<span class="dot dot-white"></span>'+codeLabel+' → '+ownNow+
         '<br><span class="dot dot-purple"></span>'+(partnerHadShift ? ownNow : '—')+' → '+nowDisplay(partnerNow);
     } else {
-      subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<span style="background:#e8eefc; color:#0b1220; font-size:10px; font-weight:700; line-height:1; padding:3px 6px 2px; border-radius:5px; display:inline-block; margin-right:0; vertical-align:middle;">'+escapeHtml(codeLabel)+'</span>' : codeLabel)+' ' + fmtDateOn(idx)+((nextDayText && !hideNext)?'<br>'+nextDayText:'');
+      subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<span style="background:#e8eefc; color:#0b1220; font-size:10px; font-weight:700; line-height:1; padding:3px 6px 2px; border-radius:5px; display:inline-block; margin-right:0; vertical-align:middle;">'+escapeHtml(codeLabel)+'</span>' : codeLabel)+(hideNext ? '' : ' ' + fmtDateOn(idx))+((nextDayText && !hideNext)?'<br>'+nextDayText:'');   // clean rows: no repeated date (it is the day that was searched)
     }
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
       '<div class="row-sub">'+subHtml+'</div></div>'+
