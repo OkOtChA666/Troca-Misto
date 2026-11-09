@@ -1060,7 +1060,7 @@
   .turnaround-view-btn:active{ transform: translateY(1px); }
   .row-name{ font-size: 14.5px; font-weight:600; color: var(--text); }
   .row-sub{ font-family: 'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-size: 12.5px; color: var(--text-dim); margin-top:10px; line-height:2; }
-  .row-detail .confirm-btn{ font-family:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-size:13px; letter-spacing:.03em; padding:0 26px; height:42px; flex:1; }
+  .row-detail .confirm-btn{ font-family:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-size:13px; letter-spacing:.03em; padding:0; height:42px; flex:1 1 0; min-width:0; box-sizing:border-box; }
   .swap-partner{ color: var(--swap); font-weight:600; }
   .sw-line{ display:flex; align-items:center; gap:6px; width:100%; }
   .sw-names{ flex:1; min-width:0; }
@@ -1172,6 +1172,7 @@
   .rl-wrap.rl-col{ flex-direction:column; gap:5px; }
   .rl-wrap:not(.rl-col){ gap:0; }
   .rl-wrap:not(.rl-col) > .rl{ flex:1; justify-content:center; }
+  .rl-wrap:not(.rl-col) > .rl + .rl{ border-left:1px solid #2a3552; }
   .rl{ display:flex; align-items:center; gap:6px; }
   .rl svg{ flex:none; width:14px; height:14px; }
   .rl.bad{ color:var(--nogo); }
