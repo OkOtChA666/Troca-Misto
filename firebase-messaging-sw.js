@@ -44,3 +44,16 @@ messaging.onBackgroundMessage((payload) => {
     badge: '/notification_badge.png',
   });
 });
+
+// Tapping a notification: close it and open the app (or bring it to the front if it is already open).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ('focus' in c) return c.focus();
+      }
+      return clients.openWindow('/');
+    })
+  );
+});
