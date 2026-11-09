@@ -1446,6 +1446,8 @@
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
   .mt-foot{ font-style:italic; font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-top:12px; }
 @keyframes nmmq{to{transform:translateX(calc(-1*var(--w)))}}
+#user-menu-btn > svg:last-child{ transition:transform .2s ease; }
+#user-menu-btn.open > svg:last-child{ transform:rotate(180deg); }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -1624,7 +1626,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.93</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.94</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -4810,7 +4812,17 @@ document.getElementById('logout-link').addEventListener('click', () => {
 
 document.getElementById('area-logout-btn').addEventListener('click', () => document.getElementById('logout-link').click());
 // tap the name in the header: small menu with SAIR
-function closeUserMenu(){ const m = document.getElementById('user-menu'); if(m) m.remove(); }
+function tuckUserMenu(m){
+  // the card slides out from behind the header bar (like the stacked task cards): its top 16px hide behind the bar, with a soft shadow falling on it
+  const row = document.getElementById('logged-in-tab-row'); if(!row) return;
+  const T = 16, r = row.getBoundingClientRect();
+  m.style.top = (r.bottom + window.scrollY - T) + 'px';
+  m.style.clipPath = 'inset(' + T + 'px -50px -50px -50px)';
+  m.style.borderTopWidth = '0';
+  const sp = document.createElement('div'); sp.style.cssText = 'height:' + T + 'px; pointer-events:none;'; m.insertBefore(sp, m.firstChild);
+  const sh = document.createElement('div'); sh.style.cssText = 'position:absolute; left:0; right:0; top:' + T + 'px; height:30px; pointer-events:none; background:linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,0));'; m.appendChild(sh);
+}
+function closeUserMenu(){ const m = document.getElementById('user-menu'); if(m) m.remove(); const b = document.getElementById('user-menu-btn'); if(b) b.classList.remove('open'); }
 function toggleUserMenu(){
   if(document.getElementById('user-menu')){ closeUserMenu(); return; }
   const row = document.getElementById('logged-in-tab-row'); if(!row) return;
@@ -4822,7 +4834,7 @@ function toggleUserMenu(){
     m.style.background = 'radial-gradient(120% 90% at 0 0, #16304a 0, #0f1626 55%)'; m.style.padding = '0'; m.style.overflow = 'hidden'; m.style.minWidth = '290px';
     m.innerHTML = '<div style="padding:16px 16px 14px; display:flex; gap:14px; align-items:center;"><div style="flex:none; width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">SU</div></div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text);">SUPORTE</div><div style="margin-top:6px; font:11px var(--mono); color:#8a96b3; letter-spacing:.1em;">SUPORTE · FAO</div></div></div>' +
       '<div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
-    document.body.appendChild(m);
+    document.body.appendChild(m); { const b = document.getElementById('user-menu-btn'); if(b) b.classList.add('open'); } tuckUserMenu(m);
     document.getElementById('user-menu-out').addEventListener('click', () => { closeUserMenu(); showConfirmDialog('Terminar sessão? Vais precisar do utilizador e da password para entrar novamente.', () => { try{ localStorage.removeItem('trocaMistoSupport'); }catch(e){} location.reload(); }, false, 'SAIR', false, null, 'CANCELAR'); });
     return;
   }
@@ -4850,7 +4862,7 @@ function toggleUserMenu(){
     proMenuLinksHtml() +
     ((isAdminSession || isDeptAdminSession) ? '<div id="user-menu-admin" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ffb020; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>DEFINIÇÕES</div>' : '') +
     '<div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
-  document.body.appendChild(m);
+  document.body.appendChild(m); { const b = document.getElementById('user-menu-btn'); if(b) b.classList.add('open'); } tuckUserMenu(m);
   document.getElementById('user-menu-out').addEventListener('click', () => { closeUserMenu(); document.getElementById('logout-link').click(); });
   const _am = document.getElementById('user-menu-admin'); if(_am) _am.addEventListener('click', () => { closeUserMenu(); openScheduleOverride(); });
   m.querySelectorAll('[data-go]').forEach(r => r.addEventListener('click', () => { closeUserMenu(); const t = document.getElementById(r.dataset.go); if(t) t.click(); }));
