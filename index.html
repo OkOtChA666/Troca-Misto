@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.88</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.89</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -11143,21 +11143,8 @@ function mtPunchOf(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON
 let qwSel = '', qwOpen = false;
 function qwLive(){ return DATA.workers.filter(w => mtIsLive(w.id)).sort((a, b) => a.name.localeCompare(b.name)); }
 function qwTasksHtml(id){
-  let rec = null; try{ rec = MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; }catch(e){}
-  if(!rec || !rec.t || !rec.t.length) return '<div class="mt-empty">Sem tarefas atribuídas.</div>';
-  const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
-  return rec.t.slice().sort((p, q) => String(p[1]).localeCompare(String(q[1]))).map(t => {
-    const label = String(t[0] || ''), start = t[1], end = t[2];
-    const nk = label.replace(/^<\s*/, '').trim();
-    const sM = mtToMin(start); let eM = mtToMin(end); if(sM !== null && eM !== null && eM <= sM) eM += 1440;
-    let cls = '', chip = '';
-    if(sM !== null && eM !== null){ if(nowMin >= eM) cls = ' past'; else if(nowMin >= sM){ cls = ' now'; chip = '<span class="mt-chip now">A DECORRER</span>'; } }
-    if(/^(break|pausa|pause)$/i.test(nk)) return '<div class="mt-row mt-break' + cls + '" style="min-height:0;"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div><div class="mt-break-word">BREAK</div>' + chip + '</div>';
-    const colr = mtColor(t[3]), kind = MT_KINDS[colr] || null;
-    const kindHtml = kind ? '<span class="mt-kind" style="background:' + colr + ';color:' + kind[1] + '">' + kind[0] + '</span>' : '<span class="mt-kind mt-kind-empty"></span>';
-    return '<div class="mt-row' + cls + '" style="min-height:0;' + (colr ? 'border-left-color:' + colr + ';--c:' + colr : '') + '"><div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
-      '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + '</div>' + chip + '</div>';
-  }).join('');
+  const w = DATA.workers.find(x => x.id === id), now = new Date();
+  return mtShiftPillsHtml(w || null, now.getHours() * 60 + now.getMinutes(), mtPunchOf(id)) + mtTasksBodyHtml(id, w || null, now, MT_DOC && MT_DOC.date === sfToday());
 }
 function qwRender(){
   const sel = document.getElementById('qw-select'), card = document.getElementById('qw-card');
@@ -11200,34 +11187,8 @@ function mtShiftPillsHtml(me, nowMin, punch){
            '<div class="mt-rail"' + (cls === ' done' ? ' style="visibility:hidden;"' : '') + '><i class="' + cls.trim() + '" style="width:' + pct + '%;"></i></div>' + mtPunchHtml(punch) + '</div>';   // shift over: no bar
   }catch(e){ return ''; }
 }
-function renderMyTasks(){
-  const body = document.getElementById('my-tasks-body');
-  if(!body || !mtOpenOverlay()) return;
-  if(GROUP === 'sup'){ renderSupAll(); return; }
-  let staffId = null;
-  try{ staffId = localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){}
-  const me = staffId ? DATA.workers.find(w => w.id === staffId) : null;
+function mtTasksBodyHtml(staffId, me, now, sameDay){
   let html = '';
-  if(MT_ERR){ body.innerHTML = html + '<div class="mt-warn red">Não consegui ligar à base de dados. Vê as tuas tarefas na plataforma oficial.</div>'; return; }
-  if(MT_DOC === null){ body.innerHTML = html + '<div class="mt-empty">A carregar…</div>'; return; }
-  if(MT_DOC === false || !MT_DOC.a){ body.innerHTML = html + '<div class="mt-warn amber">Ainda não há tarefas guardadas. Vê as tuas tarefas na plataforma oficial.</div>'; return; }
-
-  const now = new Date();
-  const todayIso = now.getFullYear() + '-' + mtPad(now.getMonth() + 1) + '-' + mtPad(now.getDate());
-  const ageMin = MT_DOC.updatedAt ? Math.max(0, Math.round((Date.now() - MT_DOC.updatedAt) / 60000)) : null;
-  const upd = MT_DOC.updatedAt ? new Date(MT_DOC.updatedAt) : null;
-  // the "Atualizado às X (há X min)" line now lives at the bottom, above the note (see mt-foot)
-  const updTxt = 'Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
-          (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '');
-  html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes(), mtMyPunch(staffId));   // TURNO bar (shift, countdown / day off) for everybody
-  if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
-  else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
-  const sameDay = MT_DOC.date === todayIso;
-  if(!sameDay){
-    const dd = MT_DOC.date ? MT_DOC.date.split('-').reverse().join('/') : '?';
-    html += '<div class="mt-warn amber">Os dados guardados são do dia ' + mtEsc(dd) + ' — ainda não foram atualizados para hoje.</div>';
-  }
-
   let rec = null;
   try{ rec = MT_DOC.a[staffId] ? JSON.parse(MT_DOC.a[staffId]) : null; } catch(e){}
   if(!rec){
@@ -11281,6 +11242,37 @@ function renderMyTasks(){
     if(stackRows.length) html += '<div class="mt-pstack' + (mtPastOpen ? ' open' : '') + '">' + stackRows.join('') + '</div>';
     html += liveRows.join('');
   }
+  return html;
+}
+function renderMyTasks(){
+  const body = document.getElementById('my-tasks-body');
+  if(!body || !mtOpenOverlay()) return;
+  if(GROUP === 'sup'){ renderSupAll(); return; }
+  let staffId = null;
+  try{ staffId = localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){}
+  const me = staffId ? DATA.workers.find(w => w.id === staffId) : null;
+  let html = '';
+  if(MT_ERR){ body.innerHTML = html + '<div class="mt-warn red">Não consegui ligar à base de dados. Vê as tuas tarefas na plataforma oficial.</div>'; return; }
+  if(MT_DOC === null){ body.innerHTML = html + '<div class="mt-empty">A carregar…</div>'; return; }
+  if(MT_DOC === false || !MT_DOC.a){ body.innerHTML = html + '<div class="mt-warn amber">Ainda não há tarefas guardadas. Vê as tuas tarefas na plataforma oficial.</div>'; return; }
+
+  const now = new Date();
+  const todayIso = now.getFullYear() + '-' + mtPad(now.getMonth() + 1) + '-' + mtPad(now.getDate());
+  const ageMin = MT_DOC.updatedAt ? Math.max(0, Math.round((Date.now() - MT_DOC.updatedAt) / 60000)) : null;
+  const upd = MT_DOC.updatedAt ? new Date(MT_DOC.updatedAt) : null;
+  // the "Atualizado às X (há X min)" line now lives at the bottom, above the note (see mt-foot)
+  const updTxt = 'Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
+          (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '');
+  html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes(), mtMyPunch(staffId));   // TURNO bar (shift, countdown / day off) for everybody
+  if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
+  else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
+  const sameDay = MT_DOC.date === todayIso;
+  if(!sameDay){
+    const dd = MT_DOC.date ? MT_DOC.date.split('-').reverse().join('/') : '?';
+    html += '<div class="mt-warn amber">Os dados guardados são do dia ' + mtEsc(dd) + ' — ainda não foram atualizados para hoje.</div>';
+  }
+
+  html += mtTasksBodyHtml(staffId, me, now, sameDay);
   html += '<div class="mt-foot"><span style="color:var(--amber);">' + updTxt + '.</span><div style="height:12px;"></div>Em caso de dúvida, confirma sempre na plataforma oficial.</div>';
   body.innerHTML = html;
 }
