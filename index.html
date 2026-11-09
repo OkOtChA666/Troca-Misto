@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.86</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.87</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2321,6 +2321,12 @@
           <span class="pill-track"></span>
         </span>
       </label>
+      <div id="qw-box" style="margin-top:26px; padding-top:18px; border-top:1px solid var(--border); text-transform:none; letter-spacing:normal;">
+        <div style="font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--amber); margin-bottom:10px;">QUEM ESTÁ A TRABALHAR</div>
+        <select id="qw-select" style="width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:12px; font-family:var(--sans); font-size:14px;"></select>
+        <div id="qw-card"></div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:8px; font-style:italic;">Só aparece para ti. A lista mostra quem já picou entrada hoje e ainda não saiu.</div>
+      </div>
       </div>
       <div class="rules-tab" data-rt="email" style="display:none;">
       <div style="border-top:1px solid var(--border-soft); margin-top:24px; padding-top:16px; text-transform:none; letter-spacing:normal;">
@@ -8978,6 +8984,7 @@ document.getElementById('rules-tabs').addEventListener('click', (e) => {
   const k = t.getAttribute('data-rt');
   document.querySelectorAll('#rules-tabs .rules-tab-btn').forEach(x => x.classList.toggle('on', x === t));
   document.querySelectorAll('#custom2-panel .rules-tab').forEach(x => { x.style.display = x.getAttribute('data-rt') === k ? '' : 'none'; });
+  if(k === 'app'){ try{ mtListen(); qwRender(); }catch(e){} }
 });
 // ---------- LIMITES DAS TROCAS: minimum rest and maximum consecutive days, adjustable from RULES (shared by everyone) ----------
 let swapLimits = { minRest:11, maxConsec:6 };
@@ -10334,7 +10341,7 @@ function mtListen(){
       const db = await getDb();
       if(!db){ MT_ERR = true; MT_LISTENING = false; renderMyTasks(); return; }
       MT_UNSUB = db.collection('data').doc('tasks').onSnapshot(
-        snap => { MT_DOC = snap.exists ? snap.data() : false; MT_ERR = false; mtUpdateBadge(); if(mtOpenOverlay()) renderMyTasks();
+        snap => { MT_DOC = snap.exists ? snap.data() : false; MT_ERR = false; mtUpdateBadge(); try{ qwRender(); }catch(e){} if(mtOpenOverlay()) renderMyTasks();
           try{ const nm = document.getElementById('notifications-modal'); if(nm && !nm.classList.contains('hidden')) renderNotificationsList(); }catch(e){} },   // bell already open: show the task entries as soon as they arrive
         () => { MT_ERR = true; if(mtOpenOverlay()) renderMyTasks(); }
       );
@@ -11127,6 +11134,49 @@ function mtMyPunch(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON
 // live: clocked in today (planete) and not clocked out yet = at the airport right now (any date being searched)
 function mtIsLive(id){ try{ if(!MT_DOC || MT_DOC.date !== sfToday()) return false; const p = mtPunchOf(id); return !!(p && p[0] && !p[1]); }catch(e){ return false; } }
 function mtPunchOf(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; return r && r.p ? r.p : null; }catch(e){ return null; } }
+// ---------- QUEM ESTÁ A TRABALHAR (admin settings, APP tab): pick someone clocked in right now, tap the card to see their tasks ----------
+let qwSel = '', qwOpen = false;
+function qwLive(){ return DATA.workers.filter(w => mtIsLive(w.id)).sort((a, b) => a.name.localeCompare(b.name)); }
+function qwTasksHtml(id){
+  let rec = null; try{ rec = MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; }catch(e){}
+  if(!rec || !rec.t || !rec.t.length) return '<div class="mt-empty">Sem tarefas atribuídas.</div>';
+  const now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+  return rec.t.slice().sort((p, q) => String(p[1]).localeCompare(String(q[1]))).map(t => {
+    const label = String(t[0] || ''), start = t[1], end = t[2];
+    const nk = label.replace(/^<\s*/, '').trim();
+    const sM = mtToMin(start); let eM = mtToMin(end); if(sM !== null && eM !== null && eM <= sM) eM += 1440;
+    let cls = '', chip = '';
+    if(sM !== null && eM !== null){ if(nowMin >= eM) cls = ' past'; else if(nowMin >= sM){ cls = ' now'; chip = '<span class="mt-chip now">A DECORRER</span>'; } }
+    if(/^(break|pausa|pause)$/i.test(nk)) return '<div class="mt-row mt-break' + cls + '" style="min-height:0;"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div><div class="mt-break-word">BREAK</div>' + chip + '</div>';
+    const colr = mtColor(t[3]), kind = MT_KINDS[colr] || null;
+    const kindHtml = kind ? '<span class="mt-kind" style="background:' + colr + ';color:' + kind[1] + '">' + kind[0] + '</span>' : '<span class="mt-kind mt-kind-empty"></span>';
+    return '<div class="mt-row' + cls + '" style="min-height:0;' + (colr ? 'border-left-color:' + colr + ';--c:' + colr : '') + '"><div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
+      '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + '</div>' + chip + '</div>';
+  }).join('');
+}
+function qwRender(){
+  const sel = document.getElementById('qw-select'), card = document.getElementById('qw-card');
+  if(!sel || !card) return;
+  const live = qwLive();
+  if(qwSel && !live.some(w => w.id === qwSel)) { /* keep showing, but say they left */ }
+  sel.innerHTML = '<option value="">No aeroporto agora (' + live.length + ') — escolher…</option>' + live.map(w => '<option value="' + mtEsc(w.id) + '"' + (w.id === qwSel ? ' selected' : '') + '>' + mtEsc(w.name) + '</option>').join('');
+  if(!qwSel){ card.innerHTML = ''; return; }
+  const w = DATA.workers.find(x => x.id === qwSel); if(!w){ card.innerHTML = ''; return; }
+  const p = mtPunchOf(qwSel) || [], b = mtShiftBounds(w);
+  const shiftTxt = b && b.work ? 'turno ' + b.start.slice(0, 2) + ':' + b.start.slice(2) + ' – ' + b.end.slice(0, 2) + ':' + b.end.slice(2) : '';
+  const left = !mtIsLive(qwSel);
+  if(!sel.value && left) sel.value = '';
+  card.innerHTML = '<div style="margin-top:12px; border:1px solid var(--border); border-radius:12px; background:var(--panel-2); overflow:hidden;">' +
+    '<div id="qw-head" style="display:flex; align-items:center; gap:10px; padding:14px; cursor:pointer;"><div style="flex:1;"><div style="font-weight:800; font-size:17px; color:var(--text);">' + mtEsc(w.name) +
+    (left ? '' : ' <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--go); box-shadow:0 0 0 3px rgba(46,204,113,.2); position:relative; top:-2px; margin-left:4px;"></span>') + '</div>' +
+    '<div style="font-family:var(--mono); font-size:12px; color:var(--text-dim); margin-top:6px; display:flex; gap:16px; flex-wrap:wrap;">' +
+    (p[0] ? '<span><i class="mt-pd in" style="display:inline-block; margin-right:6px;"></i>entrou ' + mtEsc(p[0]) + '</span>' : '') +
+    (p[1] ? '<span><i class="mt-pd out" style="display:inline-block; margin-right:6px;"></i>saiu ' + mtEsc(p[1]) + '</span>' : '') +
+    (shiftTxt ? '<span>' + shiftTxt + '</span>' : '') + '</div></div><div style="color:var(--text-dim); font-size:18px;">' + (qwOpen ? '▴' : '▾') + '</div></div>' +
+    (qwOpen ? '<div style="padding:12px 12px 4px; border-top:1px solid var(--border);">' + qwTasksHtml(qwSel) + '</div>' : '') + '</div>';
+}
+document.addEventListener('change', ev => { if(ev.target && ev.target.id === 'qw-select'){ qwSel = ev.target.value; qwOpen = false; qwRender(); } });
+document.addEventListener('click', ev => { if(ev.target.closest && ev.target.closest('#qw-head')){ qwOpen = !qwOpen; qwRender(); } });
 function mtPunchHtml(p){
   if(!p || (!p[0] && !p[1])) return '';
   return '<div class="mt-punch">' + (p[0] ? '<span><i class="mt-pd in"></i><b>' + mtEsc(p[0]) + '</b></span>' : '') + (p[1] ? '<span style="margin-left:auto;"><i class="mt-pd out"></i><b>' + mtEsc(p[1]) + '</b></span>' : '') + '</div>';
