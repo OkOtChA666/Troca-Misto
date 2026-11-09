@@ -1449,6 +1449,8 @@
 #user-menu-btn > svg:last-child{ transition:transform .2s ease; }
 #user-menu-btn.open > svg:last-child{ transform:rotate(180deg); }
   .swc #confirm-modal-cancel.hidden{ display:none !important; }
+  #confirm-modal-now{ display:none; }
+  .swc #confirm-modal-now:not(.hidden){ display:block; width:100%; padding:12px; border-radius:12px; border:1.5px solid #ffb020; background:transparent; color:#ffb020; font:700 13px 'Outfit', var(--sans); letter-spacing:.1em; cursor:pointer; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -1548,6 +1550,7 @@
     <div id="confirm-modal-message" style="margin-bottom:14px; font-size:14px; color:var(--text); line-height:1.5; white-space:pre-line;"></div>
     <div class="modal-actions">
       <button type="button" class="flag-btn" id="confirm-modal-cancel" style="padding:10px 14px; font-size:11.5px; margin-top:0;">Cancelar</button>
+      <button type="button" id="confirm-modal-now" class="hidden">TROCAR JÁ</button>
       <button type="button" class="confirm-btn" id="confirm-modal-confirm" style="padding:10px 14px; font-size:11.5px;">Continuar</button>
     </div>
     <label id="confirm-modal-anon-toggle" class="hidden" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; cursor:pointer; text-transform:none; letter-spacing:normal;">
@@ -1637,7 +1640,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.21</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.22</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -4247,6 +4250,12 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
       mtSwapWarning(() => {
       const medTime = getMedAppointmentTime(workerId, idx) || getMedAppointmentTime(partnerId, idx);
       const hasMedIssue = !!medTime;
+      const runDirectSwap = async (anonymous) => {
+        await setSwapPartner(workerId, idx, {id: partnerId, name: partnerName}, onDone, type, anonymous);
+        offerWhatsAppMessage(partnerName, () => {
+          maybeOfferTrocaForm(workerId, idx, partnerId, partnerName, type, showSwapSuccessMessage);
+        });
+      };
       const medRemarkHtml = hasMedIssue ? '<div style="margin-top:8px;">Remarks: <span style="color:#5FA8FF;">Consulta médica - '+fmtHHMM(medTime.start)+'-'+fmtHHMM(medTime.end)+'</span></div>' : '';
       showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5;">Confirmar troca com<b style="display:block; margin-top:2px; font-size:16px;">'+escapeHtml(candidateName)+(candidateWorker && candidateWorker.id ? ' <span style="display:inline-block; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; margin-left:6px; font:700 11px var(--mono); vertical-align:1px;">'+escapeHtml(String(candidateWorker.id))+'</span>' : '')+'</b></div>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
         const anonymous = document.getElementById('confirm-modal-anon-checkbox').checked;
@@ -4262,11 +4271,19 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
           }
           return;
         }
-        await setSwapPartner(workerId, idx, {id: partnerId, name: partnerName}, onDone, type, anonymous);
-        offerWhatsAppMessage(partnerName, () => {
-          maybeOfferTrocaForm(workerId, idx, partnerId, partnerName, type, showSwapSuccessMessage);
-        });
+        await runDirectSwap(anonymous);
       }, hasMedIssue, 'CONFIRMAR', true);
+      // admin only: while requests are on, a second button makes the swap straight away (the old way)
+      try{
+        if(window.SWAP_ASKS_ON && localStorage.getItem('trocaMistoLoginStaffId') === ADMIN_STAFF_ID){
+          window.CONFIRM_NOW_CB = async () => {
+            const anonymous = document.getElementById('confirm-modal-anon-checkbox').checked;
+            btn.disabled = true;
+            await runDirectSwap(anonymous);
+          };
+          document.getElementById('confirm-modal-now').classList.remove('hidden');
+        }
+      }catch(e){}
       });   // end of the warning step
     });
     row.appendChild(info);
@@ -4531,7 +4548,9 @@ document.getElementById('password-modal').addEventListener('click', (e) => {
 // ---------- generic confirm dialog ----------
 let confirmModalCallback = null;
 let confirmModalOnClose = null;
+window.CONFIRM_NOW_CB = null;   // admin-only "TROCAR JÁ" action of the swap confirmation (set by buildSwapConfirm)
 function showConfirmDialog(message, onConfirm, disableConfirmBtn, confirmLabel, showAnonToggle, onClose, cancelLabel, hideCancelBtn){
+  window.CONFIRM_NOW_CB = null; { const _nb = document.getElementById('confirm-modal-now'); if(_nb) _nb.classList.add('hidden'); }
   confirmModalCallback = onConfirm;
   confirmModalOnClose = onClose || null;
   document.getElementById('confirm-modal-message').innerHTML = message;
@@ -4546,6 +4565,7 @@ function showConfirmDialog(message, onConfirm, disableConfirmBtn, confirmLabel, 
 }
 function hideConfirmDialog(){
   document.getElementById('confirm-modal').classList.add('hidden');
+  { const _nb = document.getElementById('confirm-modal-now'); if(_nb) _nb.classList.add('hidden'); }
   confirmModalCallback = null;
   confirmModalOnClose = null;
 }
@@ -4563,6 +4583,11 @@ document.getElementById('confirm-modal-confirm').addEventListener('click', async
   hideConfirmDialog();
   if(cb) await cb();
   if(closeCb) closeCb();
+});
+document.getElementById('confirm-modal-now').addEventListener('click', async () => {
+  const cb = window.CONFIRM_NOW_CB; window.CONFIRM_NOW_CB = null;
+  hideConfirmDialog();
+  if(cb) await cb();
 });
 document.getElementById('confirm-modal').addEventListener('click', (e) => {
   if(e.target.id === 'confirm-modal'){
