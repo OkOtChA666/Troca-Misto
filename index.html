@@ -4261,11 +4261,12 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
           maybeOfferTrocaForm(workerId, idx, partnerId, partnerName, type, showSwapSuccessMessage);
         });
       };
+      const asksOn = !!window.SWAP_ASKS_ON;   // what the person sees on the button (PEDIR) must match what it does
       const medRemarkHtml = hasMedIssue ? '<div style="margin-top:8px;">Remarks: <span style="color:#5FA8FF;">Consulta médica - '+fmtHHMM(medTime.start)+'-'+fmtHHMM(medTime.end)+'</span></div>' : '';
-      showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5;">Confirmar troca com<b style="display:block; margin-top:2px; font-size:16px;">'+escapeHtml(candidateName)+(candidateWorker && candidateWorker.id ? ' <span style="display:inline-block; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; margin-left:6px; font:700 11px var(--mono); vertical-align:1px;">'+escapeHtml(String(candidateWorker.id))+'</span>' : '')+'</b></div>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
+      showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5;">'+(asksOn ? 'Pedir troca a' : 'Confirmar troca com')+'<b style="display:block; margin-top:2px; font-size:16px;">'+escapeHtml(candidateName)+(candidateWorker && candidateWorker.id ? ' <span style="display:inline-block; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; margin-left:6px; font:700 11px var(--mono); vertical-align:1px;">'+escapeHtml(String(candidateWorker.id))+'</span>' : '')+'</b></div>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
         const anonymous = document.getElementById('confirm-modal-anon-checkbox').checked;
         btn.disabled = true;
-        if(window.SWAP_ASKS_ON){
+        if(asksOn){
           // requests are switched on: nothing changes yet — the other person gets a request and the swap is only made when they accept
           const sent = await sendSwapAsk(workerId, partnerId, idx, type, anonymous);
           if(onDone) onDone();
@@ -4277,10 +4278,10 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
           return;
         }
         await runDirectSwap(anonymous);
-      }, hasMedIssue, 'CONFIRMAR', true);
+      }, hasMedIssue, asksOn ? 'PEDIR' : 'CONFIRMAR', true);
       // admin only: while requests are on, a second button makes the swap straight away (the old way)
       try{
-        if(window.SWAP_ASKS_ON && localStorage.getItem('trocaMistoLoginStaffId') === ADMIN_STAFF_ID){
+        if(asksOn && localStorage.getItem('trocaMistoLoginStaffId') === ADMIN_STAFF_ID){
           window.CONFIRM_NOW_CB = async () => {
             const anonymous = document.getElementById('confirm-modal-anon-checkbox').checked;
             btn.disabled = true;
