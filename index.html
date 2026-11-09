@@ -6432,7 +6432,7 @@ function renderCoverResults(results, idx){
     if(r.go){
       detail.innerHTML = flagged
         ? '<div style="height:6px;"></div><span class="issue">Sem violações de regras — mas foi reportado manualmente:</span>'
-        : '<div style="height:6px;"></div>'+(nextDayText ? '<div class="nd-block"><div class="nd-label">No dia seguinte</div>'+nextDayText+'</div>' : '');   // clean candidates: the two checks are shown once, in the CANDIDATOS header
+        : '<div style="height:6px;"></div>'+(nextDayText ? '<div class="nd-block"><div class="nd-label">Dia seguinte</div>'+((nextEntry && nextEntry.status === 'work') ? fmtHHMM(nextEntry.start) + ' - ' + fmtHHMM(nextEntry.end) : escapeHtml((nextEntry && nextEntry.codes && nextEntry.codes[0]) || 'off'))+'</div>' : '');   // clean candidates: the two checks are shown once, in the CANDIDATOS header
     } else {
       detail.innerHTML = '<div style="height:6px;"></div>'+buildRuleCheckHtml(r.issues);
     }
