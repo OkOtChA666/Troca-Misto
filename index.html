@@ -1181,6 +1181,8 @@
   .rl-head .rl svg{ width:12px; height:12px; }
   .rl-head{ margin-left:8px; }
   @media (max-width:380px){ .rl-head{ font-size:10px; gap:6px; margin-left:6px; } .rl-head .rl svg{ width:11px; height:11px; } }
+  .nd-block{ margin-top:8px; }
+  .nd-label{ font-family:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-weight:600; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#6f7fa6; margin-bottom:4px; }
   .rl-sep{ width:1px; height:14px; background:#2a3552; }
   .empty-state{
     text-align:center; padding: 28px 10px; color: var(--text-dim); font-size: 13.5px;
@@ -6395,6 +6397,7 @@ function renderCoverResults(results, idx){
       (flagged ? ' <span class="flag-indicator">⚠ FLAGGED</span>' : '');
     const reportBtnId = 'reportbtn-' + r.worker.id + '-' + idx;
     const reportBtnHtml = ' <button type="button" class="flag-btn inline-report'+(flagged?' active':'')+'" id="'+reportBtnId+'">'+(flagged?'<svg viewBox="0 0 16 16" width="11" height="11" style="vertical-align:middle;"><path d="M3 4h10M6 4V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V4M4.5 4l.5 9a1 1 0 0 0 1 .9h4a1 1 0 0 0 1-.9l.5-9" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> APAGAR FLAG':'⚠')+'</button>';
+    const hideNext = !!(r.go && !flagged && !swapped);   // clean candidates: the next day is shown only when the row is opened
     let subHtml;
     if(swapped && partner){
       const partnerWorker = DATA.workers.find(w => w.id === partner.withId);
@@ -6405,7 +6408,7 @@ function renderCoverResults(results, idx){
       subHtml = '<span class="dot dot-white"></span>'+codeLabel+' → '+ownNow+
         '<br><span class="dot dot-purple"></span>'+(partnerHadShift ? ownNow : '—')+' → '+nowDisplay(partnerNow);
     } else {
-      subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<span style="background:#e8eefc; color:#0b1220; font-size:10px; font-weight:700; line-height:1; padding:3px 6px 2px; border-radius:5px; display:inline-block; margin-right:0; vertical-align:middle;">'+escapeHtml(codeLabel)+'</span>' : codeLabel)+' ' + fmtDateOn(idx)+(nextDayText?'<br>'+nextDayText:'');
+      subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<span style="background:#e8eefc; color:#0b1220; font-size:10px; font-weight:700; line-height:1; padding:3px 6px 2px; border-radius:5px; display:inline-block; margin-right:0; vertical-align:middle;">'+escapeHtml(codeLabel)+'</span>' : codeLabel)+' ' + fmtDateOn(idx)+((nextDayText && !hideNext)?'<br>'+nextDayText:'');
     }
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
       '<div class="row-sub">'+subHtml+'</div></div>'+
@@ -6429,7 +6432,7 @@ function renderCoverResults(results, idx){
     if(r.go){
       detail.innerHTML = flagged
         ? '<div style="height:6px;"></div><span class="issue">Sem violações de regras — mas foi reportado manualmente:</span>'
-        : '<div style="height:6px;"></div>';   // clean candidates: the two checks are shown once, in the CANDIDATOS header
+        : '<div style="height:6px;"></div>'+(nextDayText ? '<div class="nd-block"><div class="nd-label">No dia seguinte</div>'+nextDayText+'</div>' : '');   // clean candidates: the two checks are shown once, in the CANDIDATOS header
     } else {
       detail.innerHTML = '<div style="height:6px;"></div>'+buildRuleCheckHtml(r.issues);
     }
