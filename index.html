@@ -1626,7 +1626,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.95</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.96</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -4825,7 +4825,7 @@ function tuckUserMenu(m){
   try{
     if(!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) && m.animate){
       const h = m.offsetHeight;
-      m.animate([{ clipPath:'inset(' + T + 'px -50px ' + (h - T) + 'px -50px)' }, { clipPath:'inset(' + T + 'px -50px -50px -50px)' }], { duration:320, easing:'cubic-bezier(.3,.7,.3,1)' });
+      m.animate([{ clipPath:'inset(' + T + 'px -50px ' + (h - T) + 'px -50px)' }, { clipPath:'inset(' + T + 'px -50px -50px -50px)' }], { duration:1100, easing:'cubic-bezier(.4,0,.2,1)' });
     }
   }catch(e){}
 }
@@ -4838,8 +4838,8 @@ function closeUserMenu(){
       if(!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) && m.animate && m.style.clipPath){
         const h = m.offsetHeight, T = 16;
         m.style.pointerEvents = 'none';
-        const a = m.animate([{ clipPath:'inset(' + T + 'px -50px -50px -50px)' }, { clipPath:'inset(' + T + 'px -50px ' + (h - T) + 'px -50px)' }], { duration:170, easing:'ease-in', fill:'forwards' });
-        a.onfinish = fin; setTimeout(fin, 260);
+        const a = m.animate([{ clipPath:'inset(' + T + 'px -50px -50px -50px)' }, { clipPath:'inset(' + T + 'px -50px ' + (h - T) + 'px -50px)' }], { duration:600, easing:'cubic-bezier(.4,0,.2,1)', fill:'forwards' });
+        a.onfinish = fin; setTimeout(fin, 800);
       } else fin();
     }catch(e){ fin(); }
   }
