@@ -1901,6 +1901,13 @@
     </div>
 
     <div class="context-line hidden" id="extra-context"></div>
+    <div id="extra-times" class="hidden" style="margin:0 0 14px;">
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1; min-width:0;"><label for="extra-from" style="display:block; font-family:var(--mono); font-size:10px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">DE</label><input type="time" id="extra-from" step="900" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark;"></div>
+        <div style="flex:1; min-width:0;"><label for="extra-to" style="display:block; font-family:var(--mono); font-size:10px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">ATÉ</label><input type="time" id="extra-to" step="900" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark;"></div>
+      </div>
+      <div id="extra-times-err" style="display:none; margin-top:8px; font-size:12.5px; color:#ff6b6b;"></div>
+    </div>
 
     <button class="btn" id="extra-confirm-btn" disabled>Confirmar</button>
 
@@ -4269,9 +4276,9 @@ async function saveExtraHours(){
   await dbSetShared('extraHours', EXTRA_HOURS);
 }
 function isExtraHours(workerId, idx){ return !!EXTRA_HOURS[extraKey(workerId, idx)]; }
-async function setExtraHours(workerId, idx, on, onDone){
+async function setExtraHours(workerId, idx, on, onDone, times){
   const key = extraKey(workerId, idx);
-  if(on) EXTRA_HOURS[key] = { ts: Date.now() };
+  if(on){ EXTRA_HOURS[key] = { ts: Date.now() }; if(times && times.from && times.to){ EXTRA_HOURS[key].from = times.from; EXTRA_HOURS[key].to = times.to; } }
   else delete EXTRA_HOURS[key];
   await saveExtraHours();
   if(onDone) onDone();
@@ -6673,7 +6680,7 @@ document.getElementById('extra-date').addEventListener('change', updateExtraCont
 function updateExtraContext(){
   const ctx = document.getElementById('extra-context');
   const btn = document.getElementById('extra-confirm-btn');
-  if(!extraWorker){ ctx.classList.add('hidden'); btn.disabled = true; return; }
+  if(!extraWorker){ ctx.classList.add('hidden'); document.getElementById('extra-times').classList.add('hidden'); EXTRA_LIMIT = null; btn.disabled = true; return; }
   const idx = parseInt(document.getElementById('extra-date').value, 10);
   const entry = getEffectiveEntry(extraWorker, idx);
   ctx.classList.remove('hidden');
@@ -6686,6 +6693,8 @@ function updateExtraContext(){
   }
   const isOwnExtra = extraWorker.name === rememberedName; // admin picking someone else still sees the name
   const shortShift = entry.status === 'work' && workMins > 0 && workMins <= 6*60;
+  const tbox = document.getElementById('extra-times');
+  tbox.classList.add('hidden'); EXTRA_LIMIT = null;
   if(entry.status === 'work' && !shortShift){
     ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Não podes fazer Horas-Extra</div>';
     btn.disabled = true;
@@ -6700,18 +6709,48 @@ function updateExtraContext(){
     ctx.innerHTML = '<b>'+escapeHtml(extraWorker.name)+'</b> is scheduled <b>'+escapeHtml(codeLabel)+'</b> on '+fmtDateLabel(idx)+'.';
     }
     btn.disabled = false;
+    // eligible: show the hours boxes (max 8h in a day in total, and not on top of the normal shift)
+    const toMin = h => parseInt(h.slice(0,2),10)*60 + parseInt(h.slice(2,4),10);
+    const fmtM = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+    const sS = shortShift ? toMin(entry.start) : null, sE = shortShift ? sS + workMins : null;
+    const rem = 8*60 - (shortShift ? workMins : 0);
+    EXTRA_LIMIT = { rem, sS, sE };
+    let f = 8*60, t = f + Math.min(rem, 4*60);
+    if(shortShift){ if(sS - rem >= 0){ f = sS - rem; t = sS; } else { f = sE; t = Math.min(sE + rem, 23*60+59); } }
+    document.getElementById('extra-from').value = fmtM(f);
+    document.getElementById('extra-to').value = fmtM(t);
+    tbox.classList.remove('hidden');
+    validateExtraTimes();
   }
 }
+let EXTRA_LIMIT = null;
+function validateExtraTimes(){
+  const btn = document.getElementById('extra-confirm-btn'), err = document.getElementById('extra-times-err');
+  if(!EXTRA_LIMIT) return true;
+  const toMin = v => { const m = /^(\d\d):(\d\d)$/.exec(v || ''); return m ? parseInt(m[1],10)*60 + parseInt(m[2],10) : null; };
+  const a = toMin(document.getElementById('extra-from').value), b = toMin(document.getElementById('extra-to').value);
+  let msg = '';
+  if(a === null || b === null) msg = 'Escolhe as horas.';
+  else if(b <= a) msg = 'A hora final tem de ser depois da inicial.';
+  else if(b - a > EXTRA_LIMIT.rem) msg = 'Máximo ' + (EXTRA_LIMIT.rem/60) + 'h de Horas-Extra neste dia.';
+  else if(EXTRA_LIMIT.sS !== null && a < EXTRA_LIMIT.sE && b > EXTRA_LIMIT.sS) msg = 'Não pode sobrepor o teu turno.';
+  err.textContent = msg; err.style.display = msg ? 'block' : 'none';
+  btn.disabled = !!msg;
+  return !msg;
+}
+['extra-from','extra-to'].forEach(id => document.getElementById(id).addEventListener('input', validateExtraTimes));
 document.getElementById('extra-confirm-btn').addEventListener('click', async () => {
   if(!extraWorker) return;
   const idx = parseInt(document.getElementById('extra-date').value, 10);
   const btn = document.getElementById('extra-confirm-btn');
+  if(!validateExtraTimes()) return;
+  const times = EXTRA_LIMIT ? { from: document.getElementById('extra-from').value, to: document.getElementById('extra-to').value } : null;
   btn.disabled = true;
   await setExtraHours(extraWorker.id, idx, true, () => {
     updateExtraContext();
     renderExtraHoursList();
     refreshAllDateSelectCounts();
-  });
+  }, times);
 });
 
 let EXTRA_SHOW_PAST = false;
@@ -6754,7 +6793,7 @@ function renderExtraHoursList(){
     const past = isPastDay(x.idx);
     const nameHtml = past ? '<span class="csr-past">'+escapeHtml(x.worker.name)+'</span>' : escapeHtml(x.worker.name);
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
-      '<div class="row-sub">'+fmtDateLabel(x.idx)+'</div></div>'+
+      '<div class="row-sub">'+fmtDateLabel(x.idx)+((x.e && x.e.from && x.e.to) ? ' · '+x.e.from+'–'+x.e.to : '')+'</div></div>'+
       '<button type="button" class="recent-swap-delete" title="Remover">✕</button>';
     row.querySelector('.recent-swap-delete').addEventListener('click', (ev) => {
       ev.stopPropagation();
