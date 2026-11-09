@@ -1336,10 +1336,12 @@
 
   /* ---- SUPORTE: login that only sees the swaps log ---- */
   html.support-mode .tabs, html.support-mode .panel:not(#panel-support), html.support-mode #planeamento-turnaround-row,
-  html.support-mode #notif-count, html.support-mode #notifications-bell-link, html.support-mode #schedule-override-link,
+  html.support-mode #schedule-override-link,
   html.support-mode #logout-link, html.support-mode #end-of-month-warning{ display:none !important; }
   html.support-mode #panel-support{ display:block !important; }
   html.support-mode #stat-workers-link{ pointer-events:none; }
+  html.support-mode #stat-version-wrap{ display:none !important; }
+  html.support-mode #notif-coord-toggle{ display:none !important; }
   html.support-mode #logged-in-tab-row{ border-top:1px solid var(--border) !important; border-radius:8px !important; margin-top:12px; }
   .rules-tab-btn{ flex:1; text-align:center; padding:10px 0 9px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--text-dim); border-bottom:2px solid transparent; cursor:pointer; user-select:none; }
   .rules-tab-btn.on{ color:var(--amber); border-bottom-color:var(--amber); }
@@ -1622,7 +1624,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.92</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.93</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -4750,12 +4752,13 @@ function startSupportMode(){
   document.documentElement.classList.add('support-mode');
   document.getElementById('access-portal').classList.add('hidden');
   document.getElementById('main-wrap').classList.remove('hidden');
+  try{ if(!localStorage.getItem('trocaMistoSupSeen')) localStorage.setItem('trocaMistoSupSeen', String(Date.now())); }catch(e){}
   setTimeout(async () => {
     try{ document.querySelector('.eyebrow').textContent = 'SUPORTE · FAO'; }catch(e){}
     try{ updateLoggedInDisplay('SUPORTE', 'SUPORTE'); }catch(e){}
     document.getElementById('panel-support').classList.remove('hidden');
     try{ await loadSwaps(); }catch(e){}
-    swlRender('sup-log-root');
+    swlRender('sup-log-root'); try{ renderNotificationsBadge(); }catch(e){}
   }, 0);
 }
 (function restoreLoginIfPresent(){
@@ -7606,8 +7609,9 @@ let notificationsListenerUnsubscribe = null;
 function renderNotificationsBadge(){
   const badge = document.getElementById('notifications-badge');
   if(!badge) return;
-  let unreadCount = Object.values(NOTIFICATIONS).filter(n => !n.read && !n.hidden && !isNotificationEventPast(n)).length;
-  try{ const sn = mtSeen(); unreadCount += mtChanges().filter(x => x[0] > sn).length; }catch(e){}   // changes to my own tasks (see mtChanges)
+  const supMode = document.documentElement.classList.contains('support-mode');
+  let unreadCount = supMode ? supUnread() : Object.values(NOTIFICATIONS).filter(n => !n.read && !n.hidden && !isNotificationEventPast(n)).length;
+  if(!supMode){ try{ const sn = mtSeen(); unreadCount += mtChanges().filter(x => x[0] > sn).length; }catch(e){} }   // changes to my own tasks (see mtChanges)
   badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
   badge.classList.toggle('hidden', unreadCount === 0);
   const nc = document.getElementById('notif-count');
@@ -7761,6 +7765,7 @@ function renderNotificationsList(){
   const list = document.getElementById('notifications-modal-list');
   const empty = document.getElementById('notifications-modal-empty');
   if(!list) return;
+  if(document.documentElement.classList.contains('support-mode')){ renderSupNotifications(list, empty); return; }
   const entries = Object.entries(NOTIFICATIONS)
     .filter(([id, n]) => !n.hidden && !isNotificationEventPast(n))
     .map(([id, n]) => ({ kind:'n', id, n, ts: n.createdAt || 0 }));
@@ -7854,6 +7859,12 @@ function setupNotificationsListener(staffId){
   });
 }
 function openNotificationsModal(){
+  if(document.documentElement.classList.contains('support-mode')){
+    SUP_OPEN_SEEN = supSeen(); renderNotificationsList();
+    document.getElementById('notifications-modal').classList.remove('hidden');
+    try{ localStorage.setItem('trocaMistoSupSeen', String(Date.now())); }catch(e){}
+    renderNotificationsBadge(); return;
+  }
   try{ NOTIF_OPEN_SNAPSHOT = { ids: new Set(Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id)), seenTs: (typeof mtSeen === 'function' ? mtSeen() : 0) }; }catch(e){ NOTIF_OPEN_SNAPSHOT = null; }
   mtCoordToggleSync(); renderNotificationsList();
   document.getElementById('notifications-modal').classList.remove('hidden');
@@ -9615,7 +9626,26 @@ document.addEventListener('click', ev => {
   const t = ev.target.closest && ev.target.closest('[data-swl-tab]'); if(!t) return;
   SWL_TAB[t.getAttribute('data-swl-root')] = t.getAttribute('data-swl-tab'); swlRender(t.getAttribute('data-swl-root'));
 });
-function swlRefreshAll(){ try{ if(document.documentElement.classList.contains('support-mode')) swlRender('sup-log-root'); else if(!document.getElementById('swl-panel').classList.contains('hidden')) swlRender('swl-root'); }catch(e){} }
+let SUP_OPEN_SEEN = 0;
+function supSeen(){ try{ return parseInt(localStorage.getItem('trocaMistoSupSeen') || '0', 10) || 0; }catch(e){ return 0; } }
+function supUnread(){ const sn = supSeen(); return swlEntries().filter(e => e.ts && e.ts > sn).length; }
+function renderSupNotifications(list, empty){
+  const items = swlEntries().filter(e => e.ts).sort((a, b) => b.ts - a.ts).slice(0, 50);
+  empty.classList.toggle('hidden', items.length > 0);
+  const unreadTotal = items.filter(e => e.ts > SUP_OPEN_SEEN).length;
+  const sub = document.getElementById('notifications-modal-sub');
+  if(sub) sub.textContent = items.length ? (items.length + (items.length === 1 ? ' TROCA' : ' TROCAS') + (unreadTotal ? ' · ' + unreadTotal + ' POR LER' : '')) : '';
+  list.innerHTML = items.map(e => {
+    const unread = e.ts > SUP_OPEN_SEEN, c = e.type === 'timeswap' ? '#19d3ff' : '#ffb020';
+    return '<div style="position:relative; display:flex; gap:10px; padding:11px 12px; border-radius:12px; margin-bottom:8px; border-left:3px solid ' + c + '; ' + (unread ? 'background:#1b2742; box-shadow:0 0 0 1px #2b3b5e;' : 'background:#10192b; opacity:.78;') + '">' +
+      '<div style="width:28px; height:28px; border-radius:50%; background:' + c + '22; color:' + c + '; border:1px solid ' + c + '80; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;">⇄</div>' +
+      '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + (unread ? 'color:var(--text); font-weight:600;' : 'color:var(--text-dim);') + '">Nova troca · ' + (e.type === 'timeswap' ? 'turno' : 'folga') + '</div>' +
+      '<div style="font-size:11.5px; font-weight:600; margin-top:2px; color:var(--amber);">' + mtEsc(e.req.name) + ' ⇄ ' + mtEsc(e.sub.name) + '</div>' +
+      '<div style="font-size:11.5px; margin-top:2px; color:var(--text-dim);">' + swlLabel(e.date) + ' · ' + mtEsc(notificationRelativeTime(e.ts)) + '</div></div>' +
+      (unread ? '<span style="position:absolute; top:7px; right:7px; width:8px; height:8px; border-radius:50%; background:#ff5d6c;"></span>' : '') + '</div>';
+  }).join('');
+}
+function swlRefreshAll(){ try{ if(document.documentElement.classList.contains('support-mode')) renderNotificationsBadge(); }catch(e){} try{ if(document.documentElement.classList.contains('support-mode')) swlRender('sup-log-root'); else if(!document.getElementById('swl-panel').classList.contains('hidden')) swlRender('swl-root'); }catch(e){} }
 async function swlMakeHash(pw){
   const salt = crypto.getRandomValues(new Uint8Array(16)), iter = 200000;
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
