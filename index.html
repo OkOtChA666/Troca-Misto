@@ -1059,6 +1059,10 @@
   .row-name{ font-size: 14.5px; font-weight:600; color: var(--text); }
   .row-sub{ font-family: var(--mono); font-size: 11.5px; color: var(--text-dim); margin-top:2px; line-height:1.6; }
   .swap-partner{ color: var(--swap); font-weight:600; }
+  .sw-line{ display:flex; align-items:center; gap:6px; width:100%; }
+  .sw-names{ flex:1; min-width:0; }
+  .sw-vf{ width:20px; flex:none; display:flex; justify-content:center; line-height:0; }
+  .sw-vf svg{ display:block; }
   .folga-badge{
     display:inline-flex; align-items:center; justify-content:center;
     font-family: var(--mono); font-size: 10px; font-weight:700; letter-spacing:0.05em;
@@ -1640,7 +1644,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.22</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.23</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -4015,7 +4019,7 @@ function showRequestNote(req){
 function swapKey(workerId, idx){ return workerId + ':' + idx; }
 function isSwapped(workerId, idx){ return !!SWAPS[swapKey(workerId, idx)]; }
 let LAST_SWAP = { saved:false, email:null, wa:'skipped' };   // real outcome of the swap being confirmed right now — shown on the final screen
-async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, fromRequest){
+async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, fromRequest, verified){
   LAST_SWAP = { saved:false, email:Promise.resolve('off'), wa:'skipped' };
   const key = swapKey(workerId, idx);
   const previousValue = SWAPS[key]; // kept so a failed save can be reverted to exactly what was there before, not just deleted
@@ -4046,6 +4050,7 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
   const d = realDateForIdx(idx);
   const calendarDate = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   const newValue = partner ? { withId: partner.id, withName: partner.name, workerId: workerId, workerName: worker ? worker.name : null, workerWasWorking: workerWasWorking, partnerShiftTimeText: partnerShiftTimeText, dayNumber: DATA.days[idx], calendarDate: calendarDate, shiftTimeText: shiftTimeText, ts: Date.now(), type: type || 'cover', anonymous: !!anonymous, fromRequest: fromRequest || null } : null;
+  if(newValue && verified) newValue.verified = true;   // made from a request that the other person accepted (blue check in the lists)
   if(newValue) SWAPS[key] = newValue; else delete SWAPS[key];
   // This entry has its own document now — writing or deleting it can never collide with or
   // overwrite a different swap the way one shared document holding everything used to.
@@ -4389,7 +4394,7 @@ document.getElementById('ask-modal-body').addEventListener('click', async (e) =>
     let idx = -1; try{ for(let i = 0; i < DATA.days.length; i++){ if(askCal(i) === a.cal){ idx = i; break; } } }catch(x){}
     if(idx < 0){ await finish('cancelled'); fail('Este pedido é de outro mês e já não pode ser aceite.'); return; }
     if(isSwapped(a.cid, idx) || isSwapped(a.sid, idx)){ await finish('cancelled'); fail('Já não é possível: uma das pessoas já tem uma troca nesse dia.'); return; }
-    await setSwapPartner(a.cid, idx, { id: a.sid, name: a.sname }, () => {}, a.type, a.anon);
+    await setSwapPartner(a.cid, idx, { id: a.sid, name: a.sname }, () => {}, a.type, a.anon, null, true);
     if(!LAST_SWAP.saved){ fail('Não foi possível fazer a troca agora. Tenta novamente.'); return; }
     await finish('accepted');
     // any other request still waiting for either of them on that day is no longer possible
@@ -5234,15 +5239,18 @@ function renderSwapsListGeneric(showAll, cfg){
         '<br><span class="dot dot-white"></span>'+ownOrigTime+' → '+ownNowDisplay;
     }
 
-    const nameLineHtml = e.s.anonymous
+    const vfSvg = e.s.verified ? '<svg viewBox="0 0 24 24" width="18" height="18" title="Troca confirmada pelos dois"><path d="M12 1.8l2.5 1.7 3-.1 1.2 2.8 2.6 1.5-.6 3 1.2 2.8-2.1 2.2-.5 3-3 .6-2 2.3-2.7-1.4-2.7 1.4-2-2.3-3-.6-.5-3L1.9 13l1.2-2.8-.6-3 2.6-1.5L6.3 3.4l3 .1z" fill="#2f9bff"/><path d="M7.6 12.3l3.1 3.1 5.8-6.2" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '';
+    // the names take the free space; the blue check (verified swaps only) sits in its own narrow column, so all checks line up
+    const nameInner = e.s.anonymous
       ? '<span style="color:var(--text);">TROCA ANÓNIMA</span>'
       : '<span class="swap-partner">'+escapeHtml(e.s.withName)+'</span> &nbsp;⇄&nbsp; '+escapeHtml(e.worker.name);
+    const nameLineHtml = '<span class="sw-line"><span class="sw-names">'+nameInner+'</span><span class="sw-vf">'+vfSvg+'</span></span>';
     // TROCAS RECENTES (cover/turno) only shows a delete button for admin — even the swap's
     // own owner can't delete it from here anymore, since As Minhas Trocas is now the one
     // place a regular person deletes their own swaps. As Minhas Trocas itself (useReasonConfirm)
     // always shows it, since that list is already filtered to just the logged-in person's own.
     const canDeleteFromHere = cfg.useReasonConfirm || isAdminSession;
-    row.innerHTML = '<div class="row-main"><div class="row-name">'+nameLineHtml+'</div>'+
+    row.innerHTML = '<div class="row-main"><div class="row-name" style="font-size:13px;">'+nameLineHtml+'</div>'+
       '<div class="row-sub">'+fmtSwapDateRobust(e.s, e.idx)+'<br>'+rowSubHtml+
       '</div></div>'+
       (canDeleteFromHere ? '<button type="button" class="recent-swap-delete" title="Eliminar troca">✕</button>' : '');
