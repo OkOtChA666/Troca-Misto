@@ -1448,6 +1448,7 @@
 @keyframes nmmq{to{transform:translateX(calc(-1*var(--w)))}}
 #user-menu-btn > svg:last-child{ transition:transform .2s ease; }
 #user-menu-btn.open > svg:last-child{ transform:rotate(180deg); }
+  .swc #confirm-modal-cancel.hidden{ display:none !important; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -1587,6 +1588,16 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="ask-modal">
+  <div class="modal-box" style="max-width:420px; text-align:left;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <span id="ask-modal-title" style="font-family:var(--mono); font-size:15px; font-weight:800; letter-spacing:3px; color:var(--amber);">PEDIDO DE TROCA</span>
+      <button type="button" id="ask-modal-close" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1; padding:0;">&times;</button>
+    </div>
+    <div id="ask-modal-body"></div>
+  </div>
+</div>
+
 <div class="modal-overlay hidden" id="cancel-swap-modal">
   <div class="modal-box">
     <p style="margin-bottom:14px;">De certeza que desejas eliminar esta troca?</p>
@@ -1626,7 +1637,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.20</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.21</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2349,6 +2360,13 @@
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Link - Apoiar projecto</span>
         <span class="pill-toggle">
           <input type="checkbox" id="support-link-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+      </label>
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Pedidos de troca (a outra pessoa tem de aceitar)</span>
+        <span class="pill-toggle">
+          <input type="checkbox" id="swap-asks-enabled-toggle">
           <span class="pill-track"></span>
         </span>
       </label>
@@ -4207,6 +4225,12 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
       await setSwapPartner(workerId, idx, null, onDone);
     });
     wrap.appendChild(clearBtn);
+  } else if(askPendingFor(workerId, idx) || askPendingFor(partnerId, idx)){
+    // someone already has a swap request waiting for an answer on this day: shown, but can't be asked again until it's settled
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px;';
+    row.innerHTML = '<div>Trocar com <b style="color:var(--text);">'+escapeHtml(candidateName)+'</b></div><span style="font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em; padding:6px 9px; border-radius:6px; background:#ffb02022; color:#ffb020; white-space:nowrap;">PEDIDO PENDENTE</span>';
+    wrap.appendChild(row);
   } else {
     const row = document.createElement('div');
     row.style.display = 'flex';
@@ -4227,6 +4251,17 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
       showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5;">Confirmar troca com<b style="display:block; margin-top:2px; font-size:16px;">'+escapeHtml(candidateName)+(candidateWorker && candidateWorker.id ? ' <span style="display:inline-block; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; margin-left:6px; font:700 11px var(--mono); vertical-align:1px;">'+escapeHtml(String(candidateWorker.id))+'</span>' : '')+'</b></div>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
         const anonymous = document.getElementById('confirm-modal-anon-checkbox').checked;
         btn.disabled = true;
+        if(window.SWAP_ASKS_ON){
+          // requests are switched on: nothing changes yet — the other person gets a request and the swap is only made when they accept
+          const sent = await sendSwapAsk(workerId, partnerId, idx, type, anonymous);
+          if(onDone) onDone();
+          if(sent){
+            setTimeout(() => showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5; text-align:center;">Pedido enviado a<b style="display:block; margin-top:2px; font-size:16px;">'+escapeHtml(candidateName)+'</b><div style="margin-top:8px; font-size:13px; font-weight:400; color:var(--text-dim);">A troca só é feita quando aceitar. Tem 24h para responder.</div></div>', () => {}, false, 'OK', false, null, null, true), 200);
+          } else {
+            setTimeout(() => showConfirmDialog('Não foi possível enviar o pedido agora. Tenta novamente dentro de alguns instantes — nada foi alterado.', () => {}, false, 'OK', false, null, null, true), 200);
+          }
+          return;
+        }
         await setSwapPartner(workerId, idx, {id: partnerId, name: partnerName}, onDone, type, anonymous);
         offerWhatsAppMessage(partnerName, () => {
           maybeOfferTrocaForm(workerId, idx, partnerId, partnerName, type, showSwapSuccessMessage);
@@ -4240,6 +4275,133 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
   }
   return wrap;
 }
+
+// ---------- PEDIDOS DE TROCA: pressing CONFIRMAR sends a request, the other person must accept (switched on/off in RULES → APP) ----------
+window.SWAP_ASKS = window.SWAP_ASKS || {}; window.SWAP_ASKS_ON = !!window.SWAP_ASKS_ON;
+const ASK_TTL = 24 * 3600 * 1000;
+function askCal(idx){ const d = realDateForIdx(idx); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function askStatus(a){ return a && a.status === 'pending' && Date.now() > a.exp ? 'expired' : (a ? a.status : ''); }
+function askPendingFor(id, idx){
+  if(!window.SWAP_ASKS_ON) return false;
+  let cal; try{ cal = askCal(idx); }catch(e){ return false; }
+  return Object.values(window.SWAP_ASKS || {}).some(a => a && askStatus(a) === 'pending' && a.cal === cal && (a.sid === id || a.cid === id));
+}
+async function askPut(key, val){
+  try{ const db = await getDb(); if(!db) return false; await db.collection('data').doc(gScope('swapAsks')).set({ [key]: val }, { merge:true }); return true; }catch(e){ return false; }
+}
+function askSeen(){ try{ return parseInt(localStorage.getItem('trocaMistoAskSeen') || '0', 10) || 0; }catch(e){ return 0; } }
+function askShiftText(w, idx){
+  try{ const e = getEntry(w, idx); if(e.status === 'work') return { t: fmtHHMM(e.start) + '–' + fmtHHMM(e.end), work:true }; return { t: (e.codes && e.codes[0]) ? e.codes[0] : 'FO', work:false }; }catch(x){ return { t:'—', work:false }; }
+}
+async function sendSwapAsk(candId, meId, idx, type, anonymous){
+  const cw = DATA.workers.find(w => w.id === candId), sw = DATA.workers.find(w => w.id === meId);
+  if(!cw || !sw) return false;
+  const cs = askShiftText(cw, idx), ss = askShiftText(sw, idx), cal = askCal(idx), now = Date.now();
+  const key = meId + '_' + candId + '_' + cal;
+  const a = { key, sid: meId, sname: sw.name, cid: candId, cname: cw.name, idx, cal, type: type || 'cover', anon: !!anonymous, sShift: ss.t, cShift: cs.t, sWork: ss.work, cWork: cs.work, ts: now, exp: now + ASK_TTL, status: 'pending' };
+  window.SWAP_ASKS[key] = a;
+  const ok = await askPut(key, a);
+  if(!ok) delete window.SWAP_ASKS[key];
+  try{ renderNotificationsBadge(); }catch(e){}
+  return ok;
+}
+// what the bell shows for requests: mine to answer, mine that are waiting, and the answers to mine
+function askBellItems(){
+  const me = window.MY_ASK_ID, out = [], now = Date.now(), week = 7 * 24 * 3600 * 1000, seen = window.ASK_OPEN_SEEN !== undefined ? window.ASK_OPEN_SEEN : askSeen();
+  if(!me) return out;
+  Object.values(window.SWAP_ASKS || {}).forEach(a => {
+    if(!a || !a.key) return;
+    const st = askStatus(a), done = a.resolvedAt || a.exp;
+    if(now - (done || a.ts) > week) return;
+    if(a.cid === me && st === 'pending') out.push({ key:a.key, ts:a.ts, cal:a.cal, unread:true, color:'#ffb020', title:'Pedido de troca', sub:a.sname + ' quer trocar contigo' });
+    else if(a.sid === me){
+      if(st === 'pending') out.push({ key:a.key, ts:a.ts, cal:a.cal, unread:false, color:'#ffb020', title:'Pedido enviado · à espera', sub:a.cname });
+      else if(st === 'accepted') out.push({ key:a.key, ts:done, cal:a.cal, unread:done > seen, color:'#2ecc71', title:'Pedido aceite', sub:a.cname + ' aceitou a troca' });
+      else if(st === 'declined') out.push({ key:a.key, ts:done, cal:a.cal, unread:done > seen, color:'#ff5d6c', title:'Pedido recusado', sub:a.cname + ' recusou' });
+      else if(st === 'expired') out.push({ key:a.key, ts:done, cal:a.cal, unread:done > seen, color:'#7b8799', title:'Pedido expirou', sub:a.cname + ' não respondeu' });
+    }
+  });
+  return out;
+}
+function openAskModal(key){
+  const a = (window.SWAP_ASKS || {})[key]; if(!a) return;
+  const me = window.MY_ASK_ID, st = askStatus(a), iAmCand = a.cid === me;
+  const line = (k, v, first) => '<div style="display:flex; gap:10px; padding:5px 0;' + (first ? '' : ' border-top:1px solid var(--border-soft);') + ' font-size:13px;"><div style="width:92px; flex-shrink:0; font-family:var(--mono); font-size:10px; letter-spacing:.06em; color:var(--text-dim); padding-top:2px;">' + k + '</div><div style="flex:1; color:var(--text-dim);">' + v + '</div></div>';
+  const idv = v => '<span style="font-family:var(--mono); font-weight:700; color:var(--cyan);">' + escapeHtml(v) + '</span>';
+  const nm = v => '<b style="color:var(--text);">' + escapeHtml(v) + '</b>';
+  const brk = '<div style="display:flex; align-items:center; gap:10px; margin:14px 0 10px;"><div style="flex:1; border-top:2px solid var(--border);"></div><div style="font-family:var(--mono); font-size:13px; color:var(--amber);">⇄</div><div style="flex:1; border-top:2px solid var(--border);"></div></div>';
+  const sIsReq = !(a.sWork === false && a.cWork === true);   // whoever works and gets covered is the requester
+  const P = (id, name, shift) => line(id.role, nm(name), true) + line('ID', idv(id.id)) + line('TURNO', escapeHtml(shift));
+  const sP = { role: sIsReq ? 'REQUERENTE' : 'SUBSTITUTO', id: a.sid }, cP = { role: iAmCand ? 'TU' : (sIsReq ? 'SUBSTITUTO' : 'REQUERENTE'), id: a.cid };
+  const first = sIsReq ? P(sP, a.sname, a.sShift) : P(cP, a.cname, a.cShift), second = sIsReq ? P(cP, a.cname, a.cShift) : P(sP, a.sname, a.sShift);
+  const colors = { pending:'#ffb020', accepted:'#2ecc71', declined:'#ff5d6c', expired:'#7b8799', cancelled:'#7b8799' };
+  const labels = { pending: iAmCand ? 'PEDIDO' : 'À ESPERA', accepted:'ACEITE ✓', declined:'RECUSADO', expired:'EXPIRADO', cancelled:'CANCELADO' };
+  const c = colors[st] || '#ffb020';
+  let h = (!iAmCand && st === 'pending') ? '<p class="hint" style="margin:0 0 12px;">A troca só é feita quando a outra pessoa aceitar.</p>' : '';
+  h += '<div style="border:1px solid var(--border); border-left:4px solid ' + c + '; border-radius:10px; background:var(--panel-2); padding:12px; margin-bottom:12px;">' +
+    '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-family:var(--mono); font-size:12px; font-weight:700; color:var(--text);">' + escapeHtml(swlLabel(a.cal).toUpperCase()) + '</div><span style="font-family:var(--mono); font-size:10px; font-weight:700; padding:3px 7px; border-radius:5px; background:' + c + '22; color:' + c + ';">' + (labels[st] || '') + '</span></div>' +
+    first + brk + second +
+    '<div style="height:10px; border-bottom:2px solid var(--border); margin-bottom:6px;"></div>' +
+    line('ENVIADO', escapeHtml(notificationRelativeTime(a.ts)), true) + (st === 'pending' ? line('RESPONDE ATÉ', escapeHtml(new Date(a.exp).toLocaleString('pt-PT', { weekday:'short', hour:'2-digit', minute:'2-digit' }))) : '') + '</div>';
+  if(st === 'pending'){
+    h += iAmCand
+      ? '<div style="display:flex; gap:10px;"><button type="button" data-ask-act="decline" data-ask-key="' + escapeHtml(key) + '" style="flex:1; padding:14px; border-radius:10px; border:1px solid var(--border); background:transparent; color:var(--text-dim); font-family:var(--mono); font-weight:800; letter-spacing:.08em; font-size:13px; cursor:pointer;">RECUSAR</button><button type="button" data-ask-act="accept" data-ask-key="' + escapeHtml(key) + '" style="flex:1; padding:14px; border-radius:10px; border:none; background:linear-gradient(#ffc94d,#ffb010); color:#1a1200; font-family:var(--mono); font-weight:800; letter-spacing:.08em; font-size:13px; cursor:pointer;">ACEITAR</button></div>'
+      : '<button type="button" data-ask-act="cancel" data-ask-key="' + escapeHtml(key) + '" style="width:100%; padding:13px; border-radius:10px; border:1px solid var(--border); background:transparent; color:var(--text-dim); font-family:var(--mono); font-weight:700; letter-spacing:.08em; font-size:13px; cursor:pointer;">CANCELAR PEDIDO</button>';
+  }
+  h += '<div id="ask-modal-msg" style="margin-top:10px; font-size:12.5px; color:#ff6b6b; text-align:center; display:none;"></div>';
+  document.getElementById('ask-modal-title').textContent = iAmCand ? 'PEDIDO DE TROCA' : (st === 'pending' ? 'PEDIDO ENVIADO' : 'O TEU PEDIDO');
+  document.getElementById('ask-modal-body').innerHTML = h;
+  document.getElementById('ask-modal').classList.remove('hidden');
+  window.ASK_OPEN_KEY = key;
+}
+function closeAskModal(){ document.getElementById('ask-modal').classList.add('hidden'); window.ASK_OPEN_KEY = null; }
+document.getElementById('ask-modal-close').addEventListener('click', closeAskModal);
+document.getElementById('notifications-modal-list').addEventListener('click', (e) => {
+  const t = e.target.closest && e.target.closest('[data-ask]'); if(t) openAskModal(t.getAttribute('data-ask'));
+});
+document.getElementById('ask-modal-body').addEventListener('click', async (e) => {
+  const b = e.target.closest && e.target.closest('[data-ask-act]'); if(!b) return;
+  const key = b.getAttribute('data-ask-key'), act = b.getAttribute('data-ask-act'), a = (window.SWAP_ASKS || {})[key];
+  const msg = document.getElementById('ask-modal-msg'), fail = t => { msg.textContent = t; msg.style.display = 'block'; b.disabled = false; };
+  if(!a || askStatus(a) !== 'pending'){ fail('Este pedido já não está à espera de resposta.'); return; }
+  b.disabled = true;
+  const finish = async (status) => { const n = Object.assign({}, a, { status, resolvedAt: Date.now() }); window.SWAP_ASKS[key] = n; const ok = await askPut(key, n); if(!ok){ window.SWAP_ASKS[key] = a; return false; } return true; };
+  if(act === 'cancel'){ if(await finish('cancelled')){ closeAskModal(); } else fail('Não foi possível agora. Tenta novamente.'); }
+  else if(act === 'decline'){ if(await finish('declined')){ closeAskModal(); } else fail('Não foi possível agora. Tenta novamente.'); }
+  else if(act === 'accept'){
+    let idx = -1; try{ for(let i = 0; i < DATA.days.length; i++){ if(askCal(i) === a.cal){ idx = i; break; } } }catch(x){}
+    if(idx < 0){ await finish('cancelled'); fail('Este pedido é de outro mês e já não pode ser aceite.'); return; }
+    if(isSwapped(a.cid, idx) || isSwapped(a.sid, idx)){ await finish('cancelled'); fail('Já não é possível: uma das pessoas já tem uma troca nesse dia.'); return; }
+    await setSwapPartner(a.cid, idx, { id: a.sid, name: a.sname }, () => {}, a.type, a.anon);
+    if(!LAST_SWAP.saved){ fail('Não foi possível fazer a troca agora. Tenta novamente.'); return; }
+    await finish('accepted');
+    // any other request still waiting for either of them on that day is no longer possible
+    for(const o of Object.values(window.SWAP_ASKS)){ if(o && o.key !== key && askStatus(o) === 'pending' && o.cal === a.cal && (o.sid === a.sid || o.cid === a.sid || o.sid === a.cid || o.cid === a.cid)){ const n = Object.assign({}, o, { status:'cancelled', resolvedAt: Date.now() }); window.SWAP_ASKS[o.key] = n; askPut(o.key, n); } }
+    closeAskModal(); refreshRecentSwapsLists();
+    setTimeout(() => showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5; text-align:center;">Troca feita com<b style="display:block; margin-top:2px; font-size:16px;">' + escapeHtml(a.sname) + '</b></div>', () => {}, false, 'OK', false, null, null, true), 200);
+  }
+});
+// live: requests and the on/off switch
+function askLive(){
+  getDb().then(db => {
+    if(!db) return;
+    db.collection('data').doc(gScope('swapAsks')).onSnapshot(sn => {
+      window.SWAP_ASKS = sn.exists ? JSON.parse(JSON.stringify(sn.data())) : {};
+      try{ renderNotificationsBadge(); }catch(e){}
+      try{ const m = document.getElementById('notifications-modal'); if(m && !m.classList.contains('hidden')) renderNotificationsList(); }catch(e){}
+      try{ if(window.ASK_OPEN_KEY && !document.getElementById('ask-modal').classList.contains('hidden')) openAskModal(window.ASK_OPEN_KEY); }catch(e){}
+    });
+    db.collection('data').doc(gScope('swapAsksCfg')).onSnapshot(sn => {
+      window.SWAP_ASKS_ON = !!(sn.exists && sn.data().enabled);
+      try{ document.getElementById('swap-asks-enabled-toggle').checked = window.SWAP_ASKS_ON; }catch(e){}
+    });
+  }).catch(() => {});
+}
+setTimeout(askLive, 0);
+setInterval(() => { try{ renderNotificationsBadge(); }catch(e){} }, 60000);   // a request that just ran out of time drops off the counter
+document.getElementById('swap-asks-enabled-toggle').addEventListener('change', async (e) => {
+  window.SWAP_ASKS_ON = e.target.checked; await dbSetShared('swapAsksCfg', { enabled: e.target.checked });
+});
 loadSwaps().then(() => refreshRecentSwapsLists());
 loadDoubles().catch(() => {});
 loadForRemarks().catch(() => {});
@@ -7696,6 +7858,7 @@ function renderNotificationsBadge(){
   const supMode = document.documentElement.classList.contains('support-mode');
   let unreadCount = supMode ? supUnread() : Object.values(NOTIFICATIONS).filter(n => !n.read && !n.hidden && !isNotificationEventPast(n)).length;
   if(!supMode){ try{ const sn = mtSeen(); unreadCount += mtChanges().filter(x => x[0] > sn).length; }catch(e){} }   // changes to my own tasks (see mtChanges)
+  if(!supMode){ try{ unreadCount += askBellItems().filter(x => x.unread).length; }catch(e){} }   // swap requests (see askBellItems)
   badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
   badge.classList.toggle('hidden', unreadCount === 0);
   const nc = document.getElementById('notif-count');
@@ -7856,10 +8019,11 @@ function renderNotificationsList(){
   let seenTs = 0; try{ seenTs = mtSeen(); }catch(e){}
   if(NOTIF_OPEN_SNAPSHOT) seenTs = NOTIF_OPEN_SNAPSHOT.seenTs;
   try{ mtChanges().forEach(x => entries.push({ kind:'t', x, ts: x[0] })); }catch(e){}
+  try{ askBellItems().forEach(x => entries.push({ kind:'a', x, ts: x.ts })); }catch(e){}   // swap requests
   try{ mtFalseAlarms().forEach(x => entries.push({ kind:'f', x, ts: x[0] })); }catch(e){}   // removed + new again with identical details: one short note instead of two alarms
   entries.sort((a, b) => b.ts - a.ts);
   empty.classList.toggle('hidden', entries.length > 0);
-  const isUnread = item => item.kind === 'f' ? false : item.kind === 't' ? item.x[0] > seenTs
+  const isUnread = item => item.kind === 'f' ? false : item.kind === 'a' ? item.x.unread : item.kind === 't' ? item.x[0] > seenTs
     : (NOTIF_OPEN_SNAPSHOT ? NOTIF_OPEN_SNAPSHOT.ids.has(item.id) : !item.n.read);
   const unreadTotal = entries.filter(isUnread).length;
   const sub = document.getElementById('notifications-modal-sub');
@@ -7878,6 +8042,15 @@ function renderNotificationsList(){
     }
     const unread = isUnread(item);
     const st = unread ? 'color:var(--text); font-weight:600;' : 'color:var(--text-dim);';
+    if(item.kind === 'a'){
+      const ax = item.x;
+      html += '<div data-ask="' + escapeHtml(ax.key) + '" style="cursor:pointer;">' + card(ax.color, unread,
+        '<div style="width:28px; height:28px; border-radius:50%; background:' + ax.color + '22; color:' + ax.color + '; border:1px solid ' + ax.color + '80; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;">⇄</div>' +
+        '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + st + '">' + escapeHtml(ax.title) + '</div>' +
+        '<div style="font-size:11.5px; font-weight:600; margin-top:2px; color:var(--amber);">' + escapeHtml(ax.sub) + '</div>' +
+        '<div style="font-size:11.5px; margin-top:2px; color:var(--text-dim);">' + escapeHtml(swlLabel(ax.cal)) + ' · ' + escapeHtml(notificationRelativeTime(ax.ts)) + '</div></div>') + '</div>';
+      continue;
+    }
     if(item.kind === 'f'){
       const mm = /^(.+) (\d\d:\d\d–\d\d:\d\d)$/.exec(String(item.x[1] || '')) || [0, item.x[1], ''];
       const nm = escapeHtml(String(mm[1]).replace(/^<\s*/, '').trim()), tm = escapeHtml(String(mm[2]).replace(/–/g, ' – '));
@@ -7928,6 +8101,7 @@ function renderNotificationsList(){
 // filter correctly, and the previous person's listener (if any) needs to stop first so a
 // shared device never keeps showing the wrong person's notifications after switching users.
 function setupNotificationsListener(staffId){
+  window.MY_ASK_ID = staffId;
   try{ mtListen(); }catch(e){}   // load the task data right away too (the bell shows task changes), no waiting for the 10-second check
   if(notificationsListenerUnsubscribe) notificationsListenerUnsubscribe();
   getDb().then(db => {
@@ -7950,12 +8124,14 @@ function openNotificationsModal(){
     renderNotificationsBadge(); return;
   }
   try{ NOTIF_OPEN_SNAPSHOT = { ids: new Set(Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id)), seenTs: (typeof mtSeen === 'function' ? mtSeen() : 0) }; }catch(e){ NOTIF_OPEN_SNAPSHOT = null; }
+  try{ window.ASK_OPEN_SEEN = askSeen(); localStorage.setItem('trocaMistoAskSeen', String(Date.now())); }catch(e){}
   mtCoordToggleSync(); renderNotificationsList();
   document.getElementById('notifications-modal').classList.remove('hidden');
   // Opening the list is what counts as "seen" — mark every currently-unread entry as read.
   const unreadIds = Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id);
   unreadIds.forEach(id => { dbSetCollectionEntry('notifications', id, Object.assign({}, NOTIFICATIONS[id], { read: true })); });
   try{ if(MT_DOC) mtMarkSeen(); }catch(e){}
+  try{ renderNotificationsBadge(); }catch(e){}
 }
 document.getElementById('notifications-bell-link').addEventListener('click', openNotificationsModal);
 document.getElementById('notif-coord-toggle').addEventListener('click', () => {
