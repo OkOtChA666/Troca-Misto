@@ -6706,7 +6706,7 @@ function updateExtraContext(){
       ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Ainda podes fazer Horas-Extra</div>';
     } else {
     const codeLabel = (entry.codes && entry.codes[0]) ? entry.codes[0] : 'off';
-    ctx.innerHTML = '<b>'+escapeHtml(extraWorker.name)+'</b> is scheduled <b>'+escapeHtml(codeLabel)+'</b> on '+fmtDateLabel(idx)+'.';
+    ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+escapeHtml(codeLabel)+'</b>';
     }
     btn.disabled = false;
     // eligible: show the hours boxes (max 8h in a day in total, and not on top of the normal shift)
