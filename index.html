@@ -1176,6 +1176,12 @@
   .rl{ display:flex; align-items:center; gap:6px; }
   .rl svg{ flex:none; width:14px; height:14px; }
   .rl.bad{ color:var(--nogo); }
+  .rl-head{ display:inline-flex; align-items:center; gap:8px; font-family:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-weight:500; font-size:11px; letter-spacing:0; text-transform:none; color:var(--text-dim); white-space:nowrap; flex-shrink:0; }
+  .rl-head .rl{ gap:4px; }
+  .rl-head .rl svg{ width:12px; height:12px; }
+  .rl-head{ margin-left:8px; }
+  @media (max-width:380px){ .rl-head{ font-size:10px; gap:6px; margin-left:6px; } .rl-head .rl svg{ width:11px; height:11px; } }
+  .rl-sep{ width:1px; height:14px; background:#2a3552; }
   .empty-state{
     text-align:center; padding: 28px 10px; color: var(--text-dim); font-size: 13.5px;
   }
@@ -3638,6 +3644,10 @@ function ruleLinesHtml(consecIssue, restIssue){
     ? '<span class="rl bad">'+XX+'Horas de descanso · '+fmtHours(restIssue.gap)+' (mín. '+restIssue.min+'h+)</span>'
     : '<span class="rl">'+CK+'Horas de descanso</span>';
   return '<div class="rl-wrap'+((consecIssue||restIssue)?' rl-col':'')+'">'+a+b+'</div>';
+}
+function ruleHeadHtml(){
+  const CK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="var(--go)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  return '<span class="rl-head"><span class="rl">'+CK+'Dias seguidos</span><span class="rl-sep"></span><span class="rl">'+CK+'Horas de descanso</span></span>';
 }
 function buildRuleCheckHtml(issues){
   const restIssue = issues.find(i => i.type === 'rest');
@@ -6319,7 +6329,7 @@ function renderCoverResults(results, idx){
   const head = document.createElement('div');
   head.className = 'results-head';
   { const nAvail = results.filter(r=>r.go && !isFlagged(r.worker.id, idx) && !isSwapped(r.worker.id, idx)).length;
-    head.innerHTML = '<span><b style="font-weight:800; color:#fff;">'+results.length+'</b> '+(results.length === 1 ? 'CANDIDATO' : 'CANDIDATOS')+'</span>'; }
+    head.innerHTML = '<span style="white-space:nowrap; letter-spacing:0.06em;"><b style="font-weight:800; color:#fff;">'+results.length+'</b> '+(results.length === 1 ? 'CANDIDATO' : 'CANDIDATOS')+'</span>'+(nAvail > 0 ? ruleHeadHtml() : ''); }
   box.appendChild(head);
   let dividerShown = false;
   let issueDividerShown = false;
@@ -6419,7 +6429,7 @@ function renderCoverResults(results, idx){
     if(r.go){
       detail.innerHTML = flagged
         ? '<div style="height:6px;"></div><span class="issue">Sem violações de regras — mas foi reportado manualmente:</span>'
-        : '<div style="height:6px;"></div>'+ruleLinesHtml(null,null)+'';
+        : '<div style="height:6px;"></div>';   // clean candidates: the two checks are shown once, in the CANDIDATOS header
     } else {
       detail.innerHTML = '<div style="height:6px;"></div>'+buildRuleCheckHtml(r.issues);
     }
