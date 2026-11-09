@@ -1614,7 +1614,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.89</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.90</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2350,7 +2350,7 @@
       </div>
     </div>
 
-    <div id="qw-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px; text-transform:none; letter-spacing:normal;">
+    <div id="qw-panel" class="hidden" style="margin-bottom:6px; text-transform:none; letter-spacing:normal;">
       <select id="qw-select" style="width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:12px; font-family:var(--sans); font-size:14px;"></select>
       <div id="qw-card"></div>
       <div style="font-size:11px; color:var(--text-dim); margin-top:8px; font-style:italic;">Só aparece para ti. A lista mostra quem já picou entrada hoje e ainda não saiu.</div>
@@ -11158,14 +11158,14 @@ function qwRender(){
   const shiftTxt = b && b.work ? 'turno ' + b.start.slice(0, 2) + ':' + b.start.slice(2) + ' – ' + b.end.slice(0, 2) + ':' + b.end.slice(2) : '';
   const left = !mtIsLive(qwSel);
   if(!sel.value && left) sel.value = '';
-  card.innerHTML = '<div style="margin-top:12px; border:1px solid var(--border); border-radius:12px; background:var(--panel-2); overflow:hidden;">' +
-    '<div id="qw-head" style="display:flex; align-items:center; gap:10px; padding:14px; cursor:pointer;"><div style="flex:1;"><div style="font-weight:800; font-size:17px; color:var(--text);">' + mtEsc(w.name) +
+  card.innerHTML = '<div style="margin-top:14px;">' +
+    '<div id="qw-head" style="display:flex; align-items:center; gap:10px; padding:4px 2px 12px; cursor:pointer;"><div style="flex:1;"><div style="font-weight:800; font-size:17px; color:var(--text);">' + mtEsc(w.name) +
     (left ? '' : ' <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--go); box-shadow:0 0 0 3px rgba(46,204,113,.2); position:relative; top:-2px; margin-left:4px;"></span>') + '</div>' +
     '<div style="font-family:var(--mono); font-size:12px; color:var(--text-dim); margin-top:6px; display:flex; gap:16px; flex-wrap:wrap;">' +
     (p[0] ? '<span><i class="mt-pd in" style="display:inline-block; margin-right:6px;"></i>entrou ' + mtEsc(p[0]) + '</span>' : '') +
     (p[1] ? '<span><i class="mt-pd out" style="display:inline-block; margin-right:6px;"></i>saiu ' + mtEsc(p[1]) + '</span>' : '') +
     (shiftTxt ? '<span>' + shiftTxt + '</span>' : '') + '</div></div><div style="color:var(--text-dim); font-size:18px;">' + (qwOpen ? '▴' : '▾') + '</div></div>' +
-    (qwOpen ? '<div style="padding:12px 12px 4px; border-top:1px solid var(--border);">' + qwTasksHtml(qwSel) + '</div>' : '') + '</div>';
+    (qwOpen ? '<div>' + qwTasksHtml(qwSel) + '</div>' : '') + '</div>';
 }
 document.addEventListener('change', ev => { if(ev.target && ev.target.id === 'qw-select'){ qwSel = ev.target.value; qwOpen = false; qwRender(); } });
 document.addEventListener('click', ev => { if(ev.target.closest && ev.target.closest('#qw-head')){ qwOpen = !qwOpen; qwRender(); } });
