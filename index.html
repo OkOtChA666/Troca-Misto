@@ -1165,6 +1165,11 @@
   .row-detail.open{ display:block; }
   .row-detail .issue{ color: var(--nogo); }
   .row-detail .ok{ color: var(--go); }
+  .rl-wrap{ display:flex; gap:22px; flex-wrap:wrap; margin-top:2px; font-family:var(--mono); font-size:12px; color:var(--text-dim); }
+  .rl-wrap.rl-col{ flex-direction:column; gap:4px; }
+  .rl{ display:flex; align-items:center; gap:6px; }
+  .rl svg{ flex:none; width:14px; height:14px; }
+  .rl.bad{ color:var(--nogo); }
   .empty-state{
     text-align:center; padding: 28px 10px; color: var(--text-dim); font-size: 13.5px;
   }
@@ -3617,27 +3622,32 @@ function issueText(iss){
 // Same two-line layout as the "everything's fine" message (Máximo de dias permitidos / Horas
 // de descanço), just filled in with the actual failing detail instead of a raw sentence —
 // so a failed check reads as clearly as a passed one, not as a jarring wall of English text.
+function ruleLinesHtml(consecIssue, restIssue){
+  const CK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="var(--go)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const XX = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="var(--nogo)" stroke-width="2.6" stroke-linecap="round"/></svg>';
+  const a = consecIssue
+    ? '<span class="rl bad">'+XX+'Dias seguidos · '+consecIssue.len+' (máx. '+consecIssue.max+')</span>'
+    : '<span class="rl">'+CK+'Dias seguidos</span>';
+  const b = restIssue
+    ? '<span class="rl bad">'+XX+'Horas de descanso · '+fmtHours(restIssue.gap)+' (mín. '+restIssue.min+'h+)</span>'
+    : '<span class="rl">'+CK+'Horas de descanso</span>';
+  return '<div class="rl-wrap'+((consecIssue||restIssue)?' rl-col':'')+'">'+a+b+'</div>';
+}
 function buildRuleCheckHtml(issues){
   const restIssue = issues.find(i => i.type === 'rest');
   const consecIssue = issues.find(i => i.type === 'consecutive');
   const medIssue = issues.find(i => i.type === 'med');
   const otherIssues = issues.filter(i => i.type === 'altea' || i.type === 'iport' || i.type === 'availability');
 
-  const consecLine = consecIssue
-    ? '<span class="issue">Máximo de dias permitidos: '+consecIssue.len+' dias seguidos (máx. '+consecIssue.max+')</span>'
-    : '<span class="ok">Máximo de dias permitidos: OK</span>';
-  const restLine = restIssue
-    ? '<span class="issue">Horas de descanço: '+fmtHours(restIssue.gap)+' (mín. '+restIssue.min+'h+)</span>'
-    : '<span class="ok">Horas de descanço: OK</span>';
-
-  let html = consecLine + '<br>' + restLine;
+  const html0 = ruleLinesHtml(consecIssue, restIssue);
+  let html = html0;
   if(medIssue){
     const medTimeLabel = (medIssue.start && medIssue.end) ? ' - '+fmtHHMM(medIssue.start)+'-'+fmtHHMM(medIssue.end) : '';
-    html += '<br>Remarks: <span style="color:#5FA8FF;">Consulta médica'+medTimeLabel+'</span>';
+    html += '<div style="margin-top:6px;">Remarks: <span style="color:#5FA8FF;">Consulta médica'+medTimeLabel+'</span></div>';
   }
   otherIssues.forEach(iss => {
     const color = iss.type === 'availability' ? '#FF9A3D' : 'var(--nogo)';
-    html += '<br><span style="color:'+color+';">'+issueText(iss)+'</span>';
+    html += '<div style="margin-top:4px;"><span style="color:'+color+';">'+issueText(iss)+'</span></div>';
   });
   return html;
 }
@@ -4237,19 +4247,17 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
     // someone already has a swap request waiting for an answer on this day: shown, but can't be asked again until it's settled
     const row = document.createElement('div');
     row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px;';
-    row.innerHTML = '<div>Trocar com <b style="color:var(--text);">'+escapeHtml(candidateName)+'</b></div><span style="font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em; padding:6px 9px; border-radius:6px; background:#ffb02022; color:#ffb020; white-space:nowrap;">PEDIDO PENDENTE</span>';
+    row.innerHTML = '<span style="font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em; padding:6px 9px; border-radius:6px; background:#ffb02022; color:#ffb020; white-space:nowrap;">PEDIDO PENDENTE</span>';
     wrap.appendChild(row);
   } else {
     const row = document.createElement('div');
     row.style.display = 'flex';
     row.style.alignItems = 'center';
     row.style.gap = '10px';
-    const info = document.createElement('div');
-    info.innerHTML = 'Trocar com <b style="color:var(--text);">'+escapeHtml(candidateName)+'</b>';
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'confirm-btn';
-    btn.textContent = 'TROCAR';
+    btn.textContent = window.SWAP_ASKS_ON ? 'PEDIR TROCA' : 'TROCAR';
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       mtSwapWarning(() => {
@@ -4292,7 +4300,6 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
       }catch(e){}
       });   // end of the warning step
     });
-    row.appendChild(info);
     row.appendChild(btn);
     wrap.appendChild(row);
   }
@@ -6407,7 +6414,7 @@ function renderCoverResults(results, idx){
     if(r.go){
       detail.innerHTML = flagged
         ? '<div style="height:6px;"></div><span class="issue">Sem violações de regras — mas foi reportado manualmente:</span>'
-        : '<div style="height:6px;"></div><span class="ok">Máximo de dias permitidos: OK<br>Horas de descanço: OK</span>';
+        : '<div style="height:6px;"></div>'+ruleLinesHtml(null,null)+'';
     } else {
       detail.innerHTML = '<div style="height:6px;"></div>'+buildRuleCheckHtml(r.issues);
     }
@@ -6694,7 +6701,7 @@ function renderTradeResults(){
     if(r.go){
       bits.push(flagged
         ? '<span class="issue">Sem violações de regras — mas foi reportado manualmente:</span>'
-        : '<span class="ok">Máximo de dias permitidos: OK<br>Horas de descanço: OK</span>');
+        : ''+ruleLinesHtml(null,null)+'');
     } else {
       if(r.issuesMe.length) bits.push('<div>O teu lado:</div>'+buildRuleCheckHtml(r.issuesMe));
       if(r.issuesThem.length) bits.push('<div style="margin-top:8px;">O lado deles:</div>'+buildRuleCheckHtml(r.issuesThem));
