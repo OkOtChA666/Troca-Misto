@@ -1333,6 +1333,14 @@
   .mt-time{ font-family:var(--mono); font-weight:700; font-size:14px; color:var(--text); min-width:98px; white-space:nowrap; }
   .mt-label{ flex:1; font-size:14px; color:var(--text); word-break:break-word; }
   .mt-chip{ font-family:var(--mono); font-size:10px; letter-spacing:0.08em; padding:3px 7px; border-radius:5px; white-space:nowrap; }
+
+  /* ---- SUPORTE: login that only sees the swaps log ---- */
+  html.support-mode .tabs, html.support-mode .panel:not(#panel-support), html.support-mode #planeamento-turnaround-row,
+  html.support-mode #notif-count, html.support-mode #notifications-bell-link, html.support-mode #schedule-override-link,
+  html.support-mode #logout-link, html.support-mode #user-menu-btn > svg:last-child, html.support-mode #end-of-month-warning{ display:none !important; }
+  html.support-mode #panel-support{ display:block !important; }
+  html.support-mode #user-menu-btn, html.support-mode #stat-workers-link{ pointer-events:none; }
+  html.support-mode #logged-in-tab-row{ border-top:1px solid var(--border) !important; border-radius:8px !important; margin-top:12px; }
   .rules-tab-btn{ flex:1; text-align:center; padding:10px 0 9px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--text-dim); border-bottom:2px solid transparent; cursor:pointer; user-select:none; }
   .rules-tab-btn.on{ color:var(--amber); border-bottom-color:var(--amber); }
   .rules-tab > :first-child{ margin-top:0 !important; border-top:0 !important; padding-top:0 !important; }
@@ -1614,7 +1622,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.90</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.91</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2132,6 +2140,13 @@
   </div>
 
   <!-- BETA: SCHEDULE OVERRIDE PANEL -->
+  <div class="panel hidden" id="panel-support" style="text-transform:none; letter-spacing:normal;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">TROCAS FEITAS</div>
+      <button type="button" id="sup-logout" class="btn" style="width:auto; margin:0; padding:8px 14px; font-size:12px;">SAIR</button>
+    </div>
+    <div id="sup-log-root"></div>
+  </div>
   <div class="panel hidden" id="panel-schedule-override">
     <div id="so-head" style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;">
       <div id="so-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">DEFINIÇÕES</div>
@@ -2152,6 +2167,8 @@
       <div class="tool-card" id="so-card-custom2"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/></svg></div><div><div class="tool-name">RULES</div><div class="tool-desc">Regras das trocas e companhias</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-stats"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 19l5-6 4 3 7-9M16 7h4v4"/></svg></div><div><div class="tool-name">STATS</div><div class="tool-desc">Estatísticas das trocas</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-qw"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="18.5" cy="6.5" r="2.5" fill="#2ecc71" stroke="#2ecc71"/></svg></div><div><div class="tool-name">QUEM ESTÁ A TRABALHAR</div><div class="tool-desc">Quem está no aeroporto agora</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-swl"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M5 8h13M15 4l4 4-4 4M19 16H6M9 12l-4 4 4 4"/></svg></div><div><div class="tool-name">TROCAS FEITAS</div><div class="tool-desc">Todas as trocas, com detalhes</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-sacc"><div class="tool-ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><div><div class="tool-name">ACESSO SUPORTE</div><div class="tool-desc">Utilizador e password da equipa de suporte</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <button type="button" id="so-switch-dept" class="so-switch-dept"></button>
     </div>
     <div id="so-row" style="display:none; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
@@ -2159,6 +2176,8 @@
       <button type="button" class="btn" id="msg-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">MSG</button>
       <button type="button" class="btn" id="custom1-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">MAIN</button>
       <button type="button" class="btn" id="custom2-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">RULES</button>
+      <button type="button" class="btn" id="swl-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">TF</button>
+      <button type="button" class="btn" id="sacc-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">AS</button>
       <button type="button" class="btn" id="qw-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">QUEM</button>
       <button type="button" class="btn" id="stats-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">STATS</button>
       <button type="button" class="btn" id="aistaff-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">PREVISÃO</button>
@@ -2350,6 +2369,15 @@
       </div>
     </div>
 
+    <div id="swl-panel" class="hidden" style="margin-bottom:6px; text-transform:none; letter-spacing:normal;"><div id="swl-root"></div></div>
+    <div id="sacc-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px; text-transform:none; letter-spacing:normal;">
+      <div style="font-size:13px; color:var(--text-dim); margin:0 0 14px; line-height:1.5;">A equipa de suporte entra com o utilizador <b style="color:var(--cyan); font-family:var(--mono);">SUPORTE</b> (ou <b style="color:var(--cyan); font-family:var(--mono);">0000</b> no teclado de números) e esta password. Só vê a página TROCAS FEITAS.</div>
+      <div style="font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:6px;">NOVA PASSWORD</div>
+      <input type="text" id="sacc-input" autocomplete="off" placeholder="Escreve a nova password" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:12px; color:var(--text); font-size:14px; margin-bottom:12px;">
+      <button type="button" class="btn" id="sacc-save" style="margin-top:4px;">Guardar</button>
+      <div id="sacc-msg" style="font-size:12px; margin-top:10px; color:var(--text-dim);"></div>
+      <div id="sacc-info" style="font-size:11px; color:var(--text-dim); margin-top:6px; font-style:italic;"></div>
+    </div>
     <div id="qw-panel" class="hidden" style="margin-bottom:6px; text-transform:none; letter-spacing:normal;">
       <select id="qw-select" style="width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:12px; font-family:var(--sans); font-size:14px;"></select>
       <div id="qw-card"></div>
@@ -4478,6 +4506,12 @@ async function checkAccessPassword(){
   const input = document.getElementById('access-portal-input');
   const error = document.getElementById('access-portal-error');
   const staffId = staffInput.value.trim();
+  if(staffId.toUpperCase() === 'SUPORTE' || staffId === '0000'){
+    let ok = false;
+    try{ const db = await getDb(); const sn = db ? await db.collection('data').doc('supportLogin').get() : null; const cfg = sn && sn.exists ? sn.data() : null; ok = !!(cfg && cfg.hash && await verifyPassword(input.value, cfg.hash)); }catch(e){}
+    if(ok){ try{ localStorage.setItem('trocaMistoSupport', '1'); localStorage.removeItem('trocaMistoLoginStaffId'); localStorage.removeItem('trocaMistoLoginIsAdmin'); localStorage.removeItem('trocaMistoGroup'); }catch(e){} location.reload(); return; }
+    error.classList.remove('hidden'); input.value = ''; input.focus(); return;
+  }
   const isAdmin = staffId === ADMIN_STAFF_ID;
   let worker = DATA.workers.find(w => w.id === staffId);
   let passwordOk = false;
@@ -4713,7 +4747,20 @@ document.getElementById('access-portal-staffnum').addEventListener('input', upda
 // Skip the login screen entirely if this device already logged in before — checked
 // synchronously against localStorage (not the async, Firestore-backed rememberedName) so
 // there's no flash of the login screen while waiting on a network read.
+function startSupportMode(){
+  document.documentElement.classList.add('support-mode');
+  document.getElementById('access-portal').classList.add('hidden');
+  document.getElementById('main-wrap').classList.remove('hidden');
+  setTimeout(async () => {
+    try{ document.querySelector('.eyebrow').textContent = 'SUPORTE · FAO'; }catch(e){}
+    try{ updateLoggedInDisplay('SUPORTE', 'SUPORTE'); }catch(e){}
+    document.getElementById('panel-support').classList.remove('hidden');
+    try{ await loadSwaps(); }catch(e){}
+    swlRender('sup-log-root');
+  }, 0);
+}
 (function restoreLoginIfPresent(){
+  try{ if(localStorage.getItem('trocaMistoSupport') === '1'){ startSupportMode(); return; } }catch(e){}
   const savedStaffId = localStorage.getItem('trocaMistoLoginStaffId');
   if(!savedStaffId) return;
   let worker = DATA.workers.find(w => w.id === savedStaffId);
@@ -5056,6 +5103,7 @@ document.getElementById('my-swaps-link').addEventListener('click', () => {
 });
 document.getElementById('my-swaps-back-btn').addEventListener('click', () => { if(AREA_VIEW === 'reqs' && reqsNewOpen()) reqsShow('mine'); else if(AREA_VIEW !== 'hub') showAreaHub(); else closeMySwaps(); });   // inside a section: back to the ÁREA PESSOAL menu
 function refreshRecentSwapsLists(){
+  try{ swlRefreshAll(); }catch(e){}
   renderCoverSwapsList(recentSwapsExpanded);
   renderTurnoSwapsList(recentTurnoSwapsExpanded);
   // Only worth re-rendering if the panel is actually the one currently visible — same
@@ -8666,9 +8714,9 @@ function renderScheduleOverrideList(){
   });
 }
 // ---------- ADMIN menu: stacked cards, one section open at a time ----------
-const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR' };
+const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR', swl:'TROCAS FEITAS', sacc:'ACESSO SUPORTE' };
 function soApplyCards(){
-  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
+  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
   const t = document.getElementById('so-title'); if(t && GROUP && isAdminSession) t.textContent = 'DEFINIÇÕES · ' + GROUP_LABEL;
 }
 function soShowMenu(){
@@ -8695,7 +8743,7 @@ function soOpen(key){
   document.getElementById(key + '-toggle-btn').click();
   if(key === 'aistaff') document.getElementById('so-head').classList.add('hidden');
 }
-['ah','sched','aistaff','msg','custom1','custom2','stats','qw'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
+['ah','sched','aistaff','msg','custom1','custom2','stats','qw','swl','sacc'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
 document.getElementById('so-back-btn').addEventListener('click', () => {
   if(!document.getElementById('so-menu').classList.contains('hidden')) closeScheduleOverride();
   else soShowMenu();
@@ -8713,7 +8761,7 @@ function openScheduleOverride(){
 // Generalized helpers for the message panels (currently just msg) — only one
 // can be open at a time, and opening any of them hides the other 3 buttons + the normal
 // PLANEAMENTO content, leaving only "← Voltar" visible until you back out of it.
-const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff', 'qw'];
+const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff', 'qw', 'swl', 'sacc'];
 function closeAllMsgPanels(){
   document.getElementById('so-row').classList.remove('hidden');
   ALL_MSG_PANEL_KEYS.forEach(key => {
@@ -9509,6 +9557,82 @@ async function openAiStaff(){
 document.getElementById('aistaff-toggle-btn').addEventListener('click', openAiStaff);
 document.getElementById('ai-back-btn').addEventListener('click', () => soShowMenu());
 document.getElementById('ai-rh').addEventListener('click', () => document.getElementById('ai-rl2').classList.toggle('open'));
+// ---------- TROCAS FEITAS (read-only log of every swap) + ACESSO SUPORTE ----------
+const SWL_TAB = {};
+const SWL_WD = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'], SWL_MON = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+function swlLabel(iso){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if(!m) return '—'; const d = new Date(+m[1], +m[2] - 1, +m[3]); return SWL_WD[d.getDay()] + ' ' + m[3] + ' ' + SWL_MON[+m[2] - 1]; }
+function swlWhen(ts){ if(!ts) return '—'; const d = new Date(ts); const mon = SWL_MON[d.getMonth()]; return mtPad(d.getDate()) + ' ' + mon.charAt(0) + mon.slice(1).toLowerCase() + ' ' + d.getFullYear() + ', ' + mtPad(d.getHours()) + ':' + mtPad(d.getMinutes()); }
+function swlEntries(){
+  const out = [];
+  Object.keys(SWAPS || {}).forEach(key => {
+    const s = SWAPS[key]; if(!s) return;
+    const sep = key.lastIndexOf(':'), workerId = key.slice(0, sep), idx = parseInt(key.slice(sep + 1), 10);
+    let type = 'cover'; try{ type = classifySwapType(workerId, idx, s.type); }catch(e){ type = s.type || 'cover'; }
+    let date = s.calendarDate || ''; if(!date){ try{ const d = realDateForIdx(idx); date = d.getFullYear() + '-' + mtPad(d.getMonth() + 1) + '-' + mtPad(d.getDate()); }catch(e){} }
+    const w = DATA.workers.find(x => x.id === workerId);
+    const wName = s.workerName || (w ? w.name : workerId), pName = s.withName || s.withId || '—';
+    const wShift = s.shiftTimeText ? s.shiftTimeText.replace('-', ' – ') : 'Folga', pShift = s.partnerShiftTimeText ? s.partnerShiftTimeText.replace('-', ' – ') : 'Folga';
+    let req, sub;
+    if(type !== 'timeswap' && s.workerWasWorking === false){ req = { id:s.withId, name:pName, shift:pShift }; sub = { id:workerId, name:wName, shift:wShift }; }
+    else { req = { id:workerId, name:wName, shift:wShift }; sub = { id:s.withId, name:pName, shift:pShift }; }
+    out.push({ key, type, date, ts:s.ts || 0, req, sub, anonymous:!!s.anonymous, fromRequest:!!s.fromRequest });
+  });
+  out.sort((a, b) => a.ts - b.ts); out.forEach((e, i) => { e.n = i + 1; });
+  return out;
+}
+function swlRender(rootId){
+  const root = document.getElementById(rootId); if(!root) return;
+  const tab = SWL_TAB[rootId] || 'all', today = sfToday(), all = swlEntries();
+  const isUp = e => e.date && e.date >= today, isPast = e => e.date && e.date < today;
+  const counts = { all: all.length, next: all.filter(isUp).length, past: all.filter(isPast).length };
+  let list = tab === 'next' ? all.filter(isUp).sort((a, b) => a.date.localeCompare(b.date)) : tab === 'past' ? all.filter(isPast).sort((a, b) => b.date.localeCompare(a.date)) : all.slice().sort((a, b) => b.ts - a.ts);
+  const tabBtn = (k, label) => '<div data-swl-tab="' + k + '" data-swl-root="' + rootId + '" style="flex:1; text-align:center; padding:9px 0; cursor:pointer; border-bottom:2px solid ' + (tab === k ? 'var(--amber)' : 'transparent') + '; color:' + (tab === k ? 'var(--amber)' : 'var(--text-dim)') + '; font-family:var(--mono); font-size:11px; font-weight:700;">' + label + ' · ' + counts[k] + '</div>';
+  const line = (k, v, first) => '<div style="display:flex; gap:10px; padding:5px 0;' + (first ? '' : ' border-top:1px solid var(--border-soft);') + ' font-size:13px;"><div style="width:92px; flex-shrink:0; font-family:var(--mono); font-size:10px; letter-spacing:.06em; color:var(--text-dim); padding-top:2px;">' + k + '</div><div style="flex:1; color:var(--text-dim);">' + v + '</div></div>';
+  const idv = v => '<span style="font-family:var(--mono); font-weight:700; color:var(--cyan);">' + mtEsc(v || '—') + '</span>';
+  const nm = v => '<b style="color:var(--text);">' + mtEsc(v) + '</b>';
+  const brk = '<div style="display:flex; align-items:center; gap:10px; margin:16px 0 12px;"><div style="flex:1; border-top:2px solid var(--border);"></div><div style="font-family:var(--mono); font-size:13px; color:var(--amber);">⇄</div><div style="flex:1; border-top:2px solid var(--border);"></div></div>';
+  let html = '<div style="display:flex; gap:6px; margin-bottom:12px;">' + tabBtn('all', 'TODAS') + tabBtn('next', 'PRÓXIMAS') + tabBtn('past', 'PASSADAS') + '</div>';
+  if(!list.length) html += '<div class="mt-empty">Sem trocas.</div>';
+  list.forEach(e => {
+    const c = e.type === 'timeswap' ? '#19d3ff' : '#ffb020', estado = !e.date ? '—' : e.date < today ? 'concluída' : e.date === today ? 'hoje' : 'por acontecer';
+    html += '<div style="border:1px solid var(--border); border-left:4px solid ' + c + '; border-radius:10px; background:var(--panel-2); padding:12px; margin-bottom:12px;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-family:var(--mono); font-size:12px; font-weight:700; color:var(--text);">#' + e.n + ' · ' + swlLabel(e.date) + '</div><span style="font-family:var(--mono); font-size:10px; font-weight:700; padding:3px 7px; border-radius:5px; background:' + c + '22; color:' + c + ';">' + (e.type === 'timeswap' ? 'TROCA DE TURNO' : 'DIA DE FOLGA') + '</span></div>' +
+      line('REQUERENTE', nm(e.req.name), true) + line('ID', idv(e.req.id)) + line('TURNO', mtEsc(e.req.shift)) + brk +
+      line('SUBSTITUTO', nm(e.sub.name), true) + line('ID', idv(e.sub.id)) + line('TURNO', mtEsc(e.sub.shift)) +
+      '<div style="height:22px; border-bottom:2px solid var(--border); margin-bottom:6px;"></div>' +
+      line('FEITA EM', mtEsc(swlWhen(e.ts)), true) + line('ESTADO', estado) + line('ORIGEM', (e.fromRequest ? 'veio de um pedido' : 'pedido direto') + ' · ' + (e.anonymous ? 'nome escondido' : 'nome visível')) + line('DATA REAL', mtEsc(e.date || '—')) + '</div>';
+  });
+  root.innerHTML = html;
+}
+document.addEventListener('click', ev => {
+  const t = ev.target.closest && ev.target.closest('[data-swl-tab]'); if(!t) return;
+  SWL_TAB[t.getAttribute('data-swl-root')] = t.getAttribute('data-swl-tab'); swlRender(t.getAttribute('data-swl-root'));
+});
+function swlRefreshAll(){ try{ if(document.documentElement.classList.contains('support-mode')) swlRender('sup-log-root'); else if(!document.getElementById('swl-panel').classList.contains('hidden')) swlRender('swl-root'); }catch(e){} }
+async function swlMakeHash(pw){
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iter = 200000;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = new Uint8Array(await crypto.subtle.deriveBits({ name:'PBKDF2', salt, iterations:iter, hash:'SHA-256' }, key, 256));
+  const hex = a => Array.prototype.map.call(a, x => x.toString(16).padStart(2, '0')).join('');
+  return 'pbkdf2$' + iter + '$' + hex(salt) + '$' + hex(bits);
+}
+async function saccLoad(){
+  const info = document.getElementById('sacc-info'); if(!info) return;
+  document.getElementById('sacc-msg').textContent = ''; document.getElementById('sacc-input').value = '';
+  info.textContent = 'A carregar…';
+  try{ const db = await getDb(); const sn = db ? await db.collection('data').doc('supportLogin').get() : null; const cfg = sn && sn.exists ? sn.data() : null;
+    info.textContent = 'Última alteração: ' + (cfg && cfg.updatedAt ? swlWhen(cfg.updatedAt) : 'nunca (ninguém consegue entrar enquanto não definires uma password)'); }catch(e){ info.textContent = ''; }
+}
+document.getElementById('sacc-save').addEventListener('click', async () => {
+  const inp = document.getElementById('sacc-input'), msg = document.getElementById('sacc-msg'), v = inp.value.trim();
+  if(v.length < 6){ msg.style.color = 'var(--nogo)'; msg.textContent = 'A password tem de ter pelo menos 6 caracteres.'; return; }
+  try{ const db = await getDb(); if(!db) throw new Error('db'); await db.collection('data').doc('supportLogin').set({ hash: await swlMakeHash(v), updatedAt: Date.now() });
+    msg.style.color = 'var(--go)'; msg.textContent = 'Password guardada.'; inp.value = ''; saccLoad(); document.getElementById('sacc-msg').style.color = 'var(--go)'; document.getElementById('sacc-msg').textContent = 'Password guardada.';
+  }catch(e){ msg.style.color = 'var(--nogo)'; msg.textContent = 'Não consegui guardar. Tenta outra vez.'; }
+});
+document.getElementById('swl-toggle-btn').addEventListener('click', () => { openMsgPanel('swl'); swlRender('swl-root'); });
+document.getElementById('sacc-toggle-btn').addEventListener('click', () => { openMsgPanel('sacc'); saccLoad(); });
+document.getElementById('sup-logout').addEventListener('click', () => { try{ localStorage.removeItem('trocaMistoSupport'); }catch(e){} location.reload(); });
 document.getElementById('qw-toggle-btn').addEventListener('click', () => {
   openMsgPanel('qw'); qwSel = ''; qwOpen = false;
   try{ mtListen(); }catch(e){}
