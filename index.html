@@ -1031,6 +1031,8 @@
     font-family: var(--sans); font-size:12px; font-weight:600;
     color: var(--text-dim); transition: color 0.15s ease, transform 0.15s ease;
   }
+  .row-detail .favorite-heart-btn{ flex:1; height:42px; box-sizing:border-box; border:1px solid #2a3552; border-radius:7px; color:#a9b6d6; }
+  .row-detail .favorite-heart-btn.is-favorite{ color:#FFB020; border-color:#FFB020; background:rgba(255,176,32,.08); }
   .favorite-heart-btn.is-favorite{ color: var(--swap); }
   .favorite-heart-btn:active{ transform: scale(0.85); }
   .favorite-heart-label{ line-height:1; color:#fff; }
@@ -1057,8 +1059,8 @@
   }
   .turnaround-view-btn:active{ transform: translateY(1px); }
   .row-name{ font-size: 14.5px; font-weight:600; color: var(--text); }
-  .row-sub{ font-family: 'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-size: 12.5px; color: var(--text-dim); margin-top:2px; line-height:1.5; }
-  .row-detail .confirm-btn{ font-family:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-size:13px; letter-spacing:.03em; padding:10px 26px; }
+  .row-sub{ font-family: 'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-size: 12.5px; color: var(--text-dim); margin-top:10px; line-height:2; }
+  .row-detail .confirm-btn{ font-family:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-size:13px; letter-spacing:.03em; padding:0 26px; height:42px; flex:1; }
   .swap-partner{ color: var(--swap); font-weight:600; }
   .sw-line{ display:flex; align-items:center; gap:6px; width:100%; }
   .sw-names{ flex:1; min-width:0; }
@@ -1166,8 +1168,10 @@
   .row-detail.open{ display:block; }
   .row-detail .issue{ color: var(--nogo); }
   .row-detail .ok{ color: var(--go); }
-  .rl-wrap{ display:flex; gap:22px; flex-wrap:wrap; margin-top:2px; font-family:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-weight:500; font-size:13px; color:var(--text-dim); }
-  .rl-wrap.rl-col{ flex-direction:column; gap:4px; }
+  .rl-wrap{ display:flex; gap:22px; flex-wrap:wrap; margin-top:16px; font-family:'Instrument Sans','IBM Plex Sans',system-ui,sans-serif; font-weight:500; font-size:13px; color:var(--text-dim); }
+  .rl-wrap.rl-col{ flex-direction:column; gap:5px; }
+  .rl-wrap:not(.rl-col){ gap:0; }
+  .rl-wrap:not(.rl-col) > .rl{ flex:1; justify-content:center; }
   .rl{ display:flex; align-items:center; gap:6px; }
   .rl svg{ flex:none; width:14px; height:14px; }
   .rl.bad{ color:var(--nogo); }
@@ -3998,9 +4002,8 @@ async function toggleFavorite(workerId){
 }
 function favoriteHeartHtml(workerId){
   const fav = isFavorite(workerId);
-  return '<button type="button" class="favorite-heart-btn'+(fav?' is-favorite':'')+'" data-worker-id="'+workerId+'" title="'+(fav?'Remover dos favoritos':'Adicionar aos favoritos')+'">'+
-    '<span class="favorite-heart-label">Favorito</span>'+
-    '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 21s-7-4.5-9.5-9C.7 8 2 4.5 5.5 4c2-.3 3.7.7 4.9 2.3C11.3 5.4 13 4.4 15 4.5c3.5.3 4.8 4 3.5 7.5C16 17 12 21 12 21z" fill="'+(fav?'currentColor':'none')+'" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'+
+  return '<button type="button" class="favorite-heart-btn'+(fav?' is-favorite':'')+'" data-worker-id="'+workerId+'" title="'+(fav?'Remover dos favoritos':'Adicionar aos favoritos')+'" aria-label="Favorito">'+
+    '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 20.5C5.2 15.7 2.5 12.2 2.5 8.6 2.5 6 4.5 4 7 4c1.9 0 3.6 1 5 3 1.4-2 3.1-3 5-3 2.5 0 4.5 2 4.5 4.6 0 3.6-2.7 7.1-9.5 11.9z" fill="'+(fav?'currentColor':'none')+'" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'+
   '</button>';
 }
 // Delegated once, in the CAPTURE phase — handles every heart button, current and future,
@@ -6423,7 +6426,7 @@ function renderCoverResults(results, idx){
     if(swapped) detail.appendChild(buildSwapWarning(r.worker.id, idx));
     if(swapped) detail.appendChild(buildFlagBtn(r.worker.id, idx, () => renderCoverResults(lastCoverResults, lastCoverIdx)));
     const confirmRow = document.createElement('div');
-    confirmRow.style.cssText = 'display:flex; align-items:center; gap:10px;';
+    confirmRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:16px;';
     const confirmEl = buildSwapConfirm(r.worker.id, idx, coverWorker.id, coverWorker.name, runCoverSearch);
     confirmEl.style.flex = '1';
     confirmRow.appendChild(confirmEl);
@@ -6710,7 +6713,7 @@ function renderTradeResults(){
     detail.innerHTML = bits.join('');
     if(flagged) detail.appendChild(buildFlagWarning(r.worker.id, idx));
     const confirmRow = document.createElement('div');
-    confirmRow.style.cssText = 'display:flex; align-items:center; gap:10px;';
+    confirmRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:16px;';
     const confirmEl = buildSwapConfirm(r.worker.id, idx, tradeA.id, tradeA.name, runTradeSearch, 'timeswap');
     confirmEl.style.flex = '1';
     confirmRow.appendChild(confirmEl);
