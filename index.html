@@ -1626,7 +1626,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.94</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.11.95</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -4821,8 +4821,29 @@ function tuckUserMenu(m){
   m.style.borderTopWidth = '0';
   const sp = document.createElement('div'); sp.style.cssText = 'height:' + T + 'px; pointer-events:none;'; m.insertBefore(sp, m.firstChild);
   const sh = document.createElement('div'); sh.style.cssText = 'position:absolute; left:0; right:0; top:' + T + 'px; height:30px; pointer-events:none; background:linear-gradient(rgba(0,0,0,.65), rgba(0,0,0,0));'; m.appendChild(sh);
+  // drop-down: the card is revealed from behind the bar, top to bottom
+  try{
+    if(!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) && m.animate){
+      const h = m.offsetHeight;
+      m.animate([{ clipPath:'inset(' + T + 'px -50px ' + (h - T) + 'px -50px)' }, { clipPath:'inset(' + T + 'px -50px -50px -50px)' }], { duration:320, easing:'cubic-bezier(.3,.7,.3,1)' });
+    }
+  }catch(e){}
 }
-function closeUserMenu(){ const m = document.getElementById('user-menu'); if(m) m.remove(); const b = document.getElementById('user-menu-btn'); if(b) b.classList.remove('open'); }
+function closeUserMenu(){
+  const m = document.getElementById('user-menu');
+  if(m){
+    m.id = 'user-menu-closing';
+    let done = false; const fin = () => { if(!done){ done = true; m.remove(); } };
+    try{
+      if(!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) && m.animate && m.style.clipPath){
+        const h = m.offsetHeight, T = 16;
+        m.style.pointerEvents = 'none';
+        const a = m.animate([{ clipPath:'inset(' + T + 'px -50px -50px -50px)' }, { clipPath:'inset(' + T + 'px -50px ' + (h - T) + 'px -50px)' }], { duration:170, easing:'ease-in', fill:'forwards' });
+        a.onfinish = fin; setTimeout(fin, 260);
+      } else fin();
+    }catch(e){ fin(); }
+  }
+  const b = document.getElementById('user-menu-btn'); if(b) b.classList.remove('open'); }
 function toggleUserMenu(){
   if(document.getElementById('user-menu')){ closeUserMenu(); return; }
   const row = document.getElementById('logged-in-tab-row'); if(!row) return;
