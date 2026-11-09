@@ -6429,7 +6429,7 @@ function renderCoverResults(results, idx){
     const confirmRow = document.createElement('div');
     confirmRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:16px;';
     const confirmEl = buildSwapConfirm(r.worker.id, idx, coverWorker.id, coverWorker.name, runCoverSearch);
-    confirmEl.style.flex = '1';
+    confirmEl.style.flex = '1'; confirmEl.style.marginTop = '0';
     confirmRow.appendChild(confirmEl);
     confirmRow.insertAdjacentHTML('beforeend', favoriteHeartHtml(r.worker.id));
     detail.appendChild(confirmRow);
@@ -6716,7 +6716,7 @@ function renderTradeResults(){
     const confirmRow = document.createElement('div');
     confirmRow.style.cssText = 'display:flex; align-items:center; gap:10px; margin-top:16px;';
     const confirmEl = buildSwapConfirm(r.worker.id, idx, tradeA.id, tradeA.name, runTradeSearch, 'timeswap');
-    confirmEl.style.flex = '1';
+    confirmEl.style.flex = '1'; confirmEl.style.marginTop = '0';
     confirmRow.appendChild(confirmEl);
     confirmRow.insertAdjacentHTML('beforeend', favoriteHeartHtml(r.worker.id));
     detail.appendChild(confirmRow);
