@@ -518,8 +518,9 @@
   }
   .custom-select-trigger:focus{ outline:none; border-color: var(--cyan); }
   .custom-select-trigger .csr-row-inner{ flex:1; display:flex; justify-content:space-between; align-items:center; min-width:0; }
-  .custom-select-trigger::after{
-    content: '▾'; color: var(--text-dim); margin-left:10px; flex-shrink:0;
+  .custom-select-trigger::after{   /* same thin chevron as the 24h time boxes */
+    content:''; width:12px; height:8px; margin-left:10px; flex-shrink:0;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238b97b8' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
   }
   .custom-select-list{
     position:absolute; z-index:20;
@@ -1254,14 +1255,14 @@
   div.area-card > .ac-ic{ width:50px; height:auto; border-radius:0; border:0; }
   div.area-card > div:not(.ac-ic){ padding:16px 0; align-self:center; }
   /* FERRAMENTAS cards: same look as the ÁREA PESSOAL cards (icon block on the left edge, no arrow) */
-  #panel-tools .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
-  #panel-tools .tool-card > .tool-arrow{ display:none; }
-  #panel-tools .tool-card > .tool-ic{ width:50px; height:auto; border-radius:0; border:0; background:#0f2236; color:#4fd1f0; }
-  html.themed #panel-tools .tool-card{ border-radius:var(--r); }
-  html.themed #panel-tools .tool-card > .tool-ic{ background:var(--panel-2); color:var(--text); }
-  #panel-tools .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
-  #panel-tools .tool-name{ font-size:15px; letter-spacing:.12em; }
-  #panel-tools .tool-desc{ font-size:13px; margin-top:4px; }
+  #panel-tools .tool-card, #so-menu .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
+  #panel-tools .tool-card > .tool-arrow, #so-menu .tool-card > .tool-arrow{ display:none; }
+  #panel-tools .tool-card > .tool-ic, #so-menu .tool-card > .tool-ic{ width:50px; height:auto; border-radius:0; border:0; background:#0f2236; color:#4fd1f0; }
+  html.themed #panel-tools .tool-card, html.themed #so-menu .tool-card{ border-radius:var(--r); }
+  html.themed #panel-tools .tool-card > .tool-ic, html.themed #so-menu .tool-card > .tool-ic{ background:var(--panel-2); color:var(--text); }
+  #panel-tools .tool-card > div:not(.tool-ic), #so-menu .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
+  #panel-tools .tool-name, #so-menu .tool-name{ font-size:15px; letter-spacing:.12em; }
+  #panel-tools .tool-desc, #so-menu .tool-desc{ font-size:13px; margin-top:4px; }
   .area-card .ac-s{ font-size:13px; color:var(--text-dim); margin-top:4px; }
   /* favourites: heart on each card; chosen ones go to the top, set apart, in strong yellow */
   .area-card .ac-fav{ flex:none; background:none; border:0; padding:6px; margin:-6px 0; cursor:pointer; color:#5a6788; display:inline-flex; -webkit-tap-highlight-color:transparent; }
@@ -1271,7 +1272,7 @@
   .area-card.fav .ac-fav{ color:var(--amber); }
   .area-card.fav .ac-fav svg{ fill:currentColor; }
   .area-favlbl{ font-size:10.5px; font-style:italic; letter-spacing:.06em; color:rgba(255,176,32,.6); margin:0 4px 5px; text-align:right; }
-  #area-hub-sep{ height:2px; background:linear-gradient(90deg, transparent, #ffb020 20%, #ffb020 80%, transparent); opacity:.55; margin:34px 0 46px; }
+  #area-hub-sep{ height:2px; background:linear-gradient(90deg, transparent, #ffb020 20%, #ffb020 80%, transparent); opacity:.55; margin:16px 0 22px; }
   .area-card .ac-cnt{ display:none; font-family:var(--mono); font-size:11px; background:var(--text); color:#0b1220; border-radius:5px; padding:1px 7px; }
   .area-card .ac-cnt.on{ display:inline-block; }
   .area-card .ac-dot{ width:8px; height:8px; border-radius:50%; background:var(--nogo); display:none; }
@@ -1967,8 +1968,8 @@
     <div class="context-line hidden" id="extra-context"></div>
     <div id="extra-times" class="hidden" style="margin:0 0 14px;">
       <div style="display:flex; gap:10px;">
-        <div style="flex:1; min-width:0;"><label for="extra-from" style="display:block; font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">DE</label><select id="extra-from" class="extra-time-sel" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark; appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:30px; background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%3E%3Cpath%20d=%27M1%201.5l5%205%205-5%27%20fill=%27none%27%20stroke=%27%238b97b8%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E); background-repeat:no-repeat; background-position:right 12px center;"></select></div>
-        <div style="flex:1; min-width:0;"><label for="extra-to" style="display:block; font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">ATÉ</label><select id="extra-to" class="extra-time-sel" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark; appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:30px; background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%3E%3Cpath%20d=%27M1%201.5l5%205%205-5%27%20fill=%27none%27%20stroke=%27%238b97b8%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E); background-repeat:no-repeat; background-position:right 12px center;"></select></div>
+        <div style="flex:1; min-width:0;"><label for="extra-from" style="display:block; text-align:center; font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">DE</label><select id="extra-from" class="extra-time-sel" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark; appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:30px; background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%3E%3Cpath%20d=%27M1%201.5l5%205%205-5%27%20fill=%27none%27%20stroke=%27%238b97b8%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E); background-repeat:no-repeat; background-position:right 12px center;"></select></div>
+        <div style="flex:1; min-width:0;"><label for="extra-to" style="display:block; text-align:center; font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">ATÉ</label><select id="extra-to" class="extra-time-sel" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark; appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:30px; background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%3E%3Cpath%20d=%27M1%201.5l5%205%205-5%27%20fill=%27none%27%20stroke=%27%238b97b8%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E); background-repeat:no-repeat; background-position:right 12px center;"></select></div>
       </div>
       <div id="extra-times-err" style="display:none; margin-top:8px; font-size:12.5px; color:#ff6b6b;"></div>
     </div>
@@ -1976,7 +1977,7 @@
     <button class="btn" id="extra-confirm-btn" disabled>Confirmar</button>
 
     <div class="recent-swaps-section">
-      <div class="results-head"><span>STAFF COM HORAS EXTRA</span></div>
+      <div class="results-head"><span id="extra-list-title">STAFF COM HORAS EXTRA</span></div>
       <div id="extra-hours-list"></div>
     </div>
   </div>
@@ -2514,11 +2515,11 @@
         <div class="turnaround-row-pair">
           <div class="turnaround-field-half">
             <div><span class="turnaround-field-label">Novo Início</span></div>
-            <input type="time" id="schedule-override-start-input">
+            <select id="schedule-override-start-input" class="extra-time-sel" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark; appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:30px; background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%3E%3Cpath%20d=%27M1%201.5l5%205%205-5%27%20fill=%27none%27%20stroke=%27%238b97b8%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E); background-repeat:no-repeat; background-position:right 12px center;"></select>
           </div>
           <div class="turnaround-field-half">
             <div><span class="turnaround-field-label">Novo Fim</span></div>
-            <input type="time" id="schedule-override-end-input">
+            <select id="schedule-override-end-input" class="extra-time-sel" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark; appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:30px; background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%3E%3Cpath%20d=%27M1%201.5l5%205%205-5%27%20fill=%27none%27%20stroke=%27%238b97b8%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E); background-repeat:no-repeat; background-position:right 12px center;"></select>
           </div>
         </div>
         <div style="margin:12px 0 4px;">
@@ -7180,7 +7181,7 @@ function setExtraTime(id, v){
   sel.value = v;
 }
 (function(){
-  ['extra-from','extra-to'].forEach(id => {
+  ['extra-from','extra-to','schedule-override-start-input','schedule-override-end-input'].forEach(id => {
     const sel = document.getElementById(id);
     for(let m = 0; m < 24*60; m += 15){
       const v = String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
@@ -7222,6 +7223,7 @@ function renderExtraHoursList(){
       return String(a.worker.name).localeCompare(String(b.worker.name), 'pt');
     });
 
+  { const t = document.getElementById('extra-list-title'); if(t) t.innerHTML = '<b style="font-weight:800; color:#fff;">' + entries.length + '</b> STAFF COM HORAS EXTRA'; }
   if(entries.length === 0){
     list.innerHTML = '<div class="empty-state" style="padding:16px 10px;">Sem horas extra marcadas</div>';
     return;
@@ -9186,8 +9188,8 @@ function updateScheduleOverrideContext(){
   const overriddenTag = entry.overridden ? ' <span style="color:var(--amber);">(já atualizado)</span>' : '';
   ctx.innerHTML = '<b>'+escapeHtml(scheduleOverrideWorker.name)+'</b> está escalado '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+' em '+fmtDateLabel(idx)+'.'+coveringTag+overriddenTag;
   inputsBox.classList.remove('hidden');
-  document.getElementById('schedule-override-start-input').value = entry.start.slice(0,2)+':'+entry.start.slice(2,4);
-  document.getElementById('schedule-override-end-input').value = entry.end.slice(0,2)+':'+entry.end.slice(2,4);
+  setExtraTime('schedule-override-start-input', entry.start.slice(0,2)+':'+entry.start.slice(2,4));
+  setExtraTime('schedule-override-end-input', entry.end.slice(0,2)+':'+entry.end.slice(2,4));
   soPaintForChips(forRemarkFor(scheduleOverrideWorker.id, idx));
 }
 function soPaintForChips(on){
