@@ -3459,7 +3459,7 @@ function partnerScheduleLabel(partnerName, idx){
   const partner = DATA.workers.find(w => w.name === partnerName);
   if(!partner) return '';
   const e = getEffectiveEntry(partner, idx);
-  if(e.status === 'work') return fmtHHMM(e.start)+' – '+fmtHHMM(e.end);
+  if(e.status === 'work') return fmtHHMM(e.start)+' - '+fmtHHMM(e.end);
   if(e.status === 'off') return escapeHtml(e.codes[0] || 'FOLGA');
   return '';
 }
@@ -3675,7 +3675,7 @@ function buildRuleCheckHtml(issues){
   const html0 = ruleLinesHtml(consecIssue, restIssue);
   let html = html0;
   if(medIssue){
-    const medTimeLabel = (medIssue.start && medIssue.end) ? ' - '+fmtHHMM(medIssue.start)+'-'+fmtHHMM(medIssue.end) : '';
+    const medTimeLabel = (medIssue.start && medIssue.end) ? ' - '+fmtHHMM(medIssue.start)+' - '+fmtHHMM(medIssue.end) : '';
     html += '<div style="margin-top:6px;">Remarks: <span style="color:#5FA8FF;">Consulta médica'+medTimeLabel+'</span></div>';
   }
   otherIssues.forEach(iss => {
@@ -4073,7 +4073,7 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
   // that's being covered/traded away, which is exactly the time a notification to the other
   // person should reference ("thanks for covering me at 08:00-16:00"), not their own schedule.
   const originalEntry = getEntry(worker, idx);
-  const shiftTimeText = originalEntry.status === 'work' ? (fmtHHMM(originalEntry.start)+'-'+fmtHHMM(originalEntry.end)) : null;
+  const shiftTimeText = originalEntry.status === 'work' ? (fmtHHMM(originalEntry.start)+' - '+fmtHHMM(originalEntry.end)) : null;
   // Who was actually working: when the person saved here was OFF, they are the one covering and the
   // notification must go the other way round (see functions_index.js). The partner's own shift time is
   // stored too, since that is the shift being covered in that case.
@@ -4082,7 +4082,7 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
   try{
     const pw = partner ? DATA.workers.find(w => w.id === partner.id) : null;
     const pe = pw ? getEntry(pw, idx) : null;
-    if(pe && pe.status === 'work') partnerShiftTimeText = fmtHHMM(pe.start)+'-'+fmtHHMM(pe.end);
+    if(pe && pe.status === 'work') partnerShiftTimeText = fmtHHMM(pe.start)+' - '+fmtHHMM(pe.end);
   }catch(e){}
   // calendarDate is the real, month-independent anchor for this swap (e.g. "2026-09-16") — idx
   // alone is just a position within WHATEVER month happens to be loaded at the time something
@@ -4190,13 +4190,13 @@ function buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type, sende
 
   let candidateBefore, candidateAfter, partnerBefore, partnerAfter;
   if(type === 'timeswap'){
-    candidateBefore = candidateEntry.status === 'work' ? fmtHHMM(candidateEntry.start)+'-'+fmtHHMM(candidateEntry.end) : '—';
-    partnerBefore = partnerEntry.status === 'work' ? fmtHHMM(partnerEntry.start)+'-'+fmtHHMM(partnerEntry.end) : '—';
+    candidateBefore = candidateEntry.status === 'work' ? fmtHHMM(candidateEntry.start)+' - '+fmtHHMM(candidateEntry.end) : '—';
+    partnerBefore = partnerEntry.status === 'work' ? fmtHHMM(partnerEntry.start)+' - '+fmtHHMM(partnerEntry.end) : '—';
     candidateAfter = partnerBefore;
     partnerAfter = candidateBefore;
   } else {
     candidateBefore = candidateEntry.status === 'off' ? (candidateEntry.codes[0] || 'off') : '—';
-    partnerBefore = partnerEntry.status === 'work' ? fmtHHMM(partnerEntry.start)+'-'+fmtHHMM(partnerEntry.end) : '—';
+    partnerBefore = partnerEntry.status === 'work' ? fmtHHMM(partnerEntry.start)+' - '+fmtHHMM(partnerEntry.end) : '—';
     candidateAfter = partnerBefore;
     partnerAfter = candidateBefore;
   }
@@ -4302,7 +4302,7 @@ function buildSwapConfirm(workerId, idx, partnerId, partnerName, onDone, type){
         });
       };
       const asksOn = !!window.SWAP_ASKS_ON;   // what the person sees on the button (PEDIR) must match what it does
-      const medRemarkHtml = hasMedIssue ? '<div style="margin-top:8px;">Remarks: <span style="color:#5FA8FF;">Consulta médica - '+fmtHHMM(medTime.start)+'-'+fmtHHMM(medTime.end)+'</span></div>' : '';
+      const medRemarkHtml = hasMedIssue ? '<div style="margin-top:8px;">Remarks: <span style="color:#5FA8FF;">Consulta médica - '+fmtHHMM(medTime.start)+' - '+fmtHHMM(medTime.end)+'</span></div>' : '';
       showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5;">'+(asksOn ? 'Pedir troca a' : 'Confirmar troca com')+'<b style="display:block; margin-top:2px; font-size:16px;">'+escapeHtml(candidateName)+(candidateWorker && candidateWorker.id ? ' <span style="display:inline-block; background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; margin-left:6px; font:700 11px var(--mono); vertical-align:1px;">'+escapeHtml(String(candidateWorker.id))+'</span>' : '')+'</b></div>'+buildSwapPreviewHtml(workerId, partnerId, partnerName, idx, type)+medRemarkHtml, async () => {
         const anonymous = document.getElementById('confirm-modal-anon-checkbox').checked;
         btn.disabled = true;
@@ -6326,17 +6326,17 @@ function updateCoverContext(){
   let showDeleteBtn = false;
   if(entry.status === 'work'){
     if(entry.covering){
-      ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' – '+fmtHHMM(entry.end)+'</b><br>A COBRIR<br><b>'+escapeHtml(entry.covering)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.covering, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>A COBRIR<br><b>'+escapeHtml(entry.covering)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.covering, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
       btn.disabled = true;
       showDeleteBtn = true;
     } else if(entry.swappedWith){
-      ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' – '+fmtHHMM(entry.end)+'</b><br>TROCA DE TURNO COM<br><b>'+escapeHtml(entry.swappedWith)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.swappedWith, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>TROCA DE TURNO COM<br><b>'+escapeHtml(entry.swappedWith)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.swappedWith, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
       btn.disabled = true;
       showDeleteBtn = true;
     } else {
       const ov = SCHEDULE_OVERRIDES[coverWorker.id + ':' + idx];
       if(ov && ov.originalStart && (ov.originalStart !== ov.start || ov.originalEnd !== ov.end)){
-        ctx.innerHTML = '<b><span class="old-time-strike">'+fmtHHMM(ov.originalStart)+'-'+fmtHHMM(ov.originalEnd)+'</span> → '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>';
+        ctx.innerHTML = '<b><span class="old-time-strike">'+fmtHHMM(ov.originalStart)+' - '+fmtHHMM(ov.originalEnd)+'</span> → '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>';
       } else {
         if(isProTheme()){ ctx.innerHTML = proTicketHtml(entry, idx); ctx.classList.add('pro-ticket'); }
         else ctx.innerHTML = '<b>'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>' + dayDifficultyHtml(countCleanCoverCandidates(entry, coverWorker.id, idx));
@@ -6455,7 +6455,7 @@ function renderCoverResults(results, idx){
   box.innerHTML = '';
   document.getElementById('cover-clear-btn').classList.toggle('hidden', results.length === 0);
   if(results.length === 0){
-    box.innerHTML = '<div class="empty-state"><span class="big">NO CANDIDATES</span>Nobody else in the roster is free that day.</div>';
+    box.innerHTML = '<div class="empty-state"><span class="big">SEM RESULTADOS</span>Ninguém está livre nesse dia.</div>';
     return;
   }
   const sorted = [...results].sort((a,b) => {
@@ -6556,7 +6556,7 @@ function renderCoverResults(results, idx){
       const partnerWorker = DATA.workers.find(w => w.id === partner.withId);
       const partnerEntry = partnerWorker ? getEntry(partnerWorker, idx) : null;
       const partnerHadShift = partnerEntry && partnerEntry.status === 'work';
-      const ownNow = partnerHadShift ? fmtHHMM(partnerEntry.start)+'-'+fmtHHMM(partnerEntry.end) : '—';
+      const ownNow = partnerHadShift ? fmtHHMM(partnerEntry.start)+' - '+fmtHHMM(partnerEntry.end) : '—';
       const partnerNow = codeLabel;
       subHtml = '<span class="dot dot-white"></span>'+codeLabel+' → '+ownNow+
         '<br><span class="dot dot-purple"></span>'+(partnerHadShift ? ownNow : '—')+' → '+nowDisplay(partnerNow);
@@ -6666,7 +6666,7 @@ function updateTurnoContext(skipSliderReset){
   const deleteBtnHtml = '<div style="text-align:center;"><button type="button" id="turno-delete-swap-btn" class="flag-btn" style="margin-top:8px;">🗑 ELIMINAR TROCA</button></div>';
   if(entry.status === 'work'){
     if(entry.covering){
-      ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' – '+fmtHHMM(entry.end)+'</b><br>A COBRIR<br><b>'+escapeHtml(entry.covering)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.covering, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>A COBRIR<br><b>'+escapeHtml(entry.covering)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.covering, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
       btn.disabled = true;
       searchControls.classList.add('hidden');
       document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
@@ -6679,7 +6679,7 @@ function updateTurnoContext(skipSliderReset){
       return;
     }
     if(entry.swappedWith){
-      ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' – '+fmtHHMM(entry.end)+'</b><br>TROCA DE TURNO COM<br><b>'+escapeHtml(entry.swappedWith)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.swappedWith, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>TROCA DE TURNO COM<br><b>'+escapeHtml(entry.swappedWith)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.swappedWith, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
       btn.disabled = true;
       searchControls.classList.add('hidden');
       document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
@@ -6693,7 +6693,7 @@ function updateTurnoContext(skipSliderReset){
     }
     const ovTurno = SCHEDULE_OVERRIDES[tradeA.id + ':' + idx];
     if(ovTurno && ovTurno.originalStart && (ovTurno.originalStart !== ovTurno.start || ovTurno.originalEnd !== ovTurno.end)){
-      ctx.innerHTML = '<b>'+tradeA.name+'</b> works <span class="old-time-strike">'+fmtHHMM(ovTurno.originalStart)+'-'+fmtHHMM(ovTurno.originalEnd)+'</span> → '+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+' on '+fmtDateLabel(idx)+'.';
+      ctx.innerHTML = '<b>'+tradeA.name+'</b> works <span class="old-time-strike">'+fmtHHMM(ovTurno.originalStart)+' - '+fmtHHMM(ovTurno.originalEnd)+'</span> → '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+' on '+fmtDateLabel(idx)+'.';
     } else {
       if(isProTheme()){ ctx.innerHTML = proTicketHtml(entry, idx, true); ctx.classList.add('pro-ticket'); }
       else ctx.innerHTML = '<b>'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>';
@@ -6815,7 +6815,7 @@ function renderTradeResults(){
   box.innerHTML = '';
   document.getElementById('trade-clear-btn').classList.toggle('hidden', results.length === 0);
   if(results.length === 0){
-    box.innerHTML = '<div class="empty-state"><span class="big">NO MATCHES</span>Nobody else on '+fmtDateLabel(idx)+' has a shift starting at or after '+fmtMinAsTime(lastTrade.desiredMin)+'.</div>';
+    box.innerHTML = '<div class="empty-state"><span class="big">SEM RESULTADOS</span>Ninguém tem turno '+(/^(S[áa]bado|Domingo)/.test(fmtDateLong(idx)) ? 'no ' : 'na ')+fmtDateLong(idx)+' a começar às '+fmtMinAsTime(lastTrade.desiredMin)+' ou depois.</div>';
     return;
   }
   const head = document.createElement('div');
@@ -7080,14 +7080,14 @@ function updateExtraContext(){
   const tbox = document.getElementById('extra-times');
   tbox.classList.add('hidden'); EXTRA_LIMIT = null;
   if(entry.status === 'work' && !shortShift){
-    ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Não podes fazer Horas-Extra</div>';
+    ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Não podes fazer Horas-Extra</div>';
     btn.disabled = true;
   } else if(already){
     ctx.innerHTML = '<b>'+escapeHtml(extraWorker.name)+'</b> is already marked as doing horas extra on '+fmtDateLabel(idx)+'.';
     btn.disabled = true;
   } else {
     if(shortShift){
-      ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Ainda podes fazer Horas-Extra</div>';
+      ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Ainda podes fazer Horas-Extra</div>';
     } else {
     const codeLabel = (entry.codes && entry.codes[0]) ? entry.codes[0] : 'off';
     ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+escapeHtml(codeLabel)+'</b>';
@@ -7236,8 +7236,8 @@ function showSwapGlimpse(idx, wk){
   if(!rec) return;
   const original = getEntry(wk, idx);
   const resolved = getEffectiveEntry(wk, idx);
-  const beforeLabel = original.status === 'work' ? fmtHHMM(original.start)+'-'+fmtHHMM(original.end) : (original.codes[0] || 'Folga');
-  const afterLabel = resolved.status === 'work' ? fmtHHMM(resolved.start)+'-'+fmtHHMM(resolved.end) : (resolved.codes[0] || 'Folga');
+  const beforeLabel = original.status === 'work' ? fmtHHMM(original.start)+' - '+fmtHHMM(original.end) : (original.codes[0] || 'Folga');
+  const afterLabel = resolved.status === 'work' ? fmtHHMM(resolved.start)+' - '+fmtHHMM(resolved.end) : (resolved.codes[0] || 'Folga');
   const verb = rec.type === 'timeswap' ? 'Troca de turno' : 'Troca';
   const html = '<div style="text-align:left;">'+
     '<div style="font-family:var(--sans); font-size:12px; color:var(--text-dim); margin-bottom:6px;">'+verb+' &middot; '+fmtDateLabel(idx)+'</div>'+
@@ -7438,7 +7438,7 @@ function updateRequestContext(){
       return;
     }
     if(isProTheme()){ ctx.innerHTML = proTicketHtml(entry, idx, true); ctx.classList.add('pro-ticket'); }
-    else ctx.innerHTML = '<b>'+escapeHtml(requestPosterWorker.name)+'</b> trabalha '+fmtHHMM(entry.start)+'-'+fmtHHMM(entry.end)+' em '+fmtDateLabel(idx)+'.';
+    else ctx.innerHTML = '<b>'+escapeHtml(requestPosterWorker.name)+'</b> trabalha '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+' em '+fmtDateLabel(idx)+'.';
   } else {
     if(entry.status !== 'work'){
       ctx.innerHTML = 'Para pedir troca de turno, tens de estar escalado para trabalhar nesse dia.';
@@ -7446,7 +7446,7 @@ function updateRequestContext(){
       return;
     }
     if(isProTheme()){ ctx.innerHTML = proTicketHtml(entry, idx, true); ctx.classList.add('pro-ticket'); }
-    else ctx.innerHTML = '<b>'+escapeHtml(requestPosterWorker.name)+'</b> trabalha '+fmtHHMM(entry.start)+'-'+fmtHHMM(entry.end)+' em '+fmtDateLabel(idx)+'.';
+    else ctx.innerHTML = '<b>'+escapeHtml(requestPosterWorker.name)+'</b> trabalha '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+' em '+fmtDateLabel(idx)+'.';
   }
   btn.disabled = false;
 }
@@ -9120,7 +9120,7 @@ function updateScheduleOverrideContext(){
   }
   const coveringTag = entry.covering ? ' <span style="color:var(--swap);">(a cobrir '+escapeHtml(entry.covering)+')</span>' : '';
   const overriddenTag = entry.overridden ? ' <span style="color:var(--amber);">(já atualizado)</span>' : '';
-  ctx.innerHTML = '<b>'+escapeHtml(scheduleOverrideWorker.name)+'</b> está escalado '+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+' em '+fmtDateLabel(idx)+'.'+coveringTag+overriddenTag;
+  ctx.innerHTML = '<b>'+escapeHtml(scheduleOverrideWorker.name)+'</b> está escalado '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+' em '+fmtDateLabel(idx)+'.'+coveringTag+overriddenTag;
   inputsBox.classList.remove('hidden');
   document.getElementById('schedule-override-start-input').value = entry.start.slice(0,2)+':'+entry.start.slice(2,4);
   document.getElementById('schedule-override-end-input').value = entry.end.slice(0,2)+':'+entry.end.slice(2,4);
@@ -9192,8 +9192,8 @@ function renderScheduleOverrideList(){
     const nameHtml = past ? '<span class="csr-past">'+escapeHtml(e.worker.name)+'</span>' : escapeHtml(e.worker.name);
     const changed = (e.ov.originalStart && e.ov.originalStart !== e.ov.start) || (e.ov.originalEnd && e.ov.originalEnd !== e.ov.end);
     const timeLine = changed
-      ? '<span class="old-time-strike">'+fmtHHMM(e.ov.originalStart)+'-'+fmtHHMM(e.ov.originalEnd)+'</span> → '+fmtHHMM(e.ov.start)+'-'+fmtHHMM(e.ov.end)
-      : fmtHHMM(e.ov.start)+'-'+fmtHHMM(e.ov.end);
+      ? '<span class="old-time-strike">'+fmtHHMM(e.ov.originalStart)+' - '+fmtHHMM(e.ov.originalEnd)+'</span> → '+fmtHHMM(e.ov.start)+' - '+fmtHHMM(e.ov.end)
+      : fmtHHMM(e.ov.start)+' - '+fmtHHMM(e.ov.end);
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
       '<div class="row-sub">'+fmtDateLabel(e.idx)+'<br>'+timeLine+'</div></div>'+
       '<button type="button" class="recent-swap-delete" title="Remover alteração">✕</button>';
