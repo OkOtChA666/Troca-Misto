@@ -634,6 +634,8 @@
   .fl-meta{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; color:#5f6a82; margin:10px 2px; }
   .fl-cnt{ display:inline-block; margin-left:6px; font-size:10.5px; padding:2px 6px; border-radius:9px; background:rgba(255,179,0,.14); color:var(--amber); }
   .fl-cnt:empty{ display:none; }
+  #my-swaps-title-head{ display:none; }
+  .swap-sort-tab .fl-cnt{ font-weight:700; font-size:10px; padding:1px 6px; margin-left:5px; letter-spacing:0; }
   .swap-sort-tab.active .fl-cnt{ background:rgba(95,224,255,.16); color:var(--cyan); }
   .fl-row{ display:grid; grid-template-columns:54px 1fr auto; gap:10px; align-items:center; background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
   .fl-row.past{ opacity:.4; }
@@ -5352,6 +5354,15 @@ function renderSwapsListGeneric(showAll, cfg){
     .filter(e => !cfg.personFilter || cfg.personFilter(e));
 
   const sortMode = cfg.sortModeGetter ? cfg.sortModeGetter() : 'recentes';
+  if(cfg.tabPrefix){   // AS MINHAS TROCAS: the count lives on the tabs (no extra heading line)
+    const live = entries.filter(e => !isPastDay(e.idx) && swapStillPendingToday(e)).length;
+    const past = entries.filter(e => isPastDay(e.idx) || (isTodayDay(e.idx) && !swapStillPendingToday(e))).length;
+    [['recentes', live], ['proximas', live], ['passadas', past]].forEach(([k, n]) => {
+      const sp = document.querySelector('#' + cfg.tabPrefix + k + ' span'); if(!sp) return;
+      let c = sp.querySelector('.fl-cnt'); if(!c){ c = document.createElement('b'); c.className = 'fl-cnt'; sp.appendChild(c); }
+      c.textContent = n > 0 ? String(n) : '';
+    });
+  }
   if(sortMode === 'passadas'){
     // Nothing actually gets deleted when a day passes — it's just hidden from the other
     // two views. This is that same data, surfaced as a genuine month-long audit trail.
@@ -5490,7 +5501,7 @@ const TURNO_SWAPS_CFG = { listId:'recent-swaps-turno-list', moreBtnId:'recent-sw
 // No wantedType — combines Dia de Folga and Troca de Turno together, since "as minhas
 // trocas" means everything the logged-in person is part of, not one kind specifically.
 const MY_SWAPS_CFG = {
-  listId:'my-swaps-list', moreBtnId:'my-swaps-more-btn', titleId:'my-swaps-title',
+  listId:'my-swaps-list', moreBtnId:'my-swaps-more-btn', titleId:'my-swaps-title', tabPrefix:'mine-sort-',
   expandedGetter: () => myTrocasExpanded, sortModeGetter: () => myTrocasSortMode,
   useReasonConfirm: true, // this list uses the confirmation+reason modal instead of a password — see renderSwapsListGeneric's delete button logic
   personFilter: (e) => {
