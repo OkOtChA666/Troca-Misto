@@ -2436,6 +2436,13 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Dica «Como fazer uma troca»</span>
+        <span class="pill-toggle">
+          <input type="checkbox" id="tip-swap-toggle">
+          <span class="pill-track"></span>
+        </span>
+      </label>
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Pedidos de troca (a outra pessoa tem de aceitar)</span>
         <span class="pill-toggle">
           <input type="checkbox" id="swap-asks-enabled-toggle">
@@ -4497,6 +4504,10 @@ function askLive(){
       window.SWAP_ASKS_ON = !!(sn.exists && sn.data().enabled);
       try{ document.getElementById('swap-asks-enabled-toggle').checked = window.SWAP_ASKS_ON; }catch(e){}
     });
+    db.collection('data').doc(gScope('tipSwapCfg')).onSnapshot(sn => {
+      window.TIP_ON = sn.exists ? sn.data().enabled !== false : true;
+      try{ document.getElementById('tip-swap-toggle').checked = window.TIP_ON; }catch(e){}
+    });
     db.collection('data').doc(gScope('coordNotesCfg')).onSnapshot(sn => {
       window.COORD_SHOW = !!(sn.exists && sn.data().show);
       try{ document.getElementById('coord-notes-toggle').checked = window.COORD_SHOW; }catch(e){}
@@ -4506,6 +4517,9 @@ function askLive(){
 }
 setTimeout(askLive, 0);
 setInterval(() => { try{ renderNotificationsBadge(); }catch(e){} }, 60000);   // a request that just ran out of time drops off the counter
+document.getElementById('tip-swap-toggle').addEventListener('change', async (e) => {
+  window.TIP_ON = e.target.checked; await dbSetShared('tipSwapCfg', { enabled: e.target.checked });
+});
 document.getElementById('coord-notes-toggle').addEventListener('change', async (e) => {
   window.COORD_SHOW = e.target.checked; await dbSetShared('coordNotesCfg', { show: e.target.checked });
   try{ renderNotificationsBadge(); }catch(x){}
@@ -11011,6 +11025,39 @@ setTimeout(() => { try{ if(sessionStorage.getItem('reopenUpload') === '1'){ sess
     location.reload();
   } catch(e){}
 })();
+
+
+// ---------- first-time tip: "COMO FAZER UMA TROCA" (shown once per phone, right after the first list of names) ----------
+window.TIP_ON = (window.TIP_ON === undefined) ? true : window.TIP_ON;
+function swapTipSeen(){ try{ return localStorage.getItem('trocaMistoTipSwap') === '1'; }catch(e){ return true; } }
+function maybeShowSwapTip(boxId){
+  if(!window.TIP_ON || swapTipSeen() || document.getElementById('swap-tip')) return;
+  setTimeout(() => {
+    if(!window.TIP_ON || swapTipSeen() || document.getElementById('swap-tip')) return;
+    const box = document.getElementById(boxId); const row = box && box.querySelector('.row');
+    if(!row || !row.offsetParent) return;
+    row.scrollIntoView({ block:'center' });
+    setTimeout(() => {
+      const r = row.getBoundingClientRect(), vh = window.innerHeight;
+      if(r.height < 10) return;
+      const o = document.createElement('div'); o.id = 'swap-tip';
+      o.style.cssText = 'position:fixed; inset:0; z-index:9999;';
+      const below = r.bottom + 230 < vh, top = below ? (r.bottom + 58) : Math.max(12, r.top - 200);
+      o.innerHTML = '<div style="position:absolute; left:' + (r.left - 6) + 'px; top:' + (r.top - 4) + 'px; width:' + (r.width + 12) + 'px; height:' + (r.height + 8) + 'px; border-radius:14px; box-shadow:0 0 0 9999px rgba(4,7,14,.82); border:2px solid var(--amber);"></div>' +
+        '<div style="position:absolute; left:' + (r.left + r.width * 0.28) + 'px; top:' + (below ? (r.bottom - 8) : (r.top - 44)) + 'px; font-size:34px; filter:drop-shadow(0 2px 6px #000); transform:rotate(' + (below ? -15 : 165) + 'deg);">👆</div>' +
+        '<div style="position:absolute; left:16px; right:16px; top:' + top + 'px; background:var(--panel); border:1px solid var(--amber); border-radius:14px; padding:14px 16px; box-shadow:0 10px 30px rgba(0,0,0,.6); font-family:var(--sans);">' +
+          '<div style="font:800 13px var(--sans); letter-spacing:.1em; color:var(--amber); margin-bottom:6px;">COMO FAZER UMA TROCA</div>' +
+          '<div style="font:500 14.5px/1.45 var(--sans); color:var(--text);">Toca no <b>nome</b> de uma pessoa para ver os detalhes e fazer a troca.</div>' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;"><span style="font:600 12px var(--sans); color:var(--text-dim);">Só aparece uma vez</span><button type="button" id="swap-tip-ok" style="background:var(--amber); color:#1a1200; border:0; font:800 12px var(--sans); letter-spacing:.1em; padding:10px 18px; border-radius:9px; cursor:pointer;">PERCEBI</button></div>' +
+        '</div>';
+      document.body.appendChild(o);
+      const close = () => { try{ localStorage.setItem('trocaMistoTipSwap', '1'); }catch(e){} o.remove(); };
+      document.getElementById('swap-tip-ok').addEventListener('click', close);
+    }, 450);
+  }, 700);
+}
+{ const _rtr = renderTradeResults; renderTradeResults = function(){ const v = _rtr.apply(this, arguments); try{ maybeShowSwapTip('trade-results'); }catch(e){} return v; }; }
+{ const _rcr = renderCoverResults; renderCoverResults = function(){ const v = _rcr.apply(this, arguments); try{ maybeShowSwapTip('cover-results'); }catch(e){} return v; }; }
 
 // ===================== AS MINHAS TAREFAS =====================
 // Shows the logged-in agent's own tasks for today, read from the copy that the scheduled job
