@@ -6426,7 +6426,7 @@ function renderCoverResults(results, idx){
     const matchingRequest = !swapped ? findMatchingOpenRequest(r.worker.id, idx, 'cover') : null;
     const starBtnId = 'cover-starbtn-' + r.worker.id + '-' + idx;
     const starHtml = matchingRequest ? ' <button type="button" id="'+starBtnId+'" style="background:none; border:none; padding:0; cursor:pointer; font-size:15px; vertical-align:middle; position:relative; top:-4px;" title="Tem um pedido aberto em PEDIDOS">📌</button>' : '';
-    const nameHtml = r.worker.name + codeBadge + issueBadge + starHtml +
+    const nameHtml = escapeHtml(niceListName(r.worker.name)) + codeBadge + issueBadge + starHtml +
       (partner ? ' &nbsp;⇄&nbsp; <span class="swap-partner">'+escapeHtml(partner.withName)+'</span>' : '') +
       (flagged ? ' <span class="flag-indicator">⚠ FLAGGED</span>' : '');
     const reportBtnId = 'reportbtn-' + r.worker.id + '-' + idx;
