@@ -319,7 +319,7 @@
   html.themed .pds-chip.on{ background:var(--acc); border-color:var(--acc); color:var(--on-acc); opacity:1; }
   html.themed .pds-chip.on .w{ color:var(--on-acc); opacity:.75; }
   html.themed .pds-chip.on .b{ background:var(--on-acc); }
-  html.themed #cover-context-label{ display:none !important; }
+  html.themed #turno-context-label, html.themed #cover-context-label{ display:none !important; }
   html.themed .context-line.pro-ticket{ position:relative; overflow:hidden; background:var(--tk-bg); color:var(--tk-ink); border:none; border-radius:var(--r2); padding:16px 18px 0; text-align:left; margin:12px 0 20px; }
   html.themed .context-line.pro-ticket b{ color:inherit; }
   .pt-time:last-child{ padding-bottom:20px; }
@@ -1836,6 +1836,7 @@
       <div id="pro-daystrip-trade" class="pds"></div>
     </div>
 
+    <label id="turno-context-label" class="hidden" style="text-align:center; margin-bottom:6px;">O TEU HORÁRIO</label>
     <div class="context-line hidden" id="turno-context"></div>
 
     <div id="turno-search-controls">
@@ -6655,10 +6656,11 @@ function updateTurnoContext(skipSliderReset){
   document.getElementById('trade-clear-btn').classList.add('hidden');
   document.getElementById('recent-swaps-turno-section').classList.remove('hidden');
   lastTrade = null;
-  if(!tradeA){ ctx.classList.add('hidden'); btn.disabled = true; searchControls.classList.add('hidden'); return; }
+  if(!tradeA){ ctx.classList.add('hidden'); document.getElementById('turno-context-label').classList.add('hidden'); btn.disabled = true; searchControls.classList.add('hidden'); return; }
   const idx = parseInt(document.getElementById('trade-a-date').value, 10);
   const entry = getEffectiveEntry(tradeA, idx);
   ctx.classList.remove('hidden');
+  document.getElementById('turno-context-label').classList.remove('hidden');
   const dblHtmlT = doubleBoxHtml(tradeA, idx);
   if(dblHtmlT){ ctx.innerHTML = dblHtmlT; btn.disabled = true; searchControls.classList.add('hidden'); wireDoubleClear(ctx, tradeA.id, idx, updateTurnoContext); return; }
   const deleteBtnHtml = '<div style="text-align:center;"><button type="button" id="turno-delete-swap-btn" class="flag-btn" style="margin-top:8px;">🗑 ELIMINAR TROCA</button></div>';
@@ -6694,7 +6696,7 @@ function updateTurnoContext(skipSliderReset){
       ctx.innerHTML = '<b>'+tradeA.name+'</b> works <span class="old-time-strike">'+fmtHHMM(ovTurno.originalStart)+'-'+fmtHHMM(ovTurno.originalEnd)+'</span> → '+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+' on '+fmtDateLabel(idx)+'.';
     } else {
       if(isProTheme()){ ctx.innerHTML = proTicketHtml(entry, idx, true); ctx.classList.add('pro-ticket'); }
-      else ctx.innerHTML = '<b>'+tradeA.name+'</b> works '+fmtHHMM(entry.start)+'–'+fmtHHMM(entry.end)+' on '+fmtDateLabel(idx)+'.';
+      else ctx.innerHTML = '<b>'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>';
     }
     btn.disabled = false;
     searchControls.classList.remove('hidden');
@@ -6720,7 +6722,7 @@ function updateTurnoContext(skipSliderReset){
       }, 'Delete2026', false);
     });
   } else {
-    ctx.innerHTML = '<b>'+tradeA.name+'</b> não está escalado para trabalhar '+fmtDateLabel(idx)+' — Escolhe um dia em que ele esteja efectivamente a trabalhar.';
+    ctx.innerHTML = '<b>'+escapeHtml((entry.codes && entry.codes[0]) || 'FOLGA')+'</b>';   // just the code (name and date are already selected above)
     btn.disabled = true;
     searchControls.classList.add('hidden');
   }
