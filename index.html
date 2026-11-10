@@ -1040,6 +1040,9 @@
   .row:last-child{ border-bottom:none; }
   .row-main{ flex:1 1 170px; min-width:0; }
   .row.has-av .row-main{ flex-basis:110px; }
+  .st-av-row{ width:40px; height:40px; border-radius:50%; overflow:hidden; flex:none; display:flex; align-items:center; justify-content:center; color:#fff; font:700 14px 'Instrument Sans',system-ui,sans-serif; box-shadow:0 0 0 1px #2a3552; transition: width .22s ease, height .22s ease, font-size .22s ease; }
+  .row.row-expanded .st-av-row{ width:84px; height:84px; font-size:29px; }
+  @media (prefers-reduced-motion: reduce){ .st-av-row{ transition:none; } }
   .recent-swap-delete{
     flex-shrink:0;
     width:24px; height:24px;
@@ -5186,7 +5189,7 @@ function avatarInner(id, name){
 }
 function avatarHtml(id, name, size){
   const ph = photoOf(id);
-  return '<div class="st-av" data-id="'+escapeHtml(String(id))+'" data-name="'+escapeHtml(name)+'" style="width:'+size+'px; height:'+size+'px; border-radius:50%; overflow:hidden; flex:none; display:flex; align-items:center; justify-content:center; background:'+avatarColor(id)+'; color:#fff; font:700 '+Math.round(size*0.34)+'px \'Instrument Sans\',system-ui,sans-serif; box-shadow:0 0 0 1px #2a3552;">'+avatarInner(id, name)+'</div>';
+  return '<div class="st-av st-av-row" data-id="'+escapeHtml(String(id))+'" data-name="'+escapeHtml(name)+'" style="background:'+avatarColor(id)+';">'+avatarInner(id, name)+'</div>';
 }
 function repaintAvatars(){
   document.querySelectorAll('.st-av').forEach(el => { el.innerHTML = avatarInner(el.dataset.id, el.dataset.name); });
@@ -5197,14 +5200,14 @@ function resizePhotoFile(file){
     const url = URL.createObjectURL(file); const img = new Image();
     img.onload = () => {
       try{
-        const S = 96, sw = img.naturalWidth, sh = img.naturalHeight, side = Math.min(sw, sh);
+        const S = 128, sw = img.naturalWidth, sh = img.naturalHeight, side = Math.min(sw, sh);
         const sx = (sw - side) / 2, sy = sh > sw ? Math.max(0, (sh - side) * 0.2) : 0;   // portrait photos: crop a little above the middle (faces are usually in the upper part)
         const c = document.createElement('canvas'); c.width = c.height = S;
         const x = c.getContext('2d'); x.fillStyle = '#0b1220'; x.fillRect(0, 0, S, S); x.drawImage(img, sx, sy, side, side, 0, 0, S, S);
         URL.revokeObjectURL(url);
         let q = 0.8, d = c.toDataURL('image/jpeg', q);
-        while(d.length > 9000 && q > 0.4){ q -= 0.1; d = c.toDataURL('image/jpeg', q); }
-        if(d.length > 12000) rej(new Error('big')); else res(d);
+        while(d.length > 13000 && q > 0.4){ q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+        if(d.length > 17000) rej(new Error('big')); else res(d);
       }catch(e){ rej(e); }
     };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad')); };
@@ -5268,12 +5271,12 @@ function openPhotoCrop(file, id){
     ov.querySelector('#pc-cancel').addEventListener('click', close);
     ov.querySelector('#pc-save').addEventListener('click', async () => {
       try{
-        const S = 96, side = BOX / sc;
+        const S = 128, side = BOX / sc;
         const c = document.createElement('canvas'); c.width = c.height = S;
         const x = c.getContext('2d'); x.fillStyle = '#0b1220'; x.fillRect(0, 0, S, S);
         x.drawImage(img, -tx / sc, -ty / sc, side, side, 0, 0, S, S);
         let q = 0.8, d = c.toDataURL('image/jpeg', q);
-        while(d.length > 9000 && q > 0.4){ q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+        while(d.length > 13000 && q > 0.4){ q -= 0.1; d = c.toDataURL('image/jpeg', q); }
         await savePhoto(id, d); close();
       }catch(e){ close(); showConfirmDialog('Não consegui guardar essa foto. Tenta outra.', () => {}, false, 'OK', false, null, '', true); }
     });
