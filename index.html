@@ -319,7 +319,7 @@
   html.themed .pds-chip.on{ background:var(--acc); border-color:var(--acc); color:var(--on-acc); opacity:1; }
   html.themed .pds-chip.on .w{ color:var(--on-acc); opacity:.75; }
   html.themed .pds-chip.on .b{ background:var(--on-acc); }
-  html.themed #turno-context-label, html.themed #cover-context-label{ display:none !important; }
+  html.themed #extra-context-label, html.themed #turno-context-label, html.themed #cover-context-label{ display:none !important; }
   html.themed .context-line.pro-ticket{ position:relative; overflow:hidden; background:var(--tk-bg); color:var(--tk-ink); border:none; border-radius:var(--r2); padding:16px 18px 0; text-align:left; margin:12px 0 20px; }
   html.themed .context-line.pro-ticket b{ color:inherit; }
   .pt-time:last-child{ padding-bottom:20px; }
@@ -339,7 +339,7 @@
   html.themed input[type=text], html.themed input[type=number], html.themed input[type=time], html.themed select{ border-radius:var(--r); font-family:var(--sans); }
   html.themed .request-type-chip, html.themed .chip-checkbox{ border-radius:var(--r); font-family:var(--sans); font-weight:600; letter-spacing:.02em; }
   /* Pro: no "Data" label above the day strip; hour and company options are tap-to-select chips (no tick boxes) */
-  label[for="cover-date"], label[for="trade-a-date"], label[for="request-date"]{ display:none; }
+  label[for="cover-date"], label[for="trade-a-date"], label[for="request-date"], label[for="extra-date"]{ display:none; }
   html.theme-pro .field > label:has(+ .hour-filter-row){ display:none; }
   html.theme-pro .chip-checkbox input, html.theme-pro .checkbox-label input[type=checkbox]{ display:none; }
   html.theme-pro .chip-checkbox{ padding:10px 20px; font-size:14px; }
@@ -1944,11 +1944,12 @@
       </div>
     </div>
 
+    <label id="extra-context-label" class="hidden" style="text-align:center; margin-bottom:6px;">O TEU HORÁRIO</label>
     <div class="context-line hidden" id="extra-context"></div>
     <div id="extra-times" class="hidden" style="margin:0 0 14px;">
       <div style="display:flex; gap:10px;">
-        <div style="flex:1; min-width:0;"><label for="extra-from" style="display:block; font-family:var(--mono); font-size:10px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">DE</label><input type="time" id="extra-from" step="900" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark;"></div>
-        <div style="flex:1; min-width:0;"><label for="extra-to" style="display:block; font-family:var(--mono); font-size:10px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">ATÉ</label><input type="time" id="extra-to" step="900" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark;"></div>
+        <div style="flex:1; min-width:0;"><label for="extra-from" style="display:block; font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">DE</label><select id="extra-from" class="extra-time-sel" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark; appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:30px; background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%3E%3Cpath%20d=%27M1%201.5l5%205%205-5%27%20fill=%27none%27%20stroke=%27%238b97b8%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E); background-repeat:no-repeat; background-position:right 12px center;"></select></div>
+        <div style="flex:1; min-width:0;"><label for="extra-to" style="display:block; font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text-dim); margin-bottom:5px;">ATÉ</label><select id="extra-to" class="extra-time-sel" style="width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--panel-2); border-radius:8px; padding:11px 12px; font-family:var(--mono); font-size:15px; color:var(--text); color-scheme:dark; appearance:none; -webkit-appearance:none; cursor:pointer; padding-right:30px; background-image:url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%2712%27%20height=%278%27%20viewBox=%270%200%2012%208%27%3E%3Cpath%20d=%27M1%201.5l5%205%205-5%27%20fill=%27none%27%20stroke=%27%238b97b8%27%20stroke-width=%271.6%27%20stroke-linecap=%27round%27/%3E%3C/svg%3E); background-repeat:no-repeat; background-position:right 12px center;"></select></div>
       </div>
       <div id="extra-times-err" style="display:none; margin-top:8px; font-size:12.5px; color:#ff6b6b;"></div>
     </div>
@@ -7064,10 +7065,11 @@ document.getElementById('extra-date').addEventListener('change', updateExtraCont
 function updateExtraContext(){
   const ctx = document.getElementById('extra-context');
   const btn = document.getElementById('extra-confirm-btn');
-  if(!extraWorker){ ctx.classList.add('hidden'); document.getElementById('extra-times').classList.add('hidden'); EXTRA_LIMIT = null; btn.disabled = true; return; }
+  if(!extraWorker){ ctx.classList.add('hidden'); document.getElementById('extra-context-label').classList.add('hidden'); document.getElementById('extra-times').classList.add('hidden'); EXTRA_LIMIT = null; btn.disabled = true; return; }
   const idx = parseInt(document.getElementById('extra-date').value, 10);
   const entry = getEffectiveEntry(extraWorker, idx);
   ctx.classList.remove('hidden');
+  document.getElementById('extra-context-label').classList.remove('hidden');
   const already = isExtraHours(extraWorker.id, idx);
   // short shifts (4h or 6h) can still take horas extra on the same day; 8h shifts cannot
   let workMins = 0;
@@ -7080,17 +7082,17 @@ function updateExtraContext(){
   const tbox = document.getElementById('extra-times');
   tbox.classList.add('hidden'); EXTRA_LIMIT = null;
   if(entry.status === 'work' && !shortShift){
-    ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Não podes fazer Horas-Extra</div>';
+    ctx.innerHTML = '<b>'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Não podes fazer Horas-Extra</div>';
     btn.disabled = true;
   } else if(already){
     ctx.innerHTML = '<b>'+escapeHtml(extraWorker.name)+'</b> is already marked as doing horas extra on '+fmtDateLabel(idx)+'.';
     btn.disabled = true;
   } else {
     if(shortShift){
-      ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Ainda podes fazer Horas-Extra</div>';
+      ctx.innerHTML = '<b>'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><div style="margin-top:6px;">Ainda podes fazer Horas-Extra</div>';
     } else {
     const codeLabel = (entry.codes && entry.codes[0]) ? entry.codes[0] : 'off';
-    ctx.innerHTML = '<b>'+(isOwnExtra ? '' : escapeHtml(extraWorker.name)+' ')+escapeHtml(codeLabel)+'</b>';
+    ctx.innerHTML = '<b>'+escapeHtml(codeLabel)+'</b>';
     }
     btn.disabled = false;
     // eligible: show the hours boxes (max 8h in a day in total, and not on top of the normal shift)
@@ -7101,8 +7103,8 @@ function updateExtraContext(){
     EXTRA_LIMIT = { rem, sS, sE };
     let f = 8*60, t = f + Math.min(rem, 4*60);
     if(shortShift){ if(sS - rem >= 0){ f = sS - rem; t = sS; } else { f = sE; t = Math.min(sE + rem, 23*60+59); } }
-    document.getElementById('extra-from').value = fmtM(f);
-    document.getElementById('extra-to').value = fmtM(t);
+    setExtraTime('extra-from', fmtM(f));
+    setExtraTime('extra-to', fmtM(t));
     tbox.classList.remove('hidden');
     validateExtraTimes();
   }
@@ -7122,6 +7124,25 @@ function validateExtraTimes(){
   btn.disabled = !!msg;
   return !msg;
 }
+// 24-hour time pickers (the phone's own time field shows AM/PM on some devices)
+function setExtraTime(id, v){
+  const sel = document.getElementById(id);
+  if(![...sel.options].some(o => o.value === v)){
+    const o = document.createElement('option'); o.value = v; o.textContent = v;
+    const opts = [...sel.options]; const after = opts.find(x => x.value > v);
+    sel.insertBefore(o, after || null);
+  }
+  sel.value = v;
+}
+(function(){
+  ['extra-from','extra-to'].forEach(id => {
+    const sel = document.getElementById(id);
+    for(let m = 0; m < 24*60; m += 15){
+      const v = String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+      const o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
+    }
+  });
+})();
 ['extra-from','extra-to'].forEach(id => document.getElementById(id).addEventListener('input', validateExtraTimes));
 document.getElementById('extra-confirm-btn').addEventListener('click', async () => {
   if(!extraWorker) return;
