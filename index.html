@@ -3217,15 +3217,23 @@ function fmtDateLabel(i){
 // its date from idx against today's DATA would silently produce the wrong day (exactly the
 // bug that happened switching from September to October). Older swaps saved before
 // calendarDate existed fall back to the old idx-based label, same as always.
+const WD_FULL = {Dom:'Domingo',Seg:'Segunda-feira',Ter:'Terça-feira',Qua:'Quarta-feira',Qui:'Quinta-feira',Sex:'Sexta-feira','Sáb':'Sábado'};
+const MON_FULL = {Jan:'Janeiro',Fev:'Fevereiro',Mar:'Março',Abr:'Abril',Mai:'Maio',Jun:'Junho',Jul:'Julho',Ago:'Agosto',Set:'Setembro',Out:'Outubro',Nov:'Novembro',Dez:'Dezembro'};
+// "Sexta-feira, 13 de Novembro" (used by the swap lists)
+function fmtDateLong(idx){
+  const wd = WD_PT[WEEKDAYS[idx]] || WEEKDAYS[idx];
+  const mo = MON_PT[MONTH_ABBR] || MONTH_ABBR;
+  return (WD_FULL[wd] || wd) + ', ' + parseInt(DATA.days[idx], 10) + ' de ' + (MON_FULL[mo] || mo);
+}
 function fmtSwapDateRobust(swapData, idx){
   if(swapData && swapData.calendarDate){
     const [y, m, d] = swapData.calendarDate.split('-').map(Number);
     const dateObj = new Date(y, m - 1, d);
-    const weekdayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-    const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    return weekdayNames[dateObj.getDay()] + ' ' + String(d).padStart(2,'0') + ' ' + monthNames[m-1];
+    const weekdayNames = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+    const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    return weekdayNames[dateObj.getDay()] + ', ' + d + ' de ' + monthNames[m-1];
   }
-  return fmtDateLabel(idx);
+  return fmtDateLong(idx);
 }
 
 // ---------- parsing ----------
@@ -3813,7 +3821,7 @@ function escapeHtml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function nowDisplay(v){
-  if(!v || v === '—' || /\d{2}:\d{2}-\d{2}:\d{2}/.test(v)) return v;
+  if(!v || v === '—' || /\d{2}:\d{2} ?- ?\d{2}:\d{2}/.test(v)) return v;
   return '<span style="color:var(--go); font-weight:700;">FOLGA</span>';
 }
 async function toggleFlag(workerId, idx, onDone){
@@ -4122,7 +4130,7 @@ async function setSwapPartner(workerId, idx, partner, onDone, type, anonymous, f
 // (no purple/white distinction, no delete button) since nothing has happened yet.
 let previewCopyText = '';
 function plainNowDisplay(v){
-  if(!v || v === '—' || /\d{2}:\d{2}-\d{2}:\d{2}/.test(v)) return v;
+  if(!v || v === '—' || /\d{2}:\d{2} ?- ?\d{2}:\d{2}/.test(v)) return v;
   return 'FOLGA';
 }
 function copyPreviewText(btn){
@@ -5164,6 +5172,13 @@ function swapStillPendingToday(e){
   if(ends.length === 0) return false; // nobody in this swap is actually working today anymore
   return nowMin < Math.max(...ends);
 }
+// "GUERREIRO ELIANA" -> "Eliana Guerreiro" (display only; used in the swap lists)
+function niceListName(n){
+  const parts = String(n||'').trim().split(/\s+/).filter(Boolean);
+  const cap = w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  if(parts.length === 2) return cap(parts[1]) + ' ' + cap(parts[0]);
+  return parts.map(cap).join(' ');
+}
 function renderSwapsListGeneric(showAll, cfg){
   const list = document.getElementById(cfg.listId);
   const moreBtn = document.getElementById(cfg.moreBtnId);
@@ -5234,31 +5249,31 @@ function renderSwapsListGeneric(showAll, cfg){
     const partnerEffective = partnerWorker ? getEffectiveEntry(partnerWorker, e.idx) : null;
     if(actualType === 'cover'){
       // asymmetric: e.worker was off, took over partner's shift; partner is now off instead
-      const ownCode = ownOriginal.status === 'off' ? (ownOriginal.codes[0] || 'off') : (ownOriginal.status === 'work' ? fmtHHMM(ownOriginal.start)+'-'+fmtHHMM(ownOriginal.end) : '—');
+      const ownCode = ownOriginal.status === 'off' ? (ownOriginal.codes[0] || 'off') : (ownOriginal.status === 'work' ? fmtHHMM(ownOriginal.start)+' - '+fmtHHMM(ownOriginal.end) : '—');
       const partnerOriginal = partnerWorker ? getEntry(partnerWorker, e.idx) : null;
       const partnerHadShift = partnerOriginal && partnerOriginal.status === 'work';
-      const partnerBeforeTime = partnerHadShift ? fmtHHMM(partnerOriginal.start)+'-'+fmtHHMM(partnerOriginal.end) : '—';
+      const partnerBeforeTime = partnerHadShift ? fmtHHMM(partnerOriginal.start)+' - '+fmtHHMM(partnerOriginal.end) : '—';
       const partnerNow = ownCode;
       const partnerNowDisplay = (partnerEffective && partnerEffective.overridden)
-        ? '<span class="old-time-strike">'+nowDisplay(partnerNow)+'</span> → '+fmtHHMM(partnerEffective.start)+'-'+fmtHHMM(partnerEffective.end)+' <span class="ah-badge">AH</span>'
+        ? '<span class="old-time-strike">'+nowDisplay(partnerNow)+'</span> → '+fmtHHMM(partnerEffective.start)+' - '+fmtHHMM(partnerEffective.end)+' <span class="ah-badge">AH</span>'
         : nowDisplay(partnerNow);
       const ownNowDisplay = ownEffective.overridden
-        ? '<span class="old-time-strike">'+partnerBeforeTime+'</span> → '+fmtHHMM(ownEffective.start)+'-'+fmtHHMM(ownEffective.end)+' <span class="ah-badge">AH</span>'
+        ? '<span class="old-time-strike">'+partnerBeforeTime+'</span> → '+fmtHHMM(ownEffective.start)+' - '+fmtHHMM(ownEffective.end)+' <span class="ah-badge">AH</span>'
         : partnerBeforeTime;
       rowSubHtml = '<span class="dot dot-purple"></span>'+partnerBeforeTime+' → '+partnerNowDisplay+
         '<br><span class="dot dot-white"></span>'+ownCode+' → '+ownNowDisplay;
     } else {
       // symmetric: both were originally working, they simply trade times with each other
-      const ownOrigTime = ownOriginal.status === 'work' ? fmtHHMM(ownOriginal.start)+'-'+fmtHHMM(ownOriginal.end) : '—';
+      const ownOrigTime = ownOriginal.status === 'work' ? fmtHHMM(ownOriginal.start)+' - '+fmtHHMM(ownOriginal.end) : '—';
       const partnerOriginal = partnerWorker ? getEntry(partnerWorker, e.idx) : null;
-      const partnerOrigTime = (partnerOriginal && partnerOriginal.status === 'work') ? fmtHHMM(partnerOriginal.start)+'-'+fmtHHMM(partnerOriginal.end) : '—';
+      const partnerOrigTime = (partnerOriginal && partnerOriginal.status === 'work') ? fmtHHMM(partnerOriginal.start)+' - '+fmtHHMM(partnerOriginal.end) : '—';
       const ownNowPlain = partnerOrigTime; // e.worker's new time = partner's original time
       const partnerNowPlain = ownOrigTime; // partner's new time = e.worker's original time
       const partnerNowDisplay = (partnerEffective && partnerEffective.overridden)
-        ? '<span class="old-time-strike">'+partnerNowPlain+'</span> → '+fmtHHMM(partnerEffective.start)+'-'+fmtHHMM(partnerEffective.end)+' <span class="ah-badge">AH</span>'
+        ? '<span class="old-time-strike">'+partnerNowPlain+'</span> → '+fmtHHMM(partnerEffective.start)+' - '+fmtHHMM(partnerEffective.end)+' <span class="ah-badge">AH</span>'
         : partnerNowPlain;
       const ownNowDisplay = ownEffective.overridden
-        ? '<span class="old-time-strike">'+ownNowPlain+'</span> → '+fmtHHMM(ownEffective.start)+'-'+fmtHHMM(ownEffective.end)+' <span class="ah-badge">AH</span>'
+        ? '<span class="old-time-strike">'+ownNowPlain+'</span> → '+fmtHHMM(ownEffective.start)+' - '+fmtHHMM(ownEffective.end)+' <span class="ah-badge">AH</span>'
         : ownNowPlain;
       rowSubHtml = '<span class="dot dot-purple"></span>'+partnerOrigTime+' → '+partnerNowDisplay+
         '<br><span class="dot dot-white"></span>'+ownOrigTime+' → '+ownNowDisplay;
@@ -5268,7 +5283,7 @@ function renderSwapsListGeneric(showAll, cfg){
     // the names take the free space; the blue check (verified swaps only) sits in its own narrow column, so all checks line up
     const nameInner = e.s.anonymous
       ? '<span style="color:var(--text);">TROCA ANÓNIMA</span>'
-      : '<span class="swap-partner">'+escapeHtml(e.s.withName)+'</span> &nbsp;⇄&nbsp; '+escapeHtml(e.worker.name);
+      : '<span class="swap-partner">'+escapeHtml(niceListName(e.s.withName))+'</span> &nbsp;⇄&nbsp; '+escapeHtml(niceListName(e.worker.name));
     const nameLineHtml = '<span class="sw-line"><span class="sw-names">'+nameInner+'</span><span class="sw-vf">'+vfSvg+'</span></span>';
     // TROCAS RECENTES (cover/turno) only shows a delete button for admin — even the swap's
     // own owner can't delete it from here anymore, since As Minhas Trocas is now the one
@@ -5863,13 +5878,32 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
     const r = rowLabel(idx);
     trigger.innerHTML = '<span class="csr-row-inner">'+r.dateHtml + r.countHtml+'</span>';
   }
+  // with OCULTAR FOLGAS on, a day off is never listed — not even when it happens to be the selected one;
+  // in that case the selection moves to the first day that is still listed
+  function isHiddenOff(w, i){
+    if(!(w && HIDE_OFF_DAYS)) return false;
+    try{ const he = getEffectiveEntry(w, i); return !!(he && he.status === 'off'); }catch(e){ return false; }
+  }
+  function moveOffSelection(w){
+    if(!(w && HIDE_OFF_DAYS)) return;
+    const cur = parseInt(sel.value, 10) || 0;
+    if(!isHiddenOff(w, cur)) return;
+    for(let i=0;i<N;i++){
+      if(isBlocked(i) || isHiddenOff(w, i)) continue;
+      sel.value = i; sel.dispatchEvent(new Event('change')); refreshTrigger();
+      return;
+    }
+  }
   function renderList(){
     recomputeCounts();
     list.innerHTML = '';
-    const current = parseInt(sel.value, 10) || 0;
     let hideW = null;
     if(workerFn){
       try{ hideW = workerFn(); }catch(e){ hideW = null; }
+      moveOffSelection(hideW);
+    }
+    const current = parseInt(sel.value, 10) || 0;
+    if(workerFn){
       if(hideW){
         const bar = document.createElement('div');
         bar.className = 'csr-hide-bar';
@@ -5886,7 +5920,7 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
     }
     for(let i=0;i<N;i++){
       if(isBlocked(i)) continue; // no point listing days that can't be picked
-      if(hideW && HIDE_OFF_DAYS && i !== current){ try{ const he = getEffectiveEntry(hideW, i); if(he && he.status === 'off') continue; }catch(e){} }
+      if(isHiddenOff(hideW, i)) continue;
       const r = rowLabel(i);
       const row = document.createElement('div');
       row.className = 'custom-select-row' + (i === current ? ' selected' : '');
