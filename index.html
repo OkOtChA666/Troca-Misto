@@ -6481,7 +6481,7 @@ function renderCoverResults(results, idx){
   const head = document.createElement('div');
   head.className = 'results-head';
   { const nAvail = results.filter(r=>r.go && !isFlagged(r.worker.id, idx) && !isSwapped(r.worker.id, idx)).length;
-    head.innerHTML = '<span style="white-space:nowrap; letter-spacing:0.06em;"><b style="font-weight:800; color:#fff;">'+results.length+'</b> '+(results.length === 1 ? 'CANDIDATO' : 'CANDIDATOS')+'</span>'+(nAvail > 0 ? ruleHeadHtml() : ''); }
+    head.innerHTML = '<span style="white-space:nowrap; font-family:\'Instrument Sans\',\'IBM Plex Sans\',system-ui,sans-serif; font-weight:600; font-size:11px; letter-spacing:0.06em;"><b style="font-weight:800; color:#fff;">'+results.length+'</b> '+(results.length === 1 ? 'CANDIDATO' : 'CANDIDATOS')+'</span>'+(nAvail > 0 ? ruleHeadHtml() : ''); }
   box.appendChild(head);
   let dividerShown = false;
   let issueDividerShown = false;
