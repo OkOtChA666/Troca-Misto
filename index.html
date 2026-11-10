@@ -4487,9 +4487,94 @@ document.getElementById('ask-modal-body').addEventListener('click', async (e) =>
     // any other request still waiting for either of them on that day is no longer possible
     for(const o of Object.values(window.SWAP_ASKS)){ if(o && o.key !== key && askStatus(o) === 'pending' && o.cal === a.cal && (o.sid === a.sid || o.cid === a.sid || o.sid === a.cid || o.cid === a.cid)){ const n = Object.assign({}, o, { status:'cancelled', resolvedAt: Date.now() }); window.SWAP_ASKS[o.key] = n; askPut(o.key, n); } }
     closeAskModal(); refreshRecentSwapsLists();
-    setTimeout(() => showConfirmDialog('<div class="swc-title" style="font-size:15px; line-height:1.5; text-align:center;">Troca feita com<b style="display:block; margin-top:2px; font-size:16px;">' + escapeHtml(a.sname) + '</b></div>', () => {}, false, 'OK', false, null, null, true), 200);
+    setTimeout(() => { try{ showSwapCards([Object.assign({}, a, { status:'accepted', resolvedAt: Date.now() })]); }catch(e){} }, 200);
   }
 });
+
+// ---------- "TROCA CONFIRMADA" card (information only; the calendar button saves the shift to the phone) ----------
+const SWC_SEEN_KEY = 'trocaMistoSwapCardSeen';
+function swcSeenGet(){ try{ const v = localStorage.getItem(SWC_SEEN_KEY); return v === null ? null : JSON.parse(v); }catch(e){ return []; } }
+function swcSeenAdd(keys){ try{ const cur = swcSeenGet() || []; keys.forEach(k => { if(cur.indexOf(k) < 0) cur.push(k); }); localStorage.setItem(SWC_SEEN_KEY, JSON.stringify(cur.slice(-80))); }catch(e){} }
+function swcShiftLabel(t, work){ if(work) return t; return 'FOLGA' + ((t && t !== 'FO' && t !== '—') ? ' · ' + t : ''); }
+function swcInfo(a){
+  const me = window.MY_ASK_ID, iAmReq = a.sid === me;
+  const before = iAmReq ? { t:a.sShift, w:a.sWork } : { t:a.cShift, w:a.cWork };
+  const after = iAmReq ? { t:a.cShift, w:a.cWork } : { t:a.sShift, w:a.sWork };
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(a.cal || ''); const d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  const day = d ? d.toLocaleDateString('pt-PT', { weekday:'long', day:'numeric', month:'long' }) : '—';
+  const done = a.resolvedAt || a.ts, dd = new Date(done), n = new Date();
+  const same = dd.toDateString() === n.toDateString(), yest = new Date(n.getTime() - 86400000).toDateString() === dd.toDateString();
+  const hm = dd.toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' });
+  return { date:d, day: day.charAt(0).toUpperCase() + day.slice(1), other: iAmReq ? a.cname : a.sname, before: swcShiftLabel(before.t, before.w), after: swcShiftLabel(after.t, after.w), afterRaw: after, when: (same ? 'hoje' : yest ? 'ontem' : dd.toLocaleDateString('pt-PT', { day:'numeric', month:'short' })) + ', ' + hm };
+}
+function swcIcs(a){
+  const i = swcInfo(a); if(!i.date) return;
+  const pad = x => String(x).padStart(2, '0'), ymd = d => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+  let ev, title = 'Troca de turno';
+  const tm = /^(\d{2}):(\d{2})\s*[–-]\s*(\d{2}):(\d{2})$/.exec(i.afterRaw.t || '');
+  if(i.afterRaw.w && tm){
+    const end = new Date(i.date); if(+tm[3] * 60 + +tm[4] <= +tm[1] * 60 + +tm[2]) end.setDate(end.getDate() + 1);
+    title = 'Turno ' + i.afterRaw.t + ' (troca)';
+    ev = 'DTSTART:' + ymd(i.date) + 'T' + tm[1] + tm[2] + '00\r\nDTEND:' + ymd(end) + 'T' + tm[3] + tm[4] + '00';
+  } else {
+    const nx = new Date(i.date); nx.setDate(nx.getDate() + 1); title = 'Folga (troca)';
+    ev = 'DTSTART;VALUE=DATE:' + ymd(i.date) + '\r\nDTEND;VALUE=DATE:' + ymd(nx);
+  }
+  const ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//TROCA-MISTO//PT\r\nBEGIN:VEVENT\r\nUID:' + a.key + '@troca-misto\r\nDTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '') + '\r\n' + ev + '\r\nSUMMARY:' + title + '\r\nDESCRIPTION:Troca com ' + i.other + '\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n';
+  const url = URL.createObjectURL(new Blob([ics], { type:'text/calendar;charset=utf-8' })), l = document.createElement('a');
+  l.href = url; l.download = 'troca-' + (a.cal || 'turno') + '.ics'; document.body.appendChild(l); l.click(); setTimeout(() => { l.remove(); URL.revokeObjectURL(url); }, 4000);
+}
+function showSwapCards(list){
+  if(!list || !list.length) return;
+  swcSeenAdd(list.map(a => a.key));
+  let ov = document.getElementById('swc-card-ov');
+  if(!ov){
+    const st = document.createElement('style');
+    st.textContent = '#swc-card-ov .swc-box{max-width:380px; width:calc(100% - 36px); background:var(--panel); border:1px solid rgba(46,204,113,.55); border-radius:18px; padding:18px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.6);}' +
+      '#swc-card-ov .swc-ok{width:54px; height:54px; border-radius:50%; background:#2ecc71; color:#08210f; font-size:30px; font-weight:900; margin:0 auto 8px; display:flex; align-items:center; justify-content:center;}' +
+      '#swc-card-ov .swc-h{font-family:var(--mono); font-size:18px; font-weight:800; letter-spacing:1px; color:#2ecc71;}' +
+      '#swc-card-ov .swc-sub{font-size:12px; color:var(--text-dim); margin-top:3px;}' +
+      '#swc-card-ov .swc-cnt{display:block; font-size:12px; color:var(--text-dim); margin-bottom:8px;}' +
+      '#swc-card-ov .swc-big{margin:12px 0 4px; background:var(--panel-2); border-radius:12px; padding:12px; font-size:13px; color:var(--text-dim);}' +
+      '#swc-card-ov .swc-big b{display:block; color:var(--amber); font-family:var(--mono); font-size:22px; margin-top:3px;}' +
+      '#swc-card-ov .swc-r{display:flex; justify-content:space-between; gap:10px; padding:10px 4px; border-bottom:1px solid var(--border-soft); font-size:14px; text-align:left;}' +
+      '#swc-card-ov .swc-r:last-of-type{border-bottom:0;} #swc-card-ov .swc-r span{color:var(--text-dim);} #swc-card-ov .swc-r b{text-align:right; color:var(--text);}' +
+      '#swc-card-ov .swc-b1{width:100%; margin-top:12px; padding:13px; border:none; border-radius:12px; background:linear-gradient(#ffc94d,#ffb010); color:#1a1200; font-family:var(--mono); font-weight:800; letter-spacing:.06em; font-size:13px; cursor:pointer;}' +
+      '#swc-card-ov .swc-b2{width:100%; margin-top:8px; padding:11px; border:1px solid var(--border); border-radius:12px; background:transparent; color:var(--text-dim); font-family:var(--mono); font-weight:700; letter-spacing:.06em; font-size:13px; cursor:pointer;}' +
+      '#swc-card-ov .swc-dots{margin-top:10px; color:var(--amber); letter-spacing:6px; font-size:14px;}';
+    document.head.appendChild(st);
+    ov = document.createElement('div'); ov.id = 'swc-card-ov'; ov.className = 'modal-overlay hidden'; ov.style.zIndex = '260';
+    document.body.appendChild(ov);
+  }
+  let i = 0;
+  const draw = () => {
+    const a = list[i], f = swcInfo(a), many = list.length > 1;
+    ov.innerHTML = '<div class="swc-box">' + (many ? '<span class="swc-cnt">' + (i + 1) + ' de ' + list.length + '</span>' : '') +
+      '<div class="swc-ok">✓</div><div class="swc-h">TROCA CONFIRMADA</div><div class="swc-sub">Fica guardado em ÁREA PESSOAL</div>' +
+      '<div class="swc-big">O teu novo horário<b>' + escapeHtml(f.after) + '</b></div>' +
+      '<div class="swc-r"><span>Dia</span><b>' + escapeHtml(f.day) + '</b></div><div class="swc-r"><span>Troca com</span><b>' + escapeHtml(f.other) + '</b></div>' +
+      '<div class="swc-r"><span>Antes</span><b>' + escapeHtml(f.before) + '</b></div><div class="swc-r"><span>Confirmada</span><b>' + escapeHtml(f.when) + '</b></div>' +
+      '<button type="button" class="swc-b1" id="swc-cal">📅 ADICIONAR AO CALENDÁRIO</button>' +
+      '<button type="button" class="swc-b2" id="swc-next">' + (many && i < list.length - 1 ? 'PRÓXIMA ›' : 'FECHAR') + '</button>' +
+      (many ? '<div class="swc-dots">' + list.map((x, k) => k === i ? '●' : '○').join(' ') + '</div>' : '') + '</div>';
+    document.getElementById('swc-cal').onclick = () => { try{ swcIcs(a); }catch(e){} };
+    document.getElementById('swc-next').onclick = () => { if(many && i < list.length - 1){ i++; draw(); } else ov.classList.add('hidden'); };
+  };
+  draw(); ov.classList.remove('hidden');
+}
+let SWC_FIRST = true;
+function swapCardCheck(){
+  const me = window.MY_ASK_ID; if(!me) return;
+  const acc = Object.values(window.SWAP_ASKS || {}).filter(a => a && a.status === 'accepted' && a.sid === me);
+  let seen = swcSeenGet();
+  if(seen === null){ swcSeenAdd(acc.map(a => a.key)); seen = swcSeenGet() || []; SWC_FIRST = false; try{ localStorage.setItem(SWC_SEEN_KEY, JSON.stringify(seen)); }catch(e){} return; }   // first time on this phone: older swaps do not pop up
+  SWC_FIRST = false;
+  const fresh = acc.filter(a => seen.indexOf(a.key) < 0 && (Date.now() - (a.resolvedAt || a.ts)) < 7 * 86400000).sort((x, y) => (x.resolvedAt || x.ts) - (y.resolvedAt || y.ts));
+  if(!fresh.length) return;
+  const busy = ['ask-modal', 'notifications-modal', 'swc-card-ov', 'confirm-modal'].some(id => { const e = document.getElementById(id); return e && !e.classList.contains('hidden'); });
+  if(busy) return;
+  showSwapCards(fresh);
+}
 // live: requests and the on/off switch
 function askLive(){
   getDb().then(db => {
@@ -4499,6 +4584,7 @@ function askLive(){
       try{ renderNotificationsBadge(); }catch(e){}
       try{ const m = document.getElementById('notifications-modal'); if(m && !m.classList.contains('hidden')) renderNotificationsList(); }catch(e){}
       try{ if(window.ASK_OPEN_KEY && !document.getElementById('ask-modal').classList.contains('hidden')) openAskModal(window.ASK_OPEN_KEY); }catch(e){}
+      try{ setTimeout(swapCardCheck, 700); }catch(e){}
     });
     db.collection('data').doc(gScope('swapAsksCfg')).onSnapshot(sn => {
       window.SWAP_ASKS_ON = !!(sn.exists && sn.data().enabled);
