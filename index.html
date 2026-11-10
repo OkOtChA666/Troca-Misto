@@ -1378,7 +1378,6 @@
   html.support-mode #panel-support{ display:block !important; }
   html.support-mode #stat-workers-link{ pointer-events:none; }
   html.support-mode #stat-version-wrap{ display:none !important; }
-  html.support-mode #notif-coord-toggle{ display:none !important; }
   html.support-mode #logged-in-tab-row{ border-top:1px solid var(--border) !important; border-radius:8px !important; margin-top:12px; }
   .rules-tab-btn{ flex:1; text-align:center; padding:10px 0 9px; font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:0.08em; color:var(--text-dim); border-bottom:2px solid transparent; cursor:pointer; user-select:none; }
   .rules-tab-btn.on{ color:var(--amber); border-bottom-color:var(--amber); }
@@ -1618,7 +1617,7 @@
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
       <span style="font-family:var(--mono); font-size:15px; font-weight:800; letter-spacing:3px; color:var(--amber);">NOTIFICAÇÕES</span>
       <span style="display:flex; align-items:center; gap:14px;">
-      <button type="button" id="notif-coord-toggle" role="switch" aria-checked="true" title="Esconder avisos «alterada pelo coordenador»" style="position:relative; width:26px; height:14px; border-radius:7px; border:0; padding:0; cursor:pointer; background:var(--amber); flex-shrink:0;"><i style="position:absolute; top:2px; left:14px; width:10px; height:10px; border-radius:50%; background:#1a1200; transition:left .15s;"></i></button>
+
       <button type="button" id="notifications-modal-close" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1; padding:0;">&times;</button>
       </span>
     </div>
@@ -2403,6 +2402,13 @@
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Link - Apoiar projecto</span>
         <span class="pill-toggle">
           <input type="checkbox" id="support-link-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+      </label>
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Notificações: mostrar «alterada pelo coordenador»</span>
+        <span class="pill-toggle">
+          <input type="checkbox" id="coord-notes-toggle">
           <span class="pill-track"></span>
         </span>
       </label>
@@ -4385,9 +4391,9 @@ function askBellItems(){
     if(!a || !a.key) return;
     const st = askStatus(a), done = a.resolvedAt || a.exp;
     if(now - (done || a.ts) > week) return;
-    if(a.cid === me && st === 'pending') out.push({ key:a.key, ts:a.ts, cal:a.cal, unread:true, color:'#ffb020', title:'Pedido de troca', sub:a.sname + ' quer trocar contigo' });
+    if(a.cid === me && st === 'pending') out.push({ key:a.key, ts:a.ts, cal:a.cal, unread:true, color:'#ffb020', pend:true, title:'Pedido de troca', sub:a.sname + ' quer trocar contigo' });
     else if(a.sid === me){
-      if(st === 'pending') out.push({ key:a.key, ts:a.ts, cal:a.cal, unread:false, color:'#ffb020', title:'Pedido enviado · à espera', sub:a.cname });
+      if(st === 'pending') out.push({ key:a.key, ts:a.ts, cal:a.cal, unread:false, color:'#ffb020', pend:true, title:'Pedido enviado · à espera', sub:a.cname });
       else if(st === 'accepted') out.push({ key:a.key, ts:done, cal:a.cal, unread:done > seen, color:'#2ecc71', title:'Pedido aceite', sub:a.cname + ' aceitou a troca' });
       else if(st === 'declined') out.push({ key:a.key, ts:done, cal:a.cal, unread:done > seen, color:'#ff5d6c', title:'Pedido recusado', sub:a.cname + ' recusou' });
       else if(st === 'expired') out.push({ key:a.key, ts:done, cal:a.cal, unread:done > seen, color:'#7b8799', title:'Pedido expirou', sub:a.cname + ' não respondeu' });
@@ -4429,6 +4435,7 @@ function openAskModal(key){
 function closeAskModal(){ document.getElementById('ask-modal').classList.add('hidden'); window.ASK_OPEN_KEY = null; }
 document.getElementById('ask-modal-close').addEventListener('click', closeAskModal);
 document.getElementById('notifications-modal-list').addEventListener('click', (e) => {
+  if(e.target.closest && e.target.closest('.notif-hide')) return;
   const t = e.target.closest && e.target.closest('[data-ask]'); if(t) openAskModal(t.getAttribute('data-ask'));
 });
 document.getElementById('ask-modal-body').addEventListener('click', async (e) => {
@@ -4467,10 +4474,19 @@ function askLive(){
       window.SWAP_ASKS_ON = !!(sn.exists && sn.data().enabled);
       try{ document.getElementById('swap-asks-enabled-toggle').checked = window.SWAP_ASKS_ON; }catch(e){}
     });
+    db.collection('data').doc(gScope('coordNotesCfg')).onSnapshot(sn => {
+      window.COORD_SHOW = !!(sn.exists && sn.data().show);
+      try{ document.getElementById('coord-notes-toggle').checked = window.COORD_SHOW; }catch(e){}
+      try{ renderNotificationsBadge(); const m = document.getElementById('notifications-modal'); if(m && !m.classList.contains('hidden')) renderNotificationsList(); }catch(e){}
+    });
   }).catch(() => {});
 }
 setTimeout(askLive, 0);
 setInterval(() => { try{ renderNotificationsBadge(); }catch(e){} }, 60000);   // a request that just ran out of time drops off the counter
+document.getElementById('coord-notes-toggle').addEventListener('change', async (e) => {
+  window.COORD_SHOW = e.target.checked; await dbSetShared('coordNotesCfg', { show: e.target.checked });
+  try{ renderNotificationsBadge(); }catch(x){}
+});
 document.getElementById('swap-asks-enabled-toggle').addEventListener('change', async (e) => {
   window.SWAP_ASKS_ON = e.target.checked; await dbSetShared('swapAsksCfg', { enabled: e.target.checked });
 });
@@ -8270,8 +8286,9 @@ function renderNotificationsList(){
     .map(([id, n]) => ({ kind:'n', id, n, ts: n.createdAt || 0 }));
   let seenTs = 0; try{ seenTs = mtSeen(); }catch(e){}
   if(NOTIF_OPEN_SNAPSHOT) seenTs = NOTIF_OPEN_SNAPSHOT.seenTs;
-  try{ mtChanges().forEach(x => entries.push({ kind:'t', x, ts: x[0] })); }catch(e){}
-  try{ askBellItems().forEach(x => entries.push({ kind:'a', x, ts: x.ts })); }catch(e){}   // swap requests
+  const hiddenN = mtNoteHidden();
+  try{ mtChanges().filter(x => hiddenN.indexOf(mtNoteId(x)) < 0).forEach(x => entries.push({ kind:'t', x, ts: x[0] })); }catch(e){}
+  try{ askBellItems().filter(x => x.pend || hiddenN.indexOf(mtStaffId() + '|ask|' + x.key + '|' + x.ts) < 0).forEach(x => entries.push({ kind:'a', x, ts: x.ts })); }catch(e){}   // swap requests
   try{ mtFalseAlarms().forEach(x => entries.push({ kind:'f', x, ts: x[0] })); }catch(e){}   // removed + new again with identical details: one short note instead of two alarms
   entries.sort((a, b) => b.ts - a.ts);
   empty.classList.toggle('hidden', entries.length > 0);
@@ -8300,7 +8317,8 @@ function renderNotificationsList(){
         '<div style="width:28px; height:28px; border-radius:50%; background:' + ax.color + '22; color:' + ax.color + '; border:1px solid ' + ax.color + '80; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;">⇄</div>' +
         '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + st + '">' + escapeHtml(ax.title) + '</div>' +
         '<div style="font-size:11.5px; font-weight:600; margin-top:2px; color:var(--amber);">' + escapeHtml(ax.sub) + '</div>' +
-        '<div style="font-size:11.5px; margin-top:2px; color:var(--text-dim);">' + escapeHtml(swlLabel(ax.cal)) + ' · ' + escapeHtml(notificationRelativeTime(ax.ts)) + '</div></div>') + '</div>';
+        (function(){ const ln = '<div style="font-size:11.5px; margin-top:2px; color:var(--text-dim);">' + escapeHtml(swlLabel(ax.cal)) + ' · ' + escapeHtml(notificationRelativeTime(ax.ts)) + '</div>';
+          return ax.pend ? ln : '<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:8px;"><div>' + ln + '</div>' + notifTrashBtn('data-note="' + escapeHtml(mtStaffId() + '|ask|' + ax.key + '|' + ax.ts) + '"') + '</div>'; })() + '</div>') + '</div>';
       continue;
     }
     if(item.kind === 'f'){
@@ -8321,7 +8339,7 @@ function renderNotificationsList(){
         : '<div style="width:28px; height:28px; border-radius:50%; background:rgba(255,93,108,0.15); color:var(--nogo); border:1px solid rgba(255,93,108,0.5); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:13px;">≡</div>';
       html += card(c.type === 'delay' ? 'var(--amber)' : '#ff5d6c', unread, ic +
         '<div style="flex:1; min-width:0;"><div style="font-size:12.5px; line-height:1.4; ' + st + '">' + (c.type === 'delay' ? 'Hora alterada · voo' : 'As tuas tarefas mudaram') + '</div>' +
-        mtNotifDetail(c) + notifLogHtml(whenT, item.x[0]) + '</div>');
+        mtNotifDetail(c) + notifLogRow(notifLogHtml(whenT, item.x[0]), 'data-note="' + escapeHtml(mtNoteId(item.x)) + '"') + '</div>');
       continue;
     }
     const id = item.id;
@@ -8377,7 +8395,7 @@ function openNotificationsModal(){
   }
   try{ NOTIF_OPEN_SNAPSHOT = { ids: new Set(Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id)), seenTs: (typeof mtSeen === 'function' ? mtSeen() : 0) }; }catch(e){ NOTIF_OPEN_SNAPSHOT = null; }
   try{ window.ASK_OPEN_SEEN = askSeen(); localStorage.setItem('trocaMistoAskSeen', String(Date.now())); }catch(e){}
-  mtCoordToggleSync(); renderNotificationsList();
+  renderNotificationsList();
   document.getElementById('notifications-modal').classList.remove('hidden');
   // Opening the list is what counts as "seen" — mark every currently-unread entry as read.
   const unreadIds = Object.entries(NOTIFICATIONS).filter(([id, n]) => !n.read).map(([id]) => id);
@@ -8386,10 +8404,6 @@ function openNotificationsModal(){
   try{ renderNotificationsBadge(); }catch(e){}
 }
 document.getElementById('notifications-bell-link').addEventListener('click', openNotificationsModal);
-document.getElementById('notif-coord-toggle').addEventListener('click', () => {
-  try{ localStorage.setItem('trocaMistoShowCoord', mtHideCoord() ? '1' : '0'); }catch(e){}
-  mtCoordToggleSync(); renderNotificationsList(); renderNotificationsBadge();
-});
 // only the bell opens the notifications; the number next to it is display-only
 // ✕ on a notification: hides it for this person (kept in the database, just no longer shown or counted).
 document.getElementById('notifications-modal-list').addEventListener('click', (e) => {
@@ -10964,18 +10978,12 @@ function mtToMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (
 function mtPad(n){ return String(n).padStart(2, '0'); }
 function mtStaffId(){ try{ return localStorage.getItem('trocaMistoLoginStaffId'); } catch(e){ return null; } }
 // small switch in the bell: ON (default) hides the "alterada pelo coordenador" notes; the choice is kept on this phone only
-function mtHideCoord(){ try{ return localStorage.getItem('trocaMistoShowCoord') !== '1'; }catch(e){ return true; } }
-function mtCoordToggleSync(){
-  const b = document.getElementById('notif-coord-toggle'); if(!b) return;
-  const on = mtHideCoord();
-  b.setAttribute('aria-checked', on ? 'true' : 'false');
-  b.style.background = on ? 'var(--amber)' : '#2a3550';
-  const k = b.firstElementChild; if(k){ k.style.left = on ? '14px' : '2px'; k.style.background = on ? '#1a1200' : '#8a94a8'; }
-}
+function mtHideCoord(){ return !window.COORD_SHOW; }   // admin switch in DEFINIÇÕES → APP (off by default: coordinator notes stay hidden)
 function mtChanges(){ return mtChangesSplit().keep.filter(x => !(mtHideCoord() && /: alterada pelo coordenador$/.test(String(x[1] || '')))); }
 function mtNoteHidden(){ try{ return JSON.parse(localStorage.getItem('trocaMistoHiddenNotes') || '[]'); }catch(e){ return []; } }
 function mtNoteId(x){ return mtStaffId() + '|' + x[0] + '|' + x[1]; }
 const NOTIF_TRASH_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg>';
+function notifTrashBtn(attr){ return '<button type="button" class="notif-hide" ' + attr + ' title="Esconder" style="background:none; border:none; color:var(--text-dim); line-height:1; cursor:pointer; padding:0 2px; margin:0 0 -1px 0;">' + NOTIF_TRASH_SVG + '</button>'; }
 function notifLogRow(logHtml, attr){   // "recebida há X" on the left, trash icon at the right end of the same line
   return '<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:8px;"><div>' + logHtml + '</div>' +
     '<button type="button" class="notif-hide" ' + attr + ' title="Esconder" style="background:none; border:none; color:var(--text-dim); line-height:1; cursor:pointer; padding:0 2px; margin:0 0 -1px 0;">' + NOTIF_TRASH_SVG + '</button></div>';
@@ -11181,7 +11189,7 @@ function renderAreaHubOrder(){
   try{ const tc = document.getElementById('area-card-themes'); if(tc) tc.style.display = themeProAvailable() ? '' : 'none'; }catch(e){}
   const old = document.getElementById('area-hub-sep'); if(old) old.remove();
   hub.querySelectorAll('.area-favlbl').forEach(e => e.remove());
-  fav.forEach(([k, id]) => { const l = document.createElement('div'); l.className = 'area-favlbl'; l.textContent = 'MARCADO COMO FAVORITO'; hub.appendChild(l); hub.appendChild(document.getElementById(id)); });
+  fav.forEach(([k, id]) => { hub.appendChild(document.getElementById(id)); });
   if(fav.length && rest.length){ const sep = document.createElement('div'); sep.id = 'area-hub-sep'; hub.appendChild(sep); }
   rest.forEach(([k, id]) => hub.appendChild(document.getElementById(id)));
   AREA_CARDS.forEach(([k, id]) => { const c = document.getElementById(id), on = favs.indexOf(k) >= 0; c.classList.toggle('fav', on); const b = c.querySelector('.ac-fav'); if(b){ b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = on ? 'Remover dos favoritos' : 'Marcar como favorito'; } });
