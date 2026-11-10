@@ -6817,7 +6817,8 @@ function renderTradeResults(){
   }
   const head = document.createElement('div');
   head.className = 'results-head';
-  head.innerHTML = '<span>'+results.length+' SHIFTS ON '+fmtDateLabel(idx).toUpperCase()+'</span><span>EARLIEST FIRST</span>';
+  const nAvailT = results.filter(r => r.go).length;
+  head.innerHTML = '<span class="cand-count"><b style="font-weight:800; color:#fff;">'+results.length+'</b> '+(results.length === 1 ? 'TURNO' : 'TURNOS')+'</span>'+(nAvailT > 0 ? ruleHeadHtml() : '');
   box.appendChild(head);
 
   // Conformity is the OUTER split — clean candidates entirely first, issues entirely last,
@@ -6849,8 +6850,14 @@ function renderTradeResults(){
         ? fmtHHMM(nextEntry.start) + ' - ' + fmtHHMM(nextEntry.end) + ' &nbsp;' + fmtDateOn(nextIdx)
         : (nextEntry.codes[0] || 'off') + ' ' + fmtDateOn(nextIdx);
     }
-    row.innerHTML = '<div class="row-main"><div class="row-name">'+r.worker.name+issueBadge+starHtml+(flagged?' <span class="flag-indicator">⚠ FLAGGED</span>':'')+'</div>'+
-      '<div class="row-sub">'+fmtHHMM(r.entry.start)+'-'+fmtHHMM(r.entry.end)+' ' + fmtDateOn(idx)+(nextDayText?'<br>'+nextDayText:'')+'</div></div>'+
+    const hideNextT = !!(r.go && !flagged);
+    const tTimes = fmtHHMM(r.entry.start)+' - '+fmtHHMM(r.entry.end);
+    const nextDayTextT = nextEntry ? (nextEntry.status === 'work'
+        ? fmtHHMM(nextEntry.start) + ' - ' + fmtHHMM(nextEntry.end) + ' &nbsp;' + fmtDateOn(nextIdx)
+        : (nextEntry.codes[0] || 'off') + ' ' + fmtDateOn(nextIdx)) : '';
+    row.classList.add('has-av');
+    row.innerHTML = avatarHtml(r.worker.id, r.worker.name, 40) + '<div class="row-main"><div class="row-name">'+escapeHtml(niceListName(r.worker.name))+issueBadge+starHtml+(flagged?' <span class="flag-indicator">⚠ FLAGGED</span>':'')+'</div>'+
+      '<div class="row-sub">'+(hideNextT ? tTimes : tTimes+' '+fmtDateOn(idx)+(nextDayTextT?'<br>'+nextDayTextT:''))+'</div></div>'+
       '<div class="row-status">'+reportBtnHtml+hoursBadge(r.worker.id)+sysBadge(r.worker.id)+'</div>';
     if(matchingRequest){
       row.querySelector('#'+starBtnId).addEventListener('click', (e) => {
@@ -6867,11 +6874,12 @@ function renderTradeResults(){
     const detail = document.createElement('div');
     detail.className = 'row-detail';
     const bits = [];
-    bits.push('<div>You\'d take '+fmtHHMM(r.entry.start)+'-'+fmtHHMM(r.entry.end)+', they\'d take '+fmtHHMM(myEntry.start)+'-'+fmtHHMM(myEntry.end)+'.</div>');
+    bits.push('<div style="height:6px;"></div>');
+    bits.push('<div>Ficas com '+fmtHHMM(r.entry.start)+' - '+fmtHHMM(r.entry.end)+' · fica com '+fmtHHMM(myEntry.start)+' - '+fmtHHMM(myEntry.end)+'</div>');
     if(r.go){
       bits.push(flagged
         ? '<span class="issue">Sem violações de regras — mas foi reportado manualmente:</span>'
-        : ''+ruleLinesHtml(null,null)+'');
+        : (nextEntry ? '<div class="nd-block"><div class="nd-label">Dia seguinte</div>'+((nextEntry.status === 'work') ? fmtHHMM(nextEntry.start) + ' - ' + fmtHHMM(nextEntry.end) : escapeHtml((nextEntry.codes && nextEntry.codes[0]) || 'off'))+'</div>' : ''));
     } else {
       if(r.issuesMe.length) bits.push('<div>O teu lado:</div>'+buildRuleCheckHtml(r.issuesMe));
       if(r.issuesThem.length) bits.push('<div style="margin-top:8px;">O lado deles:</div>'+buildRuleCheckHtml(r.issuesThem));
