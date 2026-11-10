@@ -1039,6 +1039,7 @@
   @media (prefers-reduced-motion: reduce){ .row{ animation:none; opacity:1; transform:none; } }
   .row:last-child{ border-bottom:none; }
   .row-main{ flex:1 1 170px; min-width:0; }
+  .row.has-av .row-main{ flex-basis:110px; }
   .recent-swap-delete{
     flex-shrink:0;
     width:24px; height:24px;
@@ -5110,13 +5111,14 @@ function toggleUserMenu(){
   try{ const pp = (MT_DOC && MT_DOC.date === sfToday()) ? mtMyPunch(mtStaffId()) : null; if(pp && pp[0] && !pp[1]) punchDot = '<span title="Entrada registada" style="flex:none; width:9px; height:9px; border-radius:50%; background:#2ecc71; box-shadow:0 0 0 3px rgba(46,204,113,.18);"></span>'; }catch(e){}
   const grp = (GROUP === 'sup') ? 'SUPERVISÃO · FAO' : 'TTAE · FAO · PAX';
   m.style.background = 'radial-gradient(120% 90% at 0 0, #16304a 0, #0f1626 55%)'; m.style.padding = '0'; m.style.overflow = 'hidden'; m.style.minWidth = '290px';
-  m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div style="flex:none; width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + escapeHtml(ini) + '</div></div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text); display:flex; align-items:center; gap:9px;">' + escapeHtml(nm) + punchDot + '</div><div style="margin-top:6px;"><span style="display:inline-block; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center;">' + escapeHtml(window._loggedId || '') + '</span></div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:8px;">' + grp + '</div></div></div>' +
+  m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div id="user-menu-photo" title="Foto" style="flex:none; position:relative; width:56px; height:62px; cursor:pointer;"><div style="width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div id="user-menu-hexin" style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; overflow:hidden; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + (photoOf(window._loggedId) ? avatarInner(window._loggedId, nm) : escapeHtml(ini)) + '</div></div><div style="position:absolute; right:-4px; bottom:2px; width:20px; height:20px; border-radius:50%; background:#ffb020; color:#1a1200; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #0f1626;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></div></div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text); display:flex; align-items:center; gap:9px;">' + escapeHtml(nm) + punchDot + '</div><div style="margin-top:6px;"><span style="display:inline-block; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center;">' + escapeHtml(window._loggedId || '') + '</span></div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:8px;">' + grp + '</div>' + (photoOf(window._loggedId) ? '<div id="user-menu-rmphoto" style="margin-top:8px; font:600 10px var(--mono); letter-spacing:.1em; color:#8a96b3; text-decoration:underline; cursor:pointer;">REMOVER FOTO</div>' : '') + '</div></div>' +
     '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">HOJE</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px;">' + escapeHtml(offTxt) + '</div></div></div>' +
     proMenuLinksHtml() +
     ((isAdminSession || isDeptAdminSession) ? '<div id="user-menu-admin" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ffb020; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>DEFINIÇÕES</div>' : '') +
     '<div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
   document.body.appendChild(m); { const b = document.getElementById('user-menu-btn'); if(b) b.classList.add('open'); } tuckUserMenu(m);
   document.getElementById('user-menu-out').addEventListener('click', () => { closeUserMenu(); document.getElementById('logout-link').click(); });
+  { const ph = document.getElementById('user-menu-photo'); if(ph) ph.addEventListener('click', (e) => { e.stopPropagation(); pickMyPhoto(); }); const rp = document.getElementById('user-menu-rmphoto'); if(rp) rp.addEventListener('click', (e) => { e.stopPropagation(); closeUserMenu(); removeMyPhoto(); }); }
   const _am = document.getElementById('user-menu-admin'); if(_am) _am.addEventListener('click', () => { closeUserMenu(); openScheduleOverride(); });
   m.querySelectorAll('[data-go]').forEach(r => r.addEventListener('click', () => { closeUserMenu(); const t = document.getElementById(r.dataset.go); if(t) t.click(); }));
 }
@@ -5172,6 +5174,117 @@ function swapStillPendingToday(e){
   if(ends.length === 0) return false; // nobody in this swap is actually working today anymore
   return nowMin < Math.max(...ends);
 }
+// ---------- staff photos ----------
+// One small square JPEG per person (made on the phone, ~3 KB), kept as text in the shared database: data/photos { staffId: "data:image/jpeg;base64,..." }
+let PHOTOS = {};
+function photoOf(id){ return PHOTOS[String(id)] || ''; }
+function avatarColor(id){ const cols = ['#3a5a8c','#5b4bb7','#7a4a6a','#2f7a6b','#b5651d','#4a6b3a','#8c3a4a','#3a7a8c']; let h = 0; String(id).split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return cols[h % cols.length]; }
+function avatarInitials(name){ const parts = niceListName(name).split(/\s+/).filter(Boolean); return ((parts[0]||'')[0] || '') + ((parts.length > 1 ? parts[parts.length-1] : '')[0] || ''); }
+function avatarInner(id, name){
+  const ph = photoOf(id);
+  return ph ? '<img src="'+ph+'" alt="" style="width:100%; height:100%; object-fit:cover; display:block;">' : escapeHtml(avatarInitials(name).toUpperCase());
+}
+function avatarHtml(id, name, size){
+  const ph = photoOf(id);
+  return '<div class="st-av" data-id="'+escapeHtml(String(id))+'" data-name="'+escapeHtml(name)+'" style="width:'+size+'px; height:'+size+'px; border-radius:50%; overflow:hidden; flex:none; display:flex; align-items:center; justify-content:center; background:'+avatarColor(id)+'; color:#fff; font:700 '+Math.round(size*0.34)+'px \'Instrument Sans\',system-ui,sans-serif; box-shadow:0 0 0 1px #2a3552;">'+avatarInner(id, name)+'</div>';
+}
+function repaintAvatars(){
+  document.querySelectorAll('.st-av').forEach(el => { el.innerHTML = avatarInner(el.dataset.id, el.dataset.name); });
+  const hx = document.getElementById('user-menu-hexin'); if(hx && window._loggedId){ const nm = personalName(window._loggedName); hx.innerHTML = photoOf(window._loggedId) ? avatarInner(window._loggedId, nm) : escapeHtml(nm.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()); }
+}
+function resizePhotoFile(file){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => {
+      try{
+        const S = 96, sw = img.naturalWidth, sh = img.naturalHeight, side = Math.min(sw, sh);
+        const sx = (sw - side) / 2, sy = sh > sw ? Math.max(0, (sh - side) * 0.2) : 0;   // portrait photos: crop a little above the middle (faces are usually in the upper part)
+        const c = document.createElement('canvas'); c.width = c.height = S;
+        const x = c.getContext('2d'); x.fillStyle = '#0b1220'; x.fillRect(0, 0, S, S); x.drawImage(img, sx, sy, side, side, 0, 0, S, S);
+        URL.revokeObjectURL(url);
+        let q = 0.8, d = c.toDataURL('image/jpeg', q);
+        while(d.length > 9000 && q > 0.4){ q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+        if(d.length > 12000) rej(new Error('big')); else res(d);
+      }catch(e){ rej(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad')); };
+    img.src = url;
+  });
+}
+async function savePhoto(id, dataUrl){
+  const db = await getDb(); if(!db) throw new Error('nodb');
+  const ref = db.collection('data').doc(gScope('photos'));
+  await ref.set({ [String(id)]: dataUrl || firebase.firestore.FieldValue.delete() }, { merge:true });
+  if(dataUrl) PHOTOS[String(id)] = dataUrl; else delete PHOTOS[String(id)];
+  repaintAvatars();
+}
+// Pick a photo, then move / zoom it inside the circle before saving
+function pickMyPhoto(){
+  const id = window._loggedId; if(!id) return;
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+  inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; if(f) openPhotoCrop(f, id); });
+  inp.click();
+}
+function openPhotoCrop(file, id){
+  const url = URL.createObjectURL(file); const img = new Image();
+  img.onerror = () => { URL.revokeObjectURL(url); showConfirmDialog('Não consegui abrir essa foto. Escolhe outra.', () => {}, false, 'OK', false, null, '', true); };
+  img.onload = () => {
+    const BOX = Math.min(260, window.innerWidth - 80);
+    const nw = img.naturalWidth, nh = img.naturalHeight;
+    const minS = BOX / Math.min(nw, nh);
+    let sc = minS, tx = 0, ty = 0;
+    const ov = document.createElement('div'); ov.id = 'photo-crop';
+    ov.style.cssText = 'position:fixed; inset:0; z-index:100000; background:rgba(5,9,18,.94); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:20px; font-family:var(--mono);';
+    ov.innerHTML = '<div style="color:#e8eefc; font:700 13px var(--mono); letter-spacing:.12em;">AJUSTA A FOTO</div>' +
+      '<div id="pc-box" style="position:relative; width:'+BOX+'px; height:'+BOX+'px; overflow:hidden; border-radius:50%; background:#0b1220; touch-action:none; cursor:grab; box-shadow:0 0 0 2px #ffb020;"><img id="pc-img" alt="" draggable="false" style="position:absolute; left:0; top:0; max-width:none; user-select:none; -webkit-user-drag:none;"></div>' +
+      '<input id="pc-zoom" type="range" min="1" max="4" step="0.01" value="1" style="width:'+BOX+'px; accent-color:#ffb020;">' +
+      '<div style="color:#8a96b3; font:11px var(--mono); letter-spacing:.06em; text-align:center;">Arrasta para mover · pinça ou usa a barra para ampliar</div>' +
+      '<div style="display:flex; gap:12px; width:'+BOX+'px;"><button type="button" id="pc-cancel" style="flex:1; height:42px; border-radius:7px; border:1px solid #2a3552; background:transparent; color:#a9b6d6; font:700 12px var(--mono); letter-spacing:.1em; cursor:pointer;">CANCELAR</button><button type="button" id="pc-save" style="flex:1; height:42px; border-radius:7px; border:none; background:linear-gradient(#FFC94D,#FFB020); color:#1a1200; font:700 12px var(--mono); letter-spacing:.1em; cursor:pointer;">GUARDAR</button></div>';
+    document.body.appendChild(ov);
+    const box = ov.querySelector('#pc-box'), im = ov.querySelector('#pc-img'), zoom = ov.querySelector('#pc-zoom');
+    im.src = url;
+    function clamp(){ const w = nw * sc, h = nh * sc; tx = Math.min(0, Math.max(BOX - w, tx)); ty = Math.min(0, Math.max(BOX - h, ty)); }
+    function paint(){ clamp(); im.style.width = (nw * sc) + 'px'; im.style.height = (nh * sc) + 'px'; im.style.left = tx + 'px'; im.style.top = ty + 'px'; }
+    function setScale(ns, cx, cy){   // zoom around a point of the box (default: its middle)
+      cx = (cx === undefined ? BOX / 2 : cx); cy = (cy === undefined ? BOX / 2 : cy);
+      ns = Math.min(minS * 4, Math.max(minS, ns));
+      const k = ns / sc; tx = cx - (cx - tx) * k; ty = cy - (cy - ty) * k; sc = ns;
+      zoom.value = String(sc / minS); paint();
+    }
+    tx = (BOX - nw * sc) / 2; ty = nh > nw ? -(nh * sc - BOX) * 0.2 : (BOX - nh * sc) / 2; paint();
+    zoom.addEventListener('input', () => setScale(minS * parseFloat(zoom.value)));
+    box.addEventListener('wheel', (e) => { e.preventDefault(); const r = box.getBoundingClientRect(); setScale(sc * (e.deltaY < 0 ? 1.08 : 1/1.08), e.clientX - r.left, e.clientY - r.top); }, { passive:false });
+    const pts = new Map(); let lastDist = 0;
+    box.addEventListener('pointerdown', (e) => { box.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x:e.clientX, y:e.clientY }); box.style.cursor = 'grabbing'; if(pts.size === 2){ const [a, b2] = [...pts.values()]; lastDist = Math.hypot(a.x - b2.x, a.y - b2.y); } });
+    box.addEventListener('pointermove', (e) => {
+      if(!pts.has(e.pointerId)) return;
+      const prev = pts.get(e.pointerId); pts.set(e.pointerId, { x:e.clientX, y:e.clientY });
+      if(pts.size === 1){ tx += e.clientX - prev.x; ty += e.clientY - prev.y; paint(); }
+      else if(pts.size === 2){ const [a, b2] = [...pts.values()]; const d = Math.hypot(a.x - b2.x, a.y - b2.y); if(lastDist){ const r = box.getBoundingClientRect(); setScale(sc * d / lastDist, (a.x + b2.x) / 2 - r.left, (a.y + b2.y) / 2 - r.top); } lastDist = d; }
+    });
+    const up = (e) => { pts.delete(e.pointerId); lastDist = 0; box.style.cursor = 'grab'; };
+    box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
+    const close = () => { URL.revokeObjectURL(url); ov.remove(); };
+    ov.querySelector('#pc-cancel').addEventListener('click', close);
+    ov.querySelector('#pc-save').addEventListener('click', async () => {
+      try{
+        const S = 96, side = BOX / sc;
+        const c = document.createElement('canvas'); c.width = c.height = S;
+        const x = c.getContext('2d'); x.fillStyle = '#0b1220'; x.fillRect(0, 0, S, S);
+        x.drawImage(img, -tx / sc, -ty / sc, side, side, 0, 0, S, S);
+        let q = 0.8, d = c.toDataURL('image/jpeg', q);
+        while(d.length > 9000 && q > 0.4){ q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+        await savePhoto(id, d); close();
+      }catch(e){ close(); showConfirmDialog('Não consegui guardar essa foto. Tenta outra.', () => {}, false, 'OK', false, null, '', true); }
+    });
+  };
+  img.src = url;
+}
+function removeMyPhoto(){
+  const id = window._loggedId; if(!id) return;
+  showConfirmDialog('Remover a tua foto?', async () => { try{ await savePhoto(id, null); }catch(e){} }, false, 'REMOVER', false, null, 'CANCELAR');
+}
+getDb().then(db => { if(!db) return; try{ db.collection('data').doc(gScope('photos')).onSnapshot(sn => { PHOTOS = sn.exists ? sn.data() : {}; repaintAvatars(); }, () => {}); }catch(e){} });
 // "GUERREIRO ELIANA" -> "Eliana Guerreiro" (display only; used in the swap lists)
 function niceListName(n){
   const parts = String(n||'').trim().split(/\s+/).filter(Boolean);
@@ -6444,7 +6557,8 @@ function renderCoverResults(results, idx){
     } else {
       subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<span style="background:#e8eefc; color:#0b1220; font-size:10px; font-weight:700; line-height:1; padding:3px 6px 2px; border-radius:5px; display:inline-block; margin-right:0; vertical-align:middle;">'+escapeHtml(codeLabel)+'</span>' : codeLabel)+(hideNext ? '' : ' ' + fmtDateOn(idx))+((nextDayText && !hideNext)?'<br>'+nextDayText:'');   // clean rows: no repeated date (it is the day that was searched)
     }
-    row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
+    row.classList.add('has-av');
+    row.innerHTML = avatarHtml(r.worker.id, r.worker.name, 40) + '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
       '<div class="row-sub">'+subHtml+'</div></div>'+
       '<div class="row-status">'+(swapped?'':(reportBtnHtml+hoursBadge(r.worker.id)+sysBadge(r.worker.id)))+'</div>';
     if(matchingRequest){
