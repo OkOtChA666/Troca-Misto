@@ -1251,6 +1251,15 @@
   div.area-card{ padding:0 18px 0 0; gap:14px; align-items:stretch; }
   div.area-card > .ac-ic{ width:50px; height:auto; border-radius:0; border:0; }
   div.area-card > div:not(.ac-ic){ padding:16px 0; align-self:center; }
+  /* FERRAMENTAS cards: same look as the ÁREA PESSOAL cards (icon block on the left edge, no arrow) */
+  #panel-tools .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
+  #panel-tools .tool-card > .tool-arrow{ display:none; }
+  #panel-tools .tool-card > .tool-ic{ width:50px; height:auto; border-radius:0; border:0; background:#0f2236; color:#4fd1f0; }
+  html.themed #panel-tools .tool-card{ border-radius:var(--r); }
+  html.themed #panel-tools .tool-card > .tool-ic{ background:var(--panel-2); color:var(--text); }
+  #panel-tools .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
+  #panel-tools .tool-name{ font-size:15px; letter-spacing:.12em; }
+  #panel-tools .tool-desc{ font-size:13px; margin-top:4px; }
   .area-card .ac-s{ font-size:13px; color:var(--text-dim); margin-top:4px; }
   /* favourites: heart on each card; chosen ones go to the top, set apart, in strong yellow */
   .area-card .ac-fav{ flex:none; background:none; border:0; padding:6px; margin:-6px 0; cursor:pointer; color:#5a6788; display:inline-flex; -webkit-tap-highlight-color:transparent; }
@@ -8130,7 +8139,7 @@ function renderNotificationsBadge(){
   badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
   badge.classList.toggle('hidden', unreadCount === 0);
   const nc = document.getElementById('notif-count');
-  if(nc){ nc.textContent = String(unreadCount); nc.style.color = unreadCount > 0 ? '#ffb020' : '#5a6788'; nc.style.background = unreadCount > 0 ? '#2a2008' : '#0f1626'; nc.style.borderColor = unreadCount > 0 ? '#8a6a14' : '#1c2a44'; }
+  if(nc){ nc.style.display = unreadCount > 0 ? '' : 'none'; nc.textContent = String(unreadCount); nc.style.color = unreadCount > 0 ? '#ffb020' : '#5a6788'; nc.style.background = unreadCount > 0 ? '#2a2008' : '#0f1626'; nc.style.borderColor = unreadCount > 0 ? '#8a6a14' : '#1c2a44'; }
   const bl = document.getElementById('notifications-bell-link'); if(bl) bl.classList.toggle('has-unread', unreadCount > 0);
   try{ updateAreaHubDot(); }catch(e){}
 }
