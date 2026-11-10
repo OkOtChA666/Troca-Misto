@@ -522,6 +522,12 @@
     content:''; width:12px; height:8px; margin-left:10px; flex-shrink:0;
     background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238b97b8' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
   }
+  .csr-d{ display:inline-flex; align-items:baseline; }
+  .csr-d i{ font-style:normal; }
+  .csr-d .csr-w, .csr-d .csr-m{ text-transform:uppercase; letter-spacing:.04em; font-size:13px; }
+  .csr-d .csr-w{ min-width:36px; }
+  .csr-d .csr-w{ min-width:40px; }
+  .csr-d .csr-n{ min-width:0; margin-right:5px; }
   .custom-select-list{
     position:absolute; z-index:20;
     top: calc(100% + 4px); left:0; right:0;
@@ -6029,12 +6035,17 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
   function isWeekend(idx){
     return WEEKDAYS[idx] === 'Sat' || WEEKDAYS[idx] === 'Sun';
   }
+  // "Sáb 14 Nov" -> three fixed columns (weekday / day / month) so the dates line up row under row
+  function alignedDate(t){
+    const m = /^(\S+)\s+(\d+)\s+(.+)$/.exec(String(t));
+    return m ? '<span class="csr-d"><i class="csr-w">'+m[1]+'</i><i class="csr-n">'+m[2]+'</i><i class="csr-m">'+m[3]+'</i></span>' : t;
+  }
   function rowLabel(idx){
     const dateClass = 'csr-date' + (isWeekend(idx) ? ' csr-weekend' : '') + (isBlocked(idx) ? ' csr-past' : '');
     const countClass = 'csr-count ' + tierClass(counts[idx]);
     const todayTag = isTomorrowDay(idx) ? ' <span class="csr-today-tag">AMANHÃ</span>' : (allowToday && isTodayDay(idx) ? ' <span class="csr-today-tag">HOJE</span>' : '');
     return {
-      dateHtml: '<span class="'+dateClass+'">'+fmtDateLabel(idx)+todayTag+'</span>',
+      dateHtml: '<span class="'+dateClass+'">'+alignedDate(fmtDateLabel(idx))+todayTag+'</span>',
       countHtml: '<span class="'+countClass+'">'+counts[idx]+' '+(counts[idx] === 1 ? PEOPLE_WORD[0] : PEOPLE_WORD[1])+'</span>'
     };
   }
