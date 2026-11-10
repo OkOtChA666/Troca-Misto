@@ -471,6 +471,10 @@
     box-shadow: 0 0 0 3px var(--amber-glow);
     cursor:pointer;
   }
+  .ts-row{ display:flex; align-items:center; justify-content:space-between; margin:10px 0 14px; }
+  .ts-big{ font-family:var(--sans); font-weight:800; font-size:40px; line-height:1; color:var(--amber); letter-spacing:.02em; }
+  .ts-btn{ flex:none; width:46px; height:46px; border-radius:12px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font:600 22px var(--sans); display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ts-btn:active{ border-color:var(--amber); color:var(--amber); }
   input[type=range]::-moz-range-thumb{
     width:20px; height:20px; border-radius:50%;
     background: var(--amber); border: 2px solid #1A1200;
@@ -1867,7 +1871,8 @@
 
     <div id="turno-search-controls">
       <div class="field">
-        <label for="turno-slider">HORÁRIO PRETENDIDO PARA INÍCIO DO TURNO - <span id="turno-slider-readout" style="color:var(--amber);">—</span></label>
+        <label for="turno-slider" style="text-align:center;">INÍCIO DO TURNO A PARTIR DAS</label>
+        <div class="ts-row"><button type="button" class="ts-btn" id="turno-minus" aria-label="15 minutos antes">−</button><span id="turno-slider-readout" class="ts-big">—</span><button type="button" class="ts-btn" id="turno-plus" aria-label="15 minutos depois">+</button></div>
         <input type="range" id="turno-slider" min="0" max="1425" step="15" value="480">
       </div>
       <div class="field" style="margin-top:20px;">
@@ -6695,6 +6700,11 @@ function onPickTradeA(w){
 setupCombo('trade-a-input','trade-a-list', onPickTradeA, (w) => !isBlocked(w.id) && isSelfOrAdmin(w));
 document.getElementById('trade-a-date').addEventListener('change', updateTurnoContext);
 document.getElementById('turno-slider').addEventListener('input', updateSliderReadout);
+[['turno-minus', -15], ['turno-plus', 15]].forEach(([id, d]) => document.getElementById(id).addEventListener('click', () => {
+  const sl = document.getElementById('turno-slider');
+  sl.value = Math.max(parseInt(sl.min, 10), Math.min(parseInt(sl.max, 10), parseInt(sl.value, 10) + d));
+  sl.dispatchEvent(new Event('input', { bubbles:true }));
+}));
 function fmtMinAsTime(mins){
   const h = Math.floor(mins/60), m = mins%60;
   return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
