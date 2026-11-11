@@ -13,7 +13,17 @@ export function parseRegulation(html) {
   const headRe = /<font class="trigInfo">\[(\d+)\]<\/font>\s*<font class="nameInfo">([^<]*)<\/font>\s*<font class="firstNameInfo">([^<]*)<\/font>/g;
   let m;
   while ((m = headRe.exec(html))) {
-    if (!agents.has(m[1])) agents.set(m[1], { id: m[1], name: (dec(m[2]).trim() + ' ' + dec(m[3]).trim()).trim(), tasks: [] });
+    if (!agents.has(m[1])) {
+      // the role written under the name (e.g. "Agente Check-In E Portas Embarque", "Agente Balcão E Vendas"); k = 1 only for check-in agents
+      const rm = /<font class="qualif">[\s\S]{0,200}?<font class="default">([^<]*)<\/font>/.exec(html.slice(m.index, m.index + 1500));
+      const role = rm ? dec(rm[1]).trim() : '';
+      // the remark on the agent's header (e.g. SWAP, LOST, TKT) and the service Planete has for them today (e.g. "12:00 18:00(06:00)")
+      const hs = html.lastIndexOf('<div class="header', m.index);
+      const rmq = (/data-rmq="([^"]*)"/.exec(html.slice(hs, m.index)) || [])[1] || '';
+      const nextH = html.indexOf('<div class="header', m.index);
+      const sv = /class="infoServ">\s*(\d{1,2}:\d{2})\s+(\d{1,2}:\d{2})/.exec(html.slice(m.index, nextH > 0 ? nextH : m.index + 4000));
+      agents.set(m[1], { id: m[1], name: (dec(m[2]).trim() + ' ' + dec(m[3]).trim()).trim(), tasks: [], role, k: role ? (/^Agente Check-In E Portas Embarque/i.test(role) ? 1 : 0) : null, rmq, plan: sv ? [sv[1].padStart(5, '0'), sv[2].padStart(5, '0')] : null });
+    }
   }
   // 2) tasks: every div with class "metier-N tache…"
   let date = null, taskCount = 0, orphan = 0;
