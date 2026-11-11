@@ -10084,7 +10084,7 @@ function aiCalc(idx){
   let rt = false;
   try{ rt = off === 0 && !!AI_TASKS && AI_TASKS.date === key && !!AI_TASKS.a && (Date.now() - (AI_TASKS.updatedAt || 0)) < 45 * 60000 && Object.keys(AI_TASKS.a).some(k => { try{ return !!JSON.parse(AI_TASKS.a[k]).p; }catch(e){ return false; } }); }catch(e){ rt = false; }
   const punchOf = (id) => { try{ const r = JSON.parse(AI_TASKS.a[id]); return r && r.p ? r.p : null; }catch(e){ return null; } };
-  const autoAbs = [], lateList = [], extraList = [], regList = [];
+  const autoAbs = [], lateList = [], extraList = [], regList = [], swapList = [];
   const hmMin = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length === 4 ? parseInt(d.slice(0,2),10) * 60 + parseInt(d.slice(2),10) : null; };
   DATA.workers.forEach(w => {
     const here = aiShiftMins(getEffectiveEntry(w, idx));
@@ -10149,6 +10149,15 @@ function aiCalc(idx){
       }
     }
     const notCki = (() => { try{ return JSON.parse(AI_TASKS.a[w.id]).k === 0; }catch(e){ return false; } })();   // planete says this person is not a check-in agent (balcão, supervisão, lost…)
+    if(rt && !notCki){   // planete marks a SWAP on this agent today but the app has no swap for them
+      try{
+        const rec = JSON.parse(AI_TASKS.a[w.id]);
+        if(rec && rec.x === 'SWAP' && !findSwapRecordFor(w, idx)){
+          const ps = rec.s ? [hmMin(rec.s[0]), hmMin(rec.s[1])] : null;
+          swapList.push({ id: w.id, name: w.name, app: here, pl: ps && ps[0] !== null && ps[1] !== null ? [ps[0], ps[1] <= ps[0] ? ps[1] + 1440 : ps[1]] : null });
+        }
+      }catch(e){}
+    }
     if(!here && rt && !xw && !notCki){
       // not on the roster today but clocked in (paper swap, extra hours) and still here: counts until the end of the last task
       const pp = punchOf(w.id);
@@ -10174,7 +10183,7 @@ function aiCalc(idx){
     }
   });
   const working = workers.filter(w => absent.indexOf(w.id) < 0 && autoAbs.indexOf(w.id) < 0).length + extraList.length + regList.filter(x => x.solo).length;
-  const out = { key, idx, date, workers, working, absent, rt, late: lateList, extras: extraList, reg: regList, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
+  const out = { key, idx, date, workers, working, absent, rt, late: lateList, extras: extraList, reg: regList, swp: swapList, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
   if(!fl) return out;
   const need = new Array(AI_SLOTS).fill(0);
   const base = off * 1440;   // minutes (relative to today 00:00) where this day starts
@@ -10350,13 +10359,19 @@ function aiRenderDay(c){
       '<div class="ai-wrap"><div class="ai-y">' + P.yl + '</div><div class="ai-sc"><div class="ai-in" style="width:' + (AI_ZOOM * 100) + '%">' + P.inner + '</div></div></div>' + lg + '<div class="ai-tip" id="ai-tip">' + P.tip + '</div>');
     const chips = c.absent.map(id => { const w = c.workers.find(x => x.id === id); return w ? '<span class="ai-chip">' + escapeHtml(w.name) + ' · ' + aiHM(w.s) + '–' + aiHM(w.e % 1440 || 1440) + ' <b data-rm="' + escapeHtml(id) + '">✕</b></span>' : ''; }).join('');
     const hm2 = (m) => aiHM(m % 1440 || 1440), lt = (m) => m >= 60 ? Math.floor(m / 60) + 'h' + ('0' + (m % 60)).slice(-2) : m + ' min';
-    let rtH = '';
+    let rtH = '', incH = '', regH = '', missH = '', incN = 0;
     if(c.rt){
       const chip = (t, col) => '<span class="ai-chip" style="border-color:' + col + '66' + (/^#ff5d/i.test(col) ? '' : '; color:#dbe4ff') + '">' + t + '</span>';
       const miss = c.late.slice().sort((a, b) => b.late - a.late);
-      rtH += '<div class="ai-miss"><h4 style="color:#ff5d6c">AINDA NÃO ENTRARAM · ' + miss.length + '</h4>' + (miss.length ? '<div>' + miss.map(m => chip(escapeHtml(m.name) + ' · ' + hm2(m.s) + '–' + hm2(m.e) + ' <b style="color:' + (m.out ? '#ff5d6c' : '#ffb020') + '">+' + lt(m.late) + '</b>', m.out ? '#ff5d6c' : '#ffb020')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Depois de ' + AI_LATE + ' min sem picar, deixam de contar na previsão.</div>' : '<div class="hint" style="font-size:12px;">Toda a gente que devia estar já entrou. 👍</div>') + '</div>';
-      if(c.reg && c.reg.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#4da3ff">HORAS EXTRA · ' + c.reg.length + '</h4><div>' + c.reg.map(x => chip(escapeHtml(x.name) + ' · ' + hm2(x.s) + '–' + hm2(x.e) + (x.s2 !== null && x.s2 !== undefined ? ' + ' + hm2(x.s2) + '–' + hm2(x.e2) : '') + (x.in ? ' <b style="color:#2ecc71">✓ entrou ' + escapeHtml(x.in) + '</b>' : ''), '#4da3ff')).join('') + '</div></div>';
-      if(c.extras.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#2ecc71">ENTRARAM SEM ESTAR NO HORÁRIO · ' + c.extras.length + '</h4><div>' + c.extras.map(x => chip(escapeHtml(x.name) + ' · entrou ' + escapeHtml(x.in), '#2ecc71')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Trocas em papel ou horas extra. Contam até ao fim da última tarefa.</div></div>';
+      missH += '<div class="ai-miss"><h4 style="color:#ff5d6c">AINDA NÃO ENTRARAM · ' + miss.length + '</h4>' + (miss.length ? '<div>' + miss.map(m => chip(escapeHtml(m.name) + ' · ' + hm2(m.s) + '–' + hm2(m.e) + ' <b style="color:' + (m.out ? '#ff5d6c' : '#ffb020') + '">+' + lt(m.late) + '</b>', m.out ? '#ff5d6c' : '#ffb020')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Depois de ' + AI_LATE + ' min sem picar, deixam de contar na previsão.</div>' : '<div class="hint" style="font-size:12px;">Toda a gente que devia estar já entrou. 👍</div>') + '</div>';
+      if(c.reg && c.reg.length) regH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#4da3ff">HORAS EXTRA · ' + c.reg.length + '</h4><div>' + c.reg.map(x => chip(escapeHtml(x.name) + ' · ' + hm2(x.s) + '–' + hm2(x.e) + (x.s2 !== null && x.s2 !== undefined ? ' + ' + hm2(x.s2) + '–' + hm2(x.e2) : '') + (x.in ? ' <b style="color:#2ecc71">✓ entrou ' + escapeHtml(x.in) + '</b>' : ''), '#4da3ff')).join('') + '</div></div>';
+      incN += c.extras.length;
+      if(c.swp && c.swp.length){
+        incN += c.swp.length;
+        const rg = (v) => v ? hm2(v[0]) + '–' + hm2(v[1]) : 'folga';
+        incH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#ffb020">SWAP NO PLANETE, SEM TROCA NA APP · ' + c.swp.length + '</h4><div>' + c.swp.map(x => '<span class="ai-chip" style="border-color:#ffb02066; color:#dbe4ff; display:block; margin-bottom:7px;">' + escapeHtml(x.name) + '<br><span style="color:var(--text-dim); font-size:11.5px;">App: ' + rg(x.app) + ' · Planete: ' + (x.pl ? rg(x.pl) : '?') + '</span></span>').join('') + '</div><div class="hint" style="margin-top:2px; font-size:11.5px;">No Planete tem a marca SWAP, mas a troca não foi feita na app. Faz a troca na app (ou altera o horário) para ficar tudo certo.</div></div>';
+      }
+      if(c.extras.length) incH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#2ecc71">PICARAM SEM ESTAR NO HORÁRIO · ' + c.extras.length + '</h4><div>' + c.extras.map(x => chip(escapeHtml(x.name) + ' · entrou ' + escapeHtml(x.in), '#2ecc71')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Trocas em papel ou horas extra. Contam até ao fim da última tarefa.</div></div>';
       { // possible swap made outside the app: someone missing + someone off the roster who came in around the same time
         const used = {}, pairs = [];
         c.late.filter(m => m.out).sort((x, y) => x.s - y.s).forEach(m => {
@@ -10364,8 +10379,9 @@ function aiRenderDay(c){
           c.extras.forEach(x => { if(used[x.id]) return; const xi = mtToMin(x.in); if(xi === null) return; const d = Math.abs(xi - m.s); if(d < bd){ bd = d; best = x; } });
           if(best){ used[best.id] = 1; pairs.push({ m, x: best }); }
         });
-        if(pairs.length) rtH += '<div class="ai-miss" style="margin-top:10px"><div style="border:1px solid #6b5a1f; background:#17140a; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.55;"><b style="color:#ffd166">⇄ Troca fora da app?</b>' + pairs.map(q => '<div style="margin-top:6px;">' + escapeHtml(q.m.name) + ' (' + hm2(q.m.s) + '–' + hm2(q.m.e) + ') não picou e ' + escapeHtml(q.x.name) + ' entrou às ' + escapeHtml(q.x.in) + '.</div>').join('') + '<div style="color:#8d8660; font-size:11.5px; margin-top:6px;">Só uma dica. Se for uma troca, faz a troca na app para ficar tudo certo.</div></div></div>';
+        if(pairs.length) incH += '<div class="ai-miss" style="margin-top:10px"><div style="border:1px solid #6b5a1f; background:#17140a; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.55;"><b style="color:#ffd166">⇄ Troca fora da app?</b>' + pairs.map(q => '<div style="margin-top:6px;">' + escapeHtml(q.m.name) + ' (' + hm2(q.m.s) + '–' + hm2(q.m.e) + ') não picou e ' + escapeHtml(q.x.name) + ' entrou às ' + escapeHtml(q.x.in) + '.</div>').join('') + '<div style="color:#8d8660; font-size:11.5px; margin-top:6px;">Só uma dica. Se for uma troca, faz a troca na app para ficar tudo certo.</div></div></div>';
       }
+      rtH = missH + regH + '<div style="border:1px solid #6b5a1f; border-radius:12px; padding:6px 14px 12px; margin-top:16px; background:rgba(255,176,32,.04);"><div style="display:flex; align-items:center; color:#ffb020; font-weight:700; letter-spacing:.08em; font-size:13px; padding:8px 0 2px;">⚠ INCONSISTÊNCIAS<span style="margin-left:auto; border:1px solid #6b5a1f; border-radius:12px; padding:2px 9px; font-size:12px;">' + incN + '</span></div><div style="font-size:11px; color:var(--text-dim); margin:0 0 8px;">O que não bate certo entre o horário e quem picou</div>' + incH + '</div>';
     }
     h += '<div class="ai-det">' + grid + rtH +
       (c.rt ? '' : '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
