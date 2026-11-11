@@ -738,7 +738,8 @@
   .ai-vtr{ position:relative; height:18px; border-left:1px solid #27344f; }
   .ai-vtr .g{ position:absolute; top:-5px; bottom:-5px; border-left:1px solid rgba(255,255,255,.07); }
   .ai-vtr .b{ position:absolute; left:0; top:2px; height:14px; background:rgba(46,204,113,.8); border-radius:0 3px 3px 0; } .ai-vtr .b.r{ background:rgba(255,93,108,.9); }
-  .ai-vtr .nm{ position:absolute; top:-3px; height:24px; border-left:3px solid var(--amber); } .ai-vtr .nm:after{ content:''; position:absolute; left:-6px; top:-1px; border:4px solid transparent; border-top:5px solid var(--amber); }
+  .ai-vtr .bn{ position:absolute; left:7px; top:2px; line-height:14px; font:700 11px var(--mono); color:#fff; pointer-events:none; }
+  .ai-vtr .nm{ position:absolute; top:2px; height:14px; border-left:3px solid var(--amber); border-radius:1px; }
   .ai-vr.bad{ background:rgba(255,93,108,.10); } .ai-vr .pm{ text-align:center; font:800 12px var(--mono); border-radius:6px; padding:3px 0; } .ai-vr .pm.g{ color:#2ecc71; background:rgba(46,204,113,.10); } .ai-vr .pm.rd{ color:#ff5d6c; background:rgba(255,93,108,.14); } .ai-vr .pm.o{ color:#8a97ad; }
   .ai-vtr .e{ position:absolute; top:-1px; height:20px; border-left:2.5px solid var(--cyan); } .ai-vtr .d{ position:absolute; top:-1px; height:20px; border-left:2.5px dashed #fff; }
   .ai-vr .c{ text-align:center; font:700 11px var(--mono); color:#3a4a66; } .ai-vr .c.p{ color:#c79bff; } .ai-vr .c.u{ color:var(--cyan); } .ai-vr .c.a{ color:#8fd1a8; }
@@ -10328,7 +10329,7 @@ function aiVert(c){
     const nd = c.need[x.k], hv = c.have[x.k], on = c.on[x.k], ok = Math.min(nd, hv), miss = Math.max(0, nd - hv);
     const df = hv - nd, pm = nd === 0 ? '<div class="pm o">·</div>' : (df > 0 ? '<div class="pm g">+' + df + '</div>' : df < 0 ? '<div class="pm rd">−' + (-df) + '</div>' : '<div class="pm o">OK</div>');
     grid += '<div class="ai-vr' + (c.rt && x.u <= new Date().getHours() ? ' rt' : '') + (x.u === sel ? ' sel' : '') + (df < 0 && nd > 0 ? ' bad' : '') + '" data-u="' + x.u + '"><div class="hh">' + ('0' + x.u).slice(-2) + 'h</div>' +
-      '<div class="ai-vtr">' + gl + '<div class="b' + (df < 0 ? ' r' : '') + '" style="width:' + pc(hv) + '"></div>' + (nd > 0 ? '<div class="nm" style="left:' + pc(nd) + '"></div>' : '') + '</div>' + pm +
+      '<div class="ai-vtr">' + gl + '<div class="b' + (df < 0 ? ' r' : '') + '" style="width:' + pc(hv) + '"></div>' + (hv > 0 ? '<div class="bn">' + hv + '</div>' : '') + (nd > 0 ? '<div class="nm" style="left:' + pc(nd) + '"></div>' : '') + '</div>' + pm +
       (c.hasTasks ? '<div class="c p">' + (x.bm || '·') + '</div>' : '<div></div>') +
       '<div class="c u">' + (x.dep ? '▲' + x.dep : '·') + '</div><div class="c a">' + (x.arr ? '▼' + x.arr : '·') + '</div></div>';
   });
@@ -10354,13 +10355,12 @@ function aiRenderDay(c){
       (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> Pessoas em pausa nessa hora</span>' : '') +
       '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
     const lgV = '<div class="ai-leg vl' + (AI_LEG ? ' open' : '') + '" style="gap:10px 14px; margin-top:14px;">' +
-      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px);"><i style="width:11px; height:11px; border-radius:3px; background:#2ecc71; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#2ecc71;">OK</b></span>' +
-      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px);"><i style="width:11px; height:11px; border-radius:3px; background:#ff5d6c; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#ff5d6c;">NOK</b></span>' +
-      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px);"><i style="width:3px; height:20px; background:#ffb020; margin:0 4px;"></i><b style="font-size:12px; letter-spacing:.5px; color:#ffb020;">NEED</b></span>' +
-      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 12px var(--mono); color:#2ecc71;">+1</b><b style="font:700 12px var(--mono); color:#ff5d6c;">−2</b> Sobra / falta gente</span>' +
-      (c.hasTasks ? '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 12px var(--mono); color:#c79bff;">2</b> Em pausa nessa hora</span>' : '') +
-      (c.rt ? '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:8px; height:8px; border-radius:50%; background:#2ecc71; margin:0 2px;"></i>Hora já começada: conta quem picou</span>' : '') +
-      '<span style="display:flex; align-items:center; gap:8px; width:100%; font-size:11.5px;"><b style="font:700 11px var(--mono); color:var(--cyan);">▲3</b> partidas <b style="font:700 11px var(--mono); color:#8fd1a8; margin-left:8px;">▼2</b> chegadas nessa hora</span></div>';
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#2ecc71; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#2ecc71;">OK</b></span>' +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#ff5d6c; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#ff5d6c;">NOK</b></span>' +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#ffb020; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#ffb020;">NEED</b></span>' +
+      (c.hasTasks ? '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#c79bff; margin:0;"></i>Em pausa nessa hora</span>' : '') +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 11px var(--mono); color:var(--cyan);">▲</b> PARTIDAS</span>' +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 11px var(--mono); color:#8fd1a8;">▼</b> CHEGADAS</span>' + '</div>';
     const lg = AI_VERT ? lgV : lgH;
     const V = AI_VERT ? aiVert(c) : null;
     const grid = AI_VERT ? ('<div class="ai-vt"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><button type="button" class="ai-vsw" id="ai-vsw">ver gráfico horizontal</button></div>' +
