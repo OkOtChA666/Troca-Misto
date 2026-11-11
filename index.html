@@ -733,7 +733,8 @@
   .ai-vhd, .ai-vr{ display:grid; grid-template-columns:34px 1fr 42px var(--vc,0px) 26px 26px; gap:5px; align-items:center; }
   .ai-vhd{ font:600 9px var(--mono); color:#8a97ad; letter-spacing:.04em; margin-bottom:6px; } .ai-vhd span{ text-align:center; }
   .ai-vr{ height:28px; border-radius:6px; cursor:pointer; } .ai-vr.sel{ box-shadow:0 0 0 2px #2ecc71; background:rgba(46,204,113,.08); }
-  .ai-vr .hh{ font:600 12px var(--mono); color:#8a97ad; text-align:right; padding-right:4px; }
+  .ai-vr.rt .hh:before{ content:''; position:absolute; left:2px; top:50%; margin-top:-3px; width:6px; height:6px; border-radius:50%; background:#2ecc71; }
+  .ai-vr .hh{ position:relative; font:600 12px var(--mono); color:#8a97ad; text-align:right; padding-right:4px; }
   .ai-vtr{ position:relative; height:18px; border-left:1px solid #27344f; }
   .ai-vtr .g{ position:absolute; top:-5px; bottom:-5px; border-left:1px solid rgba(255,255,255,.07); }
   .ai-vtr .b{ position:absolute; left:0; top:2px; height:14px; background:rgba(46,204,113,.8); border-radius:0 3px 3px 0; } .ai-vtr .b.r{ background:rgba(255,93,108,.9); }
@@ -10022,11 +10023,27 @@ function aiCalc(idx){
   let hasTasks = false;
   const absent = AI_ABS[key] || [];
   const workers = [];
+  // real clock-ins (today only): the green / red dots from planete, when the tasks are fresh and carry them
+  const nowD = new Date(), nowMin = nowD.getHours() * 60 + nowD.getMinutes();
+  let rt = false;
+  try{ rt = off === 0 && !!AI_TASKS && AI_TASKS.date === key && !!AI_TASKS.a && (Date.now() - (AI_TASKS.updatedAt || 0)) < 45 * 60000 && Object.keys(AI_TASKS.a).some(k => { try{ return !!JSON.parse(AI_TASKS.a[k]).p; }catch(e){ return false; } }); }catch(e){ rt = false; }
+  const punchOf = (id) => { try{ const r = JSON.parse(AI_TASKS.a[id]); return r && r.p ? r.p : null; }catch(e){ return null; } };
+  const autoAbs = [], lateList = [], extraList = [];
   DATA.workers.forEach(w => {
     const here = aiShiftMins(getEffectiveEntry(w, idx));
+    let isAbs = absent.indexOf(w.id) >= 0;
+    if(here && rt && !isAbs){
+      const pp = punchOf(w.id), pin = pp && pp[0] ? mtToMin(pp[0]) : null, pout = pp && pp[1] ? mtToMin(pp[1]) : null;
+      if(pin === null && nowMin >= here[0] && nowMin < Math.min(here[1], 1440)){
+        const late = nowMin - here[0];
+        lateList.push({ id: w.id, name: w.name, s: here[0], e: Math.min(here[1], 1440), late, out: late >= AI_LATE });
+        if(late >= AI_LATE){ isAbs = true; autoAbs.push(w.id); }
+      }
+      if(pin !== null && pout !== null && pout > here[0] && pout < here[1] && here[1] <= 1440) here[1] = pout;   // already left
+    }
     if(here){
       workers.push({ id: w.id, name: w.name, s: here[0], e: Math.min(here[1], 1440) });
-      if(absent.indexOf(w.id) < 0){
+      if(!isAbs){
         for(let t = here[0]; t < Math.min(here[1], 1440); t += AI_SLOT){ have[Math.floor(t / AI_SLOT)]++; on[Math.floor(t / AI_SLOT)]++; }
         // break: long shifts have 1 hour off the floor, usually 4 hours after the start
         // for the day the tasks cover, the real BREAK times from the tasks are used; other days (or people with no tasks) use the rule
@@ -10050,6 +10067,19 @@ function aiCalc(idx){
         }
       }
     }
+    if(!here && rt){
+      // not on the roster today but clocked in (paper swap, extra hours) and still here: counts until the end of the last task
+      const pp = punchOf(w.id);
+      if(pp && pp[0] && !pp[1]){
+        let rec = null; try{ rec = JSON.parse(AI_TASKS.a[w.id]); }catch(e){}
+        let last = null;
+        ((rec && rec.t) || []).forEach(tt => { if(/^(break|pausa|pause)$/i.test(String(tt[0] || '').replace(/^<\s*/, '').trim())) return; const b = mtToMin(tt[2]); if(b !== null && b > nowMin) last = last === null ? b : Math.max(last, b); });
+        if(last === null) last = nowMin + 60;
+        last = Math.min(last, 1440);
+        extraList.push({ id: w.id, name: w.name, in: pp[0], until: last });
+        for(let t = nowMin; t < last; t += AI_SLOT){ have[Math.floor(t / AI_SLOT)]++; on[Math.floor(t / AI_SLOT)]++; }
+      }
+    }
     if(idx > 0){
       const prev = aiShiftMins(getEffectiveEntry(w, idx - 1));
       if(prev && prev[1] > 1440){
@@ -10061,8 +10091,8 @@ function aiCalc(idx){
       }
     }
   });
-  const working = workers.filter(w => absent.indexOf(w.id) < 0).length;
-  const out = { key, idx, date, workers, working, absent, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
+  const working = workers.filter(w => absent.indexOf(w.id) < 0 && autoAbs.indexOf(w.id) < 0).length + extraList.length;
+  const out = { key, idx, date, workers, working, absent, rt, late: lateList, extras: extraList, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
   if(!fl) return out;
   const need = new Array(AI_SLOTS).fill(0);
   const base = off * 1440;   // minutes (relative to today 00:00) where this day starts
@@ -10113,11 +10143,12 @@ function aiCalc(idx){
   return out;
 }
 let AI_CUR = null, AI_ZOOM = 1;
+const AI_LATE = 7;   // minutes after the start of the shift without a clock-in before someone counts as missing
 function aiTip(c, u, g){
   const sn = c.need[u.k], shv = c.have[u.k], sd = shv - sn;
   let tip = '<b>' + aiHM(u.t0) + '–' + aiHM(u.t1 % 1440) + '</b> &nbsp; ' + (sn === 0 ? 'ninguém precisa de estar em check-in/gate ' + (g === 2 ? 'nesta meia hora' : 'nesta hora') :
     '<span class="am">precisas ' + sn + '</span> · <span class="c">estão ' + shv + '</span> → ' + (sd < 0 ? '<span class="r"><b>faltam ' + (-sd) + '</b></span>' : '<b>sobram ' + sd + '</b>')) +
-    '<div class="fl"><span class="c">' + u.dep + ' partidas</span> · ' + u.arr + ' chegadas</div>';
+    '<div class="fl"><span class="c">' + u.dep + (u.dep === 1 ? ' partida' : ' partidas') + '</span> · ' + u.arr + (u.arr === 1 ? ' chegada' : ' chegadas') + '</div>';
   if(c.hasTasks){
     const tk = c.tsk[u.k], fr = Math.max(0, shv - tk);
     tip += '<div class="x">Escalados <b>' + c.on[u.k] + '</b> − em pausa <b class="p">' + c.brk[u.k] + '</b> = disponíveis <b>' + shv + '</b><br>' +
@@ -10196,7 +10227,7 @@ function aiVert(c){
   shown.forEach(x => {
     const nd = c.need[x.k], hv = c.have[x.k], on = c.on[x.k], ok = Math.min(nd, hv), miss = Math.max(0, nd - hv);
     const df = hv - nd, pm = nd === 0 ? '<div class="pm o">·</div>' : (df > 0 ? '<div class="pm g">+' + df + '</div>' : df < 0 ? '<div class="pm rd">−' + (-df) + '</div>' : '<div class="pm o">OK</div>');
-    grid += '<div class="ai-vr' + (x.u === sel ? ' sel' : '') + (df < 0 && nd > 0 ? ' bad' : '') + '" data-u="' + x.u + '"><div class="hh">' + ('0' + x.u).slice(-2) + 'h</div>' +
+    grid += '<div class="ai-vr' + (c.rt && x.u <= new Date().getHours() ? ' rt' : '') + (x.u === sel ? ' sel' : '') + (df < 0 && nd > 0 ? ' bad' : '') + '" data-u="' + x.u + '"><div class="hh">' + ('0' + x.u).slice(-2) + 'h</div>' +
       '<div class="ai-vtr">' + gl + '<div class="b' + (df < 0 ? ' r' : '') + '" style="width:' + pc(hv) + '"></div>' + (nd > 0 ? '<div class="nm" style="left:' + pc(nd) + '"></div>' : '') + '</div>' + pm +
       (c.hasTasks ? '<div class="c p">' + (x.bm || '·') + '</div>' : '<div></div>') +
       '<div class="c u">' + (x.dep ? '▲' + x.dep : '·') + '</div><div class="c a">' + (x.arr ? '▼' + x.arr : '·') + '</div></div>';
@@ -10226,6 +10257,7 @@ function aiRenderDay(c){
       '<span><i style="display:inline-block; width:0; height:12px; border-left:3px solid var(--amber); vertical-align:middle; margin-right:6px"></i>Precisas (a barra tem de chegar aqui)</span>' +
       '<span><b style="font:700 10px var(--mono);color:#2ecc71">+1</b> / <b style="font:700 10px var(--mono);color:#ff5d6c">−2</b> sobra / falta gente</span>' +
       (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> BREAK: pessoas em pausa nessa hora</span>' : '') +
+      (c.rt ? '<span><i style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#2ecc71; margin-right:7px"></i>Hora já começada: conta quem picou</span>' : '') +
       '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
     const lg = AI_VERT ? lgV : lgH;
     const V = AI_VERT ? aiVert(c) : null;
@@ -10235,10 +10267,18 @@ function aiRenderDay(c){
       ('<button type="button" class="ai-vsw" id="ai-vsw" style="margin:0 0 6px">ver gráfico vertical</button><div class="ai-top"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><div class="ai-zs"><span>−</span><input type="range" id="ai-zr" min="1" max="5" step="0.1" value="' + AI_ZOOM + '"><span>+</span></div></div>' +
       '<div class="ai-wrap"><div class="ai-y">' + P.yl + '</div><div class="ai-sc"><div class="ai-in" style="width:' + (AI_ZOOM * 100) + '%">' + P.inner + '</div></div></div>' + lg + '<div class="ai-tip" id="ai-tip">' + P.tip + '</div>');
     const chips = c.absent.map(id => { const w = c.workers.find(x => x.id === id); return w ? '<span class="ai-chip">' + escapeHtml(w.name) + ' · ' + aiHM(w.s) + '–' + aiHM(w.e % 1440 || 1440) + ' <b data-rm="' + escapeHtml(id) + '">✕</b></span>' : ''; }).join('');
-    h += '<div class="ai-det">' + grid +
-      '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
+    const hm2 = (m) => aiHM(m % 1440 || 1440), lt = (m) => m >= 60 ? Math.floor(m / 60) + 'h' + ('0' + (m % 60)).slice(-2) : m + ' min';
+    let rtH = '';
+    if(c.rt){
+      const chip = (t, col) => '<span class="ai-chip" style="border-color:' + col + '66">' + t + '</span>';
+      const miss = c.late.slice().sort((a, b) => b.late - a.late);
+      rtH += '<div class="ai-miss"><h4 style="color:#ff5d6c">AINDA NÃO ENTRARAM · ' + miss.length + '</h4>' + (miss.length ? '<div>' + miss.map(m => chip(escapeHtml(m.name) + ' · ' + hm2(m.s) + '–' + hm2(m.e) + ' <b style="color:' + (m.out ? '#ff5d6c' : '#ffb020') + '">+' + lt(m.late) + '</b>', m.out ? '#ff5d6c' : '#ffb020')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Depois de ' + AI_LATE + ' min sem picar, deixam de contar na previsão.</div>' : '<div class="hint" style="font-size:12px;">Toda a gente que devia estar já entrou. 👍</div>') + '</div>';
+      if(c.extras.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#2ecc71">ENTRARAM SEM ESTAR NO HORÁRIO · ' + c.extras.length + '</h4><div>' + c.extras.map(x => chip(escapeHtml(x.name) + ' · entrou ' + escapeHtml(x.in), '#2ecc71')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Trocas em papel ou horas extra. Contam até ao fim da última tarefa.</div></div>';
+    }
+    h += '<div class="ai-det">' + grid + rtH +
+      (c.rt ? '' : '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
       '<input type="text" id="ai-q" placeholder="Escrever nome ou nº…" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:9px 10px; color:var(--text); font-family:var(--sans); font-size:13px;">' +
-      '<div class="ai-sug" id="ai-sug"></div></div></div>';
+      '<div class="ai-sug" id="ai-sug"></div></div>') + '</div>';
   }
   return h;
 }
