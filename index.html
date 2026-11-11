@@ -10314,7 +10314,7 @@ function aiLabels(box){
 }
 
 let AI_VERT = (function(){ try{ return localStorage.getItem('trocaMistoAiVert') !== '0'; }catch(e){ return true; } })();
-let AI_LEG = (function(){ try{ return localStorage.getItem('trocaMistoAiLeg') === '1'; }catch(e){ return false; } })();
+let AI_LEG = false; // always starts collapsed
 // vertical version of the hour chart: one row per hour (bars sideways) + BREAK / departures / arrivals columns
 function aiVert(c){
   const spu = 60 / AI_SLOT, N = 24, startU = Math.floor(c.from / spu), units = [];
@@ -10373,9 +10373,9 @@ function aiRenderDay(c){
       '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#2ecc71; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#2ecc71;">OK</b></span>' +
       '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#ff5d6c; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#ff5d6c;">NOK</b></span>' +
       '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#ffb020; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#ffb020;">NEED</b></span>' +
-      (c.hasTasks ? '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#c79bff; margin:0;"></i>Em pausa nessa hora</span>' : '') +
-      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 11px var(--mono); color:var(--cyan);">▲</b> PARTIDAS</span>' +
-      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 11px var(--mono); color:#8fd1a8;">▼</b> CHEGADAS</span>' + '</div>';
+      (c.hasTasks ? '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:10px; height:10px; border-radius:50%; background:#c79bff; margin:0;"></i><b style="font:700 11.5px var(--mono); color:#c79bff; letter-spacing:.3px;">BREAK</b></span>' : '') +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 11px var(--mono); color:var(--cyan);">▲</b> <b style="font:700 11.5px var(--mono); color:var(--cyan); letter-spacing:.3px;">PARTIDAS</b></span>' +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 11px var(--mono); color:#8fd1a8;">▼</b> <b style="font:700 11.5px var(--mono); color:#8fd1a8; letter-spacing:.3px;">CHEGADAS</b></span>' + '</div>';
     const lg = AI_VERT ? lgV : lgH;
     const V = AI_VERT ? aiVert(c) : null;
     const grid = AI_VERT ? ('<div class="ai-vt"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><button type="button" class="ai-vsw" id="ai-vsw">ver gráfico horizontal</button></div>' +
