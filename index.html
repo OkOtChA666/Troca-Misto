@@ -2396,7 +2396,7 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">TURNO DUPLO <span style="font:700 9px var(--mono); letter-spacing:.1em; color:#1a1200; background:#ffb020; border-radius:4px; padding:1px 6px; font-style:normal;">EM TESTE</span></span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Opção Turno Duplo</span>
         <span class="pill-toggle">
           <input type="checkbox" id="double-shift-enabled-toggle">
           <span class="pill-track"></span>
@@ -2459,7 +2459,7 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Pesquisa: ponto verde = no aeroporto agora</span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Quem está no aeroporto?</span>
         <span class="pill-toggle">
           <input type="checkbox" id="live-search-look-toggle">
           <span class="pill-track"></span>
@@ -2473,7 +2473,7 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Notificações: mostrar «alterada pelo coordenador»</span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Notificações "Alterada pelo coordenador"</span>
         <span class="pill-toggle">
           <input type="checkbox" id="coord-notes-toggle">
           <span class="pill-track"></span>
@@ -2487,7 +2487,7 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Pedidos de troca (a outra pessoa tem de aceitar)</span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Função <b>REQUEST</b> nas Trocas</span>
         <span class="pill-toggle">
           <input type="checkbox" id="swap-asks-enabled-toggle">
           <span class="pill-track"></span>
@@ -2505,6 +2505,19 @@
         <input type="text" id="support-email-input" autocomplete="off" spellcheck="false" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:13px;">
         <div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn" id="support-email-save-btn" style="flex:1; margin:0;">Guardar</button><button type="button" class="btn" id="support-email-test-btn" style="flex:1; margin:0;">Enviar teste</button></div>
         <div id="support-email-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px; word-break:break-word;"></div>
+        <button type="button" id="new-email-btn" style="width:100%; margin-top:10px; background:transparent; border:1px dashed #8a6a14; color:var(--amber); border-radius:8px; padding:10px 0; font:800 12px var(--sans); letter-spacing:.06em; cursor:pointer;">NOVO EMAIL</button>
+        <div id="new-email-box" style="display:none; margin-top:10px; border:1px solid var(--border-soft); background:rgba(255,255,255,.02); border-radius:10px; padding:12px; font-family:var(--sans); font-size:12.5px; line-height:1.5; color:var(--text-dim);">
+          <b style="color:var(--text);">Para receber os emails noutro endereço:</b>
+          <ol style="margin:8px 0 0; padding-left:18px;">
+            <li style="margin-bottom:6px;">Abre o site <b style="color:var(--text);">web3forms.com</b> (botão abaixo).</li>
+            <li style="margin-bottom:6px;">Escreve o <b style="color:var(--text);">email novo</b> e toca em <b style="color:var(--text);">Create Access Key</b>.</li>
+            <li style="margin-bottom:6px;">Vai ao email e copia a <b style="color:var(--text);">chave</b> que recebeste.</li>
+            <li style="margin-bottom:6px;">Cola a chave no campo acima e toca em <b style="color:var(--text);">GUARDAR</b>.</li>
+            <li>Toca em <b style="color:var(--text);">ENVIAR TESTE</b> para confirmar.</li>
+          </ol>
+          <div style="margin-top:10px; font-size:11.5px;">Se o email da chave não chegar, vê no <b style="color:var(--text);">spam</b>. O botão "Enviar email quando uma troca é confirmada" tem de estar <b style="color:var(--text);">ligado</b>. Depois de guardar a chave nova, os emails deixam de ir para o endereço antigo.</div>
+          <a href="https://web3forms.com" target="_blank" rel="noopener" style="display:block; margin-top:10px; text-align:center; border:1px solid var(--border); border-radius:8px; padding:9px 0; font:700 12px var(--sans); color:var(--cyan); text-decoration:none;">Abrir web3forms.com</a>
+        </div>
       </div>
       </div>
       <div class="rules-tab" data-rt="mais" style="display:none;">
@@ -9886,6 +9899,7 @@ document.getElementById('support-link-enabled-toggle').addEventListener('change'
     showConfirmDialog('Não foi possível guardar esta alteração agora (limite de pedidos atingido). Tenta novamente dentro de alguns instantes.', () => {}, false, 'OK', false, null, null, true);
   }
 });
+(function(){ const nb = document.getElementById('new-email-btn'), bx = document.getElementById('new-email-box'); if(nb && bx) nb.addEventListener('click', () => { const o = bx.style.display === 'none'; bx.style.display = o ? 'block' : 'none'; nb.textContent = o ? 'NOVO EMAIL ⌃' : 'NOVO EMAIL'; }); })();
 document.getElementById('theme-pro-enabled-toggle').addEventListener('change', async (e) => {
   const newValue = e.target.checked;
   themeProEnabled = newValue; themeFlagChanged();
