@@ -10353,12 +10353,14 @@ function aiRenderDay(c){
       '<span><i class="ai-sw" style="background:rgba(255,93,108,.8)"></i>Faltam pessoas</span>' +
       (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> Pessoas em pausa nessa hora</span>' : '') +
       '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
-    const lgV = '<div class="ai-leg vl' + (AI_LEG ? ' open' : '') + '"><span><i class="ai-sw" style="background:rgba(46,204,113,.8)"></i>Tens (chega)</span><span><i class="ai-sw" style="background:rgba(255,93,108,.9)"></i>Tens (não chega)</span>' +
-      '<span><i style="display:inline-block; width:0; height:12px; border-left:3px solid var(--amber); vertical-align:middle; margin-right:6px"></i>Precisas (a barra tem de chegar aqui)</span>' +
-      '<span><b style="font:700 10px var(--mono);color:#2ecc71">+1</b> / <b style="font:700 10px var(--mono);color:#ff5d6c">−2</b> sobra / falta gente</span>' +
-      (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> BREAK: pessoas em pausa nessa hora</span>' : '') +
-      (c.rt ? '<span><i style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#2ecc71; margin-right:7px"></i>Hora já começada: conta quem picou</span>' : '') +
-      '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
+    const lgV = '<div class="ai-leg vl' + (AI_LEG ? ' open' : '') + '" style="gap:10px 14px; margin-top:14px;">' +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px);"><i style="width:11px; height:11px; border-radius:3px; background:#2ecc71; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#2ecc71;">OK</b></span>' +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px);"><i style="width:11px; height:11px; border-radius:3px; background:#ff5d6c; margin:0;"></i><b style="font-size:12px; letter-spacing:.5px; color:#ff5d6c;">NOK</b></span>' +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px);"><i style="width:3px; height:20px; background:#ffb020; margin:0 4px;"></i><b style="font-size:12px; letter-spacing:.5px; color:#ffb020;">NEED</b></span>' +
+      '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 12px var(--mono); color:#2ecc71;">+1</b><b style="font:700 12px var(--mono); color:#ff5d6c;">−2</b> Sobra / falta gente</span>' +
+      (c.hasTasks ? '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><b style="font:700 12px var(--mono); color:#c79bff;">2</b> Em pausa nessa hora</span>' : '') +
+      (c.rt ? '<span style="display:flex; align-items:center; gap:8px; width:calc(50% - 7px); font-size:11.5px;"><i style="width:8px; height:8px; border-radius:50%; background:#2ecc71; margin:0 2px;"></i>Hora já começada: conta quem picou</span>' : '') +
+      '<span style="display:flex; align-items:center; gap:8px; width:100%; font-size:11.5px;"><b style="font:700 11px var(--mono); color:var(--cyan);">▲3</b> partidas <b style="font:700 11px var(--mono); color:#8fd1a8; margin-left:8px;">▼2</b> chegadas nessa hora</span></div>';
     const lg = AI_VERT ? lgV : lgH;
     const V = AI_VERT ? aiVert(c) : null;
     const grid = AI_VERT ? ('<div class="ai-vt"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><button type="button" class="ai-vsw" id="ai-vsw">ver gráfico horizontal</button></div>' +
