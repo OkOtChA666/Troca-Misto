@@ -6272,8 +6272,8 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
 function coverWorkerNoRosterDay(idx){
   try{ if(!coverWorker) return false; const e = getEffectiveEntry(coverWorker, idx); return !!(e && e.status !== 'work' && e.codes && e.codes[0] === '/'); }catch(err){ return false; }
 }
-const coverDateSelectAPI = setupCustomDateSelect('cover-date', 'cover-date-trigger', 'cover-date-list', false, coverWorkerNoRosterDay, () => coverWorker);
-const tradeDateSelectAPI = setupCustomDateSelect('trade-a-date', 'trade-a-date-trigger', 'trade-a-date-list', false, null, () => tradeA);
+const coverDateSelectAPI = setupCustomDateSelect('cover-date', 'cover-date-trigger', 'cover-date-list', () => isAdminSession, coverWorkerNoRosterDay, () => coverWorker);
+const tradeDateSelectAPI = setupCustomDateSelect('trade-a-date', 'trade-a-date-trigger', 'trade-a-date-list', () => isAdminSession, null, () => tradeA);
 const extraDateSelectAPI = setupCustomDateSelect('extra-date', 'extra-date-trigger', 'extra-date-list', () => isAdminSession);
 function refreshAllDateSelectCounts(){
   coverDateSelectAPI.refreshTrigger();
@@ -6372,7 +6372,7 @@ function onPickCoverWorker(w){
     if(w){
       const dsel = document.getElementById('cover-date');
       if(coverWorkerNoRosterDay(parseInt(dsel.value, 10))){
-        for(let i = 0; i < N; i++){ if(!isBookingBlocked(i) && !coverWorkerNoRosterDay(i)){ dsel.value = i; break; } }
+        for(let i = 0; i < N; i++){ if(!(isAdminSession ? isPastDay(i) : isBookingBlocked(i)) && !coverWorkerNoRosterDay(i)){ dsel.value = i; break; } }
       }
       coverDateSelectAPI.refreshTrigger();
     }
@@ -6446,8 +6446,8 @@ function proTicketHtml(entry, idx, slim){
 }
 const PT_WD = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const PRO_STRIPS = [
-  { sel:'cover-date', box:'pro-daystrip', worker:() => coverWorker, blocked:(i) => isBookingBlocked(i) || coverWorkerNoRosterDay(i) },
-  { sel:'trade-a-date', box:'pro-daystrip-trade', worker:() => tradeA, blocked:(i) => isBookingBlocked(i) },
+  { sel:'cover-date', box:'pro-daystrip', worker:() => coverWorker, blocked:(i) => (isAdminSession ? isPastDay(i) : isBookingBlocked(i)) || coverWorkerNoRosterDay(i) },
+  { sel:'trade-a-date', box:'pro-daystrip-trade', worker:() => tradeA, blocked:(i) => isAdminSession ? isPastDay(i) : isBookingBlocked(i) },
   { sel:'request-date', box:'pro-daystrip-req', worker:() => requestPosterWorker, blocked:(i) => isBookingBlocked(i) || isPedidosDayTooLateToRequest(i), wrap:'request-date-single-wrap' }
 ];
 const _proStripLast = {};
