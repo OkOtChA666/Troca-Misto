@@ -2563,6 +2563,7 @@
         </div>
       </div>
 
+      <label id="schedule-override-context-label" class="hidden" style="text-align:center; margin-bottom:6px;">O TEU HORÁRIO</label>
       <div class="context-line hidden" id="schedule-override-context"></div>
 
       <div id="schedule-override-inputs" class="hidden">
@@ -3334,6 +3335,8 @@ function parseEntry(raw){
   if(comma !== -1){ main = raw.slice(0, comma); codes = raw.slice(comma+1).split(';').filter(Boolean); }
   if(/^\d{4}-\d{4}$/.test(main)){
     const [s,e] = main.split('-');
+    // F50 (vacation) and BW (counted as F50): the PDF still prints the hours the person would have worked, but they are NOT working that day
+    if(codes.includes('F50')) return {status:'off', start:null, end:null, codes, vacation:true, vacStart:s, vacEnd:e};
     return {status:'work', start:s, end:e, codes};
   }
   if(/^\d{4}-\?$/.test(main)){
@@ -3344,7 +3347,26 @@ function parseEntry(raw){
 }
 function getEntry(worker, idx){
   if(idx < 0 || idx >= N) return null;
-  return parseEntry(worker.s[idx]);
+  const e = parseEntry(worker.s[idx]);
+  // a DC / DS / FO touching a vacation block (F50 / BW) is still vacation, not a real day off — same rule everywhere
+  if(e.status === 'off' && e.codes.length > 0 && e.codes.every(c => VALID_OFF_CODES.has(c)) && vacationRestFlags(worker)[idx]) return { status:'off', start:null, end:null, codes:['F50'], vacation:true, restInVacation:true, origCodes:e.codes };
+  return e;
+}
+const _vacFlagsCache = new WeakMap();
+function vacationRestFlags(worker){
+  let f = _vacFlagsCache.get(worker.s);
+  if(f && f.n === worker.s.length) return f.a;
+  const es = worker.s.map(raw => parseEntry(raw));
+  const isRest = en => en.status === 'off' && en.codes.length > 0 && en.codes.every(c => VALID_OFF_CODES.has(c));
+  const isVac = en => !!(en && en.codes && en.codes.includes('F50'));
+  const a = es.map((en, idx) => {
+    if(!isRest(en)) return false;
+    let i = idx - 1; while(i >= 0 && isRest(es[i])) i--;
+    let j = idx + 1; while(j < es.length && isRest(es[j])) j++;
+    return (i >= 0 && isVac(es[i])) || (j < es.length && isVac(es[j]));
+  });
+  _vacFlagsCache.set(worker.s, { n: worker.s.length, a });
+  return a;
 }
 // Like getEntry, but reflects "Tem troca" swaps already marked, in both directions:
 // - if this worker was off but picked up someone else's shift (cover), return that shift (entry.covering = who)
@@ -9357,18 +9379,19 @@ const scheduleOverrideDateAPI = setupCustomDateSelect('schedule-override-date', 
 function updateScheduleOverrideContext(){
   const ctx = document.getElementById('schedule-override-context');
   const inputsBox = document.getElementById('schedule-override-inputs');
-  if(!scheduleOverrideWorker){ ctx.classList.add('hidden'); inputsBox.classList.add('hidden'); return; }
+  const ctxLab = document.getElementById('schedule-override-context-label');
+  if(!scheduleOverrideWorker){ ctx.classList.add('hidden'); ctxLab.classList.add('hidden'); inputsBox.classList.add('hidden'); return; }
   const idx = parseInt(document.getElementById('schedule-override-date').value, 10);
   const entry = getEffectiveEntry(scheduleOverrideWorker, idx);
-  ctx.classList.remove('hidden');
+  ctx.classList.remove('hidden'); ctxLab.classList.remove('hidden');
   if(entry.status !== 'work'){
-    ctx.innerHTML = '<b>'+escapeHtml(scheduleOverrideWorker.name)+'</b> não está escalado para trabalhar em '+fmtDateLabel(idx)+' ('+escapeHtml((entry.codes && entry.codes[0])||'off')+').';
+    ctx.innerHTML = '<b>'+escapeHtml((entry.codes && entry.codes[0])||'off')+'</b><div style="margin-top:6px;">Não está escalado para trabalhar neste dia</div>';
     inputsBox.classList.add('hidden');
     return;
   }
   const coveringTag = entry.covering ? ' <span style="color:var(--swap);">(a cobrir '+escapeHtml(entry.covering)+')</span>' : '';
   const overriddenTag = entry.overridden ? ' <span style="color:var(--amber);">(já atualizado)</span>' : '';
-  ctx.innerHTML = '<b>'+escapeHtml(scheduleOverrideWorker.name)+'</b> está escalado '+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+' em '+fmtDateLabel(idx)+'.'+coveringTag+overriddenTag;
+  ctx.innerHTML = '<b>'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b>'+((coveringTag || overriddenTag) ? '<div style="margin-top:6px; font-size:12px;">'+(coveringTag+overriddenTag).trim()+'</div>' : '');
   inputsBox.classList.remove('hidden');
   setExtraTime('schedule-override-start-input', entry.start.slice(0,2)+':'+entry.start.slice(2,4));
   setExtraTime('schedule-override-end-input', entry.end.slice(0,2)+':'+entry.end.slice(2,4));
