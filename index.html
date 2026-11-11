@@ -718,6 +718,23 @@
   .ai-leg{ display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:10px; font:11px var(--sans); color:#b9c3d8; }
   .ai-leg i{ display:inline-block; vertical-align:middle; margin-right:5px; }
   .ai-sw{ width:10px; height:10px; border-radius:2px; } .ai-ln{ width:14px; height:0; border-top:2px solid var(--cyan); margin-bottom:2px; } .ai-ln2{ width:14px; height:0; border-top:2px dashed #fff; margin-bottom:2px; }
+
+  /* vertical PREVISÃO chart */
+  .ai-vt{ text-align:center; margin:4px 0 20px; } .ai-vt .ai-ttl{ margin:0; display:inline-flex; align-items:center; gap:8px; font-size:12.5px; }
+  .ai-vsw{ display:block; margin:8px auto 0; background:none; border:none; color:#5f6a82; font:10px var(--mono); letter-spacing:.06em; text-decoration:underline; cursor:pointer; padding:2px 6px; }
+  .ai-vhd, .ai-vr{ display:grid; grid-template-columns:34px 1fr var(--vc,0px) 28px 28px; gap:6px; align-items:center; }
+  .ai-vhd{ font:600 9px var(--mono); color:#8a97ad; letter-spacing:.04em; margin-bottom:6px; } .ai-vhd span{ text-align:center; }
+  .ai-vr{ height:28px; border-radius:6px; cursor:pointer; } .ai-vr.sel{ box-shadow:0 0 0 2px #2ecc71; background:rgba(46,204,113,.08); }
+  .ai-vr .hh{ font:600 12px var(--mono); color:#8a97ad; text-align:right; padding-right:4px; }
+  .ai-vtr{ position:relative; height:18px; border-left:1px solid #27344f; }
+  .ai-vtr .g{ position:absolute; top:-5px; bottom:-5px; border-left:1px solid rgba(255,255,255,.07); }
+  .ai-vtr .b{ position:absolute; left:0; top:2px; height:14px; background:rgba(255,179,0,.6); border-radius:0 3px 3px 0; } .ai-vtr .b.r{ background:rgba(255,93,108,.85); }
+  .ai-vtr .e{ position:absolute; top:-1px; height:20px; border-left:2.5px solid var(--cyan); } .ai-vtr .d{ position:absolute; top:-1px; height:20px; border-left:2.5px dashed #fff; }
+  .ai-vr .c{ text-align:center; font:700 11px var(--mono); color:#3a4a66; } .ai-vr .c.p{ color:#c79bff; } .ai-vr .c.u{ color:var(--cyan); } .ai-vr .c.a{ color:#8fd1a8; }
+  .ai-vax{ display:grid; grid-template-columns:34px 1fr; gap:6px; font:10px var(--mono); color:#6b7a93; margin-top:2px; } .ai-vax div{ position:relative; height:12px; } .ai-vax span{ position:absolute; transform:translateX(-50%); }
+  .ai-lgh{ margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; border:1px solid #27344f; border-radius:10px; font:700 11px var(--mono); letter-spacing:.1em; color:#8a97ad; cursor:pointer; }
+  .ai-lgh svg{ width:14px; height:14px; stroke:#8a97ad; fill:none; stroke-width:2; transition:transform .2s; } .ai-lgh.open svg{ transform:rotate(180deg); }
+  .ai-leg.vl{ display:none; } .ai-leg.vl.open{ display:flex; }
   .ai-tip{ margin-top:10px; background:#101a2e; border:1px solid #27344f; border-radius:8px; padding:9px 11px; font:12px/1.4 var(--sans); }
   .ai-tip b{ font-family:var(--mono); } .ai-tip .r{ color:#ff5d6c; } .ai-tip .c{ color:var(--cyan); } .ai-tip .am{ color:var(--amber); } .ai-tip .g{ color:#3ddc97; } .ai-tip .p{ color:#c79bff; }
   .ai-tip .fl{ margin-top:6px; font:11.5px/1.5 var(--mono); color:#b9c3d8; }
@@ -2270,7 +2287,7 @@
     </div>
 
     <div id="aistaff-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;"><div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">PREVISÃO</div><button type="button" id="ai-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button></div>
+      <div style="display:flex; align-items:center; justify-content:center; position:relative; margin-bottom:12px; min-height:34px;"><div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">PREVISÃO</div><button type="button" id="ai-back-btn" style="position:absolute; right:0;" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button></div>
       <div class="ai-mon" id="ai-month">OUTUBRO 2026</div>
       <div id="ai-list"></div>
       <div class="ai-rl2" id="ai-rl2"><div class="ai-rh" id="ai-rh"><span>REGRAS DO CÁLCULO</span><span class="ai-ch"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div><div class="ai-rule2">Por voo de partida, ao mesmo tempo:<br><b>2</b> check-in + <b>2</b> porta + <b>1</b> acolhimento = <b>5 pessoas</b>.<br>Comparado com quem está de serviço em cada hora (pausas: as reais das tarefas no dia de hoje; nos outros dias, 1 hora 4 horas depois do início nos turnos de 8H).</div></div>
@@ -10146,6 +10163,38 @@ function aiLabels(box){
     el.textContent = on ? (g === 2 ? aiHM(u * 30) : ('0' + hr).slice(-2) + 'h') : '';
   });
 }
+
+let AI_VERT = (function(){ try{ return localStorage.getItem('trocaMistoAiVert') !== '0'; }catch(e){ return true; } })();
+let AI_LEG = (function(){ try{ return localStorage.getItem('trocaMistoAiLeg') === '1'; }catch(e){ return false; } })();
+// vertical version of the hour chart: one row per hour (bars sideways) + BREAK / departures / arrivals columns
+function aiVert(c){
+  const spu = 60 / AI_SLOT, N = 24, startU = Math.floor(c.from / spu), units = [];
+  for(let u = 0; u < N; u++){
+    let best = u * spu, bv = 1e9, dep = 0, arr = 0, bm = 0;
+    for(let q = 0; q < spu; q++){ const k = u * spu + q, bb = c.have[k] - c.need[k]; if(bb < bv){ bv = bb; best = k; } dep += c.depS[k]; arr += c.arrS[k]; bm = Math.max(bm, c.brk[k]); }
+    units.push({ u, k: best, dep, arr, bm, t0: u * 60, t1: (u + 1) * 60 });
+  }
+  const shown = units.slice(startU);
+  const maxRaw = Math.max(4, ...shown.map(x => Math.max(c.need[x.k], c.on[x.k])));
+  const step = maxRaw > 30 ? 10 : 5, maxV = Math.ceil(maxRaw / step) * step;
+  let sel;
+  if(AI_SEL === null){ let bv = 1e9; sel = startU; shown.forEach(x => { if(c.need[x.k] > 0 && c.have[x.k] - c.need[x.k] < bv){ bv = c.have[x.k] - c.need[x.k]; sel = x.u; } }); }
+  else sel = Math.max(startU, Math.min(N - 1, Math.floor(AI_SEL / 60)));
+  const pc = v => (v / maxV * 100) + '%';
+  let grid = '', ticks = '', gl = '';
+  for(let t = step; t <= maxV; t += step){ gl += '<div class="g" style="left:' + pc(t) + '"></div>'; ticks += '<span style="left:' + pc(t) + '">' + t + '</span>'; }
+  shown.forEach(x => {
+    const nd = c.need[x.k], hv = c.have[x.k], on = c.on[x.k], ok = Math.min(nd, hv), miss = Math.max(0, nd - hv);
+    grid += '<div class="ai-vr' + (x.u === sel ? ' sel' : '') + '" data-u="' + x.u + '"><div class="hh">' + ('0' + x.u).slice(-2) + 'h</div>' +
+      '<div class="ai-vtr">' + gl + '<div class="b" style="width:' + pc(ok) + '"></div>' + (miss ? '<div class="b r" style="left:' + pc(ok) + '; width:' + pc(miss) + '"></div>' : '') +
+      (c.hasTasks ? '<div class="e" style="left:' + pc(on) + '"></div><div class="d" style="left:' + pc(hv) + '"></div>' : '<div class="e" style="left:' + pc(hv) + '"></div>') + '</div>' +
+      (c.hasTasks ? '<div class="c p">' + (x.bm || '·') + '</div>' : '<div></div>') +
+      '<div class="c u">' + (x.dep ? '▲' + x.dep : '·') + '</div><div class="c a">' + (x.arr ? '▼' + x.arr : '·') + '</div></div>';
+  });
+  AI_CUR = { c, units, g: 1 };
+  const hd = '<div class="ai-vhd"><span>HORA</span><span>STAFF</span>' + (c.hasTasks ? '<span>BREAK</span>' : '<span></span>') + '<span style="color:var(--cyan)">▲</span><span style="color:#8fd1a8">▼</span></div>';
+  return { inner: hd + grid + '<div class="ai-vax"><div></div><div>' + ticks + '</div></div>', tip: aiTip(c, units[sel], 1), hasTasks: !!c.hasTasks };
+}
 function aiRenderDay(c){
   const wd = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][c.date.getDay()];
   const noData = c.need === null;
@@ -10153,14 +10202,18 @@ function aiRenderDay(c){
     '<div class="ai-cm">' + (noData ? 'Ainda não há voos para este dia.' : escapeHtml(c.text) + '<i><b style="color:var(--cyan); font-weight:700;">' + c.flights + '</b> ' + (c.flights === 1 ? 'partida' : 'partidas') + ' &nbsp;|&nbsp; <b style="color:#8fd1a8; font-weight:700;">' + c.arrCount + '</b> ' + (c.arrCount === 1 ? 'chegada' : 'chegadas') + '</i><span class="ai-sb">👤 ' + c.working + ' EM SERVIÇO</span>') + '</div>' +
     '<div class="ai-bal">' + (noData || c.bal === null ? '—' : (c.bal < 0 ? '−' + (-c.bal) : '+' + c.bal)) + '</div></div>';
   if(AI_OPEN === c.idx && !noData){
-    const P = aiParts(c);
-    const lg = '<div class="ai-leg"><span><i class="ai-sw" style="background:rgba(255,179,0,.6)"></i>Pessoas necessárias</span>' +
+    const P = AI_VERT ? null : aiParts(c);
+    const lg = '<div class="ai-leg' + (AI_VERT ? ' vl' + (AI_LEG ? ' open' : '') : '') + '"><span><i class="ai-sw" style="background:rgba(255,179,0,.6)"></i>Pessoas necessárias</span>' +
       (c.hasTasks ? '<span><i class="ai-ln"></i>Escalados (turno)</span><span><i class="ai-ln2"></i>Disponíveis (sem pausas)</span>' : '<span><i class="ai-ln"></i>Pessoas em serviço</span>') +
       '<span><i class="ai-sw" style="background:rgba(255,93,108,.8)"></i>Faltam pessoas</span>' +
       (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> Pessoas em pausa nessa hora</span>' : '') +
       '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
-    const grid = '<div class="ai-top"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><div class="ai-zs"><span>−</span><input type="range" id="ai-zr" min="1" max="5" step="0.1" value="' + AI_ZOOM + '"><span>+</span></div></div>' +
-      '<div class="ai-wrap"><div class="ai-y">' + P.yl + '</div><div class="ai-sc"><div class="ai-in" style="width:' + (AI_ZOOM * 100) + '%">' + P.inner + '</div></div></div>' + lg + '<div class="ai-tip" id="ai-tip">' + P.tip + '</div>';
+    const V = AI_VERT ? aiVert(c) : null;
+    const grid = AI_VERT ? ('<div class="ai-vt"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><button type="button" class="ai-vsw" id="ai-vsw">ver gráfico horizontal</button></div>' +
+      '<div class="ai-vgrid" style="--vc:' + (c.hasTasks ? '34px' : '0px') + '">' + V.inner + '</div>' +
+      '<div class="ai-lgh' + (AI_LEG ? ' open' : '') + '" id="ai-lgh">LEGENDA <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>' + lg + '<div class="ai-tip" id="ai-tip">' + V.tip + '</div>') :
+      ('<button type="button" class="ai-vsw" id="ai-vsw" style="margin:0 0 6px">ver gráfico vertical</button><div class="ai-top"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><div class="ai-zs"><span>−</span><input type="range" id="ai-zr" min="1" max="5" step="0.1" value="' + AI_ZOOM + '"><span>+</span></div></div>' +
+      '<div class="ai-wrap"><div class="ai-y">' + P.yl + '</div><div class="ai-sc"><div class="ai-in" style="width:' + (AI_ZOOM * 100) + '%">' + P.inner + '</div></div></div>' + lg + '<div class="ai-tip" id="ai-tip">' + P.tip + '</div>');
     const chips = c.absent.map(id => { const w = c.workers.find(x => x.id === id); return w ? '<span class="ai-chip">' + escapeHtml(w.name) + ' · ' + aiHM(w.s) + '–' + aiHM(w.e % 1440 || 1440) + ' <b data-rm="' + escapeHtml(id) + '">✕</b></span>' : ''; }).join('');
     h += '<div class="ai-det">' + grid +
       '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
@@ -10173,7 +10226,7 @@ function aiPick(u){
   if(!AI_CUR) return;
   const g = AI_CUR.g, un = AI_CUR.units[u]; if(!un) return;
   AI_SEL = un.t0;
-  document.querySelectorAll('.ai-col2, .ai-fr span').forEach(el => el.classList.toggle('sel', +el.dataset.u === u));
+  document.querySelectorAll('.ai-col2, .ai-fr span, .ai-vr').forEach(el => el.classList.toggle('sel', +el.dataset.u === u));
   const t = document.getElementById('ai-tip'); if(t) t.innerHTML = aiTip(AI_CUR.c, un, g);
 }
 function renderAiStaff(){
@@ -10195,6 +10248,9 @@ function renderAiStaff(){
     AI_OPEN = AI_OPEN === i ? null : i; AI_SEL = null; renderAiStaff();
   }));
   const inn = box.querySelector('.ai-in'), sc = box.querySelector('.ai-sc'), zr = document.getElementById('ai-zr');
+  box.querySelectorAll('.ai-vr').forEach(el => el.addEventListener('click', (e) => { e.stopPropagation(); aiPick(+el.dataset.u); }));
+  const vsw = document.getElementById('ai-vsw'); if(vsw) vsw.addEventListener('click', (e) => { e.stopPropagation(); AI_VERT = !AI_VERT; try{ localStorage.setItem('trocaMistoAiVert', AI_VERT ? '1' : '0'); }catch(x){} renderAiStaff(); });
+  const lgh = document.getElementById('ai-lgh'); if(lgh) lgh.addEventListener('click', (e) => { e.stopPropagation(); AI_LEG = !AI_LEG; try{ localStorage.setItem('trocaMistoAiLeg', AI_LEG ? '1' : '0'); }catch(x){} lgh.classList.toggle('open', AI_LEG); const l = box.querySelector('.ai-leg.vl'); if(l) l.classList.toggle('open', AI_LEG); });
   if(sc) sc.scrollLeft = keepScroll;
   if(inn){
     aiLabels(box);
