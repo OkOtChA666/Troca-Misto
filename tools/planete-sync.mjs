@@ -68,6 +68,9 @@ export function buildDoc(parsed, now = Date.now(), changes = {}, fl = null) {
   const a = {};
   parsed.agents.forEach((ag) => {
     const rec = { n: ag.name, t: ag.tasks.map(t => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0, t.fkey || '']) };
+    if (/^SWAP/i.test(ag.rmq || '')) rec.x = 'SWAP';      // planete marks this agent with a SWAP remark
+    if (ag.plan) rec.s = ag.plan;      // the service planete has for the agent today [start, end]
+    if (ag.k === 0 || ag.k === 1) rec.k = ag.k;      // 1 = check-in agent, 0 = other role (balcão, supervisão, lost…)
     if (ag.punch && (ag.punch[0] || ag.punch[1])) rec.p = ag.punch;      // real clock-in / clock-out times (green / red dots in planete)
     a[ag.id] = sv(JSON.stringify(rec));
   });
