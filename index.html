@@ -754,7 +754,7 @@
   .ai-lgh{ margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; border:1px solid #27344f; border-radius:10px; font:700 11px var(--mono); letter-spacing:.1em; color:#8a97ad; cursor:pointer; }
   .ai-lgh svg{ width:14px; height:14px; stroke:#8a97ad; fill:none; stroke-width:2; transition:transform .2s; } .ai-lgh.open svg{ transform:rotate(180deg); }
   .ai-leg.vl{ display:none; } .ai-leg.vl.open{ display:flex; }
-  .ai-tip{ margin-top:10px; background:#101a2e; border:1px solid #27344f; border-radius:8px; padding:9px 11px; font:12px/1.4 var(--sans); }
+  .ai-tip{ margin-top:12px; background:#0e1626; border:1px solid #27344f; border-radius:14px; padding:14px; font:12px/1.4 var(--sans); }
   .ai-tip b{ font-family:var(--mono); } .ai-tip .r{ color:#ff5d6c; } .ai-tip .c{ color:var(--cyan); } .ai-tip .am{ color:var(--amber); } .ai-tip .g{ color:#3ddc97; } .ai-tip .p{ color:#c79bff; }
   .ai-tip .fl{ margin-top:6px; font:11.5px/1.5 var(--mono); color:#b9c3d8; }
   .ai-tip .x{ margin-top:8px; border-top:1px solid #27344f; padding-top:8px; font:11.5px/1.55 var(--mono); color:#b9c3d8; }
@@ -10254,14 +10254,22 @@ let AI_CUR = null, AI_ZOOM = 1;
 const AI_LATE = 7;   // minutes after the start of the shift without a clock-in before someone counts as missing
 function aiTip(c, u, g){
   const sn = c.need[u.k], shv = c.have[u.k], sd = shv - sn;
-  let tip = '<b>' + aiHM(u.t0) + '–' + aiHM(u.t1 % 1440) + '</b> &nbsp; ' + (sn === 0 ? 'ninguém precisa de estar em check-in/gate ' + (g === 2 ? 'nesta meia hora' : 'nesta hora') :
-    '<span class="am">precisas ' + sn + '</span> · <span class="c">estão ' + shv + '</span> → ' + (sd < 0 ? '<span class="r"><b>faltam ' + (-sd) + '</b></span>' : '<b>sobram ' + sd + '</b>')) +
-    '<div class="fl"><span class="c">' + u.dep + (u.dep === 1 ? ' partida' : ' partidas') + '</span> · ' + u.arr + (u.arr === 1 ? ' chegada' : ' chegadas') + '</div>';
+  const hr = aiHM(u.t0) + ' – ' + aiHM(u.t1 % 1440);
+  const tile = (l, v, col) => '<div style="border:1px solid #1d2a44; background:rgba(255,255,255,.02); border-radius:10px; padding:8px 6px; text-align:center;"><div style="font:700 9.5px var(--mono); letter-spacing:.08em; color:#8a97ad;">' + l + '</div><div style="font:800 20px var(--mono); margin-top:3px; color:' + col + ';">' + v + '</div></div>';
+  const row = (l, v, col) => '<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:12.5px; color:#b9c3d8;"><span>' + l + '</span><b style="font:800 13px var(--mono); color:' + (col || '#fff') + ';">' + v + '</b></div>';
+  let tip = '<div style="font:800 16px var(--mono); color:#fff;">' + hr + '</div>';
+  if(sn === 0){
+    tip += '<div style="margin-top:10px; font-size:12.5px; color:#b9c3d8;">Ninguém precisa de estar em check-in/gate ' + (g === 2 ? 'nesta meia hora' : 'nesta hora') + '</div>';
+  } else {
+    tip += '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:12px;">' + tile('PRECISAS', sn, '#ffb020') + tile('ESTÃO', shv, '#4dd0e1') +
+      (sd < 0 ? tile('FALTAM', '−' + (-sd), '#ff5d6c') : tile('SOBRAM', sd > 0 ? '+' + sd : '0', '#2ecc71')) + '</div>';
+  }
+  tip += '<div style="display:flex; justify-content:center; gap:22px; margin-top:12px; font:700 12px var(--mono);"><span style="color:#4dd0e1;">▲ ' + u.dep + (u.dep === 1 ? ' PARTIDA' : ' PARTIDAS') + '</span><span style="color:#8fd1a8;">▼ ' + u.arr + (u.arr === 1 ? ' CHEGADA' : ' CHEGADAS') + '</span></div>';
   if(c.hasTasks){
     const tk = c.tsk[u.k], fr = Math.max(0, shv - tk);
-    tip += '<div class="x">Escalados <b>' + c.on[u.k] + '</b> − em pausa <b class="p">' + c.brk[u.k] + '</b> = disponíveis <b>' + shv + '</b><br>' +
-      'Com tarefa (check-in/gate/rampa): <b>' + tk + '</b>' + (sn ? (tk >= sn ? ' <span class="g">✓ cobre o que precisas (' + sn + ')</span>' : ' <span class="am">⚠ só ' + tk + ' de ' + sn + ' precisas</span>') : '') +
-      '<br>Livres (sem tarefa nem pausa): <b>' + fr + '</b></div>';
+    tip += '<div style="border-top:1px solid #1d2a44; margin:12px 0 6px;"></div>' +
+      row('Escalados', c.on[u.k]) + row('Em pausa', c.brk[u.k], '#c79bff') + row('Disponíveis', shv) +
+      row('Com tarefa', tk + (sn ? ' <span style="color:#8a97ad; font-weight:600;">de ' + sn + '</span>' : '')) + row('Livres', fr);
   }
   return tip;
 }
