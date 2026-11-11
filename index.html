@@ -5335,11 +5335,13 @@ async function pwRender(){
   const has = w => !!cfg['h_' + w.id];
   document.getElementById('pw-n-ok').textContent = all.filter(has).length;
   document.getElementById('pw-n-no').textContent = all.filter(w => !has(w)).length;
-  const rows = all.filter(w => !q || String(w.name || '').toLowerCase().includes(q) || String(w.id).includes(q)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const found = all.filter(w => !q || String(w.name || '').toLowerCase().includes(q) || String(w.id).includes(q)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const rows = q ? found : found.slice(0, 6);
   list.innerHTML = rows.map(w => '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; border:1px solid var(--border-soft); background:rgba(255,255,255,.02); border-radius:10px; padding:9px 12px; margin-bottom:6px; font-size:12.5px;">' +
     '<div style="flex:1; min-width:0;"><b>' + escapeHtml(w.name || '') + '</b><div style="font:11px var(--mono); color:var(--text-dim);">' + escapeHtml(String(w.id)) + '</div></div>' +
     (has(w) ? '<span style="font:700 10.5px var(--mono); color:#2ecc71;">DEFINIDA</span><button type="button" class="pw-reset" data-id="' + escapeHtml(String(w.id)) + '" data-name="' + escapeHtml(w.name || '') + '" style="font:800 10px var(--mono); letter-spacing:.06em; color:var(--amber); background:none; border:1px solid #8a6a14; border-radius:6px; padding:4px 8px; cursor:pointer;">RESET</button>'
       : '<span style="font:700 10.5px var(--mono); color:var(--text-dim);">AINDA NÃO</span>') + '</div>').join('') || '<div style="font-size:12px; color:var(--text-dim);">Ninguém encontrado.</div>';
+  if(!q && found.length > rows.length) list.innerHTML += '<div style="font-size:11.5px; font-style:italic; color:var(--text-dim); margin-top:4px;">A mostrar ' + rows.length + ' de ' + found.length + ' · usa a pesquisa para ver os outros</div>';
   list.querySelectorAll('.pw-reset').forEach(b => b.addEventListener('click', () => {
     showConfirmDialog('Apagar a password de ' + b.dataset.name + '? Volta a entrar com a password do grupo e escolhe outra.', async () => {
       try{ const db = await getDb(); await db.collection('data').doc('personalPw').set({ ['h_' + b.dataset.id]: null, ['t_' + b.dataset.id]: null }, { merge: true }); }
