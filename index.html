@@ -10029,7 +10029,8 @@ function aiCalc(idx){
   let rt = false;
   try{ rt = off === 0 && !!AI_TASKS && AI_TASKS.date === key && !!AI_TASKS.a && (Date.now() - (AI_TASKS.updatedAt || 0)) < 45 * 60000 && Object.keys(AI_TASKS.a).some(k => { try{ return !!JSON.parse(AI_TASKS.a[k]).p; }catch(e){ return false; } }); }catch(e){ rt = false; }
   const punchOf = (id) => { try{ const r = JSON.parse(AI_TASKS.a[id]); return r && r.p ? r.p : null; }catch(e){ return null; } };
-  const autoAbs = [], lateList = [], extraList = [];
+  const autoAbs = [], lateList = [], extraList = [], regList = [];
+  const hmMin = (v) => { const d = String(v || '').replace(/\D/g, ''); return d.length === 4 ? parseInt(d.slice(0,2),10) * 60 + parseInt(d.slice(2),10) : null; };
   DATA.workers.forEach(w => {
     const here = aiShiftMins(getEffectiveEntry(w, idx));
     let isAbs = absent.indexOf(w.id) >= 0;
@@ -10068,7 +10069,24 @@ function aiCalc(idx){
         }
       }
     }
-    if(!here && rt){
+    // horas extra registered in the app (the admin can add them for today): they count in the forecast for their hours
+    let xw = null;
+    { const xr = EXTRA_HOURS[w.id + ':' + idx];
+      if(xr && xr.from && xr.to && absent.indexOf(w.id) < 0){ const f = hmMin(xr.from), t = hmMin(xr.to); if(f !== null && t !== null && t > f) xw = [f, Math.min(t, 1440)]; } }
+    if(xw){
+      const pp = rt ? punchOf(w.id) : null;
+      let skip = false;
+      if(rt && !(pp && pp[0]) && nowMin >= xw[0] && nowMin < xw[1]){
+        const late = nowMin - xw[0];
+        lateList.push({ id: w.id, name: w.name, s: xw[0], e: xw[1], late, out: late >= AI_LATE });
+        if(late >= AI_LATE){ autoAbs.push(w.id); skip = true; }
+      }
+      if(!skip){
+        for(let t = xw[0]; t < xw[1]; t += AI_SLOT){ have[Math.floor(t / AI_SLOT)]++; on[Math.floor(t / AI_SLOT)]++; }
+        regList.push({ id: w.id, name: w.name, s: xw[0], e: xw[1], in: pp && pp[0] ? pp[0] : '', solo: !here });
+      }
+    }
+    if(!here && rt && !xw){
       // not on the roster today but clocked in (paper swap, extra hours) and still here: counts until the end of the last task
       const pp = punchOf(w.id);
       if(pp && pp[0] && !pp[1]){
@@ -10092,8 +10110,8 @@ function aiCalc(idx){
       }
     }
   });
-  const working = workers.filter(w => absent.indexOf(w.id) < 0 && autoAbs.indexOf(w.id) < 0).length + extraList.length;
-  const out = { key, idx, date, workers, working, absent, rt, late: lateList, extras: extraList, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
+  const working = workers.filter(w => absent.indexOf(w.id) < 0 && autoAbs.indexOf(w.id) < 0).length + extraList.length + regList.filter(x => x.solo).length;
+  const out = { key, idx, date, workers, working, absent, rt, late: lateList, extras: extraList, reg: regList, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
   if(!fl) return out;
   const need = new Array(AI_SLOTS).fill(0);
   const base = off * 1440;   // minutes (relative to today 00:00) where this day starts
@@ -10274,6 +10292,7 @@ function aiRenderDay(c){
       const chip = (t, col) => '<span class="ai-chip" style="border-color:' + col + '66">' + t + '</span>';
       const miss = c.late.slice().sort((a, b) => b.late - a.late);
       rtH += '<div class="ai-miss"><h4 style="color:#ff5d6c">AINDA NÃO ENTRARAM · ' + miss.length + '</h4>' + (miss.length ? '<div>' + miss.map(m => chip(escapeHtml(m.name) + ' · ' + hm2(m.s) + '–' + hm2(m.e) + ' <b style="color:' + (m.out ? '#ff5d6c' : '#ffb020') + '">+' + lt(m.late) + '</b>', m.out ? '#ff5d6c' : '#ffb020')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Depois de ' + AI_LATE + ' min sem picar, deixam de contar na previsão.</div>' : '<div class="hint" style="font-size:12px;">Toda a gente que devia estar já entrou. 👍</div>') + '</div>';
+      if(c.reg && c.reg.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#4da3ff">HORAS EXTRA · ' + c.reg.length + '</h4><div>' + c.reg.map(x => chip(escapeHtml(x.name) + ' · ' + hm2(x.s) + '–' + hm2(x.e) + (x.in ? ' <b style="color:#2ecc71">✓ entrou ' + escapeHtml(x.in) + '</b>' : ''), '#4da3ff')).join('') + '</div></div>';
       if(c.extras.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#2ecc71">ENTRARAM SEM ESTAR NO HORÁRIO · ' + c.extras.length + '</h4><div>' + c.extras.map(x => chip(escapeHtml(x.name) + ' · entrou ' + escapeHtml(x.in), '#2ecc71')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Trocas em papel ou horas extra. Contam até ao fim da última tarefa.</div></div>';
     }
     h += '<div class="ai-det">' + grid + rtH +
