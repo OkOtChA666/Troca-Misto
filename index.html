@@ -101,7 +101,10 @@
     text-shadow: 0 0 18px var(--amber-glow); margin:0 0 6px;
   }
   .access-sub{ font-size:12.5px; color: var(--text-dim); margin:0 0 22px; }
-  .access-field{ margin-bottom:10px; }
+  .access-field{ margin-bottom:10px; position:relative; }
+  .pw-eye{ position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:0; padding:6px; cursor:pointer; color:var(--text-dim); display:flex; }
+  .pw-eye svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .pw-eye.on{ color:var(--cyan); }
   .access-field input{
     width:100%; text-align:center; letter-spacing:0.08em;
     background: var(--panel-2); border: 1px solid var(--border);
@@ -1174,6 +1177,7 @@
     padding: 10px 12px; border-radius: 7px; outline:none; margin-bottom: 10px;
   }
   .modal-box input:focus{ border-color: var(--cyan); }
+  #pw-set-modal input{ margin-bottom:0; } #pw-set-modal input:-webkit-autofill{ -webkit-box-shadow:0 0 0 40px var(--panel-2) inset; -webkit-text-fill-color:var(--text); }
   .modal-error{ color: var(--nogo); font-size: 12.5px; margin: -4px 0 10px; }
   .modal-error.hidden{ display:none; }
   .modal-actions{ display:flex; gap:10px; justify-content:center; }
@@ -1581,7 +1585,7 @@
       <input type="text" id="access-portal-staffnum" name="username" placeholder="Número de colaborador" autocomplete="username" inputmode="numeric">
     </div>
     <div class="access-field">
-      <input type="password" id="access-portal-input" name="password" placeholder="Password" autocomplete="current-password">
+      <input type="password" id="access-portal-input" name="password" placeholder="Password" autocomplete="current-password"><button type="button" class="pw-eye" data-eye="access-portal-input" aria-label="Mostrar password"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </div>
     <div class="access-error hidden" id="access-portal-error">Número ou password incorretos.</div>
     <button type="button" class="access-btn hidden" id="access-portal-btn">ENTRAR</button>
@@ -1628,6 +1632,16 @@
 </div>
 
 
+<div class="modal-overlay hidden" id="pw-set-modal" style="z-index:100000;">
+  <div class="modal-box" style="text-align:left; width:340px;">
+    <div style="font:800 15px var(--mono); letter-spacing:.1em; color:var(--amber); margin-bottom:10px;">ESCOLHE A TUA PASSWORD</div>
+    <div style="font-size:12.5px; color:var(--text-dim); line-height:1.5; margin-bottom:6px;">A partir de agora entras só com esta password. Mínimo 6 caracteres.</div>
+    <div style="position:relative; margin-top:10px;"><input type="password" id="pw-set-1" placeholder="Nova password" autocomplete="new-password" style="width:100%; box-sizing:border-box; padding-right:42px;"><button type="button" class="pw-eye" data-eye="pw-set-1" aria-label="Mostrar password"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div style="position:relative; margin-top:10px;"><input type="password" id="pw-set-2" placeholder="Repetir password" autocomplete="new-password" style="width:100%; box-sizing:border-box; padding-right:42px;"><button type="button" class="pw-eye" data-eye="pw-set-2" aria-label="Mostrar password"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <div id="pw-set-err" style="color:var(--nogo); font-size:12px; margin-top:8px; min-height:14px;"></div>
+    <button type="button" class="btn" id="pw-set-save" style="margin-top:8px; width:100%;">GUARDAR</button>
+  </div>
+</div>
 <div class="modal-overlay hidden" id="password-modal">
   <div class="modal-box">
     <label style="margin-bottom:8px;">Password necessária</label>
@@ -2299,6 +2313,7 @@
       <div class="tool-card" id="so-card-qw"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="18.5" cy="6.5" r="2.5" fill="#2ecc71" stroke="#2ecc71"/></svg></div><div><div class="tool-name">QUEM ESTÁ A TRABALHAR</div><div class="tool-desc">Quem está no aeroporto agora</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-swl"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M5 8h13M15 4l4 4-4 4M19 16H6M9 12l-4 4 4 4"/></svg></div><div><div class="tool-name">TROCAS FEITAS</div><div class="tool-desc">Todas as trocas, com detalhes</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-sacc"><div class="tool-ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><div><div class="tool-name">ACESSO SUPORTE</div><div class="tool-desc">Utilizador e password da equipa de suporte</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-pw"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L20 3M16 7l3 3"/></svg></div><div><div class="tool-name">PASSWORDS</div><div class="tool-desc">Quem já escolheu a sua password</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <button type="button" id="so-switch-dept" class="so-switch-dept"></button>
     </div>
     <div id="so-row" style="display:none; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
@@ -2308,6 +2323,7 @@
       <button type="button" class="btn" id="custom2-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">RULES</button>
       <button type="button" class="btn" id="swl-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">TF</button>
       <button type="button" class="btn" id="sacc-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">AS</button>
+      <button type="button" class="btn" id="pw-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">PW</button>
       <button type="button" class="btn" id="qw-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">QUEM</button>
       <button type="button" class="btn" id="stats-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">STATS</button>
       <button type="button" class="btn" id="aistaff-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">PREVISÃO</button>
@@ -2399,6 +2415,13 @@
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Opção Turno Duplo</span>
         <span class="pill-toggle">
           <input type="checkbox" id="double-shift-enabled-toggle">
+          <span class="pill-track"></span>
+        </span>
+      </label>
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Aceitar password antiga</span>
+        <span class="pill-toggle">
+          <input type="checkbox" id="old-pw-toggle" checked>
           <span class="pill-track"></span>
         </span>
       </label>
@@ -2541,6 +2564,16 @@
       <button type="button" class="btn" id="sacc-save" style="margin-top:4px;">Guardar</button>
       <div id="sacc-msg" style="font-size:12px; margin-top:10px; color:var(--text-dim);"></div>
       <div id="sacc-info" style="font-size:11px; color:var(--text-dim); margin-top:6px; font-style:italic;"></div>
+    </div>
+    <div id="pw-panel" class="hidden" style="margin-bottom:20px; text-transform:none; letter-spacing:normal;">
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <div style="flex:1; border:1px solid var(--border-soft); border-radius:10px; text-align:center; padding:8px 0;"><div id="pw-n-ok" style="font:800 18px var(--mono); color:#2ecc71;">–</div><div style="font:700 9px var(--mono); letter-spacing:.08em; color:var(--text-dim);">JÁ ESCOLHERAM</div></div>
+        <div style="flex:1; border:1px solid var(--border-soft); border-radius:10px; text-align:center; padding:8px 0;"><div id="pw-n-no" style="font:800 18px var(--mono); color:var(--amber);">–</div><div style="font:700 9px var(--mono); letter-spacing:.08em; color:var(--text-dim);">AINDA NÃO</div></div>
+      </div>
+      <input type="text" id="pw-search" autocomplete="off" placeholder="Procurar nome ou número…" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:11px; color:var(--text); font-size:13px; margin-bottom:10px;">
+      <div id="pw-list"></div>
+      <div id="pw-msg" style="font-size:12px; margin-top:8px; min-height:14px; color:var(--text-dim);"></div>
+      <div style="font-size:11px; color:var(--text-dim); margin-top:6px; font-style:italic;">RESET apaga a password pessoal. A pessoa volta a entrar com a password do grupo (se estiver aceite em RULES) e escolhe outra.</div>
     </div>
     <div id="qw-panel" class="hidden" style="margin-bottom:6px; text-transform:none; letter-spacing:normal;">
       <select id="qw-select" style="width:100%; background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:12px; font-family:var(--sans); font-size:14px;"></select>
@@ -4967,11 +5000,13 @@ async function groupPasswordOk(g, pw){
   return pw === STAFF_DEFAULT_PASSWORD;
 }
 function startSessionFor(staffId, g, isAdmin){
+  try{ if(window._pwMustSet && window._pwMustSet === staffId) localStorage.setItem('trocaMistoMustSetPw', staffId); else localStorage.removeItem('trocaMistoMustSetPw'); }catch(e){}
   localStorage.setItem('trocaMistoLoginStaffId', staffId);
   localStorage.setItem('trocaMistoLoginIsAdmin', String(isAdmin));
   try{ if(g) localStorage.setItem('trocaMistoGroup', g); else localStorage.removeItem('trocaMistoGroup'); }catch(e){}
 }
 async function checkAccessPassword(){
+  window._pwMustSet = null;
   const staffInput = document.getElementById('access-portal-staffnum');
   const input = document.getElementById('access-portal-input');
   const error = document.getElementById('access-portal-error');
@@ -4994,14 +5029,14 @@ async function checkAccessPassword(){
     if(GROUP === ''){
       try{
         const sch = await dbGetShared('schedule', null, 'sup');
-        if(sch && Array.isArray(sch.workers) && sch.workers.some(x => x && x.id === staffId) && await groupPasswordOk('sup', input.value)){
+        if(sch && Array.isArray(sch.workers) && sch.workers.some(x => x && x.id === staffId) && await loginPasswordOk('sup', staffId, input.value)){
           startSessionFor(staffId, 'sup', false);
           location.reload();
           return;
         }
       }catch(e){}
     }
-    passwordOk = await groupPasswordOk(GROUP, input.value);
+    passwordOk = await loginPasswordOk(GROUP, staffId, input.value);
   } else if(staffId){
     // not in this department's schedule: the staff number decides the department — look in the others
     for(const og of Object.keys(GROUPS)){
@@ -5009,7 +5044,7 @@ async function checkAccessPassword(){
       const sch = await dbGetShared('schedule', null, og);
       const w = sch && Array.isArray(sch.workers) ? sch.workers.find(x => x && x.id === staffId) : null;
       if(w){
-        if(await groupPasswordOk(og, input.value)){
+        if(await loginPasswordOk(og, staffId, input.value)){
           startSessionFor(staffId, og, false);
           location.reload();   // reload so the whole app starts in that department
           return;
@@ -5031,6 +5066,7 @@ async function checkAccessPassword(){
     applyAdminVisibility();
     updateLoggedInDisplay(staffId, worker.name);
     setupNotificationsListener(staffId);
+    setTimeout(pwMaybeAsk, 400);
     await loadMaintenanceConfig(); // always check the freshest state, never a possibly-stale cached one
     if(maintenanceConfig.enabled && !isAdminSession){
       document.getElementById('maintenance-screen-reason').textContent = maintenanceConfig.reason || 'Em manutenção';
@@ -5230,6 +5266,90 @@ function startSupportMode(){
     swlRender('sup-log-root'); try{ renderNotificationsBadge(); }catch(e){}
   }, 0);
 }
+// ---------- personal passwords ----------
+// Each person can choose their own password (stored only as a salted PBKDF2 fingerprint in data/personalPw, field h_<staff number>).
+// Once someone has one, the shared group password no longer works for them. RULES has a switch "Aceitar password antiga":
+// ON (default) = people without their own password can still enter with the group password and are then asked to choose one.
+async function pwGetCfg(){
+  try{ const db = await getDb(); const sn = db ? await db.collection('data').doc('personalPw').get() : null; return sn && sn.exists ? (sn.data() || {}) : {}; }catch(e){ return null; }
+}
+async function loginPasswordOk(g, staffId, pw){
+  const cfg = await pwGetCfg();
+  const h = cfg && cfg['h_' + staffId];
+  if(h) return await verifyPassword(pw, h);          // has an own password: only that one works
+  if(cfg && cfg.allowOld === false) return false;     // group password switched off
+  const ok = await groupPasswordOk(g, pw);
+  if(ok) window._pwMustSet = staffId;
+  return ok;
+}
+function pwMaybeAsk(){
+  let sid = '', cur = '';
+  try{ sid = localStorage.getItem('trocaMistoMustSetPw') || ''; cur = localStorage.getItem('trocaMistoLoginStaffId') || ''; }catch(e){}
+  if(!sid || sid !== cur) return;
+  const m = document.getElementById('pw-set-modal'); if(!m) return;
+  document.getElementById('pw-set-1').value = ''; document.getElementById('pw-set-2').value = ''; document.getElementById('pw-set-err').textContent = '';
+  m.classList.remove('hidden');
+}
+async function pwSaveOwn(){
+  const a = document.getElementById('pw-set-1').value, b = document.getElementById('pw-set-2').value, err = document.getElementById('pw-set-err');
+  const sid = localStorage.getItem('trocaMistoMustSetPw') || '';
+  if(a.length < 6){ err.textContent = 'A password tem de ter pelo menos 6 caracteres.'; return; }
+  if(a !== b){ err.textContent = 'As duas passwords não são iguais.'; return; }
+  if(a === STAFF_DEFAULT_PASSWORD){ err.textContent = 'Escolhe uma password diferente da do grupo.'; return; }
+  const btn = document.getElementById('pw-set-save'); btn.disabled = true; err.textContent = '';
+  try{
+    const db = await getDb(); if(!db) throw new Error('db');
+    await db.collection('data').doc('personalPw').set({ ['h_' + sid]: await swlMakeHash(a), ['t_' + sid]: Date.now() }, { merge: true });
+    try{ localStorage.removeItem('trocaMistoMustSetPw'); }catch(e){}
+    document.getElementById('pw-set-modal').classList.add('hidden');
+  }catch(e){ err.textContent = 'Não consegui guardar. Tenta outra vez.'; }
+  btn.disabled = false;
+}
+document.getElementById('pw-set-save').addEventListener('click', pwSaveOwn);
+['pw-set-1','pw-set-2'].forEach(id => document.getElementById(id).addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); pwSaveOwn(); } }));
+// the little eye: show / hide what is being typed
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('.pw-eye'); if(!b) return;
+  const inp = document.getElementById(b.dataset.eye); if(!inp) return;
+  const show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; b.classList.toggle('on', show);
+});
+// RULES switch
+async function pwLoadToggle(){
+  const cfg = await pwGetCfg(); const t = document.getElementById('old-pw-toggle'); if(t) t.checked = !(cfg && cfg.allowOld === false);
+}
+document.getElementById('old-pw-toggle').addEventListener('change', async (e) => {
+  const t = e.target, want = t.checked;
+  try{ const db = await getDb(); if(!db) throw new Error('db'); await db.collection('data').doc('personalPw').set({ allowOld: want }, { merge: true }); }
+  catch(err){ t.checked = !want; }
+});
+document.getElementById('custom2-toggle-btn').addEventListener('click', () => { pwLoadToggle(); });
+// ADMIN: who has chosen a password
+let pwCfgCache = {};
+async function pwRender(){
+  const list = document.getElementById('pw-list'), msg = document.getElementById('pw-msg'); if(!list) return;
+  list.innerHTML = '<div style="font-size:12px; color:var(--text-dim);">A carregar…</div>';
+  const cfg = await pwGetCfg(); if(cfg === null){ list.innerHTML = ''; msg.textContent = 'Não consegui carregar. Tenta outra vez.'; return; }
+  pwCfgCache = cfg; msg.textContent = '';
+  const q = (document.getElementById('pw-search').value || '').trim().toLowerCase();
+  const all = (DATA.workers || []).filter(w => w && w.id && String(w.id) !== ADMIN_STAFF_ID);
+  const has = w => !!cfg['h_' + w.id];
+  document.getElementById('pw-n-ok').textContent = all.filter(has).length;
+  document.getElementById('pw-n-no').textContent = all.filter(w => !has(w)).length;
+  const rows = all.filter(w => !q || String(w.name || '').toLowerCase().includes(q) || String(w.id).includes(q)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  list.innerHTML = rows.map(w => '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; border:1px solid var(--border-soft); background:rgba(255,255,255,.02); border-radius:10px; padding:9px 12px; margin-bottom:6px; font-size:12.5px;">' +
+    '<div style="flex:1; min-width:0;"><b>' + escapeHtml(w.name || '') + '</b><div style="font:11px var(--mono); color:var(--text-dim);">' + escapeHtml(String(w.id)) + '</div></div>' +
+    (has(w) ? '<span style="font:700 10.5px var(--mono); color:#2ecc71;">DEFINIDA</span><button type="button" class="pw-reset" data-id="' + escapeHtml(String(w.id)) + '" data-name="' + escapeHtml(w.name || '') + '" style="font:800 10px var(--mono); letter-spacing:.06em; color:var(--amber); background:none; border:1px solid #8a6a14; border-radius:6px; padding:4px 8px; cursor:pointer;">RESET</button>'
+      : '<span style="font:700 10.5px var(--mono); color:var(--text-dim);">AINDA NÃO</span>') + '</div>').join('') || '<div style="font-size:12px; color:var(--text-dim);">Ninguém encontrado.</div>';
+  list.querySelectorAll('.pw-reset').forEach(b => b.addEventListener('click', () => {
+    showConfirmDialog('Apagar a password de ' + b.dataset.name + '? Volta a entrar com a password do grupo e escolhe outra.', async () => {
+      try{ const db = await getDb(); await db.collection('data').doc('personalPw').set({ ['h_' + b.dataset.id]: null, ['t_' + b.dataset.id]: null }, { merge: true }); }
+      catch(e){ document.getElementById('pw-msg').textContent = 'Não consegui apagar. Tenta outra vez.'; return; }
+      pwRender();
+    }, false, 'RESET', false, null, 'CANCELAR');
+  }));
+}
+document.getElementById('pw-search').addEventListener('input', () => { pwRender(); });
+document.getElementById('pw-toggle-btn').addEventListener('click', () => { openMsgPanel('pw'); document.getElementById('pw-search').value = ''; pwRender(); });
 (function restoreLoginIfPresent(){
   try{ if(localStorage.getItem('trocaMistoSupport') === '1'){ startSupportMode(); return; } }catch(e){}
   const savedStaffId = localStorage.getItem('trocaMistoLoginStaffId');
@@ -5255,6 +5375,7 @@ function startSupportMode(){
     applyRememberedName('extra-name-input', onPickExtraWorker);
     applyRememberedName('request-name-input', onPickRequestPoster);
     setupNotificationsListener(savedStaffId);
+    setTimeout(pwMaybeAsk, 600);
   }, 0);
   loadMaintenanceConfig().then(() => {
     if(maintenanceConfig.enabled && !isAdminSession){
@@ -9506,9 +9627,9 @@ function renderScheduleOverrideList(){
   });
 }
 // ---------- ADMIN menu: stacked cards, one section open at a time ----------
-const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR', swl:'TROCAS FEITAS', sacc:'ACESSO SUPORTE' };
+const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR', swl:'TROCAS FEITAS', sacc:'ACESSO SUPORTE', pw:'PASSWORDS' };
 function soApplyCards(){
-  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
+  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
   const t = document.getElementById('so-title'); if(t && GROUP && isAdminSession) t.textContent = 'DEFINIÇÕES · ' + GROUP_LABEL;
 }
 function soShowMenu(){
@@ -9535,7 +9656,7 @@ function soOpen(key){
   document.getElementById(key + '-toggle-btn').click();
   if(key === 'aistaff') document.getElementById('so-head').classList.add('hidden');
 }
-['ah','sched','aistaff','msg','custom1','custom2','stats','qw','swl','sacc'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
+['ah','sched','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
 document.getElementById('so-back-btn').addEventListener('click', () => {
   if(!document.getElementById('so-menu').classList.contains('hidden')) closeScheduleOverride();
   else soShowMenu();
@@ -9553,7 +9674,7 @@ function openScheduleOverride(){
 // Generalized helpers for the message panels (currently just msg) — only one
 // can be open at a time, and opening any of them hides the other 3 buttons + the normal
 // PLANEAMENTO content, leaving only "← Voltar" visible until you back out of it.
-const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff', 'qw', 'swl', 'sacc'];
+const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff', 'qw', 'swl', 'sacc', 'pw'];
 function closeAllMsgPanels(){
   document.getElementById('so-row').classList.remove('hidden');
   ALL_MSG_PANEL_KEYS.forEach(key => {
