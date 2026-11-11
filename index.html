@@ -6148,7 +6148,8 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
   // (only truly past days blocked, not today). extraBlockedFn lets a specific caller (like
   // PEDIDOS, for its own HR-deadline rule) layer on one more condition without affecting
   // every other date picker that also uses this same shared setup function.
-  const baseBlocked = allowToday ? isPastDay : isBookingBlocked;
+  const allowTodayNow = () => typeof allowToday === 'function' ? !!allowToday() : !!allowToday;   // can be a function: the admin may pick today in HORAS EXTRA
+  const baseBlocked = (idx) => allowTodayNow() ? isPastDay(idx) : isBookingBlocked(idx);
   const isBlocked = extraBlockedFn ? (idx) => baseBlocked(idx) || extraBlockedFn(idx) : baseBlocked;
 
   let counts, minCount, maxCount;
@@ -6176,7 +6177,7 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
   function rowLabel(idx){
     const dateClass = 'csr-date' + (isWeekend(idx) ? ' csr-weekend' : '') + (isBlocked(idx) ? ' csr-past' : '');
     const countClass = 'csr-count ' + tierClass(counts[idx]);
-    const todayTag = isTomorrowDay(idx) ? ' <span class="csr-today-tag">AMANHÃ</span>' : (allowToday && isTodayDay(idx) ? ' <span class="csr-today-tag">HOJE</span>' : '');
+    const todayTag = isTomorrowDay(idx) ? ' <span class="csr-today-tag">AMANHÃ</span>' : (allowTodayNow() && isTodayDay(idx) ? ' <span class="csr-today-tag">HOJE</span>' : '');
     return {
       dateHtml: '<span class="'+dateClass+'">'+alignedDate(fmtDateLabel(idx))+todayTag+'</span>',
       countHtml: '<span class="'+countClass+'">'+counts[idx]+' '+(counts[idx] === 1 ? PEOPLE_WORD[0] : PEOPLE_WORD[1])+'</span>'
@@ -6265,7 +6266,7 @@ function coverWorkerNoRosterDay(idx){
 }
 const coverDateSelectAPI = setupCustomDateSelect('cover-date', 'cover-date-trigger', 'cover-date-list', false, coverWorkerNoRosterDay, () => coverWorker);
 const tradeDateSelectAPI = setupCustomDateSelect('trade-a-date', 'trade-a-date-trigger', 'trade-a-date-list', false, null, () => tradeA);
-const extraDateSelectAPI = setupCustomDateSelect('extra-date', 'extra-date-trigger', 'extra-date-list');
+const extraDateSelectAPI = setupCustomDateSelect('extra-date', 'extra-date-trigger', 'extra-date-list', () => isAdminSession);
 function refreshAllDateSelectCounts(){
   coverDateSelectAPI.refreshTrigger();
   tradeDateSelectAPI.refreshTrigger();
