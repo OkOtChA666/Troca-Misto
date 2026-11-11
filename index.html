@@ -722,13 +722,15 @@
   /* vertical PREVISÃO chart */
   .ai-vt{ text-align:center; margin:4px 0 20px; } .ai-vt .ai-ttl{ margin:0; display:inline-flex; align-items:center; gap:8px; font-size:12.5px; }
   .ai-vsw{ display:block; margin:8px auto 0; background:none; border:none; color:#5f6a82; font:10px var(--mono); letter-spacing:.06em; text-decoration:underline; cursor:pointer; padding:2px 6px; }
-  .ai-vhd, .ai-vr{ display:grid; grid-template-columns:34px 1fr var(--vc,0px) 28px 28px; gap:6px; align-items:center; }
+  .ai-vhd, .ai-vr{ display:grid; grid-template-columns:34px 1fr 42px var(--vc,0px) 26px 26px; gap:5px; align-items:center; }
   .ai-vhd{ font:600 9px var(--mono); color:#8a97ad; letter-spacing:.04em; margin-bottom:6px; } .ai-vhd span{ text-align:center; }
   .ai-vr{ height:28px; border-radius:6px; cursor:pointer; } .ai-vr.sel{ box-shadow:0 0 0 2px #2ecc71; background:rgba(46,204,113,.08); }
   .ai-vr .hh{ font:600 12px var(--mono); color:#8a97ad; text-align:right; padding-right:4px; }
   .ai-vtr{ position:relative; height:18px; border-left:1px solid #27344f; }
   .ai-vtr .g{ position:absolute; top:-5px; bottom:-5px; border-left:1px solid rgba(255,255,255,.07); }
-  .ai-vtr .b{ position:absolute; left:0; top:2px; height:14px; background:rgba(255,179,0,.6); border-radius:0 3px 3px 0; } .ai-vtr .b.r{ background:rgba(255,93,108,.85); }
+  .ai-vtr .b{ position:absolute; left:0; top:2px; height:14px; background:rgba(46,204,113,.8); border-radius:0 3px 3px 0; } .ai-vtr .b.r{ background:rgba(255,93,108,.9); }
+  .ai-vtr .nm{ position:absolute; top:-3px; height:24px; border-left:3px solid var(--amber); } .ai-vtr .nm:after{ content:''; position:absolute; left:-6px; top:-1px; border:4px solid transparent; border-top:5px solid var(--amber); }
+  .ai-vr.bad{ background:rgba(255,93,108,.10); } .ai-vr .pm{ text-align:center; font:800 12px var(--mono); border-radius:6px; padding:3px 0; } .ai-vr .pm.g{ color:#2ecc71; background:rgba(46,204,113,.10); } .ai-vr .pm.rd{ color:#ff5d6c; background:rgba(255,93,108,.14); } .ai-vr .pm.o{ color:#8a97ad; }
   .ai-vtr .e{ position:absolute; top:-1px; height:20px; border-left:2.5px solid var(--cyan); } .ai-vtr .d{ position:absolute; top:-1px; height:20px; border-left:2.5px dashed #fff; }
   .ai-vr .c{ text-align:center; font:700 11px var(--mono); color:#3a4a66; } .ai-vr .c.p{ color:#c79bff; } .ai-vr .c.u{ color:var(--cyan); } .ai-vr .c.a{ color:#8fd1a8; }
   .ai-vax{ display:grid; grid-template-columns:34px 1fr; gap:6px; font:10px var(--mono); color:#6b7a93; margin-top:2px; } .ai-vax div{ position:relative; height:12px; } .ai-vax span{ position:absolute; transform:translateX(-50%); }
@@ -10185,14 +10187,14 @@ function aiVert(c){
   for(let t = step; t <= maxV; t += step){ gl += '<div class="g" style="left:' + pc(t) + '"></div>'; ticks += '<span style="left:' + pc(t) + '">' + t + '</span>'; }
   shown.forEach(x => {
     const nd = c.need[x.k], hv = c.have[x.k], on = c.on[x.k], ok = Math.min(nd, hv), miss = Math.max(0, nd - hv);
-    grid += '<div class="ai-vr' + (x.u === sel ? ' sel' : '') + '" data-u="' + x.u + '"><div class="hh">' + ('0' + x.u).slice(-2) + 'h</div>' +
-      '<div class="ai-vtr">' + gl + '<div class="b" style="width:' + pc(ok) + '"></div>' + (miss ? '<div class="b r" style="left:' + pc(ok) + '; width:' + pc(miss) + '"></div>' : '') +
-      (c.hasTasks ? '<div class="e" style="left:' + pc(on) + '"></div><div class="d" style="left:' + pc(hv) + '"></div>' : '<div class="e" style="left:' + pc(hv) + '"></div>') + '</div>' +
+    const df = hv - nd, pm = nd === 0 ? '<div class="pm o">·</div>' : (df > 0 ? '<div class="pm g">+' + df + '</div>' : df < 0 ? '<div class="pm rd">−' + (-df) + '</div>' : '<div class="pm o">OK</div>');
+    grid += '<div class="ai-vr' + (x.u === sel ? ' sel' : '') + (df < 0 && nd > 0 ? ' bad' : '') + '" data-u="' + x.u + '"><div class="hh">' + ('0' + x.u).slice(-2) + 'h</div>' +
+      '<div class="ai-vtr">' + gl + '<div class="b' + (df < 0 ? ' r' : '') + '" style="width:' + pc(hv) + '"></div>' + (nd > 0 ? '<div class="nm" style="left:' + pc(nd) + '"></div>' : '') + '</div>' + pm +
       (c.hasTasks ? '<div class="c p">' + (x.bm || '·') + '</div>' : '<div></div>') +
       '<div class="c u">' + (x.dep ? '▲' + x.dep : '·') + '</div><div class="c a">' + (x.arr ? '▼' + x.arr : '·') + '</div></div>';
   });
   AI_CUR = { c, units, g: 1 };
-  const hd = '<div class="ai-vhd"><span>HORA</span><span>STAFF</span>' + (c.hasTasks ? '<span>BREAK</span>' : '<span></span>') + '<span style="color:var(--cyan)">▲</span><span style="color:#8fd1a8">▼</span></div>';
+  const hd = '<div class="ai-vhd"><span>HORA</span><span>STAFF</span><span>+ / −</span>' + (c.hasTasks ? '<span>BREAK</span>' : '<span></span>') + '<span style="color:var(--cyan)">▲</span><span style="color:#8fd1a8">▼</span></div>';
   return { inner: hd + grid + '<div class="ai-vax"><div></div><div>' + ticks + '</div></div>', tip: aiTip(c, units[sel], 1), hasTasks: !!c.hasTasks };
 }
 function aiRenderDay(c){
@@ -10203,11 +10205,17 @@ function aiRenderDay(c){
     '<div class="ai-bal">' + (noData || c.bal === null ? '—' : (c.bal < 0 ? '−' + (-c.bal) : '+' + c.bal)) + '</div></div>';
   if(AI_OPEN === c.idx && !noData){
     const P = AI_VERT ? null : aiParts(c);
-    const lg = '<div class="ai-leg' + (AI_VERT ? ' vl' + (AI_LEG ? ' open' : '') : '') + '"><span><i class="ai-sw" style="background:rgba(255,179,0,.6)"></i>Pessoas necessárias</span>' +
+    const lgH = '<div class="ai-leg"><span><i class="ai-sw" style="background:rgba(255,179,0,.6)"></i>Pessoas necessárias</span>' +
       (c.hasTasks ? '<span><i class="ai-ln"></i>Escalados (turno)</span><span><i class="ai-ln2"></i>Disponíveis (sem pausas)</span>' : '<span><i class="ai-ln"></i>Pessoas em serviço</span>') +
       '<span><i class="ai-sw" style="background:rgba(255,93,108,.8)"></i>Faltam pessoas</span>' +
       (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> Pessoas em pausa nessa hora</span>' : '') +
       '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
+    const lgV = '<div class="ai-leg vl' + (AI_LEG ? ' open' : '') + '"><span><i class="ai-sw" style="background:rgba(46,204,113,.8)"></i>Tens (chega)</span><span><i class="ai-sw" style="background:rgba(255,93,108,.9)"></i>Tens (não chega)</span>' +
+      '<span><i style="display:inline-block; width:0; height:12px; border-left:3px solid var(--amber); vertical-align:middle; margin-right:6px"></i>Precisas (a barra tem de chegar aqui)</span>' +
+      '<span><b style="font:700 10px var(--mono);color:#2ecc71">+1</b> / <b style="font:700 10px var(--mono);color:#ff5d6c">−2</b> sobra / falta gente</span>' +
+      (c.hasTasks ? '<span><b style="font:600 10px var(--mono);color:#c79bff">2</b> BREAK: pessoas em pausa nessa hora</span>' : '') +
+      '<span><b style="font:600 10px var(--mono);color:var(--cyan)">▲3</b> partidas · <b style="font:600 10px var(--mono);color:#8fd1a8">▼2</b> chegadas nessa hora</span></div>';
+    const lg = AI_VERT ? lgV : lgH;
     const V = AI_VERT ? aiVert(c) : null;
     const grid = AI_VERT ? ('<div class="ai-vt"><div class="ai-ttl">PESSOAS POR HORA' + (c.hasTasks ? '<span class="ai-tag">HOJE</span>' : '') + '</div><button type="button" class="ai-vsw" id="ai-vsw">ver gráfico horizontal</button></div>' +
       '<div class="ai-vgrid" style="--vc:' + (c.hasTasks ? '34px' : '0px') + '">' + V.inner + '</div>' +
