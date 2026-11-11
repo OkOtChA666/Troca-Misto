@@ -10148,7 +10148,8 @@ function aiCalc(idx){
         regList.push({ id: w.id, name: w.name, s: xws[0][0], e: xws[0][1], s2: xws[1] ? xws[1][0] : null, e2: xws[1] ? xws[1][1] : null, in: pp && pp[0] ? pp[0] : '', solo: !here });
       }
     }
-    if(!here && rt && !xw){
+    const notCki = (() => { try{ return JSON.parse(AI_TASKS.a[w.id]).k === 0; }catch(e){ return false; } })();   // planete says this person is not a check-in agent (balcão, supervisão, lost…)
+    if(!here && rt && !xw && !notCki){
       // not on the roster today but clocked in (paper swap, extra hours) and still here: counts until the end of the last task
       const pp = punchOf(w.id);
       if(pp && pp[0] && !pp[1]){
@@ -10172,8 +10173,18 @@ function aiCalc(idx){
       }
     }
   });
+  // clocked in in Planete but not in this app's schedule at all (information only, not counted)
+  const unknownList = [];
+  if(rt){
+    const known = {}; DATA.workers.forEach(w => { known[w.id] = 1; });
+    Object.keys(AI_TASKS.a).forEach(id => {
+      if(known[id]) return;
+      let rec = null; try{ rec = JSON.parse(AI_TASKS.a[id]); }catch(e){}
+      if(rec && rec.k !== 0 && rec.p && rec.p[0] && !rec.p[1]) unknownList.push({ id, name: String(rec.n || id), in: rec.p[0] });
+    });
+  }
   const working = workers.filter(w => absent.indexOf(w.id) < 0 && autoAbs.indexOf(w.id) < 0).length + extraList.length + regList.filter(x => x.solo).length;
-  const out = { key, idx, date, workers, working, absent, rt, late: lateList, extras: extraList, reg: regList, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
+  const out = { key, idx, date, workers, working, absent, rt, late: lateList, extras: extraList, reg: regList, unk: unknownList, have, on, brk, tsk, hasTasks, depS: new Array(AI_SLOTS).fill(0), arrS: new Array(AI_SLOTS).fill(0), from: off === 0 ? Math.max(0, (new Date().getHours() - 1) * (60 / AI_SLOT)) : 0, off, need: null, flights: fl ? fl.length : 0 };
   if(!fl) return out;
   const need = new Array(AI_SLOTS).fill(0);
   const base = off * 1440;   // minutes (relative to today 00:00) where this day starts
@@ -10355,7 +10366,17 @@ function aiRenderDay(c){
       const miss = c.late.slice().sort((a, b) => b.late - a.late);
       rtH += '<div class="ai-miss"><h4 style="color:#ff5d6c">AINDA NÃO ENTRARAM · ' + miss.length + '</h4>' + (miss.length ? '<div>' + miss.map(m => chip(escapeHtml(m.name) + ' · ' + hm2(m.s) + '–' + hm2(m.e) + ' <b style="color:' + (m.out ? '#ff5d6c' : '#ffb020') + '">+' + lt(m.late) + '</b>', m.out ? '#ff5d6c' : '#ffb020')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Depois de ' + AI_LATE + ' min sem picar, deixam de contar na previsão.</div>' : '<div class="hint" style="font-size:12px;">Toda a gente que devia estar já entrou. 👍</div>') + '</div>';
       if(c.reg && c.reg.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#4da3ff">HORAS EXTRA · ' + c.reg.length + '</h4><div>' + c.reg.map(x => chip(escapeHtml(x.name) + ' · ' + hm2(x.s) + '–' + hm2(x.e) + (x.s2 !== null && x.s2 !== undefined ? ' + ' + hm2(x.s2) + '–' + hm2(x.e2) : '') + (x.in ? ' <b style="color:#2ecc71">✓ entrou ' + escapeHtml(x.in) + '</b>' : ''), '#4da3ff')).join('') + '</div></div>';
+      if(c.unk && c.unk.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#b69cff">PICARAM MAS NÃO ESTÃO NA APP · ' + c.unk.length + '</h4><div>' + c.unk.map(x => chip(escapeHtml(x.name) + ' · entrou ' + escapeHtml(x.in), '#b69cff')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Estão no Planete mas não no horário da app. Não contam na previsão (podem ser supervisores ou balcão).</div></div>';
       if(c.extras.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#2ecc71">ENTRARAM SEM ESTAR NO HORÁRIO · ' + c.extras.length + '</h4><div>' + c.extras.map(x => chip(escapeHtml(x.name) + ' · entrou ' + escapeHtml(x.in), '#2ecc71')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Trocas em papel ou horas extra. Contam até ao fim da última tarefa.</div></div>';
+      { // possible swap made outside the app: someone missing + someone off the roster who came in around the same time
+        const used = {}, pairs = [];
+        c.late.filter(m => m.out).sort((x, y) => x.s - y.s).forEach(m => {
+          let best = null, bd = 61;
+          c.extras.forEach(x => { if(used[x.id]) return; const xi = mtToMin(x.in); if(xi === null) return; const d = Math.abs(xi - m.s); if(d < bd){ bd = d; best = x; } });
+          if(best){ used[best.id] = 1; pairs.push({ m, x: best }); }
+        });
+        if(pairs.length) rtH += '<div class="ai-miss" style="margin-top:10px"><div style="border:1px solid #6b5a1f; background:#17140a; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.55;"><b style="color:#ffd166">⇄ Troca fora da app?</b>' + pairs.map(q => '<div style="margin-top:6px;">' + escapeHtml(q.m.name) + ' (' + hm2(q.m.s) + '–' + hm2(q.m.e) + ') não picou e ' + escapeHtml(q.x.name) + ' entrou às ' + escapeHtml(q.x.in) + '.</div>').join('') + '<div style="color:#8d8660; font-size:11.5px; margin-top:6px;">Só uma dica. Se for uma troca, faz a troca na app para ficar tudo certo.</div></div></div>';
+      }
     }
     h += '<div class="ai-det">' + grid + rtH +
       (c.rt ? '' : '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
