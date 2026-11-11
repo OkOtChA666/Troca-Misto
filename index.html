@@ -672,14 +672,22 @@
   .ai-rule2 b{ color:var(--cyan); font-weight:600; }
   .back-btn.as-round{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border-radius:50%; color:var(--amber); background:rgba(255,179,0,0.08); border:1px solid rgba(255,179,0,0.45); }
   .ai-mon{ text-align:center; font-family:var(--mono); font-weight:600; font-size:12px; letter-spacing:.1em; color:var(--text); margin:4px 0 10px; }
-  .ai-day{ display:grid; grid-template-columns:46px 1fr auto; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--border-soft); border-left:4px solid #3ddc97; border-radius:10px; padding:10px 12px; margin-bottom:8px; cursor:pointer; }
-  .ai-day.w{ border-left-color:var(--amber); } .ai-day.b{ border-left-color:#ff5d6c; } .ai-day.n{ border-left-color:#2a3550; opacity:.6; cursor:default; }
-  .ai-dn{ font-family:var(--mono); font-weight:700; font-size:18px; color:var(--text); line-height:1; }
-  .ai-dn small{ display:block; font-weight:500; font-size:10px; color:var(--text-dim); margin-top:3px; }
-  .ai-cm{ font-family:var(--sans); font-size:12.5px; line-height:1.35; color:var(--text); }
-  .ai-cm i{ display:block; font-style:normal; font-family:var(--mono); font-size:10.5px; color:#6d7790; margin-top:3px; }
-  .ai-sb{ display:inline-block; font-family:var(--mono); font-weight:600; font-size:10.5px; padding:2px 7px; border-radius:9px; background:rgba(95,224,255,.14); color:var(--cyan); margin-top:4px; }
-  .ai-bal{ text-align:right; font-family:var(--mono); font-weight:700; font-size:18px; color:#3ddc97; white-space:nowrap; }
+  .ai-day{ position:relative; display:flex; align-items:stretch; background:var(--panel-2); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:12px; cursor:pointer; }
+  .ai-day.n{ opacity:.6; cursor:default; }
+  .ai-dn{ flex:none; width:58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-family:var(--mono); font-weight:700; font-size:21px; line-height:1; color:var(--text); background:rgba(61,220,151,.12); }
+  .ai-dn small{ display:block; font-weight:600; font-size:10px; letter-spacing:.1em; margin:0; color:#3ddc97; }
+  .ai-day.w .ai-dn{ background:rgba(255,179,0,.13); } .ai-day.w .ai-dn small{ color:var(--amber); }
+  .ai-day.b .ai-dn{ background:rgba(255,93,108,.13); } .ai-day.b .ai-dn small{ color:#ff5d6c; }
+  .ai-day.n .ai-dn{ background:rgba(255,255,255,.04); } .ai-day.n .ai-dn small{ color:var(--text-dim); }
+  .ai-cm{ flex:1; min-width:0; padding:12px 2px 12px 14px; font-family:var(--sans); font-size:12.5px; line-height:1.3; color:var(--text-dim); display:flex; flex-direction:column; justify-content:center; }
+  .ai-day.hs .ai-cm{ padding-bottom:40px; }
+  .ai-tt{ font-family:var(--mono); font-weight:700; font-size:13.5px; letter-spacing:.1em; color:#3ddc97; margin-bottom:3px; } .ai-day.w .ai-tt{ color:var(--amber); } .ai-day.b .ai-tt{ color:#ff7b88; }
+  .ai-day.nb .ai-tt{ color:var(--text-dim); }
+  .ai-tabs{ position:absolute; left:66px; bottom:0; display:flex; gap:4px; }
+  .ai-tabs span{ height:26px; padding:0 8px; background:#e8eefc; color:#46526b; border-radius:10px 10px 0 0; font:700 12px var(--mono); display:flex; align-items:center; gap:4px; white-space:nowrap; } .ai-tabs b{ color:#0b1220; } .ai-tabs em{ font-style:normal; font-weight:600; font-size:9.5px; color:#6b7690; }
+  .ai-bal{ flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:56px; padding:0 14px 0 8px; font-family:var(--mono); font-weight:700; font-size:22px; color:#3ddc97; white-space:nowrap; }
+  .ai-bal small{ font-weight:600; font-size:9px; letter-spacing:.08em; color:var(--text-dim); margin-top:3px; }
+  .ai-day.hs .ai-bal{ padding-bottom:26px; }
   .ai-day.w .ai-bal{ color:var(--amber); } .ai-day.b .ai-bal{ color:#ff5d6c; } .ai-day.n .ai-bal{ color:var(--text-dim); }
   .ai-det{ margin:-2px 0 10px; padding:12px; background:#0b1120; border:1px solid #1b2640; border-radius:10px; }
   .ai-hh{ display:flex; align-items:flex-end; gap:3px; height:64px; }
@@ -10200,9 +10208,13 @@ function aiVert(c){
 function aiRenderDay(c){
   const wd = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][c.date.getDay()];
   const noData = c.need === null;
-  let h = '<div class="ai-day ' + (noData ? 'n' : c.cls) + '" data-i="' + c.idx + '"><div class="ai-dn">' + DATA.days[c.idx] + '<small>' + wd + '</small></div>' +
-    '<div class="ai-cm">' + (noData ? 'Ainda não há voos para este dia.' : escapeHtml(c.text) + '<i><b style="color:var(--cyan); font-weight:700;">' + c.flights + '</b> ' + (c.flights === 1 ? 'partida' : 'partidas') + ' &nbsp;|&nbsp; <b style="color:#8fd1a8; font-weight:700;">' + c.arrCount + '</b> ' + (c.arrCount === 1 ? 'chegada' : 'chegadas') + '</i><span class="ai-sb">👤 ' + c.working + ' EM SERVIÇO</span>') + '</div>' +
-    '<div class="ai-bal">' + (noData || c.bal === null ? '—' : (c.bal < 0 ? '−' + (-c.bal) : '+' + c.bal)) + '</div></div>';
+  const dep = c.flights, arr = c.arrCount, bal = c.bal;
+  const ttl = noData ? '' : bal === null ? 'SEM MAIS VOOS' : c.cls === 'b' ? 'FALTA GENTE' : c.cls === 'w' ? (bal === 0 ? 'NO LIMITE' : 'DIA APERTADO') : 'TUDO OK';
+  const lab = noData || bal === null ? '' : c.cls === 'b' ? 'FALTA' : bal === 0 ? 'EXATO' : 'SOBRA';
+  let h = '<div class="ai-day ' + (noData ? 'n' : c.cls + (bal === null ? ' nb' : ' hs')) + '" data-i="' + c.idx + '"><div class="ai-dn">' + DATA.days[c.idx] + '<small>' + wd + '</small></div>' +
+    '<div class="ai-cm">' + (noData ? 'Ainda não há voos para este dia.' : '<div class="ai-tt">' + ttl + '</div>' + escapeHtml(c.text)) + '</div>' +
+    (noData || bal === null ? '' : '<div class="ai-tabs"><span><i style="color:#0066cc; font-style:normal">▲</i><b>' + dep + '</b><em>' + (dep === 1 ? 'partida' : 'partidas') + '</em></span><span><i style="color:#1f9d6b; font-style:normal">▼</i><b>' + arr + '</b><em>' + (arr === 1 ? 'chegada' : 'chegadas') + '</em></span><span>👤<b>' + c.working + '</b></span></div>') +
+    '<div class="ai-bal">' + (noData || bal === null ? '—' : (bal < 0 ? '−' + (-bal) : '+' + bal) + '<small>' + lab + '</small>') + '</div></div>';
   if(AI_OPEN === c.idx && !noData){
     const P = AI_VERT ? null : aiParts(c);
     const lgH = '<div class="ai-leg"><span><i class="ai-sw" style="background:rgba(255,179,0,.6)"></i>Pessoas necessárias</span>' +
