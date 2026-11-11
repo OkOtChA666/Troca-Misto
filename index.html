@@ -10289,7 +10289,7 @@ function aiRenderDay(c){
     const hm2 = (m) => aiHM(m % 1440 || 1440), lt = (m) => m >= 60 ? Math.floor(m / 60) + 'h' + ('0' + (m % 60)).slice(-2) : m + ' min';
     let rtH = '';
     if(c.rt){
-      const chip = (t, col) => '<span class="ai-chip" style="border-color:' + col + '66">' + t + '</span>';
+      const chip = (t, col) => '<span class="ai-chip" style="border-color:' + col + '66' + (/^#ff5d/i.test(col) ? '' : '; color:#dbe4ff') + '">' + t + '</span>';
       const miss = c.late.slice().sort((a, b) => b.late - a.late);
       rtH += '<div class="ai-miss"><h4 style="color:#ff5d6c">AINDA NÃO ENTRARAM · ' + miss.length + '</h4>' + (miss.length ? '<div>' + miss.map(m => chip(escapeHtml(m.name) + ' · ' + hm2(m.s) + '–' + hm2(m.e) + ' <b style="color:' + (m.out ? '#ff5d6c' : '#ffb020') + '">+' + lt(m.late) + '</b>', m.out ? '#ff5d6c' : '#ffb020')).join('') + '</div><div class="hint" style="margin-top:8px; font-size:11.5px;">Depois de ' + AI_LATE + ' min sem picar, deixam de contar na previsão.</div>' : '<div class="hint" style="font-size:12px;">Toda a gente que devia estar já entrou. 👍</div>') + '</div>';
       if(c.reg && c.reg.length) rtH += '<div class="ai-miss" style="margin-top:10px"><h4 style="color:#4da3ff">HORAS EXTRA · ' + c.reg.length + '</h4><div>' + c.reg.map(x => chip(escapeHtml(x.name) + ' · ' + hm2(x.s) + '–' + hm2(x.e) + (x.in ? ' <b style="color:#2ecc71">✓ entrou ' + escapeHtml(x.in) + '</b>' : ''), '#4da3ff')).join('') + '</div></div>';
