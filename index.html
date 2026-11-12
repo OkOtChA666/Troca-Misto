@@ -1608,6 +1608,15 @@
   .row.pc .pc-tile b.on-cyan{ color:#2ecc71; }
   .row.pc.row-expanded .row-name > span[style*="inline-flex"]{ align-items:center !important; margin-left:9px; }
   .row.pc.row-expanded .row-name > span[style*="inline-flex"] > span{ top:0 !important; }
+  .row.pc .row-sub{ display:none !important; }
+  .row.pc .rl-wrap{ margin-top:10px; }
+  .row.pc .rl:not(.bad){ display:none; }
+  .row.pc .rl.bad{ color:var(--text); }
+  .row.pc .rl.bad .rl-val{ color:var(--nogo); }
+  .row.pc.row-expanded:has(.rl.bad){ border-color:rgba(255,154,61,.38) !important; background:linear-gradient(160deg, rgba(255,154,61,.10), rgba(255,154,61,.03) 55%), var(--card, #0f1626) !important; }
+  .row.pc.row-expanded .row-name > span[style*="FF9A3D"]{ display:none; }
+  .row.pc .row-detail div:has(> span[style*="FF9A3D"]){ display:none; }
+  .row.pc:has(.rl.bad) .confirm-btn{ background:#1c2336 !important; color:#5d6a85 !important; border:1px solid #2a3450 !important; box-shadow:none !important; pointer-events:none; cursor:not-allowed; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -3949,10 +3958,10 @@ function ruleLinesHtml(consecIssue, restIssue){
   const CK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="var(--go)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const XX = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="var(--nogo)" stroke-width="2.6" stroke-linecap="round"/></svg>';
   const a = consecIssue
-    ? '<span class="rl bad">'+XX+'Dias seguidos · '+consecIssue.len+' (máx. '+consecIssue.max+')</span>'
+    ? '<span class="rl bad">'+XX+'Dias seguidos · <span class="rl-val">'+consecIssue.len+' (máx. '+consecIssue.max+')</span></span>'
     : '<span class="rl">'+CK+'Dias seguidos</span>';
   const b = restIssue
-    ? '<span class="rl bad">'+XX+'Horas de descanso · '+fmtHours(restIssue.gap)+' (mín. '+restIssue.min+'h+)</span>'
+    ? '<span class="rl bad">'+XX+'Horas de descanso · <span class="rl-val">'+fmtHours(restIssue.gap)+' (mín. '+restIssue.min+'h+)</span></span>'
     : '<span class="rl">'+CK+'Horas de descanso</span>';
   return '<div class="rl-wrap'+((consecIssue||restIssue)?' rl-col':'')+'">'+a+b+'</div>';
 }
@@ -7107,7 +7116,7 @@ function renderCoverResults(results, idx){
         ? '<div style="height:6px;"></div><span class="issue">Sem violações de regras — mas foi reportado manualmente:</span>'
         : '<div style="height:6px;"></div>'+(nextDayText ? '<div class="nd-block"><div class="nd-label">Dia seguinte</div>'+((nextEntry && nextEntry.status === 'work') ? fmtHHMM(nextEntry.start) + ' - ' + fmtHHMM(nextEntry.end) : escapeHtml((nextEntry && nextEntry.codes && nextEntry.codes[0]) || 'off'))+'</div>' : '');   // clean candidates: the two checks are shown once, in the CANDIDATOS header
     } else {
-      detail.innerHTML = '<div style="height:6px;"></div>'+buildRuleCheckHtml(r.issues);
+      detail.innerHTML = '<div style="height:6px;"></div>'+((!swapped && nextDayText) ? '<div class="nd-block"><div class="nd-label">Dia seguinte</div>'+((nextEntry && nextEntry.status === 'work') ? fmtHHMM(nextEntry.start) + ' - ' + fmtHHMM(nextEntry.end) : escapeHtml((nextEntry && nextEntry.codes && nextEntry.codes[0]) || 'off'))+'</div>' : '')+buildRuleCheckHtml(r.issues);
     }
     if(!swapped){
       const _h = TYPICAL_HOURS[r.worker.id], _ip = DCS_SYSTEMS.find(x => x.key === 'iport');
