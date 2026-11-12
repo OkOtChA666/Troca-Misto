@@ -2464,13 +2464,6 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">STAFF pode editar Horários</span>
-        <span class="pill-toggle">
-          <input type="checkbox" id="staff-edit-sched-toggle" checked>
-          <span class="pill-track"></span>
-        </span>
-      </label>
-      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Opção Turno Duplo</span>
         <span class="pill-toggle">
           <input type="checkbox" id="double-shift-enabled-toggle">
@@ -2534,6 +2527,13 @@
         </span>
       </label>
             <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">STAFF pode editar Horários</span>
+        <span class="pill-toggle">
+          <input type="checkbox" id="staff-edit-sched-toggle" checked>
+          <span class="pill-track"></span>
+        </span>
+      </label>
+      <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Mostrar aviso legal no fundo da app</span>
         <span class="pill-toggle">
           <input type="checkbox" id="legal-footer-enabled-toggle">
@@ -7656,13 +7656,14 @@ function renderExtraHoursList(){
   const nPast = entries.filter(x => isPastDay(x.idx)).length;
   if(nPast > 0){
     const t = document.createElement('div');
-    t.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin:0 0 8px;padding:0 4px;font-family:var(--mono);font-size:11px;color:var(--text-dim)';
-    t.innerHTML = '<span>PASSADAS (' + nPast + ')</span><label style="display:flex;align-items:center;gap:8px;cursor:pointer;">MOSTRAR <input type="checkbox" id="extra-show-past"' + (EXTRA_SHOW_PAST ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:var(--cyan);cursor:pointer;"></label>';
-    list.appendChild(t);
-    t.querySelector('input').addEventListener('change', ev => { EXTRA_SHOW_PAST = ev.target.checked; renderExtraHoursList(); });
+    t.style.cssText = 'display:flex;align-items:center;gap:10px;margin:0 0 4px;padding:10px 12px;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--text-dim)';
+    t.innerHTML = '<span style="flex:1;">DIAS PASSADOS</span><span style="font-weight:700;">' + nPast + '</span><span style="font-size:11px;">' + (EXTRA_SHOW_PAST ? '▼' : '▶') + '</span>';
+    window.__pastBar = t;
+    t.addEventListener('click', () => { EXTRA_SHOW_PAST = !EXTRA_SHOW_PAST; renderExtraHoursList(); });
   }
-  let lastIdx = null;
+  let lastIdx = null, pastBarDone = false;
   entries.forEach((x, i) => {
+    if(isPastDay(x.idx) && !pastBarDone){ pastBarDone = true; if(window.__pastBar){ window.__pastBar.style.marginTop = '18px'; list.appendChild(window.__pastBar); } }
     if(isPastDay(x.idx) && !EXTRA_SHOW_PAST) return;
     if(x.idx !== lastIdx){   // one heading per day, so the date is not repeated in every row
       lastIdx = x.idx;
@@ -11961,10 +11962,16 @@ function mtKey(t){
   mtTeamAll();
   return MT_INFER[mtSig(t)] || '';
 }
+const MT_ICAO = { EZY:'U2', EJU:'U2', EZS:'DS', TAP:'TP', RYR:'FR', BAW:'BA', DLH:'LH', AFR:'AF', KLM:'KL', IBE:'IB', VLG:'VY', TRA:'HV', TVF:'TO', EXS:'LS', SAS:'SK', NSZ:'DY', FIN:'AY', WZZ:'W6', SWR:'LX', AUA:'OS', BEL:'SN', LOT:'LO', TOM:'BY', EWG:'EW' };
 function mtKeyRaw(t){
   if(t[5]) return t[5];
   const lbl = String(t[0] || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim();
-  const m = /^([A-Z0-9]{2})\s?(\d{1,4}[A-Z]?)(\s|$)/.exec(lbl); if(!m) return '';
+  let m = /^([A-Z0-9]{2})\s?(\d{1,4}[A-Z]?)(\s|$)/.exec(lbl);
+  if(!m){   // the coordinator wrote the 3-letter airline name ("EZY2240", "TAP 1234"): use the 2-letter code the flight list uses
+    const m3 = /^([A-Z]{3})\s?(\d{1,4}[A-Z]?)(\s|$)/.exec(lbl), ia = m3 && MT_ICAO[m3[1]];
+    if(m3 && ia) m = [m3[0], ia, m3[2], m3[3]];
+  }
+  if(!m) return '';
   if(!MT_DOC || !MT_DOC.flights) return 'NAME:' + m[1] + m[2];
   if(MT_KEYS_SRC !== MT_DOC.flights){ MT_KEYS_SRC = MT_DOC.flights; try{ MT_KEYS = Object.keys(JSON.parse(MT_DOC.flights) || {}); }catch(e){ MT_KEYS = []; } }   // read the day's flight list directly
   const ks = MT_KEYS.filter(k => k.indexOf(m[1]) === 0 && (k.indexOf(m[1] + m[2] + '@') === 0 || k.indexOf('/' + m[2] + '@') > 0));
