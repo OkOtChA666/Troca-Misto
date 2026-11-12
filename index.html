@@ -1585,6 +1585,20 @@
   .row.pc .pc-tile b.on-cyan{ color:var(--cyan); }
   .row.pc .nd-block{ margin-top:0; border:1px solid #1c2a44; border-radius:10px; padding:9px 10px; background:rgba(8,13,24,.6); font:700 15px var(--mono); color:var(--text); }
   .row.pc .nd-label{ font:normal 9px var(--mono); letter-spacing:.1em; color:#8a96b3; margin-bottom:3px; }
+  .row.pc .row-name{ display:flex; align-items:center; }
+  .row.pc .pc-code{ flex:none; margin:0 0 0 auto !important; min-width:30px; box-sizing:border-box; text-align:center; }
+  .row.pc .row-name .pc-code{ margin-left:auto !important; }
+  .row.pc.row-expanded .row-name{ flex-wrap:wrap; }
+  .row.pc.row-expanded .row-name::after{ content:''; flex-basis:100%; order:4; height:0; }
+  .row.pc.row-expanded .row-name .pc-code{ order:5; margin:8px 0 0 0 !important; }
+  .row.pc:not(.row-expanded) .pc-code{ position:relative; }
+  .row.pc:not(.row-expanded) .pc-code::before{ content:''; position:absolute; left:-14px; top:50%; height:22px; margin-top:-11px; width:1px; background:#3a4d75; }
+  .pc-id{ display:none; }
+  .row.pc.row-expanded .pc-id{ display:inline-block; flex:none; order:5; margin:8px 0 0 0; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:2px 8px; min-width:18px; text-align:center; }
+  .row.pc.row-expanded .row-name .pc-code{ display:none !important; }
+  .row.pc .pc-sel{ margin-bottom:2px; }
+  .row.pc.row-expanded .row-status{ top:-1px; right:-1px; }
+  .row.pc.row-expanded .row-status .inline-report{ width:48px; height:30px; padding:0; margin:0; border-radius:0 16px 0 14px; border:1px solid #2a3b5c; border-top:0; border-right:0; background:#16233b; color:#8a6f78; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -7059,6 +7073,10 @@ function renderCoverResults(results, idx){
     row.innerHTML = (swapped ? avatarHtml(r.worker.id, r.worker.name, 40) : '<div class="pc-hex">' + avatarHtml(r.worker.id, r.worker.name, 40) + '</div>') + '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
       '<div class="row-sub">'+subHtml+'</div></div>'+
       '<div class="row-status">'+(swapped?'':(reportBtnHtml+hoursBadge(r.worker.id)+sysBadge(r.worker.id)))+'</div>';
+    if(!swapped){   // DC / DS / FO chip goes right after the name
+      const _n = row.querySelector('.row-name'), _s = row.querySelector('.row-sub'), _c = _s && _s.firstElementChild;
+      if(_n && _c && _c.tagName === 'SPAN' && !_c.className){ _c.classList.add('pc-code'); _n.appendChild(_c); _n.insertAdjacentHTML('beforeend', '<span class="pc-id">' + escapeHtml(String(r.worker.id)) + '</span>'); if(!_s.textContent.trim()) _s.style.display = 'none'; }
+    }
     if(matchingRequest){
       row.querySelector('#'+starBtnId).addEventListener('click', (e) => {
         e.stopPropagation();
@@ -7085,7 +7103,7 @@ function renderCoverResults(results, idx){
     if(!swapped){
       const _h = TYPICAL_HOURS[r.worker.id], _ip = DCS_SYSTEMS.find(x => x.key === 'iport');
       const _t = (lab, val, on) => '<div class="pc-tile"><i>' + lab + '</i><b' + (on ? ' class="on-' + on + '"' : '') + '>' + val + '</b></div>';
-      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + _t('ALTEA', hasAltea(r.worker.id) ? '✓' : '—', hasAltea(r.worker.id) ? 'cyan' : '') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? '✓' : '—', (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : '') + '</div>');
+      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + _t('ALTEA', hasAltea(r.worker.id) ? '✓' : '—', hasAltea(r.worker.id) ? 'cyan' : '') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? '✓' : '—', (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : '') + '</div><div class="nd-block pc-sel"><div class="nd-label">' + ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][realDateForIdx(idx).getDay()] + ' ' + String(DATA.days[idx]).padStart(2, '0') + '</div>' + escapeHtml(codeLabel) + '</div>');
     }
     if(flagged) detail.appendChild(buildFlagWarning(r.worker.id, idx));
     if(swapped) detail.appendChild(buildSwapWarning(r.worker.id, idx));
