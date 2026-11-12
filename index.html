@@ -7694,7 +7694,7 @@ function renderExtraHoursList(){
     row.style.animationDelay = (i*20)+'ms';
     const past = isPastDay(x.idx);
     const nm = niceListName(x.worker.name);
-    const nameHtml = past ? '<span class="csr-past">'+escapeHtml(nm)+'</span>' : escapeHtml(nm);
+    const nameHtml = past ? '<span style="color:var(--text-dim);">'+escapeHtml(nm)+'</span>' : escapeHtml(nm);
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
 ((x.e && x.e.from && x.e.to) ? '<div class="row-sub" style="margin-top:4px;">'+x.e.from+'–'+x.e.to+'</div>'+((x.e.from2 && x.e.to2) ? '<div class="row-sub" style="margin-top:4px;">'+x.e.from2+'–'+x.e.to2+'</div>' : '') : '')+'</div>'+
       '<button type="button" class="recent-swap-delete" title="Remover">✕</button>';
