@@ -1604,6 +1604,8 @@
   .row.pc:not(.row-expanded) .row-name > span[style*="inline-flex"] + .pc-code{ margin-left:28px !important; }
   .row.pc:not(.row-expanded) .row-name > span[style*="inline-flex"]{ align-items:center !important; }
   .row.pc:not(.row-expanded) .row-name > span[style*="inline-flex"] > span{ top:0 !important; }
+  .row.pc .pc-tile b.on-red{ color:#ff5d73; }
+  .row.pc .pc-tile b.on-cyan{ color:#2ecc71; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -7108,7 +7110,7 @@ function renderCoverResults(results, idx){
     if(!swapped){
       const _h = TYPICAL_HOURS[r.worker.id], _ip = DCS_SYSTEMS.find(x => x.key === 'iport');
       const _t = (lab, val, on) => '<div class="pc-tile"><i>' + lab + '</i><b' + (on ? ' class="on-' + on + '"' : '') + '>' + val + '</b></div>';
-      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + _t('ALTEA', hasAltea(r.worker.id) ? '✓' : '—', hasAltea(r.worker.id) ? 'cyan' : '') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? '✓' : '—', (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : '') + '</div><div class="nd-block pc-sel"><div class="nd-label">' + ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'][realDateForIdx(idx).getDay()] + ' ' + String(DATA.days[idx]).padStart(2, '0') + '</div>' + escapeHtml(codeLabel) + '</div>');
+      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + _t('ALTEA', hasAltea(r.worker.id) ? '✓' : '✕', hasAltea(r.worker.id) ? 'cyan' : 'red') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? '✓' : '✕', (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : 'red') + '</div><div class="nd-block pc-sel"><div class="nd-label">' + extraLongDate(idx).toUpperCase() + '</div>' + escapeHtml(codeLabel) + '</div>');
     }
     if(flagged) detail.appendChild(buildFlagWarning(r.worker.id, idx));
     if(swapped) detail.appendChild(buildSwapWarning(r.worker.id, idx));
