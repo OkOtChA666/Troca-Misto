@@ -7622,6 +7622,10 @@ document.getElementById('extra-confirm-btn').addEventListener('click', async () 
 });
 
 let EXTRA_SHOW_PAST = false;
+function todayLongLabel(){
+  const d = TODAY_MIDNIGHT;
+  return ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'][d.getDay()] + ', ' + d.getDate() + ' de ' + ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][d.getMonth()];
+}
 const EXTRA_COLL = new Set();   // days folded in the extra-hours list
 function extraLongDate(idx){
   const d = realDateForIdx(idx);
@@ -7663,7 +7667,16 @@ function renderExtraHoursList(){
   }
   let lastIdx = null, pastBarDone = false;
   entries.forEach((x, i) => {
-    if(isPastDay(x.idx) && !pastBarDone){ pastBarDone = true; if(window.__pastBar){ window.__pastBar.style.marginTop = '18px'; list.appendChild(window.__pastBar); } }
+    if(isPastDay(x.idx) && !pastBarDone){ pastBarDone = true; if(i === 0){   // nothing from today onwards: say so, in a bar like the day bars
+      const em = document.createElement('div');
+      em.style.cssText = 'display:flex;align-items:center;margin:16px 0 4px;padding:11px 12px;border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:8px;background:rgba(255,255,255,.03);font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.06em;color:var(--text-dim)';
+      em.innerHTML = '<span>' + escapeHtml(todayLongLabel().toUpperCase()) + '</span>';
+      list.appendChild(em);
+      const emt = document.createElement('div');
+      emt.style.cssText = 'text-align:center;padding:10px 0 4px;font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:.08em;color:var(--text-dim)';
+      emt.textContent = 'SEM HORAS EXTRA';
+      list.appendChild(emt);
+    } if(window.__pastBar){ window.__pastBar.style.marginTop = '18px'; list.appendChild(window.__pastBar); } }
     if(isPastDay(x.idx) && !EXTRA_SHOW_PAST) return;
     if(x.idx !== lastIdx){   // one heading per day, so the date is not repeated in every row
       lastIdx = x.idx;
