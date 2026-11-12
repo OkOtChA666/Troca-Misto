@@ -1317,6 +1317,14 @@
   #panel-tools .tool-card > div:not(.tool-ic), #so-menu .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
   #panel-tools .tool-name, #so-menu .tool-name{ font-size:15px; letter-spacing:.12em; }
   #panel-tools .tool-desc, #so-menu .tool-desc{ font-size:13px; margin-top:4px; }
+  #so-agentes-menu .tool-card, #so-horarios-menu .tool-card, #so-app-menu .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
+  #so-agentes-menu .tool-card > .tool-arrow, #so-horarios-menu .tool-card > .tool-arrow, #so-app-menu .tool-card > .tool-arrow{ display:none; }
+  #so-agentes-menu .tool-card > .tool-ic, #so-horarios-menu .tool-card > .tool-ic, #so-app-menu .tool-card > .tool-ic{ width:50px; height:auto; border-radius:0; border:0; background:#0f2236; color:#4fd1f0; }
+  #so-agentes-menu .tool-card > div:not(.tool-ic), #so-horarios-menu .tool-card > div:not(.tool-ic), #so-app-menu .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
+  #so-agentes-menu .tool-name, #so-horarios-menu .tool-name, #so-app-menu .tool-name{ font-size:15px; letter-spacing:.12em; }
+  #so-agentes-menu .tool-desc, #so-horarios-menu .tool-desc, #so-app-menu .tool-desc{ font-size:13px; margin-top:4px; }
+  html.themed #so-agentes-menu .tool-card, html.themed #so-horarios-menu .tool-card, html.themed #so-app-menu .tool-card{ border-radius:var(--r); }
+  html.themed #so-agentes-menu .tool-card > .tool-ic, html.themed #so-horarios-menu .tool-card > .tool-ic, html.themed #so-app-menu .tool-card > .tool-ic{ background:var(--panel-2); color:var(--text); }
   .area-card .ac-s{ font-size:13px; color:var(--text-dim); margin-top:4px; }
   /* favourites: heart on each card; chosen ones go to the top, set apart, in strong yellow */
   .area-card .ac-fav{ flex:none; background:none; border:0; padding:6px; margin:-6px 0; cursor:pointer; color:#5a6788; display:inline-flex; -webkit-tap-highlight-color:transparent; }
@@ -2354,19 +2362,28 @@
       <button type="button" id="so-sched-restore" class="flag-btn" style="width:100%; text-align:left; display:block; padding:12px;" disabled><span style="display:block;">↺ Restore — versão antes do último upload</span><span id="so-sched-restore-info" style="display:block; margin-top:4px; font-weight:400; font-size:11px;"></span></button>
     </div>
     <div id="so-menu">
-      <div class="tool-card" id="so-card-ah"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div><div class="tool-name">ALTERAÇÃO DE HORÁRIOS</div><div class="tool-desc">Mudar o horário de um trabalhador</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
-      <div class="tool-card" id="so-card-sched"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"/></svg></div><div><div class="tool-name">HORÁRIO MENSAL</div><div class="tool-desc">Carregar novo mês · Restore</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
-      <div class="tool-card" id="so-card-agentes"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg></div><div><div class="tool-name">AGENTES</div><div class="tool-desc">Skills, INCOG e OUT</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-horarios"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div><div class="tool-name">HORÁRIOS</div><div class="tool-desc">Alterações e horário mensal</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-agentes"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg></div><div><div class="tool-name">AGENTES</div><div class="tool-desc">Profile e passwords</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-aistaff"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><div><div class="tool-name">PREVISÃO</div><div class="tool-desc">Pessoas necessárias por hora</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-appmenu"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></div><div><div class="tool-name">APP</div><div class="tool-desc">MSG, MAIN, RULES e STATS</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-qw"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="18.5" cy="6.5" r="2.5" fill="#2ecc71" stroke="#2ecc71"/></svg></div><div><div class="tool-name">QUEM ESTÁ A TRABALHAR</div><div class="tool-desc">Quem está no aeroporto agora</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-swl"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M5 8h13M15 4l4 4-4 4M19 16H6M9 12l-4 4 4 4"/></svg></div><div><div class="tool-name">TROCAS FEITAS</div><div class="tool-desc">Todas as trocas, com detalhes</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-sacc"><div class="tool-ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><div><div class="tool-name">ACESSO SUPORTE</div><div class="tool-desc">Utilizador e password da equipa de suporte</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <button type="button" id="so-switch-dept" class="so-switch-dept"></button>
+    </div>
+    <div id="so-app-menu" class="hidden">
       <div class="tool-card" id="so-card-msg"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></div><div><div class="tool-name">MSG</div><div class="tool-desc">Avisos e mensagens na app</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-custom1"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2-2z"/></svg></div><div><div class="tool-name">MAIN</div><div class="tool-desc">Manutenção: bloquear o acesso</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-custom2"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/></svg></div><div><div class="tool-name">RULES</div><div class="tool-desc">Regras das trocas e companhias</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-stats"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 19l5-6 4 3 7-9M16 7h4v4"/></svg></div><div><div class="tool-name">STATS</div><div class="tool-desc">Estatísticas das trocas</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
-      <div class="tool-card" id="so-card-qw"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="18.5" cy="6.5" r="2.5" fill="#2ecc71" stroke="#2ecc71"/></svg></div><div><div class="tool-name">QUEM ESTÁ A TRABALHAR</div><div class="tool-desc">Quem está no aeroporto agora</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
-      <div class="tool-card" id="so-card-swl"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M5 8h13M15 4l4 4-4 4M19 16H6M9 12l-4 4 4 4"/></svg></div><div><div class="tool-name">TROCAS FEITAS</div><div class="tool-desc">Todas as trocas, com detalhes</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
-      <div class="tool-card" id="so-card-sacc"><div class="tool-ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><div><div class="tool-name">ACESSO SUPORTE</div><div class="tool-desc">Utilizador e password da equipa de suporte</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+    </div>
+    <div id="so-horarios-menu" class="hidden">
+      <div class="tool-card" id="so-card-ah"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div><div class="tool-name">ALTERAÇÃO DE HORÁRIOS</div><div class="tool-desc">Mudar o horário de um trabalhador</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+      <div class="tool-card" id="so-card-sched"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"/></svg></div><div><div class="tool-name">HORÁRIO MENSAL</div><div class="tool-desc">Carregar novo mês · Restore</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+    </div>
+    <div id="so-agentes-menu" class="hidden">
+      <div class="tool-card" id="so-card-skills"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg></div><div><div class="tool-name">PROFILE</div><div class="tool-desc">Skills, INCOG e OUT</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-pw"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L20 3M16 7l3 3"/></svg></div><div><div class="tool-name">PASSWORDS</div><div class="tool-desc">Quem já escolheu a sua password</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
-      <button type="button" id="so-switch-dept" class="so-switch-dept"></button>
     </div>
     <div id="so-row" style="display:none; gap:8px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
       <button type="button" class="back-btn" id="schedule-override-back-btn" style="margin-bottom:0;">← Voltar</button>
@@ -2444,7 +2461,7 @@
     <div id="custom2-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
       <div id="rules-tabs" style="display:flex; border-bottom:1px solid var(--border-soft); margin-bottom:14px;">
         <div class="rules-tab-btn on" data-rt="trocas">TROCAS</div>
-        <div class="rules-tab-btn" data-rt="app">APP</div>
+        <div class="rules-tab-btn" data-rt="app">TUNE</div>
         <div class="rules-tab-btn" data-rt="email">EMAIL</div>
         <div class="rules-tab-btn" data-rt="mais">AIRLINES</div>
       </div>
@@ -6526,7 +6543,7 @@ function refreshAllDateSelectCounts(){
 document.getElementById('tab-cover').addEventListener('click', () => switchTab('cover'));
 document.getElementById('tab-trade').addEventListener('click', () => switchTab('trade'));
 document.getElementById('tab-requests').addEventListener('click', () => switchTab('requests'));
-document.getElementById('skills-back-btn').addEventListener('click', () => { openScheduleOverride(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+document.getElementById('skills-back-btn').addEventListener('click', () => { openScheduleOverride(); soOpenSub('agentes'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 
 // ADMIN: one-tap switch between TTAE and SUPERVISÃO
 (function(){
@@ -6544,7 +6561,10 @@ document.getElementById('skills-back-btn').addEventListener('click', () => { ope
   });
 })();
 document.getElementById('xshift-back-btn').addEventListener('click', () => { if(DBL_FROM_AREA){ DBL_FROM_AREA = false; document.getElementById('panel-xshift').classList.add('hidden'); openMySwaps(); return; } openScheduleOverride(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
-document.getElementById('so-card-agentes').addEventListener('click', () => {
+document.getElementById('so-card-agentes').addEventListener('click', () => soOpenSub('agentes'));
+document.getElementById('so-card-horarios').addEventListener('click', () => soOpenSub('horarios'));
+document.getElementById('so-card-appmenu').addEventListener('click', () => soOpenSub('app'));
+document.getElementById('so-card-skills').addEventListener('click', () => {
   document.getElementById('panel-schedule-override').classList.add('hidden');
   document.querySelector('.tabs').classList.remove('hidden');
   closeAllMsgPanels();
@@ -9734,20 +9754,45 @@ function renderScheduleOverrideList(){
 // ---------- ADMIN menu: stacked cards, one section open at a time ----------
 const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR', swl:'TROCAS FEITAS', sacc:'ACESSO SUPORTE', pw:'PASSWORDS' };
 function soApplyCards(){
-  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
+  soPlaceAhCard();
+  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw','appmenu','skills','horarios'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
   const t = document.getElementById('so-title'); if(t && GROUP && isAdminSession) t.textContent = 'DEFINIÇÕES · ' + GROUP_LABEL;
 }
 function soShowMenu(){
   closeAllMsgPanels();
   document.getElementById('schedule-override-normal-content').classList.add('hidden');
+  ['agentes','horarios','app'].forEach(n => document.getElementById('so-' + n + '-menu').classList.add('hidden')); SO_SUB = '';
   document.getElementById('so-menu').classList.remove('hidden');
   document.getElementById('so-head').classList.remove('hidden');
   document.getElementById('so-title').textContent = 'DEFINIÇÕES';
   document.getElementById('so-sched').classList.add('hidden');
   soApplyCards();
 }
+let SO_SUB = '';   // which sub screen (AGENTES or HORÁRIOS) is open, or is where the open section came from
+const SO_SUB_OF = { pw:'agentes', ah:'horarios', sched:'horarios', msg:'app', custom1:'app', custom2:'app', stats:'app' };
+const SO_SUB_TITLE = { agentes:'AGENTES', horarios:'HORÁRIOS', app:'APP' };
+function soOpenSub(name){
+  if(!isAdminSession) return;
+  closeAllMsgPanels();
+  SO_SUB = name;
+  document.getElementById('schedule-override-normal-content').classList.add('hidden');
+  document.getElementById('so-menu').classList.add('hidden');
+  ['agentes','horarios','app'].forEach(n => document.getElementById('so-' + n + '-menu').classList.toggle('hidden', n !== name));
+  document.getElementById('so-head').classList.remove('hidden');
+  document.getElementById('so-title').textContent = SO_SUB_TITLE[name];
+  document.getElementById('so-sched').classList.add('hidden');
+}
+// the ALTERAÇÃO DE HORÁRIOS card lives inside HORÁRIOS for the admin, and straight in the main menu for a department admin (who only has that one)
+function soPlaceAhCard(){
+  const c = document.getElementById('so-card-ah'); if(!c) return;
+  if(isAdminSession){ const sub = document.getElementById('so-horarios-menu'); if(c.parentElement !== sub) sub.insertBefore(c, sub.firstChild); }
+  else { const m = document.getElementById('so-menu'); if(c.parentElement !== m) m.insertBefore(c, m.firstChild); }
+  const h = document.getElementById('so-card-horarios'); if(h) h.style.display = isAdminSession ? '' : 'none';
+}
 function soOpen(key){
   if(!isAdminSession && key !== 'ah') return;
+  SO_SUB = SO_SUB_OF[key] && isAdminSession ? SO_SUB_OF[key] : '';
+  ['agentes','horarios','app'].forEach(n => document.getElementById('so-' + n + '-menu').classList.add('hidden'));
   document.getElementById('so-menu').classList.add('hidden');
   document.getElementById('so-head').classList.remove('hidden');
   document.getElementById('so-title').textContent = SO_TITLES[key] || 'DEFINIÇÕES';
@@ -9764,6 +9809,7 @@ function soOpen(key){
 ['ah','sched','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
 document.getElementById('so-back-btn').addEventListener('click', () => {
   if(!document.getElementById('so-menu').classList.contains('hidden')) closeScheduleOverride();
+  else if(SO_SUB && document.getElementById('so-' + SO_SUB + '-menu').classList.contains('hidden')) soOpenSub(SO_SUB);   // from a section: back to the screen it came from
   else soShowMenu();
 });
 function openScheduleOverride(){
