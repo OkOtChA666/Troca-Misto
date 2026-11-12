@@ -1564,6 +1564,27 @@
   .board-stats-top > span > b{ margin-left:5px; }
   #area-card-msched{ border:1.5px solid #ff4d4f !important; box-shadow:0 0 0 1px rgba(255,77,79,.25), 0 0 14px rgba(255,77,79,.18); }
   div.area-card > .ac-fav.ac-warn, div.area-card.fav > .ac-fav.ac-warn{ background:#3a1115; border-color:#ff4d4f; color:#ff6b6d; cursor:default; }
+
+  /* ---- opened candidate = pro card (TROCA PARA FOLGA) ---- */
+  .pc-hex{ display:contents; }
+  .row.pc .row-status .hr-badge, .row.pc .row-status .sys-badge{ display:none; }
+  .row.pc:not(.row-expanded) .row-status{ display:none; }
+  .row.pc.row-expanded{ position:relative; background:radial-gradient(120% 90% at 0 0,#16304a 0,#0f1626 55%); border:1px solid #2a3b5c !important; border-radius:16px; padding:16px; margin:12px 0; box-shadow:0 8px 28px rgba(0,0,0,.35); gap:0 14px; }
+  .row.pc.row-expanded .pc-hex{ display:flex; flex:none; width:64px; height:72px; align-items:center; justify-content:center; background:linear-gradient(135deg,#ffb020,#4fd1f0); clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); }
+  .row.pc.row-expanded .pc-hex .st-av-row{ width:58px; height:66px; border-radius:0; box-shadow:none; font:800 20px var(--mono); clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); }
+  .row.pc.row-expanded .row-main{ flex:1 1 0; }
+  .row.pc.row-expanded .row-name{ font-size:16px; }
+  .row.pc.row-expanded .row-sub{ margin-top:6px; line-height:1.4; }
+  .row.pc.row-expanded .row-status{ position:absolute; top:12px; right:12px; margin:0; }
+  .row.pc.row-expanded .row-detail{ margin-top:14px; padding-bottom:0; }
+  .row.pc .pc-tiles{ display:flex; gap:8px; margin:0 0 8px; }
+  .row.pc .pc-tile{ flex:1; min-width:0; border:1px solid #1c2a44; border-radius:10px; padding:9px 10px; background:rgba(8,13,24,.6); }
+  .row.pc .pc-tile i{ display:block; font:normal 9px var(--mono); color:#8a96b3; letter-spacing:.1em; }
+  .row.pc .pc-tile b{ display:block; font:700 15px var(--mono); margin-top:3px; color:#5a6788; }
+  .row.pc .pc-tile b.on-amber{ color:#ffb020; }
+  .row.pc .pc-tile b.on-cyan{ color:var(--cyan); }
+  .row.pc .nd-block{ margin-top:0; border:1px solid #1c2a44; border-radius:10px; padding:9px 10px; background:rgba(8,13,24,.6); font:700 15px var(--mono); color:var(--text); }
+  .row.pc .nd-label{ font:normal 9px var(--mono); letter-spacing:.1em; color:#8a96b3; margin-bottom:3px; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -7034,7 +7055,8 @@ function renderCoverResults(results, idx){
       subHtml = ((liveSearchLook && r.entry.status === 'off') ? '<span style="background:#e8eefc; color:#0b1220; font-size:10px; font-weight:700; line-height:1; padding:3px 6px 2px; border-radius:5px; display:inline-block; margin-right:0; vertical-align:middle;">'+escapeHtml(codeLabel)+'</span>' : codeLabel)+(hideNext ? '' : ' ' + fmtDateOn(idx))+((nextDayText && !hideNext)?'<br>'+nextDayText:'');   // clean rows: no repeated date (it is the day that was searched)
     }
     row.classList.add('has-av');
-    row.innerHTML = avatarHtml(r.worker.id, r.worker.name, 40) + '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
+    if(!swapped) row.classList.add('pc');   // "pro card" look when opened (badges move into tiles)
+    row.innerHTML = (swapped ? avatarHtml(r.worker.id, r.worker.name, 40) : '<div class="pc-hex">' + avatarHtml(r.worker.id, r.worker.name, 40) + '</div>') + '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
       '<div class="row-sub">'+subHtml+'</div></div>'+
       '<div class="row-status">'+(swapped?'':(reportBtnHtml+hoursBadge(r.worker.id)+sysBadge(r.worker.id)))+'</div>';
     if(matchingRequest){
@@ -7059,6 +7081,11 @@ function renderCoverResults(results, idx){
         : '<div style="height:6px;"></div>'+(nextDayText ? '<div class="nd-block"><div class="nd-label">Dia seguinte</div>'+((nextEntry && nextEntry.status === 'work') ? fmtHHMM(nextEntry.start) + ' - ' + fmtHHMM(nextEntry.end) : escapeHtml((nextEntry && nextEntry.codes && nextEntry.codes[0]) || 'off'))+'</div>' : '');   // clean candidates: the two checks are shown once, in the CANDIDATOS header
     } else {
       detail.innerHTML = '<div style="height:6px;"></div>'+buildRuleCheckHtml(r.issues);
+    }
+    if(!swapped){
+      const _h = TYPICAL_HOURS[r.worker.id], _ip = DCS_SYSTEMS.find(x => x.key === 'iport');
+      const _t = (lab, val, on) => '<div class="pc-tile"><i>' + lab + '</i><b' + (on ? ' class="on-' + on + '"' : '') + '>' + val + '</b></div>';
+      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + _t('ALTEA', hasAltea(r.worker.id) ? '✓' : '—', hasAltea(r.worker.id) ? 'cyan' : '') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? '✓' : '—', (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : '') + '</div>');
     }
     if(flagged) detail.appendChild(buildFlagWarning(r.worker.id, idx));
     if(swapped) detail.appendChild(buildSwapWarning(r.worker.id, idx));
