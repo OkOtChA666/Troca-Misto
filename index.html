@@ -303,6 +303,10 @@
   html.themed #planeamento-turnaround-row{ background:transparent !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; border:none !important; border-top:1px solid var(--border) !important; border-bottom:1px solid var(--border) !important; border-radius:0 !important; padding:12px 0 !important; margin-top:4px !important; }
   html.themed #planeamento-turnaround-row .stat-link{ color:var(--text) !important; font-family:var(--sans); font-weight:600; font-size:12px; letter-spacing:.08em; }
   html.themed #planeamento-turnaround-row #my-swaps-link{ color:var(--amber) !important; }
+  /* header tabs: the open one gets an underline, the other one dims (nothing open = both normal) */
+  #my-swaps-link, #tools-link{ padding-bottom:3px; border-bottom:2px solid transparent; transition:opacity .15s; }
+  body:has(#panel-my-swaps:not(.hidden)) #my-swaps-link, body:has(#panel-tools:not(.hidden)) #tools-link{ border-bottom-color:currentColor; }
+  body:has(#panel-my-swaps:not(.hidden)) #tools-link, body:has(#panel-tools:not(.hidden)) #my-swaps-link{ opacity:.45; }
   html.themed #logged-in-tab-row{ background:transparent !important; border:none !important; border-radius:0 !important; padding:12px 0 !important; font-family:var(--sans) !important; }
   html.themed .tabs{ gap:0; border-bottom:1px solid var(--border); margin-bottom:18px; }
   html.themed .tab-btn{ background:transparent; border:none; border-bottom:2px solid transparent; border-radius:0; font-family:var(--sans); font-weight:600; font-size:11.5px; letter-spacing:.03em; padding:12px 2px; margin-bottom:-1px; white-space:nowrap; color:var(--text-dim); }
