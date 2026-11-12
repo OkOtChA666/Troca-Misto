@@ -9705,6 +9705,8 @@ document.getElementById('schedule-override-save-btn').addEventListener('click', 
   if(typeof refreshRecentSwapsLists === 'function') refreshRecentSwapsLists();
   if(typeof refreshAllDateSelectCounts === 'function') refreshAllDateSelectCounts();
 });
+let AH_SHOW_PAST = false;
+const AH_COLL = new Set();   // days folded in the ALTERAÇÃO DE HORÁRIOS list
 function renderScheduleOverrideList(){
   const list = document.getElementById('schedule-override-list');
   if(!list) return;
@@ -9715,25 +9717,66 @@ function renderScheduleOverrideList(){
     const worker = DATA.workers.find(w => w.id === workerId);
     return { key, workerId, idx, worker, ov: SCHEDULE_OVERRIDES[key] };
   }).filter(e => e.worker)
-    .sort((a,b) => (b.ov.ts||0) - (a.ov.ts||0));
+    .sort((a,b) => {
+      const pa = isPastDay(a.idx) ? 1 : 0, pb = isPastDay(b.idx) ? 1 : 0;
+      if(pa !== pb) return pa - pb;
+      if(a.idx !== b.idx) return pa ? (b.idx - a.idx) : (a.idx - b.idx);
+      return String(a.worker.name).localeCompare(String(b.worker.name), 'pt');
+    });
 
   if(entries.length === 0){
     list.innerHTML = '<div class="empty-state" style="padding:16px 10px;">Sem horários atualizados</div>';
     return;
   }
   list.innerHTML = '';
+  // "DIAS PASSADOS" bar (past days hidden until tapped)
+  const nPast = entries.filter(x => isPastDay(x.idx)).length;
+  let pastBar = null;
+  if(nPast > 0){
+    pastBar = document.createElement('div');
+    pastBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin:18px 0 4px;padding:10px 12px;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--text-dim)';
+    pastBar.innerHTML = '<span style="flex:1;">DIAS PASSADOS</span><span style="font-weight:700;">' + nPast + '</span><span style="font-size:11px;">' + (AH_SHOW_PAST ? '▼' : '▶') + '</span>';
+    pastBar.addEventListener('click', () => { AH_SHOW_PAST = !AH_SHOW_PAST; renderScheduleOverrideList(); });
+  }
+  let lastIdx = null, pastBarDone = false;
   entries.forEach((e, i) => {
+    const past = isPastDay(e.idx);
+    if(past && !pastBarDone){
+      pastBarDone = true;
+      if(i === 0){   // nothing from today onwards: say so, in a bar like the day bars
+        const em = document.createElement('div');
+        em.style.cssText = 'display:flex;align-items:center;margin:16px 0 4px;padding:11px 12px;border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:8px;background:rgba(255,255,255,.03);font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.06em;color:var(--text-dim)';
+        em.innerHTML = '<span>' + escapeHtml(todayLongLabel().toUpperCase()) + '</span>';
+        list.appendChild(em);
+        const emt = document.createElement('div');
+        emt.style.cssText = 'text-align:center;padding:10px 0 4px;font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:.08em;color:var(--text-dim)';
+        emt.textContent = 'SEM ALTERAÇÕES';
+        list.appendChild(emt);
+      }
+      if(pastBar) list.appendChild(pastBar);
+    }
+    if(past && !AH_SHOW_PAST) return;
+    if(e.idx !== lastIdx){   // one heading per day, so the date is not repeated in every row
+      lastIdx = e.idx;
+      const nDay = entries.filter(y => y.idx === e.idx).length, coll = AH_COLL.has(e.idx), col = past ? 'var(--text-dim)' : 'var(--amber)';
+      const h = document.createElement('div');
+      h.style.cssText = 'display:flex;align-items:center;gap:10px;margin:16px 0 4px;padding:11px 12px;cursor:pointer;border:1px solid var(--border);border-left:3px solid ' + col + ';border-radius:8px;background:rgba(255,255,255,.03);font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.06em;color:' + col;
+      h.innerHTML = '<span style="flex:1;min-width:0;">' + escapeHtml(extraLongDate(e.idx).toUpperCase()) + '</span><span style="font-weight:700;font-size:12px;color:var(--text-dim);">' + nDay + '</span><span style="font-size:11px;color:var(--text-dim);">' + (coll ? '▶' : '▼') + '</span>';
+      h.addEventListener('click', () => { if(AH_COLL.has(e.idx)) AH_COLL.delete(e.idx); else AH_COLL.add(e.idx); renderScheduleOverrideList(); });
+      list.appendChild(h);
+    }
+    if(AH_COLL.has(e.idx)) return;
     const row = document.createElement('div');
     row.className = 'row';
     row.style.animationDelay = (i*20)+'ms';
-    const past = isPastDay(e.idx);
-    const nameHtml = past ? '<span class="csr-past">'+escapeHtml(e.worker.name)+'</span>' : escapeHtml(e.worker.name);
+    const nm = niceListName(e.worker.name);
+    const nameHtml = past ? '<span style="color:var(--text-dim);">'+escapeHtml(nm)+'</span>' : escapeHtml(nm);
     const changed = (e.ov.originalStart && e.ov.originalStart !== e.ov.start) || (e.ov.originalEnd && e.ov.originalEnd !== e.ov.end);
     const timeLine = changed
       ? '<span class="old-time-strike">'+fmtHHMM(e.ov.originalStart)+' - '+fmtHHMM(e.ov.originalEnd)+'</span> → '+fmtHHMM(e.ov.start)+' - '+fmtHHMM(e.ov.end)
       : fmtHHMM(e.ov.start)+' - '+fmtHHMM(e.ov.end);
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
-      '<div class="row-sub">'+fmtDateLabel(e.idx)+'<br>'+timeLine+(e.ov.by === 'self' ? '<br><span style="color:var(--amber); font-size:11px;">alterado pelo próprio</span>' : '')+'</div></div>'+
+      '<div class="row-sub">'+timeLine+(e.ov.by === 'self' ? '<br><span style="color:var(--amber); font-size:11px;">Alterado pelo próprio</span>' : '')+'</div></div>'+
       '<button type="button" class="recent-swap-delete" title="Remover alteração">✕</button>';
     row.querySelector('.recent-swap-delete').addEventListener('click', (ev) => {
       ev.stopPropagation();
