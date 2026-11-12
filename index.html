@@ -4297,7 +4297,7 @@ function showRequestNote(req){
   const noteHtml = req.note
     ? '<div style="margin-top:10px; text-align:left; font-style:italic; color:var(--text-dim);">"'+escapeHtml(req.note)+'"</div>'
     : '<div style="margin-top:10px; text-align:left; color:var(--text-dim);">Sem nota.</div>';
-  showConfirmDialog('<b>'+escapeHtml(req.requesterName)+'</b> também tem um pedido aberto para este dia.'+noteHtml, () => {}, false, 'OK', false, null, null, true);
+  showConfirmDialog('<b>'+escapeHtml(niceListName(req.requesterName))+'</b> também tem um pedido aberto para este dia.'+noteHtml, () => {}, false, 'OK', false, null, null, true);
 }
 function swapKey(workerId, idx){ return workerId + ':' + idx; }
 function isSwapped(workerId, idx){ return !!SWAPS[swapKey(workerId, idx)]; }
@@ -8301,7 +8301,7 @@ function renderOpenRequests(){
       row.style.flexDirection = 'column';
       row.style.alignItems = 'stretch';
       row.innerHTML = '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">'+
-        '<span class="row-name">'+escapeHtml(e.requesterName)+'</span>'+nameRowBadges+'</div>'+
+        '<span class="row-name">'+escapeHtml(niceListName(e.requesterName))+'</span>'+nameRowBadges+'</div>'+
         (e.note ? '<div style="color:var(--text-dim); font-size:14px; font-style:italic; margin-bottom:10px;">"'+escapeHtml(e.note)+'"</div>' : '')+
         '<div style="display:flex; justify-content:space-between; align-items:center;">'+
         '<div style="display:flex; font-size:14px; color:var(--text);">'+
@@ -8362,7 +8362,7 @@ function renderOpenRequests(){
       ? '<div style="display:flex; gap:6px; flex-shrink:0; margin-right:28px;">'+hoursBadge(first.requesterId)+sysBadge(first.requesterId)+'</div>'
       : '';
     let html = '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">'+
-      '<div class="row-name">'+escapeHtml(first.requesterName)+'</div>'+nameRowBadges+'</div>'+
+      '<div class="row-name">'+escapeHtml(niceListName(first.requesterName))+'</div>'+nameRowBadges+'</div>'+
       '<div class="row-sub" style="margin-bottom:'+(first.note?'2px':'10px')+'; font-size:14px;">Pedido de <b style="color:var(--amber);">'+sortedItems.length+'</b> dias &middot; '+typeLabel+'</div>'+noteHtml;
     sortedItems.forEach(item => {
       const requesterEntry = requesterWorker ? getEffectiveEntry(requesterWorker, item.idx) : null;
