@@ -2288,7 +2288,13 @@
       <div><div class="tool-name">VOOS</div><div class="tool-desc">Partidas e chegadas do dia</div></div>
       <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
+    <div class="tool-card" id="tool-card-forecast">
+      <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+      <div><div class="tool-name">PREVISÃO</div><div class="tool-desc">Pessoas necessárias por hora</div></div>
+      <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+    </div>
   </div>
+  <div class="panel hidden" id="panel-forecast"></div>
 
   <!-- VOOS PANEL -->
   <div class="panel hidden" id="panel-sup-flights">
@@ -2405,6 +2411,7 @@
       <div class="ai-mon" id="ai-month">OUTUBRO 2026</div>
       <div id="ai-list"></div>
       <div class="ai-rl2" id="ai-rl2"><div class="ai-rh" id="ai-rh"><span>REGRAS DO CÁLCULO</span><span class="ai-ch"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div><div class="ai-rule2">Por voo de partida, ao mesmo tempo:<br><b>2</b> check-in + <b>2</b> porta + <b>1</b> acolhimento = <b>5 pessoas</b>.<br>Comparado com quem está de serviço em cada hora (pausas: as reais das tarefas no dia de hoje; nos outros dias, 1 hora 4 horas depois do início nos turnos de 8H).</div></div>
+      <div style="margin-top:14px; text-align:left; font:italic 12px/1.45 var(--sans); color:var(--text-dim);">Em fase de teste. As regras de cálculo poderão estar erradas.</div>
     </div>
     <div id="msg-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px;">
       <label style="display:flex; align-items:center; gap:10px; margin-bottom:24px; cursor:pointer; text-transform:none; letter-spacing:normal;">
@@ -9800,7 +9807,7 @@ function renderScheduleOverrideList(){
 const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR', swl:'TROCAS FEITAS', sacc:'ACESSO SUPORTE', pw:'PASSWORDS' };
 function soApplyCards(){
   soPlaceAhCard();
-  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw','appmenu','skills','horarios'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = (isAdminSession || k === 'ah') ? '' : 'none'; });
+  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw','appmenu','skills','horarios'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = ((isAdminSession || k === 'ah') && k !== 'aistaff') ? '' : 'none'; });
   const t = document.getElementById('so-title'); if(t && GROUP && isAdminSession) t.textContent = 'DEFINIÇÕES · ' + GROUP_LABEL;
 }
 function soShowMenu(){
@@ -10771,10 +10778,10 @@ function aiRenderDay(c){
         if(pairs.length) incH += '<div class="ai-miss" style="margin-top:10px"><div style="border:1px solid #6b5a1f; background:#17140a; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.55;"><b style="color:#ffd166">⇄ Troca fora da app?</b>' + pairs.map(q => '<div style="margin-top:6px;">' + escapeHtml(q.m.name) + ' (' + hm2(q.m.s) + '–' + hm2(q.m.e) + ') não picou e ' + escapeHtml(q.x.name) + ' entrou às ' + escapeHtml(q.x.in) + '.</div>').join('') + '<div style="color:#8d8660; font-size:11.5px; margin-top:6px;">Só uma dica. Se for uma troca, faz a troca na app para ficar tudo certo.</div></div></div>';
       }
       const incOpen = window.AI_INC_OPEN === true;
-      rtH = missH + regH + '<div class="ai-miss" style="margin-top:18px"><div onclick="window.AI_INC_OPEN = !(window.AI_INC_OPEN === true); var b = document.getElementById(\'ai-inc-b\'); b.style.display = window.AI_INC_OPEN ? \'\' : \'none\'; this.querySelector(\'svg\').style.transform = window.AI_INC_OPEN ? \'\' : \'rotate(180deg)\';" style="display:flex; align-items:center; cursor:pointer; color:#ffb020; font-weight:700; letter-spacing:.08em; font-size:12px; margin:0 0 8px;">INCONSISTÊNCIAS' + badge(incN, '#ffb020') + '<svg viewBox="0 0 24 24" style="margin-left:10px; width:16px; height:16px; fill:none; stroke:#ffb020; stroke-width:2.2;' + (incOpen ? '' : ' transform:rotate(180deg);') + '"><path d="M6 15l6-6 6 6"/></svg></div><div id="ai-inc-b"' + (incOpen ? '' : ' style="display:none"') + '>' + (incH || '<div class="hint" style="font-size:12px;">Tudo certo. 👍</div>') + '</div></div>';
+      rtH = (AI_PUBLIC() ? regH : missH + regH) + (AI_PUBLIC() ? '' : '<div class="ai-miss" style="margin-top:18px"><div onclick="window.AI_INC_OPEN = !(window.AI_INC_OPEN === true); var b = document.getElementById(\'ai-inc-b\'); b.style.display = window.AI_INC_OPEN ? \'\' : \'none\'; this.querySelector(\'svg\').style.transform = window.AI_INC_OPEN ? \'\' : \'rotate(180deg)\';" style="display:flex; align-items:center; cursor:pointer; color:#ffb020; font-weight:700; letter-spacing:.08em; font-size:12px; margin:0 0 8px;">INCONSISTÊNCIAS' + badge(incN, '#ffb020') + '<svg viewBox="0 0 24 24" style="margin-left:10px; width:16px; height:16px; fill:none; stroke:#ffb020; stroke-width:2.2;' + (incOpen ? '' : ' transform:rotate(180deg);') + '"><path d="M6 15l6-6 6 6"/></svg></div><div id="ai-inc-b"' + (incOpen ? '' : ' style="display:none"') + '>' + (incH || '<div class="hint" style="font-size:12px;">Tudo certo. 👍</div>') + '</div></div>');
     }
     h += '<div class="ai-det">' + grid + rtH +
-      (c.rt ? '' : '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
+      ((c.rt || AI_PUBLIC()) ? '' : '<div class="ai-miss"><h4>QUEM FALTA NESTE DIA</h4><div id="ai-chips">' + chips + '</div>' +
       '<input type="text" id="ai-q" placeholder="Escrever nome ou nº…" autocomplete="off" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:9px 10px; color:var(--text); font-family:var(--sans); font-size:13px;">' +
       '<div class="ai-sug" id="ai-sug"></div></div>') + '</div>';
   }
@@ -10846,6 +10853,7 @@ function renderAiStaff(){
   });
 }
 async function aiSetAbs(idx, id, on){
+  if(AI_PUBLIC()) return;
   const key = aiKey(aiDate(idx));
   const list = (AI_ABS[key] || []).filter(x => x !== id);
   if(on) list.push(id);
@@ -10863,7 +10871,33 @@ async function openAiStaff(){
   renderAiStaff();
 }
 document.getElementById('aistaff-toggle-btn').addEventListener('click', openAiStaff);
-document.getElementById('ai-back-btn').addEventListener('click', () => soShowMenu());
+let AI_TOOL = false, AI_HOME = null, AI_HOME_NEXT = null;
+function AI_PUBLIC(){ return AI_TOOL && !isAdminSession; }   // staff opening PREVISÃO from FERRAMENTAS: no names of who is late, no inconsistencies, no absence editing
+function closeForecastTool(){
+  AI_TOOL = false;
+  const pn = document.getElementById('aistaff-panel');
+  if(AI_HOME){ AI_HOME.insertBefore(pn, AI_HOME_NEXT); }
+  pn.classList.add('hidden');
+  document.getElementById('panel-forecast').classList.add('hidden');
+  openTools();
+}
+async function openForecastTool(){
+  const pn = document.getElementById('aistaff-panel');
+  if(!AI_HOME){ AI_HOME = pn.parentNode; AI_HOME_NEXT = pn.nextSibling; }
+  AI_TOOL = true;
+  document.querySelectorAll('.panel').forEach(x => x.classList.add('hidden'));
+  document.querySelector('.tabs').classList.add('hidden');
+  const host = document.getElementById('panel-forecast');
+  host.appendChild(pn); pn.classList.remove('hidden'); host.classList.remove('hidden');
+  AI_OPEN = null; renderAiStaff(); window.scrollTo({ top: 0 });
+  const [fd, ab, tk] = await Promise.all([dbGetShared('flightlist', null), dbGetShared('aistaff', null), dbGetShared('tasks', null), loadFlAirlines()]).then(r => [r[0], r[1], r[2]]);
+  AI_TASKS = tk && tk.a ? tk : null;
+  try{ AI_FLIGHTS = fd && fd.json ? JSON.parse(fd.json) : null; }catch(e){ AI_FLIGHTS = null; }
+  try{ AI_ABS = ab && ab.abs ? JSON.parse(ab.abs) : {}; }catch(e){ AI_ABS = {}; }
+  renderAiStaff();
+}
+document.getElementById('tool-card-forecast').addEventListener('click', openForecastTool);
+document.getElementById('ai-back-btn').addEventListener('click', () => { if(AI_TOOL) closeForecastTool(); else soShowMenu(); });
 document.getElementById('ai-rh').addEventListener('click', () => document.getElementById('ai-rl2').classList.toggle('open'));
 // ---------- TROCAS FEITAS (read-only log of every swap) + ACESSO SUPORTE ----------
 const SWL_TAB = {};
