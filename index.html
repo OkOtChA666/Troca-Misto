@@ -1599,6 +1599,11 @@
   .row.pc .pc-sel{ margin-bottom:2px; }
   .row.pc.row-expanded .row-status{ top:-1px; right:-1px; }
   .row.pc.row-expanded .row-status .inline-report{ width:48px; height:30px; padding:0; margin:0; border-radius:0 16px 0 14px; border:1px solid #2a3b5c; border-top:0; border-right:0; background:#16233b; color:#8a6f78; }
+  .row.pc .row-name > :not(.pc-code):not(.pc-id){ margin-left:5px; }
+  .row.pc:not(.row-expanded) .row-name > span[style*="inline-flex"]{ margin-left:auto; }
+  .row.pc:not(.row-expanded) .row-name > span[style*="inline-flex"] + .pc-code{ margin-left:28px !important; }
+  .row.pc:not(.row-expanded) .row-name > span[style*="inline-flex"]{ align-items:center !important; }
+  .row.pc:not(.row-expanded) .row-name > span[style*="inline-flex"] > span{ top:0 !important; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
