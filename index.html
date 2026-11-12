@@ -12766,6 +12766,23 @@ function msRenderList(){
     list.appendChild(row);
   });
 }
+
+// Tap the logo or the TROCA-MISTO title: close whatever is open and go to the main screen (like pressing back all the way).
+function goHomeScreen(){
+  try{ EXTRA_FROM_AREA = false; DBL_FROM_AREA = false; }catch(e){}
+  try{ closeUserMenu(); }catch(e){}
+  try{ stopFlightsListen(); }catch(e){}
+  try{ closeMyTasks(); }catch(e){}
+  try{ closeAllMsgPanels(); }catch(e){}
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  const tabs = document.querySelector('.tabs'); if(tabs) tabs.classList.remove('hidden');
+  switchTab('cover');
+  window.scrollTo({ top: 0 });
+}
+(function(){
+  const els = [document.querySelector('.board-header .board-logo'), document.querySelector('.board-header h1')];
+  els.forEach(el => { if(!el) return; el.style.cursor = 'pointer'; el.addEventListener('click', goHomeScreen); });
+})();
 </script>
 </body>
 </html>
