@@ -2431,7 +2431,7 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Aceitar password antiga</span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Password partilhada ativa<span style="display:block; margin-top:3px; font-size:11px; opacity:.75;">Desligar só quando todos tiverem a sua</span></span>
         <span class="pill-toggle">
           <input type="checkbox" id="old-pw-toggle" checked>
           <span class="pill-track"></span>
@@ -7568,6 +7568,7 @@ document.getElementById('extra-confirm-btn').addEventListener('click', async () 
 });
 
 let EXTRA_SHOW_PAST = false;
+const EXTRA_COLL = new Set();   // days folded in the extra-hours list
 function extraLongDate(idx){
   const d = realDateForIdx(idx);
   const wd = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'][d.getDay()];
@@ -7606,15 +7607,28 @@ function renderExtraHoursList(){
     list.appendChild(t);
     t.querySelector('input').addEventListener('change', ev => { EXTRA_SHOW_PAST = ev.target.checked; renderExtraHoursList(); });
   }
+  let lastIdx = null;
   entries.forEach((x, i) => {
     if(isPastDay(x.idx) && !EXTRA_SHOW_PAST) return;
+    if(x.idx !== lastIdx){   // one heading per day, so the date is not repeated in every row
+      lastIdx = x.idx;
+      const nDay = entries.filter(y => y.idx === x.idx).length;
+      const coll = EXTRA_COLL.has(x.idx), pastD = isPastDay(x.idx), col = pastD ? 'var(--text-dim)' : 'var(--amber)';
+      const h = document.createElement('div');
+      h.style.cssText = 'display:flex;align-items:center;gap:10px;margin:16px 0 4px;padding:11px 12px;cursor:pointer;border:1px solid var(--border);border-left:3px solid ' + col + ';border-radius:8px;background:rgba(255,255,255,.03);font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.06em;color:' + col;
+      h.innerHTML = '<span style="flex:1;min-width:0;">' + escapeHtml(extraLongDate(x.idx).toUpperCase()) + '</span><span style="font-weight:700;font-size:12px;color:var(--text-dim);">' + nDay + '</span><span style="font-size:11px;color:var(--text-dim);">' + (coll ? '▶' : '▼') + '</span>';
+      h.addEventListener('click', () => { if(EXTRA_COLL.has(x.idx)) EXTRA_COLL.delete(x.idx); else EXTRA_COLL.add(x.idx); renderExtraHoursList(); });
+      list.appendChild(h);
+    }
+    if(EXTRA_COLL.has(x.idx)) return;
     const row = document.createElement('div');
     row.className = 'row';
     row.style.animationDelay = (i*20)+'ms';
     const past = isPastDay(x.idx);
-    const nameHtml = past ? '<span class="csr-past">'+escapeHtml(x.worker.name)+'</span>' : escapeHtml(x.worker.name);
+    const nm = niceListName(x.worker.name);
+    const nameHtml = past ? '<span class="csr-past">'+escapeHtml(nm)+'</span>' : escapeHtml(nm);
     row.innerHTML = '<div class="row-main"><div class="row-name">'+nameHtml+'</div>'+
-      '<div class="row-sub">'+extraLongDate(x.idx)+'</div>'+((x.e && x.e.from && x.e.to) ? '<div class="row-sub" style="margin-top:4px;">'+x.e.from+'–'+x.e.to+'</div>'+((x.e.from2 && x.e.to2) ? '<div class="row-sub" style="margin-top:4px;">'+x.e.from2+'–'+x.e.to2+'</div>' : '') : '')+'</div>'+
+((x.e && x.e.from && x.e.to) ? '<div class="row-sub" style="margin-top:4px;">'+x.e.from+'–'+x.e.to+'</div>'+((x.e.from2 && x.e.to2) ? '<div class="row-sub" style="margin-top:4px;">'+x.e.from2+'–'+x.e.to2+'</div>' : '') : '')+'</div>'+
       '<button type="button" class="recent-swap-delete" title="Remover">✕</button>';
     row.querySelector('.recent-swap-delete').addEventListener('click', (ev) => {
       ev.stopPropagation();
