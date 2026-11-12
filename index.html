@@ -11975,7 +11975,7 @@ document.getElementById('area-tab-btn-swaps').addEventListener('click', () => sh
 // favourites (kept on each person's own phone). Nothing saved yet = AS MINHAS TAREFAS is the favourite; the person can remove it.
 const AREA_FAV_KEY = 'trocaMistoAreaFavs';
 const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['agenda', 'area-card-agenda'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra'], ['msched', 'area-card-msched'], ['double', 'area-card-double'], ['themes', 'area-card-themes']];
-function areaFavs(){ try{ const v = localStorage.getItem(AREA_FAV_KEY); if(v === null) return ['tasks']; const a = JSON.parse(v); return Array.isArray(a) ? a : ['tasks']; }catch(e){ return ['tasks']; } }
+function areaFavs(){ try{ const v = localStorage.getItem(AREA_FAV_KEY); if(v === null) return ['tasks']; const a = JSON.parse(v); return Array.isArray(a) ? a.filter(k => k !== 'double') : ['tasks']; }catch(e){ return ['tasks']; } }   // TURNO DUPLO (beta) can't be a favourite
 function areaSaveFavs(a){ try{ localStorage.setItem(AREA_FAV_KEY, JSON.stringify(a)); }catch(e){} }
 function renderAreaHubOrder(){
   const hub = document.getElementById('area-hub'); if(!hub) return;
@@ -11994,6 +11994,7 @@ function renderAreaHubOrder(){
 }
 AREA_CARDS.forEach(([k, id]) => {
   const c = document.getElementById(id); if(!c) return;
+  if(id === 'area-card-double') return;   // no heart on the beta card
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'ac-fav'; b.setAttribute('aria-label', 'Favorito');
   b.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.4C19.5 15.4 12 20 12 20z"/></svg>';
