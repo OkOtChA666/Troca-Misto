@@ -7121,7 +7121,7 @@ function renderCoverResults(results, idx){
     if(!swapped){
       const _h = TYPICAL_HOURS[r.worker.id], _ip = DCS_SYSTEMS.find(x => x.key === 'iport');
       const _t = (lab, val, on) => '<div class="pc-tile"><i>' + lab + '</i><b' + (on ? ' class="on-' + on + '"' : '') + '>' + val + '</b></div>';
-      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + _t('ALTEA', hasAltea(r.worker.id) ? '✓' : '✕', hasAltea(r.worker.id) ? 'cyan' : 'red') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? '✓' : '✕', (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : 'red') + '</div><div class="nd-block pc-sel"><div class="nd-label">' + extraLongDate(idx).toUpperCase() + '</div>' + escapeHtml(codeLabel) + '</div>');
+      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + _t('ALTEA', hasAltea(r.worker.id) ? window.PC_OK : window.PC_NO, hasAltea(r.worker.id) ? 'cyan' : 'red') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? window.PC_OK : window.PC_NO, (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : 'red') + '</div><div class="nd-block pc-sel"><div class="nd-label">' + extraLongDate(idx).toUpperCase() + '</div>' + escapeHtml(codeLabel) + '</div>');
     }
     if(flagged) detail.appendChild(buildFlagWarning(r.worker.id, idx));
     if(swapped) detail.appendChild(buildSwapWarning(r.worker.id, idx));
@@ -12979,6 +12979,9 @@ function goHomeScreen(){
   const els = [document.querySelector('.board-header .board-logo'), document.querySelector('.board-header h1')];
   els.forEach(el => { if(!el) return; el.style.cursor = 'pointer'; el.addEventListener('click', goHomeScreen); });
 })();
+
+window.PC_OK = '<svg viewBox="0 0 24 24" width="18" height="18" style="display:block;margin-top:1px"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#2ecc71" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+window.PC_NO = '<svg viewBox="0 0 24 24" width="18" height="18" style="display:block;margin-top:1px"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="#ff5d73" stroke-width="2.8" stroke-linecap="round"/></svg>';
 </script>
 </body>
 </html>
