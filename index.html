@@ -839,10 +839,10 @@
   }
   .ah-badge{
     display:inline-flex; align-items:center; justify-content:center;
-    font-family: var(--mono); font-size: 11px; font-weight:700; letter-spacing:0.06em;
+    font-family: var(--mono); font-size: 10px; font-weight:700; letter-spacing:0.06em; line-height:1;
     color: #FF7A29; background: rgba(255,122,41,0.12);
     border: 1px solid rgba(255,122,41,0.4);
-    border-radius: 5px; padding: 5px 8px; vertical-align: middle;
+    border-radius: 4px; padding: 0; width:25px; height:25px; box-sizing:border-box; vertical-align: middle; margin-left:2px;
   }
   .old-time-strike{ color: var(--text-dim); text-decoration: line-through; }
 
@@ -5922,10 +5922,10 @@ function renderSwapsListGeneric(showAll, cfg){
       const partnerBeforeTime = partnerHadShift ? fmtHHMM(partnerOriginal.start)+' - '+fmtHHMM(partnerOriginal.end) : '—';
       const partnerNow = ownCode;
       const partnerNowDisplay = (partnerEffective && partnerEffective.overridden)
-        ? '<span class="old-time-strike">'+nowDisplay(partnerNow)+'</span> → '+fmtHHMM(partnerEffective.start)+' - '+fmtHHMM(partnerEffective.end)+' <span class="ah-badge">AH</span>'
+        ? ahShow(nowDisplay(partnerNow), fmtHHMM(partnerEffective.start)+' - '+fmtHHMM(partnerEffective.end))
         : nowDisplay(partnerNow);
       const ownNowDisplay = ownEffective.overridden
-        ? '<span class="old-time-strike">'+partnerBeforeTime+'</span> → '+fmtHHMM(ownEffective.start)+' - '+fmtHHMM(ownEffective.end)+' <span class="ah-badge">AH</span>'
+        ? ahShow(partnerBeforeTime, fmtHHMM(ownEffective.start)+' - '+fmtHHMM(ownEffective.end))
         : partnerBeforeTime;
       rowSubHtml = '<span class="dot dot-purple"></span>'+partnerBeforeTime+' → '+partnerNowDisplay+
         '<br><span class="dot dot-white"></span>'+ownCode+' → '+ownNowDisplay;
@@ -5937,10 +5937,10 @@ function renderSwapsListGeneric(showAll, cfg){
       const ownNowPlain = partnerOrigTime; // e.worker's new time = partner's original time
       const partnerNowPlain = ownOrigTime; // partner's new time = e.worker's original time
       const partnerNowDisplay = (partnerEffective && partnerEffective.overridden)
-        ? '<span class="old-time-strike">'+partnerNowPlain+'</span> → '+fmtHHMM(partnerEffective.start)+' - '+fmtHHMM(partnerEffective.end)+' <span class="ah-badge">AH</span>'
+        ? ahShow(partnerNowPlain, fmtHHMM(partnerEffective.start)+' - '+fmtHHMM(partnerEffective.end))
         : partnerNowPlain;
       const ownNowDisplay = ownEffective.overridden
-        ? '<span class="old-time-strike">'+ownNowPlain+'</span> → '+fmtHHMM(ownEffective.start)+' - '+fmtHHMM(ownEffective.end)+' <span class="ah-badge">AH</span>'
+        ? ahShow(ownNowPlain, fmtHHMM(ownEffective.start)+' - '+fmtHHMM(ownEffective.end))
         : ownNowPlain;
       rowSubHtml = '<span class="dot dot-purple"></span>'+partnerOrigTime+' → '+partnerNowDisplay+
         '<br><span class="dot dot-white"></span>'+ownOrigTime+' → '+ownNowDisplay;
@@ -6182,6 +6182,12 @@ function pcMedalHtml(){
     '<path d="M8 19 L4 36 L10.5 32.5 L14 37 L15.5 21 Z" fill="url(#pmR)"/><path d="M22 19 L26 36 L19.5 32.5 L16 37 L14.5 21 Z" fill="url(#pmR)"/>' +
     '<circle cx="15" cy="14" r="12.5" fill="url(#pmG)" stroke="#8a5400" stroke-width="1"/><circle cx="15" cy="14" r="9.2" fill="none" stroke="#8a5400" stroke-opacity=".55" stroke-width="1"/>' +
     '<path transform="translate(8.7 7.7) scale(.52)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#5a3300"/></svg></div>';
+}
+// AH ("alteração de horário"): when the time was saved but did not really change, show the plain time only (no strike-through, no AH badge)
+function ahShow(oldTxt, newTxt){
+  const plain = String(oldTxt).replace(/<[^>]*>/g, '').trim();
+  if(plain === String(newTxt).trim()) return newTxt;
+  return '<span class="old-time-strike">' + oldTxt + '</span> → ' + newTxt + ' <span class="ah-badge">AH</span>';
 }
 function supThanksCheck(){
   const id = window.MY_ASK_ID; if(!id || !isSupporter(id) || !SUP_OPTS.splash) return;
