@@ -6354,6 +6354,7 @@ function renderSkillsList(filter){
 }
 document.getElementById('skills-filter').addEventListener('input', (e) => renderSkillsList(e.target.value));
 loadAltea();
+loadSupporters();   // the contributor list must be read at startup, like Altea
 
 // ---------- combobox helper ----------
 // A non-admin session can only ever act as themselves — used to restrict every "who am I"
