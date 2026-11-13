@@ -6140,7 +6140,41 @@ async function saveAltea(){
 function hasAltea(workerId){ return !!ALTEA[workerId]; }
 // ---------- "Apoiante": people who helped the project (set by the admin in the Skills list, shared) ----------
 let SUPPORTERS = {};
-async function loadSupporters(){ SUPPORTERS = await dbGetShared('supporters', SUPPORTERS); }
+async function loadSupporters(){ SUPPORTERS = await dbGetShared('supporters', SUPPORTERS); try{ supThanksCheck(); }catch(e){} }
+// ---- one-time thank-you for contributors: shown the first time they open the app after being ticked (remembered on this phone) ----
+function supThanksCheck(){
+  const id = window.MY_ASK_ID; if(!id || !isSupporter(id)) return;
+  const key = 'trocaMistoSupThanks:' + id;
+  try{ if(localStorage.getItem(key)) return; }catch(e){ return; }
+  setTimeout(() => {
+    try{
+      const portal = document.getElementById('access-portal'); if(portal && !portal.classList.contains('hidden')) return;
+      if(document.getElementById('sup-thanks')) return;
+      try{ localStorage.setItem(key, String(Date.now())); }catch(e){}
+      supThanksShow();
+    }catch(e){}
+  }, 1400);
+}
+function supThanksShow(){
+  const nm = (function(){ try{ return personalName(window._loggedName || '').split(/\s+/)[0] || ''; }catch(e){ return ''; } })();
+  const o = document.createElement('div'); o.id = 'sup-thanks';
+  o.style.cssText = 'position:fixed; inset:0; z-index:10000; background:rgba(4,8,16,.82); display:flex; align-items:center; justify-content:center; padding:24px; backdrop-filter:blur(3px);';
+  const medal = '<svg viewBox="0 0 30 38" width="84" height="106" style="display:block; margin:0 auto; filter:drop-shadow(0 6px 16px rgba(255,176,32,.45));"><defs><linearGradient id="tmG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0b8"/><stop offset=".5" stop-color="#ffb020"/><stop offset="1" stop-color="#d98200"/></linearGradient><linearGradient id="tmR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e5484d"/><stop offset="1" stop-color="#a3262c"/></linearGradient></defs>' +
+    '<path d="M8 19 L4 36 L10.5 32.5 L14 37 L15.5 21 Z" fill="url(#tmR)"/><path d="M22 19 L26 36 L19.5 32.5 L16 37 L14.5 21 Z" fill="url(#tmR)"/>' +
+    '<circle cx="15" cy="14" r="12.5" fill="url(#tmG)" stroke="#8a5400" stroke-width="1"/><circle cx="15" cy="14" r="9.2" fill="none" stroke="#8a5400" stroke-opacity=".55" stroke-width="1"/>' +
+    '<path transform="translate(8.7 7.7) scale(.52)" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#5a3300"/></svg>';
+  o.innerHTML = '<div role="dialog" aria-modal="true" style="width:100%; max-width:340px; text-align:center; background:linear-gradient(180deg,#16203a,#0d1424); border:1px solid rgba(255,176,32,.45); border-radius:20px; padding:30px 24px 22px; box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(255,176,32,.12);">' + medal +
+    '<div style="margin-top:18px; font:800 20px var(--mono); letter-spacing:.14em; color:#ffb020;">OBRIGADO' + (nm ? ', ' + escapeHtml(nm.toUpperCase()) : '') + '!</div>' +
+    '<div style="margin-top:12px; font:14px/1.55 var(--sans); color:var(--text);">Obrigado por apoiares o TROCA-MISTO. O teu contributo ajuda a manter a plataforma a funcionar.</div>' +
+    '<div style="margin-top:10px; font:12.5px/1.5 var(--sans); color:var(--text-dim);">A medalha de Contribuidor já aparece no teu cartão.</div>' +
+    '<button type="button" id="sup-thanks-ok" style="margin-top:20px; width:100%; padding:13px; border:0; border-radius:10px; background:linear-gradient(135deg,#ffe08a,#ffb020 55%,#f59a00); color:#2a1a00; font:800 12px var(--mono); letter-spacing:.14em; cursor:pointer;">FECHAR</button></div>';
+  const close = () => { try{ o.remove(); }catch(e){} document.removeEventListener('keydown', esc); };
+  const esc = e => { if(e.key === 'Escape') close(); };
+  o.addEventListener('click', e => { if(e.target === o) close(); });
+  document.body.appendChild(o);
+  document.getElementById('sup-thanks-ok').addEventListener('click', close);
+  document.addEventListener('keydown', esc);
+}
 function isSupporter(workerId){ return !!SUPPORTERS[workerId]; }
 async function toggleSupporter(workerId){
   if(SUPPORTERS[workerId]) delete SUPPORTERS[workerId]; else SUPPORTERS[workerId] = true;
@@ -9081,6 +9115,7 @@ function renderNotificationsList(){
 function setupNotificationsListener(staffId){
   window.MY_ASK_ID = staffId;
   try{ applySearchDefaults(); }catch(e){}
+  try{ supThanksCheck(); }catch(e){}
   try{ mtListen(); }catch(e){}   // load the task data right away too (the bell shows task changes), no waiting for the 10-second check
   if(notificationsListenerUnsubscribe) notificationsListenerUnsubscribe();
   getDb().then(db => {
