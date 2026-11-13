@@ -2596,7 +2596,7 @@
         </span>
       </label>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
-        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Tema PRO para todos (ÁREA PESSOAL → Temas)</span>
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Themes</span>
         <span class="pill-toggle">
           <input type="checkbox" id="theme-pro-enabled-toggle">
           <span class="pill-track"></span>
@@ -10433,7 +10433,19 @@ document.getElementById('rules-tabs').addEventListener('click', (e) => {
   const k = t.getAttribute('data-rt');
   document.querySelectorAll('#rules-tabs .rules-tab-btn').forEach(x => x.classList.toggle('on', x === t));
   document.querySelectorAll('#custom2-panel .rules-tab').forEach(x => { x.style.display = x.getAttribute('data-rt') === k ? '' : 'none'; });
+  if(k === 'app') sortAppToggles();
 });
+// APP tab: switches that are ON stay on top, the ones that are OFF go to the bottom (kept in their usual order inside each group). Done when the tab is opened.
+function sortAppToggles(){
+  const box = document.querySelector('#custom2-panel .rules-tab[data-rt="app"]'); if(!box) return;
+  const labs = [...box.children].filter(el => el.tagName === 'LABEL' && el.querySelector('input[type=checkbox]'));
+  if(labs.length < 2) return;
+  const orig = new Map(labs.map((l,i) => [l,i]));
+  const sorted = [...labs].sort((a,b) => (b.querySelector('input').checked - a.querySelector('input').checked) || (orig.get(a)-orig.get(b)));
+  const slots = labs.map(l => { const m = document.createComment(''); box.insertBefore(m, l); return m; });
+  sorted.forEach((l,i) => box.insertBefore(l, slots[i]));
+  slots.forEach(m => m.remove());
+}
 // ---------- LIMITES DAS TROCAS: minimum rest and maximum consecutive days, adjustable from RULES (shared by everyone) ----------
 let swapLimits = { minRest:11, maxConsec:6 };
 function applySwapLimits(){
