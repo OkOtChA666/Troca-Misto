@@ -1618,6 +1618,9 @@
   .row.pc .row-detail div:has(> span[style*="FF9A3D"]){ margin-top:10px; }
   .row.pc:has(.rl.bad) .confirm-btn{ background:#1c2336 !important; color:#5d6a85 !important; border:1px solid #2a3450 !important; box-shadow:none !important; pointer-events:none; cursor:not-allowed; }
   .row.pc .row-detail div:has(> span[style*="var(--nogo)"]){ display:none; }
+  .skills-compact .skills-col-label, .skills-compact .skills-check-cell{ width:26px; }
+  .skills-compact .skills-col-lock{ width:46px !important; }
+  .skills-compact .skills-header-checks, .skills-compact .skills-row-checks{ gap:0; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -5626,7 +5629,7 @@ function toggleUserMenu(){
   try{ const pp = (MT_DOC && MT_DOC.date === sfToday()) ? mtMyPunch(mtStaffId()) : null; if(pp && pp[0] && !pp[1]) punchDot = '<span title="Entrada registada" style="flex:none; width:9px; height:9px; border-radius:50%; background:#2ecc71; box-shadow:0 0 0 3px rgba(46,204,113,.18);"></span>'; }catch(e){}
   const grp = (GROUP === 'sup') ? 'SUPERVISÃO · FAO' : 'TTAE · FAO · PAX';
   m.style.background = 'radial-gradient(120% 90% at 0 0, #16304a 0, #0f1626 55%)'; m.style.padding = '0'; m.style.overflow = 'hidden'; m.style.minWidth = '290px';
-  m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div id="user-menu-photo" title="Foto" style="flex:none; position:relative; width:56px; height:62px; cursor:pointer;"><div style="width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div id="user-menu-hexin" style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; overflow:hidden; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + (photoOf(window._loggedId) ? avatarInner(window._loggedId, nm) : escapeHtml(ini)) + '</div></div>' + (photoOf(window._loggedId) ? '' : '<div style="position:absolute; right:-4px; bottom:2px; width:20px; height:20px; border-radius:50%; background:#ffb020; color:#1a1200; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #0f1626;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></div>') + '</div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text); display:flex; align-items:center; gap:9px;">' + escapeHtml(nm) + punchDot + '</div><div style="margin-top:6px;"><span style="display:inline-block; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center;">' + escapeHtml(window._loggedId || '') + '</span></div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:8px;">' + grp + '</div>' + '</div></div>' +
+  m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div id="user-menu-photo" title="Foto" style="flex:none; position:relative; width:56px; height:62px; cursor:pointer;"><div style="width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div id="user-menu-hexin" style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; overflow:hidden; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + (photoOf(window._loggedId) ? avatarInner(window._loggedId, nm) : escapeHtml(ini)) + '</div></div>' + (photoOf(window._loggedId) ? '' : '<div style="position:absolute; right:-4px; bottom:2px; width:20px; height:20px; border-radius:50%; background:#ffb020; color:#1a1200; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #0f1626;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></div>') + '</div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text); display:flex; align-items:center; gap:9px;">' + escapeHtml(nm) + punchDot + '</div><div style="margin-top:6px;"><span style="display:inline-block; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center;">' + escapeHtml(window._loggedId || '') + '</span>' + (isSupporter(window._loggedId) ? supporterPillHtml() : '') + '</div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:8px;">' + grp + '</div>' + '</div></div>' +
     '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">HOJE</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px;">' + escapeHtml(offTxt) + '</div></div></div>' +
     proMenuLinksHtml() +
     ((isAdminSession || isDeptAdminSession) ? '<div id="user-menu-admin" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ffb020; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>DEFINIÇÕES</div>' : '') +
@@ -6057,7 +6060,7 @@ document.getElementById('recent-swaps-turno-toggle').addEventListener('click', (
 // ---------- backup & restore (guards against anything getting reset by an update) ----------
 async function buildBackupCode(){
   // re-read from storage directly so the backup is complete even if this session hasn't loaded everything yet
-  await Promise.all([loadFlags(), loadAltea(), loadSwaps()]);
+  await Promise.all([loadFlags(), loadAltea(), loadSwaps(), loadSupporters()]);
   const payload = { v:1, flags: FLAGS, altea: ALTEA, swaps: SWAPS };
   return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
 }
@@ -6135,6 +6138,18 @@ async function saveAltea(){
   await dbSetShared('altea', ALTEA);
 }
 function hasAltea(workerId){ return !!ALTEA[workerId]; }
+// ---------- "Apoiante": people who helped the project (set by the admin in the Skills list, shared) ----------
+let SUPPORTERS = {};
+async function loadSupporters(){ SUPPORTERS = await dbGetShared('supporters', SUPPORTERS); }
+function isSupporter(workerId){ return !!SUPPORTERS[workerId]; }
+async function toggleSupporter(workerId){
+  if(SUPPORTERS[workerId]) delete SUPPORTERS[workerId]; else SUPPORTERS[workerId] = true;
+  await dbSetShared('supporters', SUPPORTERS);
+}
+function supporterPillHtml(){
+  return '<span class="sup-pill" title="Obrigado pelo apoio ao projeto!" style="display:inline-flex; align-items:center; gap:5px; margin-left:7px; vertical-align:top; font:800 10px var(--mono); letter-spacing:.14em; color:#2a1a00; background:linear-gradient(135deg,#ffe08a,#ffb020 55%,#f59a00); border-left:3px solid #b8741a; border-radius:3px 8px 8px 3px; padding:2px 10px 2px 7px; box-shadow:0 0 0 1px rgba(255,214,120,.5), 0 2px 10px rgba(255,176,32,.35);">' +
+    '<svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 5 6 5c2.1 0 3.4 1.2 4.2 2.4h3.6C14.6 6.2 15.9 5 18 5c3.3 0 5.1 3.4 3.6 6.8C19.5 16.4 12 21 12 21z" transform="translate(0 -1)"/></svg>CONTRIBUIDOR</span>';
+}
 async function toggleAltea(workerId){
   if(ALTEA[workerId]) delete ALTEA[workerId];
   else ALTEA[workerId] = true;
@@ -6277,6 +6292,8 @@ function renderSkillsList(filter){
   // TTAE: Altea + every system except LOCKED. SUPERVISÃO: only INCOG, OUT and LOCKED.
   const systems = DCS_SYSTEMS.filter(sys => isSup ? ['blocked','dismissed','locked'].includes(sys.key) : true);
   const cols = (isSup ? [] : [{ altea:true, label:'Altea' }]).concat(systems.map(sys => ({ sys, label: sys.label })));
+  if(!isSup && isAdminSession) cols.push({ supporter:true, label:'♥' });
+  box.classList.toggle('skills-compact', cols.some(c => c.supporter));   // the extra heart column must not squeeze the names
 
   const header = document.createElement('div');
   header.className = 'skills-header';
@@ -6288,7 +6305,9 @@ function renderSkillsList(filter){
   function addRow(id, name, offSchedule){
     const row = document.createElement('div');
     row.className = 'skills-row' + (isLockedAgent(id) ? ' skills-row-locked' : '');
-    const checksHtml = cols.map(c => c.altea
+    const checksHtml = cols.map(c => c.supporter
+      ? '<span class="skills-check-cell"><input type="checkbox" '+(isSupporter(id)?'checked':'')+' data-sys="supporter"></span>'
+      : c.altea
       ? '<span class="skills-check-cell"><input type="checkbox" '+(hasAltea(id)?'checked':'')+' data-sys="altea"></span>'
       : '<span class="skills-check-cell'+(c.sys.key==='locked'?' skills-lock-cell':'')+'"><input type="checkbox" '+(hasDcsSystem(c.sys, id)?'checked':'')+' data-sys="'+c.sys.key+'"></span>').join('');
     row.innerHTML = '<div class="skills-row-name">'+escapeHtml(name)+(offSchedule ? ' <span class="skills-off">fora do horário</span>' : '')+'</div>'+
@@ -6297,7 +6316,8 @@ function renderSkillsList(filter){
     inputs.forEach((inp, i) => {
       const c = cols[i];
       inp.addEventListener('change', () => {
-        if(c.altea) toggleAltea(id);
+        if(c.supporter) toggleSupporter(id);
+        else if(c.altea) toggleAltea(id);
         else{
           toggleDcsSystem(c.sys, id, name);
           if(c.sys.key === 'locked') row.classList.toggle('skills-row-locked', !!c.sys.store[String(id)]);
