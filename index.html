@@ -8692,18 +8692,63 @@ let NOTIFICATIONS = {}; // keyed by document id, only ever holds this logged-in 
 let notificationsListenerUnsubscribe = null;
 // ---- new PEDIDOS in the bell: everyone except the person who posted them ----
 function pedAlertsOn(){ try{ return localStorage.getItem('trocaMistoPedAlerts:' + (window.MY_ASK_ID || '')) !== 'off'; }catch(e){ return true; } }
+function prefGet(k, d){ try{ const o = JSON.parse(localStorage.getItem('trocaMistoPrefs:' + (window.MY_ASK_ID || '')) || '{}'); return (k in o) ? o[k] : d; }catch(e){ return d; } }
+function prefSet(k, v){ try{ const key = 'trocaMistoPrefs:' + (window.MY_ASK_ID || ''); const o = JSON.parse(localStorage.getItem(key) || '{}'); o[k] = v; localStorage.setItem(key, JSON.stringify(o)); }catch(e){} }
+// the person's usual search choices, put into TROCA PARA FOLGA when they log in (and right when they save them)
+function applySearchDefaults(){
+  try{
+    const h = prefGet('h', null), at = prefGet('at', null), ip = prefGet('ip', null);
+    if(h === null && at === null && ip === null) return;
+    document.querySelectorAll('.hour-filter').forEach(cb => { cb.checked = (h || []).indexOf(cb.value) >= 0; cb.dispatchEvent(new Event('change', { bubbles:true })); });
+    const A = document.getElementById('cover-requires-altea'), I = document.getElementById('cover-requires-iport');
+    if(A){ A.checked = !!at; A.dispatchEvent(new Event('change', { bubbles:true })); }
+    if(I){ I.checked = !!ip; I.dispatchEvent(new Event('change', { bubbles:true })); }
+  }catch(e){}
+}
 function renderPrefs(){
   const body = document.getElementById('prefs-body'); if(!body) return;
-  const on = pedAlertsOn();
-  body.innerHTML = '<div style="border:1px solid var(--border); background:var(--panel-2); border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:14px;">' +
-    '<div style="flex:1; min-width:0;"><div style="font:700 13px var(--mono); letter-spacing:.08em; color:var(--text);">NOVOS PEDIDOS</div>' +
-    '<div style="font:12px/1.45 var(--sans); color:var(--text-dim); margin-top:4px;">Receber notificação quando alguém publica um pedido</div></div>' +
-    '<button type="button" id="pref-ped-toggle" role="switch" aria-checked="' + on + '" style="flex:none; width:50px; height:30px; border-radius:999px; border:1px solid ' + (on ? '#2f8f5f' : 'var(--border)') + '; background:' + (on ? '#1f7a4d' : '#1a2438') + '; position:relative; cursor:pointer; padding:0;">' +
-    '<span style="position:absolute; top:3px; left:' + (on ? '23px' : '3px') + '; width:22px; height:22px; border-radius:50%; background:#fff; transition:left .15s;"></span></button></div>';
-  document.getElementById('pref-ped-toggle').addEventListener('click', () => {
-    try{ localStorage.setItem('trocaMistoPedAlerts:' + (window.MY_ASK_ID || ''), pedAlertsOn() ? 'off' : 'on'); }catch(e){}
-    renderPrefs(); try{ renderNotificationsBadge(); }catch(e){}
-  });
+  const sw = (id, on) => '<button type="button" id="' + id + '" role="switch" aria-checked="' + on + '" style="flex:none; width:50px; height:30px; border-radius:999px; border:1px solid ' + (on ? '#2f8f5f' : 'var(--border)') + '; background:' + (on ? '#1f7a4d' : '#1a2438') + '; position:relative; cursor:pointer; padding:0;"><span style="position:absolute; top:3px; left:' + (on ? '23px' : '3px') + '; width:22px; height:22px; border-radius:50%; background:#fff; transition:left .15s;"></span></button>';
+  const head = t => '<div style="font:700 13px var(--mono); letter-spacing:.08em; color:var(--text);">' + t + '</div>';
+  const desc = t => '<div style="font:12px/1.45 var(--sans); color:var(--text-dim); margin-top:4px;">' + t + '</div>';
+  const box = inner => '<div style="border:1px solid var(--border); background:var(--panel-2); border-radius:14px; padding:14px 16px; margin-bottom:12px;">' + inner + '</div>';
+  const line = (left, right) => '<div style="display:flex; align-items:center; gap:14px;"><div style="flex:1; min-width:0;">' + left + '</div>' + right + '</div>';
+  const chip = (id, label, on) => '<button type="button" id="' + id + '" aria-pressed="' + on + '" style="padding:9px 11px; border-radius:999px; font:700 11.5px var(--mono); letter-spacing:.04em; cursor:pointer; border:1px solid ' + (on ? 'var(--amber)' : 'var(--border)') + '; background:' + (on ? 'rgba(255,176,32,.14)' : 'transparent') + '; color:' + (on ? 'var(--amber)' : 'var(--text-dim)') + ';">' + label + '</button>';
+  const on = pedAlertsOn(), helpOnly = prefGet('pedHelp', false);
+  let html = '';
+  // 1) phone notifications: always shows where things stand
+  try{
+    if(notificationsEnabled && ('Notification' in window)){
+      let st, tx, btn = '';
+      if(npIsIOS() && !npIsInstalled()){ st = 'Falta instalar a app'; tx = 'No Safari: <b style="color:var(--text)">Partilhar → Adicionar ao ecrã principal</b>, e abre a app a partir do ícone.'; }
+      else if(Notification.permission === 'granted'){ st = '<span style="color:var(--go);">✓ Ativas</span>'; tx = 'Este telemóvel recebe avisos de trocas e de alterações às tuas tarefas.'; }
+      else if(Notification.permission === 'denied'){ st = '<span style="color:var(--nogo);">Bloqueadas</span>'; tx = 'Ativa-as nas definições do telemóvel (Definições → Notificações → TROCA-MISTO) e volta aqui.'; }
+      else { st = '<span style="color:var(--amber);">Desligadas</span>'; tx = 'Recebe avisos de trocas e de alterações às tuas tarefas.'; btn = '<button type="button" id="pref-np-btn" style="width:100%; margin-top:10px; padding:11px; border-radius:9px; border:0; background:var(--amber); color:#1a1200; font:800 12px var(--mono); letter-spacing:.12em; cursor:pointer;">ATIVAR NOTIFICAÇÕES</button>'; }
+      html += box(line(head('NOTIFICAÇÕES NO TELEMÓVEL') + desc(tx), '<div style="flex:none; font:700 12px var(--mono); letter-spacing:.06em;">' + st + '</div>') + btn);
+    }
+  }catch(e){}
+  // 2) new PEDIDOS in the bell
+  html += box(line(head('NOVOS PEDIDOS') + desc('Receber notificação quando alguém publica um pedido'), sw('pref-ped-toggle', on)) +
+    '<div style="border-top:1px solid var(--border-soft); margin:14px 0 0; padding-top:14px; ' + (on ? '' : 'opacity:.45; pointer-events:none;') + '">' +
+    line(head('SÓ OS QUE POSSO AJUDAR') + desc('Esconde pedidos que uma regra (descanso, dias seguidos…) não te deixaria fazer.'), sw('pref-help-toggle', helpOnly)) + '</div>');
+  // 3) usual search choices
+  const hs = prefGet('h', []) || [], at = !!prefGet('at', false), ip = !!prefGet('ip', false);
+  html += box(head('A MINHA PESQUISA HABITUAL') + desc('Fica já escolhido quando abres TROCA PARA FOLGA.') +
+    '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;">' + ['4','6','8'].map(v => chip('pref-h-' + v, v + 'H', hs.indexOf(v) >= 0)).join('') + chip('pref-at', 'ALTEA', at) + chip('pref-ip', 'IPORT', ip) + '</div>');
+  // 4) TURNO DUPLO (beta): only when it is switched on for the group
+  if(doubleShiftEnabled){
+    const hide = prefGet('hideDbl', false);
+    html += box(line(head('TURNO DUPLO') + desc('Mostrar o cartão TURNO DUPLO (em teste) na ÁREA PESSOAL.'), sw('pref-dbl-toggle', !hide)));
+  }
+  body.innerHTML = html;
+  const flip = (id, fn) => { const e = document.getElementById(id); if(e) e.addEventListener('click', () => { fn(); renderPrefs(); try{ renderNotificationsBadge(); renderAreaHubOrder(); }catch(err){} }); };
+  flip('pref-ped-toggle', () => { try{ localStorage.setItem('trocaMistoPedAlerts:' + (window.MY_ASK_ID || ''), pedAlertsOn() ? 'off' : 'on'); }catch(e){} });
+  flip('pref-help-toggle', () => prefSet('pedHelp', !prefGet('pedHelp', false)));
+  flip('pref-dbl-toggle', () => prefSet('hideDbl', !prefGet('hideDbl', false)));
+  ['4','6','8'].forEach(v => flip('pref-h-' + v, () => { const a = (prefGet('h', []) || []).slice(), i = a.indexOf(v); if(i >= 0) a.splice(i, 1); else a.push(v); prefSet('h', a); applySearchDefaults(); }));
+  flip('pref-at', () => { prefSet('at', !prefGet('at', false)); if(prefGet('h', null) === null) prefSet('h', []); applySearchDefaults(); });
+  flip('pref-ip', () => { prefSet('ip', !prefGet('ip', false)); if(prefGet('h', null) === null) prefSet('h', []); applySearchDefaults(); });
+  const nb = document.getElementById('pref-np-btn');
+  if(nb) nb.addEventListener('click', () => { const sid = localStorage.getItem('trocaMistoLoginStaffId'); if(!sid) return; Promise.resolve(setupPushNotificationsForThisDevice(sid, true)).then(() => { renderPrefs(); try{ npRefresh(); }catch(e){} }, () => renderPrefs()); });
 }
 function pedSeenKey(){ return 'trocaMistoPedSeen:' + (window.MY_ASK_ID || ''); }
 function pedSeen(){
@@ -8722,6 +8767,7 @@ function pedBellItems(){
     if(!e || String(e.requesterId) === String(me)) return;            // never tell people about their own request
     if(typeof rememberedName !== 'undefined' && rememberedName && rememberedName === e.requesterName) return;
     if(isPastDay(e.idx) || now - (e.ts || 0) > week) return;
+    if(prefGet('pedHelp', false)){ try{ if(getPossoAjudarState(e).disabled || getPedidosDeadlineStage(e) === 'expired') return; }catch(err){} }
     const gk = e.batchId || k;
     if(!groups[gk]){ groups[gk] = []; order.push(gk); }
     groups[gk].push(e);
@@ -8995,6 +9041,7 @@ function renderNotificationsList(){
 // shared device never keeps showing the wrong person's notifications after switching users.
 function setupNotificationsListener(staffId){
   window.MY_ASK_ID = staffId;
+  try{ applySearchDefaults(); }catch(e){}
   try{ mtListen(); }catch(e){}   // load the task data right away too (the bell shows task changes), no waiting for the 10-second check
   if(notificationsListenerUnsubscribe) notificationsListenerUnsubscribe();
   getDb().then(db => {
@@ -12139,9 +12186,9 @@ function areaSaveFavs(a){ try{ localStorage.setItem(AREA_FAV_KEY, JSON.stringify
 function renderAreaHubOrder(){
   const hub = document.getElementById('area-hub'); if(!hub) return;
   const favs = areaFavs();
-  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'double' || k === 'reqs') && GROUP === 'sup') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays())) && !(k === 'themes' && !themeProAvailable()) && !(k === 'msched' && !staffEditSchedEnabled));
+  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'double' || k === 'reqs') && GROUP === 'sup') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays() || prefGet('hideDbl', false))) && !(k === 'themes' && !themeProAvailable()) && !(k === 'msched' && !staffEditSchedEnabled));
   const fav = list.filter(([k]) => favs.indexOf(k) >= 0), rest = list.filter(([k]) => favs.indexOf(k) < 0);
-  try{ const dc = document.getElementById('area-card-double'); if(dc) dc.style.display = (GROUP !== 'sup' && doubleShiftEnabled && hasShortShiftDays()) ? '' : 'none'; }catch(e){}
+  try{ const dc = document.getElementById('area-card-double'); if(dc) dc.style.display = (GROUP !== 'sup' && doubleShiftEnabled && hasShortShiftDays() && !prefGet('hideDbl', false)) ? '' : 'none'; }catch(e){}
   try{ const mc = document.getElementById('area-card-msched'); if(mc) mc.style.display = staffEditSchedEnabled ? '' : 'none'; }catch(e){}
   try{ const tc = document.getElementById('area-card-themes'); if(tc) tc.style.display = themeProAvailable() ? '' : 'none'; }catch(e){}
   const old = document.getElementById('area-hub-sep'); if(old) old.remove();
