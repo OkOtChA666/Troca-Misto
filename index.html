@@ -12305,6 +12305,7 @@ function showAreaTab(which){
   document.getElementById('area-tab-themes').classList.toggle('hidden', !themes);
   document.getElementById('area-tab-prefs').classList.toggle('hidden', !prefs);
   document.getElementById('area-tab-support').classList.toggle('hidden', !support);
+  if(support) supWaitTick();
   areaSetTitle(tasks ? 'tasks' : reqs ? 'reqs' : agenda ? 'agenda' : themes ? 'themes' : prefs ? 'prefs' : support ? 'support' : 'swaps');
   document.getElementById('area-tab-btn-swaps').classList.toggle('active', !tasks);
   document.getElementById('area-tab-btn-tasks').classList.toggle('active', tasks);
@@ -12312,15 +12313,29 @@ function showAreaTab(which){
   document.getElementById('area-tab-tasks').classList.toggle('hidden', !tasks);
   if(tasks) openMyTasks(); else { closeMyTasks(); if(prefs) renderPrefs(); else if(themes) renderThemePicker(); else if(agenda) renderAgenda(); else if(reqs) reqsShow('mine'); else renderMySwapsList(myTrocasExpanded); }
 }
+// SUPORTE: after a message is sent, the button waits 5 minutes before the next one (remembered on this phone)
+const SUP_WAIT_MS = 5 * 60 * 1000;
+let SUP_TIMER = null;
+function supLastKey(){ return 'trocaMistoSupportLast:' + (window.MY_ASK_ID || window._loggedId || ''); }
+function supWaitLeft(){ try{ const t = parseInt(localStorage.getItem(supLastKey()) || '0', 10); return Math.max(0, t + SUP_WAIT_MS - Date.now()); }catch(e){ return 0; } }
+function supWaitTick(){
+  const btn = document.getElementById('support-send-btn'), st = document.getElementById('support-send-status'); if(!btn) return;
+  clearInterval(SUP_TIMER); SUP_TIMER = null;
+  const left = supWaitLeft();
+  if(left <= 0){ btn.disabled = false; btn.textContent = 'ENVIAR'; return; }
+  const draw = () => { const l = supWaitLeft(); if(l <= 0){ supWaitTick(); return; } const m = Math.floor(l / 60000), sc = Math.floor((l % 60000) / 1000); btn.disabled = true; btn.textContent = 'ENVIAR (espera ' + m + ':' + String(sc).padStart(2, '0') + ')'; };
+  draw(); SUP_TIMER = setInterval(draw, 1000);
+}
 document.getElementById('support-send-btn').addEventListener('click', async () => {
+  if(supWaitLeft() > 0){ supWaitTick(); return; }
   const box = document.getElementById('support-msg'), st = document.getElementById('support-send-status'), btn = document.getElementById('support-send-btn');
   const msg = (box.value || '').trim();
   if(!msg){ st.style.color = 'var(--text-dim)'; st.textContent = 'Escreve primeiro a tua mensagem.'; return; }
   btn.disabled = true; st.style.color = 'var(--text-dim)'; st.textContent = 'A enviar…';
   const ok = await sendSupportEmail({ 'Tipo': document.getElementById('support-type').value, 'Mensagem': msg, 'De': (window._loggedName || '?') + ' (n.º ' + (window._loggedId || window.MY_ASK_ID || '?') + ')', 'Enviado em': new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' }) }, 'TROCA-MISTO · Suporte · ' + document.getElementById('support-type').value);
   btn.disabled = false;
-  if(ok){ box.value = ''; st.style.color = 'var(--go)'; st.textContent = 'Mensagem enviada. Obrigado!'; }
-  else { st.style.color = '#ff5d73'; st.textContent = 'Não foi possível enviar. Tenta mais tarde.'; }
+  if(ok){ try{ localStorage.setItem(supLastKey(), String(Date.now())); }catch(e){} supWaitTick(); box.value = ''; st.style.color = 'var(--go)'; st.textContent = 'Mensagem enviada. Obrigado!'; }
+  else { st.style.color = '#ff5d73'; st.textContent = 'Não foi possível enviar. Tenta mais tarde.'; supWaitTick(); }
 });
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
 // favourites (kept on each person's own phone). Nothing saved yet = AS MINHAS TAREFAS is the favourite; the person can remove it.
