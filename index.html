@@ -1622,6 +1622,8 @@
   .skills-compact .skills-col-lock{ width:46px !important; }
   .skills-compact .skills-header-checks, .skills-compact .skills-row-checks{ gap:0; }
   .row.pc .row-name .sup-pill{ order:5; margin:8px 0 0 6px !important; font-size:8.5px !important; letter-spacing:.08em !important; padding:0 9px 0 8px !important; height:18px; box-sizing:border-box; line-height:1;; flex:none; }
+  .row .sup-pill{ display:none !important; }
+  .row.pc.row-expanded .sup-pill{ display:inline-flex !important; }
   .pc-medal{ display:none; }
   .row.pc.row-expanded .pc-medal{ display:block; position:absolute; top:44px; right:22px; width:30px; height:38px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
 </style>
@@ -7175,7 +7177,7 @@ function renderCoverResults(results, idx){
       const _n = row.querySelector('.row-name'), _s = row.querySelector('.row-sub'), _c = _s && _s.firstElementChild;
       if(_n && _c && _c.tagName === 'SPAN' && !_c.className){ _c.classList.add('pc-code'); _n.appendChild(_c); _n.insertAdjacentHTML('beforeend', '<span class="pc-id">' + escapeHtml(String(r.worker.id)) + '</span>'); if(!_s.textContent.trim()) _s.style.display = 'none'; }
     }
-    if(!swapped && isSupporter(r.worker.id)) { row.insertAdjacentHTML('beforeend', pcMedalHtml()); const _pi=row.querySelector('.pc-id'); if(_pi) _pi.insertAdjacentHTML('afterend', supporterPillHtml()); }   // contributor medal, top right of the opened card
+    if(!swapped && isSupporter(r.worker.id)) { const _pi=row.querySelector('.pc-id'); if(_pi) _pi.insertAdjacentHTML('afterend', supporterPillHtml()); }   // contributor medal, top right of the opened card
     if(matchingRequest){
       row.querySelector('#'+starBtnId).addEventListener('click', (e) => {
         e.stopPropagation();
