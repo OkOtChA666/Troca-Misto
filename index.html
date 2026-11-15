@@ -636,7 +636,7 @@
   .swap-card-now{ font-size:12px; color:var(--text-dim); }
   .swap-card-hours{ margin-top:4px; font-size:16px; font-weight:600; color:var(--amber); white-space:nowrap; }
   .swap-card-arrows{ padding-top:14px; font-size:18px; color:var(--text-dim); }
-  .swap-del-btn{ margin-top:16px; background:#5c2230; border:1px solid #5c2230; color:#ffe4e8; border-radius:4px; padding:6px 12px; font-size:11px; font-family:var(--sans); cursor:pointer; }
+  .swap-del-btn{ width:100%; height:100%; background:#5c2230; border:1px solid #5c2230; color:#ffe4e8; border-radius:6px; font-size:13px; letter-spacing:0.04em; font-family:var(--sans); cursor:pointer; }
   .swap-del-btn:active{ transform:scale(0.98); }
   .swap-block-warning{
     display:block; text-align:center; margin-top:12px;
@@ -1954,7 +1954,9 @@
       <p class="hint" style="text-align:center; margin-bottom:20px;">(DEIXAR EM BRANCO PARA PROCURAR TUDO)</p>
     </div>
 
-    <div style="display:flex; gap:8px; height:40px;">
+    <div id="cover-delete-row" class="hidden" style="height:40px;"><button type="button" id="ctx-delete-swap-btn" class="swap-del-btn">ELIMINAR TROCA</button></div>
+
+    <div id="cover-search-row" style="display:flex; gap:8px; height:40px;">
       <button class="btn" id="cover-search-btn" style="flex:1; width:auto; height:100%; padding:0; margin:0;" disabled>Procurar</button>
       <button type="button" id="cover-clear-btn" class="hidden" title="Limpar pesquisa" style="flex-shrink:0; width:40px; height:100%; padding:0; margin:0; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, #FFC94D, var(--amber)); border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; color:#1A1200; box-shadow: 0 4px 12px rgba(255,179,0,0.25);">↺</button>
     </div>
@@ -2034,7 +2036,9 @@
       </div>
     </div>
 
-    <div style="display:flex; gap:8px; height:40px;">
+    <div id="turno-delete-row" class="hidden" style="height:40px;"><button type="button" id="turno-delete-swap-btn" class="swap-del-btn">ELIMINAR TROCA</button></div>
+
+    <div id="trade-search-row" style="display:flex; gap:8px; height:40px;">
       <button class="btn" id="trade-check-btn" style="flex:1; width:auto; height:100%; padding:0; margin:0;" disabled>Procurar</button>
       <button type="button" id="trade-clear-btn" class="hidden" title="Limpar pesquisa" style="flex-shrink:0; width:40px; height:100%; padding:0; margin:0; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, #FFC94D, var(--amber)); border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; color:#1A1200; box-shadow: 0 4px 12px rgba(255,179,0,0.25);">↺</button>
     </div>
@@ -6991,6 +6995,7 @@ function dayDifficultyHtml(count){
   else { color = '#FF5C5C'; label = '🔴 Dia muito preenchido'; }
   return '<div style="text-align:center; font-size:11.5px; color:'+color+'; margin-top:8px;">'+label+'</div>';
 }
+function freshDelBtn(id){ const o = document.getElementById(id); const n = o.cloneNode(true); n.disabled = false; o.parentNode.replaceChild(n, o); return n; }
 function swapCardHtml(nameA, hoursA, nameB, hoursB, btnId){
   const wB = DATA.workers.find(w => w.name === nameB);
   const wA = DATA.workers.find(w => w.name === nameA);
@@ -7001,13 +7006,14 @@ function swapCardHtml(nameA, hoursA, nameB, hoursB, btnId){
   return '<div class="swap-card">' +
     '<div class="swap-card-body"><div class="swap-card-people">' + col(nameA, wA, hoursA) +
     '<div class="swap-card-arrows">⇄</div>' + col(nameB, wB, hoursB) + '</div>' +
-    '<button type="button" id="' + btnId + '" class="swap-del-btn">ELIMINAR TROCA</button></div>' +
+    '</div>' +
     '<div class="swap-card-warn">TROCA SOBRE TROCA NÃO É PERMITIDO</div></div>';
 }
 function updateCoverContext(){
   const ctx = document.getElementById('cover-context');
   ctx.classList.remove('pro-ticket');
   ctx.classList.remove('swap-card-box');
+  document.getElementById('cover-search-row').classList.remove('hidden'); document.getElementById('cover-delete-row').classList.add('hidden');
   try{ renderProStrip(); }catch(e){}
   const btn = document.getElementById('cover-search-btn');
   document.getElementById('cover-results').innerHTML = '';
@@ -7023,11 +7029,11 @@ function updateCoverContext(){
   let showDeleteBtn = false;
   if(entry.status === 'work'){
     if(entry.covering){
-      ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(coverWorker.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.covering, partnerScheduleLabel(entry.covering, idx), 'ctx-delete-swap-btn');
+      ctx.classList.add('swap-card-box'); document.getElementById('cover-search-row').classList.add('hidden'); document.getElementById('cover-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(coverWorker.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.covering, partnerScheduleLabel(entry.covering, idx), 'ctx-delete-swap-btn');
       btn.disabled = true;
       showDeleteBtn = true;
     } else if(entry.swappedWith){
-      ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(coverWorker.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.swappedWith, partnerScheduleLabel(entry.swappedWith, idx), 'ctx-delete-swap-btn');
+      ctx.classList.add('swap-card-box'); document.getElementById('cover-search-row').classList.add('hidden'); document.getElementById('cover-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(coverWorker.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.swappedWith, partnerScheduleLabel(entry.swappedWith, idx), 'ctx-delete-swap-btn');
       btn.disabled = true;
       showDeleteBtn = true;
     } else {
@@ -7044,7 +7050,7 @@ function updateCoverContext(){
     ctx.innerHTML = '<b>'+coverWorker.name+'</b>\'s data for '+fmtDateLabel(idx)+' is incomplete in the schedule (only a start time was readable) — worth double-checking manually.';
     btn.disabled = true;
   } else if(entry.givenAwayTo){
-    ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(coverWorker.name, escapeHtml(entry.codes[0]), entry.givenAwayTo, partnerScheduleLabel(entry.givenAwayTo, idx), 'ctx-delete-swap-btn');
+    ctx.classList.add('swap-card-box'); document.getElementById('cover-search-row').classList.add('hidden'); document.getElementById('cover-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(coverWorker.name, escapeHtml(entry.codes[0]), entry.givenAwayTo, partnerScheduleLabel(entry.givenAwayTo, idx), 'ctx-delete-swap-btn');
     btn.disabled = true;
     showDeleteBtn = true;
   } else {
@@ -7058,7 +7064,7 @@ function updateCoverContext(){
     btn.disabled = true;
   }
   if(showDeleteBtn){
-    document.getElementById('ctx-delete-swap-btn').addEventListener('click', async (e) => {
+    freshDelBtn('ctx-delete-swap-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
       showPasswordPrompt(async () => {
         e.target.disabled = true;
@@ -7362,6 +7368,7 @@ updateSliderReadout();
 function updateTurnoContext(skipSliderReset){
   const ctx = document.getElementById('turno-context');
   ctx.classList.remove('pro-ticket'); ctx.classList.remove('swap-card-box');
+  document.getElementById('trade-search-row').classList.remove('hidden'); document.getElementById('turno-delete-row').classList.add('hidden');
   try{ renderProStrip(); }catch(e){}
   const btn = document.getElementById('trade-check-btn');
   const searchControls = document.getElementById('turno-search-controls');
@@ -7378,10 +7385,10 @@ function updateTurnoContext(skipSliderReset){
   if(dblHtmlT){ ctx.innerHTML = dblHtmlT; btn.disabled = true; searchControls.classList.add('hidden'); wireDoubleClear(ctx, tradeA.id, idx, updateTurnoContext); return; }
   if(entry.status === 'work'){
     if(entry.covering){
-      ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(tradeA.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.covering, partnerScheduleLabel(entry.covering, idx), 'turno-delete-swap-btn');
+      ctx.classList.add('swap-card-box'); document.getElementById('trade-search-row').classList.add('hidden'); document.getElementById('turno-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(tradeA.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.covering, partnerScheduleLabel(entry.covering, idx), 'turno-delete-swap-btn');
       btn.disabled = true;
       searchControls.classList.add('hidden');
-      document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
+      freshDelBtn('turno-delete-swap-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
         showPasswordPrompt(async () => {
           e.target.disabled = true;
@@ -7391,10 +7398,10 @@ function updateTurnoContext(skipSliderReset){
       return;
     }
     if(entry.swappedWith){
-      ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(tradeA.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.swappedWith, partnerScheduleLabel(entry.swappedWith, idx), 'turno-delete-swap-btn');
+      ctx.classList.add('swap-card-box'); document.getElementById('trade-search-row').classList.add('hidden'); document.getElementById('turno-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(tradeA.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.swappedWith, partnerScheduleLabel(entry.swappedWith, idx), 'turno-delete-swap-btn');
       btn.disabled = true;
       searchControls.classList.add('hidden');
-      document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
+      freshDelBtn('turno-delete-swap-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
         showPasswordPrompt(async () => {
           e.target.disabled = true;
@@ -7423,10 +7430,10 @@ function updateTurnoContext(skipSliderReset){
       updateSliderReadout();
     }
   } else if(entry.givenAwayTo){
-    ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(tradeA.name, escapeHtml(entry.codes[0]), entry.givenAwayTo, partnerScheduleLabel(entry.givenAwayTo, idx), 'turno-delete-swap-btn');
+    ctx.classList.add('swap-card-box'); document.getElementById('trade-search-row').classList.add('hidden'); document.getElementById('turno-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(tradeA.name, escapeHtml(entry.codes[0]), entry.givenAwayTo, partnerScheduleLabel(entry.givenAwayTo, idx), 'turno-delete-swap-btn');
     btn.disabled = true;
     searchControls.classList.add('hidden');
-    document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
+    freshDelBtn('turno-delete-swap-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
       showPasswordPrompt(async () => {
         e.target.disabled = true;
