@@ -623,6 +623,21 @@
     text-align: center;
   }
   .context-line b{ color: var(--text); }
+  /* ---- swap card (O TEU HORÁRIO / TURNO) ---- */
+  .context-line.swap-card-box, html[class] .context-line.swap-card-box{ background:none !important; border:none !important; box-shadow:none !important; padding:0 !important; border-radius:0 !important; }
+  html.skin-planta .context-line.swap-card-box::before, html.skin-planta .context-line.swap-card-box::after{ display:none; }
+  .swap-card{ background:var(--panel-2); border:1px solid var(--border); border-radius:16px; overflow:hidden; text-align:center; }
+  .swap-card-warn{ background:var(--nogo-dim); border-bottom:1px solid rgba(255,92,108,0.35); color:var(--nogo); font-weight:700; font-size:13px; padding:12px 16px; }
+  .swap-card-body{ padding:18px 12px; }
+  .swap-card-people{ display:flex; align-items:flex-start; justify-content:center; gap:4px; }
+  .swap-card-col{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .swap-card-col .st-av-row{ width:44px; height:44px; margin-bottom:2px; }
+  .swap-card-name{ font-size:14px; font-weight:600; color:var(--text); line-height:1.3; }
+  .swap-card-now{ font-size:12px; color:var(--text-dim); }
+  .swap-card-hours{ margin-top:4px; font-size:16px; font-weight:600; color:var(--amber); white-space:nowrap; }
+  .swap-card-arrows{ padding-top:14px; font-size:18px; color:var(--text-dim); }
+  .swap-del-btn{ margin-top:20px; background:#5c2230; border:1px solid #5c2230; color:#ffe4e8; border-radius:10px; padding:10px 18px; font-size:13px; font-family:var(--sans); cursor:pointer; }
+  .swap-del-btn:active{ transform:scale(0.98); }
   .swap-block-warning{
     display:block; text-align:center; margin-top:12px;
     color: var(--nogo); font-weight:700;
@@ -6976,9 +6991,23 @@ function dayDifficultyHtml(count){
   else { color = '#FF5C5C'; label = '🔴 Dia muito preenchido'; }
   return '<div style="text-align:center; font-size:11.5px; color:'+color+'; margin-top:8px;">'+label+'</div>';
 }
+function swapCardHtml(nameA, hoursA, nameB, hoursB, btnId){
+  const wB = DATA.workers.find(w => w.name === nameB);
+  const wA = DATA.workers.find(w => w.name === nameA);
+  const col = (nm, w, hrs) => '<div class="swap-card-col">' + avatarHtml(w ? w.id : nm, nm, 44) +
+    '<div class="swap-card-name">' + escapeHtml(niceListName(nm)) + '</div>' +
+    '<div class="swap-card-now">está agora</div>' +
+    '<div class="swap-card-hours">' + hrs + '</div></div>';
+  return '<div class="swap-card">' +
+    '<div class="swap-card-warn">TROCA SOBRE TROCA NÃO É PERMITIDO</div>' +
+    '<div class="swap-card-body"><div class="swap-card-people">' + col(nameA, wA, hoursA) +
+    '<div class="swap-card-arrows">⇄</div>' + col(nameB, wB, hoursB) + '</div>' +
+    '<button type="button" id="' + btnId + '" class="swap-del-btn">🗑 ELIMINAR TROCA</button></div></div>';
+}
 function updateCoverContext(){
   const ctx = document.getElementById('cover-context');
   ctx.classList.remove('pro-ticket');
+  ctx.classList.remove('swap-card-box');
   try{ renderProStrip(); }catch(e){}
   const btn = document.getElementById('cover-search-btn');
   document.getElementById('cover-results').innerHTML = '';
@@ -6991,15 +7020,14 @@ function updateCoverContext(){
   document.getElementById('cover-context-label').classList.remove('hidden');
   const dblHtml = doubleBoxHtml(coverWorker, idx);
   if(dblHtml){ ctx.innerHTML = dblHtml; btn.disabled = true; document.getElementById('cover-search-controls').classList.add('hidden'); wireDoubleClear(ctx, coverWorker.id, idx, updateCoverContext); return; }
-  const deleteBtnHtml = '<div style="text-align:center;"><button type="button" id="ctx-delete-swap-btn" class="flag-btn" style="margin-top:8px;">🗑 ELIMINAR TROCA</button></div>';
   let showDeleteBtn = false;
   if(entry.status === 'work'){
     if(entry.covering){
-      ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>A COBRIR<br><b>'+escapeHtml(entry.covering)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.covering, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(coverWorker.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.covering, partnerScheduleLabel(entry.covering, idx), 'ctx-delete-swap-btn');
       btn.disabled = true;
       showDeleteBtn = true;
     } else if(entry.swappedWith){
-      ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>TROCA DE TURNO COM<br><b>'+escapeHtml(entry.swappedWith)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.swappedWith, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(coverWorker.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.swappedWith, partnerScheduleLabel(entry.swappedWith, idx), 'ctx-delete-swap-btn');
       btn.disabled = true;
       showDeleteBtn = true;
     } else {
@@ -7016,7 +7044,7 @@ function updateCoverContext(){
     ctx.innerHTML = '<b>'+coverWorker.name+'</b>\'s data for '+fmtDateLabel(idx)+' is incomplete in the schedule (only a start time was readable) — worth double-checking manually.';
     btn.disabled = true;
   } else if(entry.givenAwayTo){
-    ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+escapeHtml(entry.codes[0])+'</b><br>TROCOU COM<br><b>'+escapeHtml(entry.givenAwayTo)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.givenAwayTo, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+    ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(coverWorker.name, escapeHtml(entry.codes[0]), entry.givenAwayTo, partnerScheduleLabel(entry.givenAwayTo, idx), 'ctx-delete-swap-btn');
     btn.disabled = true;
     showDeleteBtn = true;
   } else {
@@ -7333,7 +7361,7 @@ updateSliderReadout();
 
 function updateTurnoContext(skipSliderReset){
   const ctx = document.getElementById('turno-context');
-  ctx.classList.remove('pro-ticket');
+  ctx.classList.remove('pro-ticket'); ctx.classList.remove('swap-card-box');
   try{ renderProStrip(); }catch(e){}
   const btn = document.getElementById('trade-check-btn');
   const searchControls = document.getElementById('turno-search-controls');
@@ -7348,10 +7376,9 @@ function updateTurnoContext(skipSliderReset){
   document.getElementById('turno-context-label').classList.remove('hidden');
   const dblHtmlT = doubleBoxHtml(tradeA, idx);
   if(dblHtmlT){ ctx.innerHTML = dblHtmlT; btn.disabled = true; searchControls.classList.add('hidden'); wireDoubleClear(ctx, tradeA.id, idx, updateTurnoContext); return; }
-  const deleteBtnHtml = '<div style="text-align:center;"><button type="button" id="turno-delete-swap-btn" class="flag-btn" style="margin-top:8px;">🗑 ELIMINAR TROCA</button></div>';
   if(entry.status === 'work'){
     if(entry.covering){
-      ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>A COBRIR<br><b>'+escapeHtml(entry.covering)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.covering, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(tradeA.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.covering, partnerScheduleLabel(entry.covering, idx), 'turno-delete-swap-btn');
       btn.disabled = true;
       searchControls.classList.add('hidden');
       document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
@@ -7364,7 +7391,7 @@ function updateTurnoContext(skipSliderReset){
       return;
     }
     if(entry.swappedWith){
-      ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>TROCA DE TURNO COM<br><b>'+escapeHtml(entry.swappedWith)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.swappedWith, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(tradeA.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.swappedWith, partnerScheduleLabel(entry.swappedWith, idx), 'turno-delete-swap-btn');
       btn.disabled = true;
       searchControls.classList.add('hidden');
       document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
@@ -7396,7 +7423,7 @@ function updateTurnoContext(skipSliderReset){
       updateSliderReadout();
     }
   } else if(entry.givenAwayTo){
-    ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+escapeHtml(entry.codes[0])+'</b><br>TROCOU COM<br><b>'+escapeHtml(entry.givenAwayTo)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.givenAwayTo, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+    ctx.classList.add('swap-card-box'); ctx.innerHTML = swapCardHtml(tradeA.name, escapeHtml(entry.codes[0]), entry.givenAwayTo, partnerScheduleLabel(entry.givenAwayTo, idx), 'turno-delete-swap-btn');
     btn.disabled = true;
     searchControls.classList.add('hidden');
     document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
