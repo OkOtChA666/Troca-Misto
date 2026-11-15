@@ -627,9 +627,9 @@
   .context-line.swap-card-box, html[class] .context-line.swap-card-box{ background:none !important; border:none !important; box-shadow:none !important; padding:0 !important; border-radius:0 !important; }
   html.skin-planta .context-line.swap-card-box::before, html.skin-planta .context-line.swap-card-box::after{ display:none; }
   .swap-card{ background:var(--panel-2); border:1px solid var(--border); border-radius:6px; overflow:hidden; text-align:center; }
-  .swap-card-warn{ background:var(--nogo-dim); border-top:1px solid rgba(255,92,108,0.35); color:var(--nogo); font-weight:700; font-size:13px; padding:12px 16px; }
+  .swap-card-warn{ background:var(--nogo-dim); border-top:1px solid rgba(255,92,108,0.35); color:var(--nogo); font-weight:600; font-size:11px; padding:7px 16px; display:flex; justify-content:center; align-items:center; text-align:center; }
   .swap-card-tab{ display:flex; justify-content:center; }
-  .swap-card-tab span{ background:#e3ddcf; color:#0d1424; font-size:11px; font-weight:600; letter-spacing:1.2px; padding:7px 22px 8px; border-radius:0 0 14px 14px; }
+  .swap-card-tab span{ background:#e3ddcf; color:#0d1424; font-size:10px; font-weight:600; letter-spacing:1.2px; padding:4px 20px 5px; border-radius:0 0 12px 12px; }
   .swap-card-body{ padding:16px 12px 18px; }
   .swap-card-people{ display:flex; align-items:flex-start; justify-content:center; gap:4px; }
   .swap-card-col{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; }
@@ -7003,7 +7003,7 @@ function swapCardHtml(nameA, hoursA, nameB, hoursB, btnId){
   const wA = DATA.workers.find(w => w.name === nameA);
   const col = (nm, w, hrs) => '<div class="swap-card-col">' + avatarHtml(w ? w.id : nm, nm, 44) +
     '<div class="swap-card-name">' + escapeHtml(niceListName(nm)) + '</div>' +
-    '<div class="swap-card-now">está agora</div>' +
+    '<div class="swap-card-now">Está agora</div>' +
     '<div class="swap-card-hours">' + hrs + '</div></div>';
   return '<div class="swap-card">' +
     '<div class="swap-card-tab"><span>TROCA CONFIRMADA</span></div>' +
