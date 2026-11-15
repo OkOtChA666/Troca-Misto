@@ -5678,7 +5678,7 @@ function toggleUserMenu(){
     return;
   }
   const me = DATA.workers.find(w => w.id === window._loggedId);
-  let todayTxt = '—', offTxt = '—';
+  let todayTxt = '—', offTxt = '—', dayLab = 'HOJE';
   try{
     if(me){
       let ti = -1; for(let i = 0; i < N; i++){ if(isTodayDay(i)){ ti = i; break; } }
@@ -5687,6 +5687,27 @@ function toggleUserMenu(){
         if(en) todayTxt = (en.status === 'work' || en.status === 'partial') ? fmtHHMM(en.start) + ' – ' + fmtHHMM(en.end) : (((en.codes || [])[0]) || 'Folga');
         const WD = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
         for(let i = ti + 1; i < N; i++){ const e2 = getEffectiveEntry(me, i); if(e2 && e2.status === 'off'){ offTxt = WD[realDateForIdx(i).getDay()] + ' ' + String(DATA.days[i]).padStart(2, '0'); break; } }
+        // 15 min after clocking out (or after the shift end when planete shows no clock-in), the card shows TOMORROW
+        try{
+          if(en && (en.status === 'work' || en.status === 'partial') && ti + 1 < N){
+            const nw = new Date(), nowMin = nw.getHours() * 60 + nw.getMinutes();
+            const pp0 = (MT_DOC && MT_DOC.date === sfToday()) ? mtMyPunch(mtStaffId()) : null;
+            let done = false;
+            if(pp0 && pp0[1]){ const o = mtToMin(pp0[1]); done = (o != null && nowMin >= o + 15); }
+            else if(!(pp0 && pp0[0])){ const sh0 = mtShiftBounds(me); done = !!(sh0 && sh0.work && nowMin >= sh0.e0 + 15); }
+            if(done){
+              const et = getEffectiveEntry(me, ti + 1);
+              if(et){
+                dayLab = 'AMANHÃ';
+                todayTxt = (et.status === 'work' || et.status === 'partial') ? fmtHHMM(et.start) + ' – ' + fmtHHMM(et.end) : (((et.codes || [])[0]) || 'Folga');
+                if(et.status === 'off'){
+                  offTxt = '—';
+                  for(let i = ti + 2; i < N; i++){ const e3 = getEffectiveEntry(me, i); if(e3 && e3.status === 'off'){ offTxt = WD[realDateForIdx(i).getDay()] + ' ' + String(DATA.days[i]).padStart(2, '0'); break; } }
+                }
+              }
+            }
+          }
+        }catch(e2){}
       }
     }
   }catch(e){}
@@ -5697,7 +5718,7 @@ function toggleUserMenu(){
   const grp = (GROUP === 'sup') ? 'SUPERVISÃO · FAO' : 'TTAE · FAO · PAX';
   m.style.background = 'radial-gradient(120% 90% at 0 0, #16304a 0, #0f1626 55%)'; m.style.padding = '0'; m.style.overflow = 'hidden'; m.style.minWidth = '290px';
   m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div id="user-menu-photo" title="Foto" style="flex:none; position:relative; width:56px; height:62px; cursor:pointer;"><div style="width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div id="user-menu-hexin" style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; overflow:hidden; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + (photoOf(window._loggedId) ? avatarInner(window._loggedId, nm) : escapeHtml(ini)) + '</div></div>' + (SUP_OPTS.card && isSupporter(window._loggedId) ? supporterBadgeHtml(!!photoOf(window._loggedId)) : '') + (photoOf(window._loggedId) ? '' : '<div style="position:absolute; right:-4px; bottom:2px; width:20px; height:20px; border-radius:50%; background:#ffb020; color:#1a1200; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #0f1626;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></div>') + '</div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text); display:flex; align-items:center; gap:9px;">' + escapeHtml(nm) + punchDot + '</div><div style="margin-top:6px;"><span style="display:inline-block; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center;">' + escapeHtml(window._loggedId || '') + '</span></div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:8px;">' + grp + '</div>' + '</div></div>' +
-    '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">HOJE</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px;">' + escapeHtml(offTxt) + '</div></div></div>' +
+    '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">' + dayLab + '</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px;">' + escapeHtml(offTxt) + '</div></div></div>' +
     proMenuLinksHtml() +
     ((isAdminSession || isDeptAdminSession) ? '<div id="user-menu-admin" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ffb020; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>DEFINIÇÕES</div>' : '') +
     '<div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
