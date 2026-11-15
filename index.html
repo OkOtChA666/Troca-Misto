@@ -626,8 +626,8 @@
   /* ---- swap card (O TEU HORÁRIO / TURNO) ---- */
   .context-line.swap-card-box, html[class] .context-line.swap-card-box{ background:none !important; border:none !important; box-shadow:none !important; padding:0 !important; border-radius:0 !important; }
   html.skin-planta .context-line.swap-card-box::before, html.skin-planta .context-line.swap-card-box::after{ display:none; }
-  .swap-card{ background:var(--panel-2); border:1px solid var(--border); border-radius:16px; overflow:hidden; text-align:center; }
-  .swap-card-warn{ background:var(--nogo-dim); border-bottom:1px solid rgba(255,92,108,0.35); color:var(--nogo); font-weight:700; font-size:13px; padding:12px 16px; }
+  .swap-card{ background:var(--panel-2); border:1px solid var(--border); border-radius:6px; overflow:hidden; text-align:center; }
+  .swap-card-warn{ background:var(--nogo-dim); border-top:1px solid rgba(255,92,108,0.35); color:var(--nogo); font-weight:700; font-size:13px; padding:12px 16px; }
   .swap-card-body{ padding:18px 12px; }
   .swap-card-people{ display:flex; align-items:flex-start; justify-content:center; gap:4px; }
   .swap-card-col{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; }
@@ -636,7 +636,7 @@
   .swap-card-now{ font-size:12px; color:var(--text-dim); }
   .swap-card-hours{ margin-top:4px; font-size:16px; font-weight:600; color:var(--amber); white-space:nowrap; }
   .swap-card-arrows{ padding-top:14px; font-size:18px; color:var(--text-dim); }
-  .swap-del-btn{ margin-top:20px; background:#5c2230; border:1px solid #5c2230; color:#ffe4e8; border-radius:10px; padding:10px 18px; font-size:13px; font-family:var(--sans); cursor:pointer; }
+  .swap-del-btn{ margin-top:16px; background:#5c2230; border:1px solid #5c2230; color:#ffe4e8; border-radius:4px; padding:6px 12px; font-size:11px; font-family:var(--sans); cursor:pointer; }
   .swap-del-btn:active{ transform:scale(0.98); }
   .swap-block-warning{
     display:block; text-align:center; margin-top:12px;
@@ -6999,10 +6999,10 @@ function swapCardHtml(nameA, hoursA, nameB, hoursB, btnId){
     '<div class="swap-card-now">está agora</div>' +
     '<div class="swap-card-hours">' + hrs + '</div></div>';
   return '<div class="swap-card">' +
-    '<div class="swap-card-warn">TROCA SOBRE TROCA NÃO É PERMITIDO</div>' +
     '<div class="swap-card-body"><div class="swap-card-people">' + col(nameA, wA, hoursA) +
     '<div class="swap-card-arrows">⇄</div>' + col(nameB, wB, hoursB) + '</div>' +
-    '<button type="button" id="' + btnId + '" class="swap-del-btn">🗑 ELIMINAR TROCA</button></div></div>';
+    '<button type="button" id="' + btnId + '" class="swap-del-btn">ELIMINAR TROCA</button></div>' +
+    '<div class="swap-card-warn">TROCA SOBRE TROCA NÃO É PERMITIDO</div></div>';
 }
 function updateCoverContext(){
   const ctx = document.getElementById('cover-context');
