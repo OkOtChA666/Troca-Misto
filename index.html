@@ -1314,8 +1314,8 @@
   html.grp-disp #cover-requires-altea, html.grp-disp #cover-requires-iport{ display:none !important; }
   html.grp-disp .field:has(#cover-requires-altea){ display:none !important; }
   html.grp-disp .sys-badge{ display:none !important; }
-  html.grp-disp #tools-link, html.grp-disp #tools-link + .header-divider{ display:none !important; }
-  html.grp-disp #area-card-extra, html.grp-disp #area-card-double, html.grp-disp #area-card-reqs, html.grp-disp #area-card-tasks{ display:none !important; }
+  html.grp-disp #tool-card-forecast{ display:none !important; }   /* DISPATCHER: FERRAMENTAS without PREVISÃO (for now) */
+  html.grp-disp #area-card-extra, html.grp-disp #area-card-double, html.grp-disp #area-card-reqs{ display:none !important; }
   .ag-nav{ text-align:center; font-family:var(--mono); font-weight:700; letter-spacing:.12em; font-size:15px; margin:2px 0 12px; }
   .ag-leg{ display:flex; gap:14px; justify-content:center; font-size:12px; margin-bottom:12px; }
   .ag-leg i{ display:inline-block; width:11px; height:11px; border-radius:3px; border:2px solid; margin-right:5px; vertical-align:-1px; }
@@ -12410,6 +12410,15 @@ function mtListen(){
     try{
       const db = await getDb();
       if(!db){ MT_ERR = true; MT_LISTENING = false; renderMyTasks(); return; }
+      let _u2 = null;
+      if(GROUP === 'disp'){
+        // DISPATCHER: the tasks come from their own copy (disptasks); the flight details (gate, stand, destination) from the shared day copy (tasks)
+        let dd = null, fl = null; const merge = () => { if(dd === null) return; MT_DOC = dd ? Object.assign({}, dd, { flights: fl || '' }) : false; MT_ERR = false; mtUpdateBadge(); try{ qwRender(); }catch(e){} if(mtOpenOverlay()) renderMyTasks(); };
+        _u2 = db.collection('data').doc('tasks').onSnapshot(snap => { fl = snap.exists ? (snap.data().flights || '') : ''; merge(); }, () => {});
+        const _u1 = db.collection('data').doc('disptasks').onSnapshot(snap => { dd = snap.exists ? snap.data() : false; merge(); }, () => { MT_ERR = true; if(mtOpenOverlay()) renderMyTasks(); });
+        MT_UNSUB = () => { try{ _u1(); }catch(e){} try{ _u2(); }catch(e){} };
+        MT_LISTENING = false; return;
+      }
       MT_UNSUB = db.collection('data').doc('tasks').onSnapshot(
         snap => { MT_DOC = snap.exists ? snap.data() : false; MT_ERR = false; mtUpdateBadge(); try{ qwRender(); }catch(e){} if(mtOpenOverlay()) renderMyTasks();
           try{ const nm = document.getElementById('notifications-modal'); if(nm && !nm.classList.contains('hidden')) renderNotificationsList(); }catch(e){} },   // bell already open: show the task entries as soon as they arrive
@@ -12592,12 +12601,12 @@ document.getElementById('area-tab-btn-swaps').addEventListener('click', () => sh
 // favourites (kept on each person's own phone). Nothing saved yet = AS MINHAS TAREFAS is the favourite; the person can remove it.
 const AREA_FAV_KEY = 'trocaMistoAreaFavs';
 const AREA_CARDS = [['tasks', 'area-card-tasks'], ['swaps', 'area-card-swaps'], ['agenda', 'area-card-agenda'], ['reqs', 'area-card-reqs'], ['extra', 'area-card-extra'], ['msched', 'area-card-msched'], ['double', 'area-card-double'], ['themes', 'area-card-themes'], ['prefs', 'area-card-prefs']];
-function areaFavs(){ try{ const v = localStorage.getItem(AREA_FAV_KEY); if(v === null) return [GROUP === 'disp' ? 'swaps' : 'tasks']; const a = JSON.parse(v); return Array.isArray(a) ? a.filter(k => k !== 'double') : ['tasks']; }catch(e){ return ['tasks']; } }   // TURNO DUPLO (beta) can't be a favourite
+function areaFavs(){ try{ const v = localStorage.getItem(AREA_FAV_KEY); if(v === null) return ['tasks']; const a = JSON.parse(v); return Array.isArray(a) ? a.filter(k => k !== 'double') : ['tasks']; }catch(e){ return ['tasks']; } }   // TURNO DUPLO (beta) can't be a favourite
 function areaSaveFavs(a){ try{ localStorage.setItem(AREA_FAV_KEY, JSON.stringify(a)); }catch(e){} }
 function renderAreaHubOrder(){
   const hub = document.getElementById('area-hub'); if(!hub) return;
   const favs = areaFavs();
-  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'double' || k === 'reqs') && GROUP === 'sup') && !((k === 'extra' || k === 'double' || k === 'reqs' || k === 'tasks') && GROUP === 'disp') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays() || prefGet('hideDbl', false))) && k !== 'themes' && !(k === 'msched' && !staffEditSchedEnabled));
+  const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'double' || k === 'reqs') && GROUP === 'sup') && !((k === 'extra' || k === 'double' || k === 'reqs') && GROUP === 'disp') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays() || prefGet('hideDbl', false))) && k !== 'themes' && !(k === 'msched' && !staffEditSchedEnabled));
   const fav = list.filter(([k]) => favs.indexOf(k) >= 0), rest = list.filter(([k]) => favs.indexOf(k) < 0);
   try{ const dc = document.getElementById('area-card-double'); if(dc) dc.style.display = (GROUP === '' && doubleShiftEnabled && hasShortShiftDays() && !prefGet('hideDbl', false)) ? '' : 'none'; }catch(e){}
   try{ const mc = document.getElementById('area-card-msched'); if(mc) mc.style.display = staffEditSchedEnabled ? '' : 'none'; }catch(e){}
@@ -12985,7 +12994,8 @@ function mtInfoHtml(f, colr){
   if(f.e && colr === '#0066cc') flags.push('<span class="mt-flag amber">ETD ' + mtEsc(f.e) + '</span>');
   return flags.length ? '<div class="mt-info">' + flags.join('') + '</div>' : '';
 }
-function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
+function mtColor(n){ n = parseInt(n, 10); if(isNaN(n)) return null; if(GROUP === 'disp' && n === 919) return '#0066cc';   // dispatcher flights are shown as PARTIDA
+ for(const c in MT_COLORS){ if(MT_COLORS[c].indexOf(n) >= 0) return c; } return null; }
 
 // ===== SUPERVISÃO · AS MINHAS TAREFAS: each supervisor picks the flights he/she works today; everybody sees who has what =====
 let SF_UNSUB_FL = null, SF_UNSUB_CL = null, SF_UNSUB_TA = null, SF_CL = null, SF_TA = {}, SF_TICK = null;
