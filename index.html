@@ -7482,7 +7482,7 @@ function renderCoverResults(results, idx){
     if(!swapped){
       const _h = TYPICAL_HOURS[r.worker.id], _ip = DCS_SYSTEMS.find(x => x.key === 'iport');
       const _t = (lab, val, on) => '<div class="pc-tile"><i>' + lab + '</i><b' + (on ? ' class="on-' + on + '"' : '') + '>' + val + '</b></div>';
-      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + _t('ALTEA', hasAltea(r.worker.id) ? window.PC_OK : window.PC_NO, hasAltea(r.worker.id) ? 'cyan' : 'red') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? window.PC_OK : window.PC_NO, (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : 'red') + '</div><div class="nd-block pc-sel"><div class="nd-label">' + extraLongDate(idx).toUpperCase() + '</div>' + escapeHtml(codeLabel) + '</div>');
+      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + (GROUP === 'sup' ? '' : _t('ALTEA', hasAltea(r.worker.id) ? window.PC_OK : window.PC_NO, hasAltea(r.worker.id) ? 'cyan' : 'red') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? window.PC_OK : window.PC_NO, (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : 'red')) + '</div><div class="nd-block pc-sel"><div class="nd-label">' + extraLongDate(idx).toUpperCase() + '</div>' + escapeHtml(codeLabel) + '</div>');
     }
     if(flagged) detail.appendChild(buildFlagWarning(r.worker.id, idx));
     if(swapped) detail.appendChild(buildSwapWarning(r.worker.id, idx));
