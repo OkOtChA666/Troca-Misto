@@ -623,6 +623,32 @@
     text-align: center;
   }
   .context-line b{ color: var(--text); }
+  /* ---- swap card (O TEU HORÁRIO / TURNO) ---- */
+  .context-line.swap-card-box, html[class] .context-line.swap-card-box{ background:none !important; border:none !important; box-shadow:none !important; padding:0 !important; border-radius:0 !important; }
+  html.skin-planta .context-line.swap-card-box::before, html.skin-planta .context-line.swap-card-box::after{ display:none; }
+  .swap-card{ background:var(--panel-2); border:1px solid var(--border); border-radius:6px; overflow:hidden; text-align:center; }
+  .swap-card-warn{ background:var(--nogo-dim); border-top:1px solid rgba(255,92,108,0.35); color:var(--nogo); font-weight:600; font-size:11px; padding:7px 16px; display:flex; justify-content:center; align-items:center; text-align:center; }
+  .swap-card-tab{ display:flex; justify-content:center; }
+  .swap-card-tab span{ background:#e3ddcf; color:#0d1424; font-size:10px; font-weight:600; letter-spacing:1.2px; padding:4px 20px 5px; border-radius:0 0 12px 12px; }
+  .swap-card-body{ padding:16px 12px 18px; }
+  .swap-card-people{ display:flex; align-items:flex-start; justify-content:center; gap:4px; }
+  .swap-card-col{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .swap-card-col .st-av-row{ width:44px; height:44px; margin-bottom:2px; }
+  .swap-card-name{ font-size:14px; font-weight:600; color:var(--text); line-height:1.3; }
+  .swap-card-now{ font-size:12px; color:var(--text-dim); }
+  .swap-card-hours{ margin-top:4px; font-size:16px; font-weight:600; color:var(--amber); white-space:nowrap; }
+  .gh-pill{ display:inline-flex; align-items:center; gap:6px; background:#0f1729; border-radius:999px; padding:3px 10px; font:400 11px var(--mono); letter-spacing:0.16em; text-transform:uppercase; color:#9aa6c2; white-space:nowrap; }
+  .gh-pill .gh-dot{ width:6px; height:6px; border-radius:50%; background:#2ecc71; display:inline-block; }
+  .gh-pill.warn{ background:#241d0a; color:#e0b44a; }
+  .gh-pill.warn .gh-dot{ background:#f0b429; }
+  .gh-pill.down{ background:#2a1219; color:#fda4af; }
+  .gh-pill.down .gh-dot{ background:#ef4444; }
+  .swap-vf{ position:relative; display:inline-flex; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .swap-vf-tip{ display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:8px; z-index:5; background:#10203a; border:1px solid #2f6fb0; border-radius:999px; padding:6px 14px; white-space:nowrap; font-size:11px; font-weight:500; color:#cfe3fb; }
+  .swap-vf-tip.show{ display:block; }
+  .swap-card-arrows{ padding-top:14px; font-size:18px; line-height:1; color:var(--text-dim); display:flex; flex-direction:column; align-items:center; gap:22px; }
+  .swap-del-btn{ background:#5c2230; border:1px solid #5c2230; color:#ffe4e8; border-radius:4px; padding:6px 12px; font-size:11px; font-family:var(--sans); cursor:pointer; }
+  .swap-del-btn:active{ transform:scale(0.98); }
   .swap-block-warning{
     display:block; text-align:center; margin-top:12px;
     color: var(--nogo); font-weight:700;
@@ -1558,6 +1584,7 @@
   .mt-row.past.team-open{ opacity:1; }
   .mt-dly{ margin-left:8px; background:var(--amber); color:#1a1200; border-radius:6px; padding:1px 8px; font:800 11px var(--mono); letter-spacing:.1em; }
   .mt-name{ display:inline-block; min-width:104px; flex:none; white-space:nowrap; }
+  .mt-ngrp{ display:inline-flex; align-items:center; min-width:104px; flex:none; white-space:nowrap; }
   .mt-pair{ display:inline-flex !important; flex-direction:column; gap:2px; line-height:1.25; }
   .mt-dest{ font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:0.06em; color:var(--amber); margin-left:10px; flex:none; align-self:baseline; font-size:14px; }
   .mt-row.has-tab{ padding-bottom:36px; }
@@ -1839,7 +1866,7 @@
         <rect x="48" y="-10" width="2" height="2" fill="#5FE0FF" opacity="0.2"/>
       </svg>
     </div>
-    <p class="eyebrow">TTAE GRUPO · FAO · PAX</p>
+    <div style="display:flex; align-items:center; justify-content:flex-start; gap:16px; margin:0 0 6px;"><p class="eyebrow" style="margin:0; white-space:nowrap;">TTAE GRUPO · FAO · PAX</p><span id="gh-status" class="gh-pill" style="display:none;"><span class="gh-dot"></span><span id="gh-status-txt"></span></span></div>
     <h1>TROCA-MISTO™</h1>
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
@@ -1950,7 +1977,9 @@
       <p class="hint" style="text-align:center; margin-bottom:20px;">(DEIXAR EM BRANCO PARA PROCURAR TUDO)</p>
     </div>
 
-    <div style="display:flex; gap:8px; height:40px;">
+    <div id="cover-delete-row" class="hidden" style="text-align:center;"><button type="button" id="ctx-delete-swap-btn" class="swap-del-btn">ELIMINAR TROCA</button></div>
+
+    <div id="cover-search-row" style="display:flex; gap:8px; height:40px;">
       <button class="btn" id="cover-search-btn" style="flex:1; width:auto; height:100%; padding:0; margin:0;" disabled>Procurar</button>
       <button type="button" id="cover-clear-btn" class="hidden" title="Limpar pesquisa" style="flex-shrink:0; width:40px; height:100%; padding:0; margin:0; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, #FFC94D, var(--amber)); border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; color:#1A1200; box-shadow: 0 4px 12px rgba(255,179,0,0.25);">↺</button>
     </div>
@@ -2030,7 +2059,9 @@
       </div>
     </div>
 
-    <div style="display:flex; gap:8px; height:40px;">
+    <div id="turno-delete-row" class="hidden" style="text-align:center;"><button type="button" id="turno-delete-swap-btn" class="swap-del-btn">ELIMINAR TROCA</button></div>
+
+    <div id="trade-search-row" style="display:flex; gap:8px; height:40px;">
       <button class="btn" id="trade-check-btn" style="flex:1; width:auto; height:100%; padding:0; margin:0;" disabled>Procurar</button>
       <button type="button" id="trade-clear-btn" class="hidden" title="Limpar pesquisa" style="flex-shrink:0; width:40px; height:100%; padding:0; margin:0; display:flex; align-items:center; justify-content:center; background: linear-gradient(180deg, #FFC94D, var(--amber)); border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; color:#1A1200; box-shadow: 0 4px 12px rgba(255,179,0,0.25);">↺</button>
     </div>
@@ -2104,9 +2135,10 @@
       <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">ALTERAÇÃO DE HORÁRIO</div>
       <button type="button" id="ms-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
     </div>
-    <div style="display:flex; gap:10px; align-items:flex-start; border:1px solid rgba(255,179,0,.45); background:rgba(255,179,0,.07); border-radius:10px; padding:11px 12px; margin-bottom:16px;">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--amber)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none; margin-top:1px;"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.5M12 17.2h.01"/></svg>
-      <div style="font:13px/1.45 var(--sans); color:var(--text);">As alterações só devem ser feitas após confirmação com o SUPORTE e a plataforma oficial.</div>
+    <div style="border:1px solid rgba(255,179,0,.45); background:rgba(255,179,0,.07); border-radius:10px; padding:12px 14px; margin-bottom:16px; font:13px/1.5 var(--sans); color:var(--text);">
+      <div>Esta funcionalidade destina-se <b style="color:var(--amber); font-weight:600;">exclusivamente</b> a registar alterações de horário previamente comunicadas e confirmadas pelo Suporte Operacional.</div>
+      <div style="margin-top:10px;">Só deves efetuar alterações nesta página <b style="color:var(--amber); font-weight:600;">quando receberes essa indicação</b>.</div>
+      <div style="margin-top:10px;"><b style="color:var(--amber); font-weight:600;">Não utilizes esta funcionalidade para efetuar trocas de turnos ou folgas.</b> Estas devem ser realizadas através do procedimento próprio de troca na plataforma.</div>
     </div>
     <div class="field">
       <label for="ms-date">Data</label>
@@ -5680,7 +5712,7 @@ function toggleUserMenu(){
     return;
   }
   const me = DATA.workers.find(w => w.id === window._loggedId);
-  let todayTxt = '—', offTxt = '—';
+  let todayTxt = '—', offTxt = '—', dayLab = 'HOJE';
   try{
     if(me){
       let ti = -1; for(let i = 0; i < N; i++){ if(isTodayDay(i)){ ti = i; break; } }
@@ -5689,6 +5721,27 @@ function toggleUserMenu(){
         if(en) todayTxt = (en.status === 'work' || en.status === 'partial') ? fmtHHMM(en.start) + ' – ' + fmtHHMM(en.end) : (((en.codes || [])[0]) || 'Folga');
         const WD = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
         for(let i = ti + 1; i < N; i++){ const e2 = getEffectiveEntry(me, i); if(e2 && e2.status === 'off'){ offTxt = WD[realDateForIdx(i).getDay()] + ' ' + String(DATA.days[i]).padStart(2, '0'); break; } }
+        // 15 min after clocking out (or after the shift end when planete shows no clock-in), the card shows TOMORROW
+        try{
+          if(en && (en.status === 'work' || en.status === 'partial') && ti + 1 < N){
+            const nw = new Date(), nowMin = nw.getHours() * 60 + nw.getMinutes();
+            const pp0 = (MT_DOC && MT_DOC.date === sfToday()) ? mtMyPunch(mtStaffId()) : null;
+            let done = false;
+            if(pp0 && pp0[1]){ const o = mtToMin(pp0[1]); done = (o != null && nowMin >= o + 15); }
+            else if(!(pp0 && pp0[0])){ const sh0 = mtShiftBounds(me); done = !!(sh0 && sh0.work && nowMin >= sh0.e0 + 15); }
+            if(done){
+              const et = getEffectiveEntry(me, ti + 1);
+              if(et){
+                dayLab = 'AMANHÃ';
+                todayTxt = (et.status === 'work' || et.status === 'partial') ? fmtHHMM(et.start) + ' – ' + fmtHHMM(et.end) : (((et.codes || [])[0]) || 'Folga');
+                if(et.status === 'off'){
+                  offTxt = '—';
+                  for(let i = ti + 2; i < N; i++){ const e3 = getEffectiveEntry(me, i); if(e3 && e3.status === 'off'){ offTxt = WD[realDateForIdx(i).getDay()] + ' ' + String(DATA.days[i]).padStart(2, '0'); break; } }
+                }
+              }
+            }
+          }
+        }catch(e2){}
       }
     }
   }catch(e){}
@@ -5699,7 +5752,7 @@ function toggleUserMenu(){
   const grp = (GROUP === 'sup') ? 'SUPERVISÃO · FAO' : (GROUP === 'disp') ? 'DISPATCHER · FAO' : 'TTAE · FAO · PAX';
   m.style.background = 'radial-gradient(120% 90% at 0 0, #16304a 0, #0f1626 55%)'; m.style.padding = '0'; m.style.overflow = 'hidden'; m.style.minWidth = '290px';
   m.innerHTML = '<div style="padding:16px 16px 12px; display:flex; gap:14px; align-items:center;"><div id="user-menu-photo" title="Foto" style="flex:none; position:relative; width:56px; height:62px; cursor:pointer;"><div style="width:56px; height:62px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:linear-gradient(135deg,#ffb020,#4fd1f0); display:flex; align-items:center; justify-content:center;"><div id="user-menu-hexin" style="width:50px; height:56px; clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:#0b1220; display:flex; align-items:center; justify-content:center; overflow:hidden; font:800 16px var(--mono); color:#ffb020; letter-spacing:0;">' + (photoOf(window._loggedId) ? avatarInner(window._loggedId, nm) : escapeHtml(ini)) + '</div></div>' + (SUP_OPTS.card && isSupporter(window._loggedId) ? supporterBadgeHtml(!!photoOf(window._loggedId)) : '') + (photoOf(window._loggedId) ? '' : '<div style="position:absolute; right:-4px; bottom:2px; width:20px; height:20px; border-radius:50%; background:#ffb020; color:#1a1200; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 2px #0f1626;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></div>') + '</div><div style="min-width:0;"><div style="font:700 14px var(--mono); letter-spacing:.08em; color:var(--text); display:flex; align-items:center; gap:9px;">' + escapeHtml(nm) + punchDot + '</div><div style="margin-top:6px;"><span style="display:inline-block; font:700 11px var(--mono); background:#e8eefc; color:#0b1220; border-radius:5px; padding:1px 7px; min-width:18px; text-align:center;">' + escapeHtml(window._loggedId || '') + '</span></div><div style="font:11px var(--mono); color:#8a96b3; letter-spacing:.06em; margin-top:8px;">' + grp + '</div>' + '</div></div>' +
-    '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">HOJE</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px;">' + escapeHtml(offTxt) + '</div></div></div>' +
+    '<div style="display:flex; gap:8px; padding:0 16px 14px;"><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">' + dayLab + '</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px; white-space:nowrap;">' + escapeHtml(todayTxt) + '</div></div><div style="flex:1; border:1px solid #1c2a44; border-radius:10px; padding:8px; background:rgba(8,13,24,.6);"><div style="font:9px var(--mono); color:#8a96b3; letter-spacing:.1em;">PRÓXIMA FOLGA</div><div style="font:700 13px var(--mono); margin-top:' + (pro ? 8 : 2) + 'px;">' + escapeHtml(offTxt) + '</div></div></div>' +
     proMenuLinksHtml() +
     ((isAdminSession || isDeptAdminSession) ? '<div id="user-menu-admin" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ffb020; cursor:pointer; font:700 12px var(--mono); letter-spacing:.14em;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>DEFINIÇÕES</div>' : '') +
     '<div id="user-menu-out" role="button" tabindex="0" style="display:flex; gap:10px; align-items:center; justify-content:center; padding:13px; border-top:1px solid #1c2a44; color:#ff5d73; cursor:pointer;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>SAIR</div>';
@@ -6999,9 +7052,49 @@ function dayDifficultyHtml(count){
   else { color = '#FF5C5C'; label = '🔴 Dia muito preenchido'; }
   return '<div style="text-align:center; font-size:11.5px; color:'+color+'; margin-top:8px;">'+label+'</div>';
 }
+document.addEventListener('click', function(e){
+  const vf = e.target && e.target.closest ? e.target.closest('.swap-vf') : null;
+  document.querySelectorAll('.swap-vf-tip.show').forEach(t => { if(!vf || !vf.contains(t)) t.classList.remove('show'); });
+  if(vf){ const t = vf.querySelector('.swap-vf-tip'); if(t){ const on = t.classList.toggle('show'); clearTimeout(window._vfTimer); if(on) window._vfTimer = setTimeout(() => t.classList.remove('show'), 3000); } }
+});
+// tiny GitHub status indicator (the app is hosted on GitHub Pages): checks on open and every 5 min; hides itself if the check fails
+async function ghStatusCheck(){
+  const el = document.getElementById('gh-status'), tx = document.getElementById('gh-status-txt');
+  if(!el || !tx) return;
+  try{
+    const r = await fetch('https://www.githubstatus.com/api/v2/status.json', { cache:'no-store' });
+    const j = await r.json();
+    const ind = j && j.status && j.status.indicator;
+    el.className = 'gh-pill' + (ind === 'none' ? '' : (ind === 'minor' ? ' warn' : ' down'));
+    tx.textContent = ind === 'none' ? 'GITHUB OK' : (ind === 'minor' ? 'GITHUB !' : 'GITHUB OFF');
+    el.style.display = (ind === 'none' || ind === 'minor' || ind === 'major' || ind === 'critical') ? 'inline-flex' : 'none';
+  }catch(e){ el.style.display = 'none'; }
+}
+window.addEventListener('load', function(){ ghStatusCheck(); setInterval(function(){ if(!document.hidden) ghStatusCheck(); }, 300000); });
+function freshDelBtn(id){ const o = document.getElementById(id); const n = o.cloneNode(true); n.disabled = false; o.parentNode.replaceChild(n, o); return n; }
+function swapCardHtml(nameA, hoursA, nameB, hoursB, btnId, idx){
+  const wB = DATA.workers.find(w => w.name === nameB);
+  const wA = DATA.workers.find(w => w.name === nameA);
+  // blue check when both people confirmed (the swap was made from a request the other person accepted)
+  let verified = false;
+  try{ if(wA && wB && idx != null){ const r1 = SWAPS[swapKey(wA.id, idx)], r2 = SWAPS[swapKey(wB.id, idx)]; verified = !!((r1 && r1.withId === wB.id && r1.verified) || (r2 && r2.withId === wA.id && r2.verified)); } }catch(e){}
+  const vfBadge = verified ? '<span class="swap-vf" role="button" tabindex="0" aria-label="Troca verificada por ambas as partes"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M12 1.8l2.5 1.7 3-.1 1.2 2.8 2.6 1.5-.6 3 1.2 2.8-2.1 2.2-.5 3-3 .6-2 2.3-2.7-1.4-2.7 1.4-2-2.3-3-.6-.5-3L1.9 13l1.2-2.8-.6-3 2.6-1.5L6.3 3.4l3 .1z" fill="#2f9bff"/><path d="M7.6 12.3l3.1 3.1 5.8-6.2" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="swap-vf-tip">Troca verificada por ambas as partes</span></span>' : '';
+  const col = (nm, w, hrs) => '<div class="swap-card-col">' + avatarHtml(w ? w.id : nm, nm, 44) +
+    '<div class="swap-card-name">' + escapeHtml(niceListName(nm)) + '</div>' +
+    '<div class="swap-card-now">Está agora</div>' +
+    '<div class="swap-card-hours">' + hrs + '</div></div>';
+  return '<div class="swap-card">' +
+    '<div class="swap-card-tab"><span>TROCA CONFIRMADA</span></div>' +
+    '<div class="swap-card-body"><div class="swap-card-people">' + col(nameA, wA, hoursA) +
+    '<div class="swap-card-arrows"><span>⇄</span>' + vfBadge + '</div>' + col(nameB, wB, hoursB) + '</div>' +
+    '</div>' +
+    '<div class="swap-card-warn">TROCA SOBRE TROCA NÃO É PERMITIDO</div></div>';
+}
 function updateCoverContext(){
   const ctx = document.getElementById('cover-context');
   ctx.classList.remove('pro-ticket');
+  ctx.classList.remove('swap-card-box');
+  document.getElementById('cover-search-row').classList.remove('hidden'); document.getElementById('cover-delete-row').classList.add('hidden');
   try{ renderProStrip(); }catch(e){}
   const btn = document.getElementById('cover-search-btn');
   document.getElementById('cover-results').innerHTML = '';
@@ -7014,15 +7107,14 @@ function updateCoverContext(){
   document.getElementById('cover-context-label').classList.remove('hidden');
   const dblHtml = doubleBoxHtml(coverWorker, idx);
   if(dblHtml){ ctx.innerHTML = dblHtml; btn.disabled = true; document.getElementById('cover-search-controls').classList.add('hidden'); wireDoubleClear(ctx, coverWorker.id, idx, updateCoverContext); return; }
-  const deleteBtnHtml = '<div style="text-align:center;"><button type="button" id="ctx-delete-swap-btn" class="flag-btn" style="margin-top:8px;">🗑 ELIMINAR TROCA</button></div>';
   let showDeleteBtn = false;
   if(entry.status === 'work'){
     if(entry.covering){
-      ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>A COBRIR<br><b>'+escapeHtml(entry.covering)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.covering, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.classList.add('swap-card-box'); document.getElementById('cover-search-row').classList.add('hidden'); document.getElementById('cover-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(coverWorker.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.covering, partnerScheduleLabel(entry.covering, idx), 'ctx-delete-swap-btn', idx);
       btn.disabled = true;
       showDeleteBtn = true;
     } else if(entry.swappedWith){
-      ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>TROCA DE TURNO COM<br><b>'+escapeHtml(entry.swappedWith)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.swappedWith, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.classList.add('swap-card-box'); document.getElementById('cover-search-row').classList.add('hidden'); document.getElementById('cover-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(coverWorker.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.swappedWith, partnerScheduleLabel(entry.swappedWith, idx), 'ctx-delete-swap-btn', idx);
       btn.disabled = true;
       showDeleteBtn = true;
     } else {
@@ -7039,7 +7131,7 @@ function updateCoverContext(){
     ctx.innerHTML = '<b>'+coverWorker.name+'</b>\'s data for '+fmtDateLabel(idx)+' is incomplete in the schedule (only a start time was readable) — worth double-checking manually.';
     btn.disabled = true;
   } else if(entry.givenAwayTo){
-    ctx.innerHTML = '<b>'+coverWorker.name+'</b> está agora <b style="color:var(--amber);">'+escapeHtml(entry.codes[0])+'</b><br>TROCOU COM<br><b>'+escapeHtml(entry.givenAwayTo)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.givenAwayTo, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+    ctx.classList.add('swap-card-box'); document.getElementById('cover-search-row').classList.add('hidden'); document.getElementById('cover-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(coverWorker.name, escapeHtml(entry.codes[0]), entry.givenAwayTo, partnerScheduleLabel(entry.givenAwayTo, idx), 'ctx-delete-swap-btn', idx);
     btn.disabled = true;
     showDeleteBtn = true;
   } else {
@@ -7053,7 +7145,7 @@ function updateCoverContext(){
     btn.disabled = true;
   }
   if(showDeleteBtn){
-    document.getElementById('ctx-delete-swap-btn').addEventListener('click', async (e) => {
+    freshDelBtn('ctx-delete-swap-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
       showPasswordPrompt(async () => {
         e.target.disabled = true;
@@ -7356,7 +7448,8 @@ updateSliderReadout();
 
 function updateTurnoContext(skipSliderReset){
   const ctx = document.getElementById('turno-context');
-  ctx.classList.remove('pro-ticket');
+  ctx.classList.remove('pro-ticket'); ctx.classList.remove('swap-card-box');
+  document.getElementById('trade-search-row').classList.remove('hidden'); document.getElementById('turno-delete-row').classList.add('hidden');
   try{ renderProStrip(); }catch(e){}
   const btn = document.getElementById('trade-check-btn');
   const searchControls = document.getElementById('turno-search-controls');
@@ -7371,13 +7464,12 @@ function updateTurnoContext(skipSliderReset){
   document.getElementById('turno-context-label').classList.remove('hidden');
   const dblHtmlT = doubleBoxHtml(tradeA, idx);
   if(dblHtmlT){ ctx.innerHTML = dblHtmlT; btn.disabled = true; searchControls.classList.add('hidden'); wireDoubleClear(ctx, tradeA.id, idx, updateTurnoContext); return; }
-  const deleteBtnHtml = '<div style="text-align:center;"><button type="button" id="turno-delete-swap-btn" class="flag-btn" style="margin-top:8px;">🗑 ELIMINAR TROCA</button></div>';
   if(entry.status === 'work'){
     if(entry.covering){
-      ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>A COBRIR<br><b>'+escapeHtml(entry.covering)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.covering, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.classList.add('swap-card-box'); document.getElementById('trade-search-row').classList.add('hidden'); document.getElementById('turno-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(tradeA.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.covering, partnerScheduleLabel(entry.covering, idx), 'turno-delete-swap-btn', idx);
       btn.disabled = true;
       searchControls.classList.add('hidden');
-      document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
+      freshDelBtn('turno-delete-swap-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
         showPasswordPrompt(async () => {
           e.target.disabled = true;
@@ -7387,10 +7479,10 @@ function updateTurnoContext(skipSliderReset){
       return;
     }
     if(entry.swappedWith){
-      ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end)+'</b><br>TROCA DE TURNO COM<br><b>'+escapeHtml(entry.swappedWith)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.swappedWith, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+      ctx.classList.add('swap-card-box'); document.getElementById('trade-search-row').classList.add('hidden'); document.getElementById('turno-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(tradeA.name, fmtHHMM(entry.start)+' - '+fmtHHMM(entry.end), entry.swappedWith, partnerScheduleLabel(entry.swappedWith, idx), 'turno-delete-swap-btn', idx);
       btn.disabled = true;
       searchControls.classList.add('hidden');
-      document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
+      freshDelBtn('turno-delete-swap-btn').addEventListener('click', async (e) => {
         e.stopPropagation();
         showPasswordPrompt(async () => {
           e.target.disabled = true;
@@ -7419,10 +7511,10 @@ function updateTurnoContext(skipSliderReset){
       updateSliderReadout();
     }
   } else if(entry.givenAwayTo){
-    ctx.innerHTML = '<b>'+tradeA.name+'</b> está agora <b style="color:var(--amber);">'+escapeHtml(entry.codes[0])+'</b><br>TROCOU COM<br><b>'+escapeHtml(entry.givenAwayTo)+'</b> está agora <b style="color:var(--amber);">'+partnerScheduleLabel(entry.givenAwayTo, idx)+'</b><span class="swap-block-warning">TROCA SOBRE TROCA NÃO É PERMITIDO</span>'+deleteBtnHtml;
+    ctx.classList.add('swap-card-box'); document.getElementById('trade-search-row').classList.add('hidden'); document.getElementById('turno-delete-row').classList.remove('hidden'); ctx.innerHTML = swapCardHtml(tradeA.name, escapeHtml(entry.codes[0]), entry.givenAwayTo, partnerScheduleLabel(entry.givenAwayTo, idx), 'turno-delete-swap-btn', idx);
     btn.disabled = true;
     searchControls.classList.add('hidden');
-    document.getElementById('turno-delete-swap-btn').addEventListener('click', async (e) => {
+    freshDelBtn('turno-delete-swap-btn').addEventListener('click', async (e) => {
       e.stopPropagation();
       showPasswordPrompt(async () => {
         e.target.disabled = true;
@@ -12879,7 +12971,8 @@ function mtNameHtml(nk){
   if(m) return '<span class="mt-name" style="min-width:0">' + mtEsc(m[1]) + '</span><span class="mt-pill">' + mtEsc(m[2] + 'º' + m[3].toUpperCase()) + '</span>' + fvPill;
   const pr = /^([A-Z0-9]{2,3}?)\s?(\d{1,4}[A-Z]?)_(\d{1,4}[A-Z]?)$/.exec(n.trim());   // arrival_departure of the same aircraft (acolhimento): one flight per line
   if(pr) return '<span class="mt-name mt-pair"><span>' + mtEsc(pr[1] + ' ' + pr[2]) + '</span><span>' + mtEsc(pr[1] + ' ' + pr[3]) + '</span></span>' + fvPill;
-  return '<span class="mt-name"' + (fvPill ? ' style="min-width:0"' : '') + '>' + mtEsc(n) + '</span>' + fvPill;   // with a badge: sit right next to the name, like the desk badge
+  if(fvPill) return '<span class="mt-ngrp"><span class="mt-name" style="min-width:0">' + mtEsc(n) + '</span>' + fvPill + '</span>';   // name + badges share the same width as a plain name, so the destination lines up
+  return '<span class="mt-name">' + mtEsc(n) + '</span>';   // with a badge: sit right next to the name, like the desk badge
 }
 function mtCornerHtml(f, colr){
   const t = mtTabInfo(f, colr);
