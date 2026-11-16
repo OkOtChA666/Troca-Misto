@@ -9451,6 +9451,36 @@ function normalizeFieldRecord(raw){
   if(typeof raw === 'string') return { value: raw, previous: null, ts: null };
   return raw;
 }
+// Popup to correct a registered time: big + / - buttons for hours and minutes (hold a button to keep changing)
+function openTimeEditor(title, current, onSave){
+  const m = /^(\d{1,2}):(\d{2})/.exec(current || ''); let hh = m ? parseInt(m[1], 10) : 0, mm = m ? parseInt(m[2], 10) : 0;
+  const ov = document.createElement('div'); ov.className = 'modal-overlay'; ov.style.zIndex = '100001';
+  const bs = 'width:100%; height:54px; border-radius:14px; border:1px solid #3a5a8c; background:#1b2c4a; color:#ffb020; font:700 30px var(--mono); line-height:1; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; touch-action:manipulation; user-select:none; -webkit-user-select:none;';
+  const col = (lab, id) => '<div style="flex:1; text-align:center;"><div style="font:600 10px var(--mono); letter-spacing:.16em; color:#7d89a3; margin-bottom:8px;">' + lab + '</div>' +
+    '<button type="button" data-k="' + id + '" data-d="1" style="' + bs + '">+</button><div id="te-' + id + '" style="font:700 46px var(--mono); color:#fff; padding:12px 0;"></div>' +
+    '<button type="button" data-k="' + id + '" data-d="-1" style="' + bs + '">&minus;</button></div>';
+  const bb = 'flex:0 0 calc(50% - 5px); width:calc(50% - 5px); min-width:0; height:48px; margin:0; padding:0 8px; display:flex; align-items:center; justify-content:center; text-align:center; font:700 13px var(--mono); letter-spacing:.08em; box-sizing:border-box; width:auto;';
+  ov.innerHTML = '<div class="modal-box" style="text-align:center; width:340px;"><div style="font:700 13px var(--mono); letter-spacing:.14em; color:var(--amber);">EDITAR HORA</div>' +
+    '<div style="font-size:13px; color:#8fa0c4; margin:4px 0 16px;">' + escapeHtml(title) + (m ? ' &middot; registado ' + escapeHtml(current) : '') + '</div>' +
+    '<div style="display:flex; align-items:center; gap:10px;">' + col('HORAS', 'h') + '<div style="font:700 40px var(--mono); color:#7d89a3; margin-top:26px;">:</div>' + col('MINUTOS', 'm') + '</div>' +
+    '<div style="display:flex; gap:10px; margin-top:20px;"><button type="button" class="flag-btn" id="te-cancel" style="' + bb + '">CANCELAR</button><button type="button" class="confirm-btn" id="te-save" style="' + bb + '">GUARDAR</button></div></div>';
+  document.body.appendChild(ov);
+  const pad = n => String(n).padStart(2, '0');
+  const paint = () => { ov.querySelector('#te-h').textContent = pad(hh); ov.querySelector('#te-m').textContent = pad(mm); };
+  const step = (k, d) => { if(k === 'h'){ hh = (hh + d + 24) % 24; } else { mm += d; if(mm > 59){ mm = 0; hh = (hh + 1) % 24; } else if(mm < 0){ mm = 59; hh = (hh + 23) % 24; } } paint(); };
+  paint();
+  let timer = null, rep = null;
+  const stop = () => { clearTimeout(timer); clearInterval(rep); timer = rep = null; };
+  ov.querySelectorAll('button[data-k]').forEach(b => {
+    const k = b.dataset.k, d = parseInt(b.dataset.d, 10);
+    b.addEventListener('pointerdown', e => { e.preventDefault(); stop(); step(k, d); timer = setTimeout(() => { rep = setInterval(() => step(k, d), 90); }, 380); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+  });
+  const close = () => { stop(); ov.remove(); };
+  ov.querySelector('#te-cancel').addEventListener('click', close);
+  ov.addEventListener('click', e => { if(e.target === ov) close(); });
+  ov.querySelector('#te-save').addEventListener('click', () => { const v = pad(hh) + ':' + pad(mm); close(); onSave(v); });
+}
 function buildTurnaroundField(f, compact){
   const rec = TURNAROUNDS[currentFlight] || {};
   const fieldRec = normalizeFieldRecord(rec[f.key]);
@@ -9492,6 +9522,23 @@ function buildTurnaroundField(f, compact){
       renderTurnaroundFields();
     });
     right.appendChild(regBtn);
+    if(val){   // a time is already registered: a pencil lets you type the correct one (arrived late, wrong tap...)
+      const edBtn = document.createElement('button');
+      edBtn.type = 'button'; edBtn.className = 'confirm-btn'; edBtn.title = 'Editar hora'; edBtn.setAttribute('aria-label', 'Editar hora');
+      edBtn.style.cssText = 'padding:8px 10px; min-width:34px; display:inline-flex; align-items:center; justify-content:center;';
+      edBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/></svg>';
+      edBtn.addEventListener('click', () => {
+        openTimeEditor(f.label, val, async nv => {
+          const cur = normalizeFieldRecord(TURNAROUNDS[currentFlight] && TURNAROUNDS[currentFlight][f.key]);
+          if(!cur || stripSeconds(cur.value) === nv) return;
+          const _val = { value: nv, previous: cur.value, ts: cur.ts || Date.now(), edited: true };   // same registration moment: editing never extends the lock
+          TURNAROUNDS[currentFlight][f.key] = _val;
+          await saveTurnaroundField(currentFlight, f.key, _val, null);
+          renderTurnaroundFields();
+        });
+      });
+      right.appendChild(edBtn);
+    }
   }
   return wrap;
 }
@@ -9583,7 +9630,9 @@ function shareFlightReport(flight){
   });
   const today = new Date();
   const dateStr = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
-  const text = 'TROCA-MISTO — Turnaround '+flight+' ('+dateStr+')\n\n'+lines.join('\n');
+  const _sp = k => String(k).slice(0,2)+' '+String(k).slice(2);
+  const _name = (rec._arr && rec._dep) ? _sp(rec._arr)+' → '+_sp(rec._dep) : _sp(flight);
+  const text = 'TURNAROUND '+_name+' ('+dateStr+')\n\n'+lines.join('\n');
   function fallbackCopy(){
     if(navigator.clipboard){
       navigator.clipboard.writeText(text).then(() => {
@@ -9597,7 +9646,7 @@ function shareFlightReport(flight){
   }
   if(navigator.share){
     try{
-      navigator.share({ title: 'Turnaround '+flight, text: text }).catch((err) => {
+      navigator.share({ title: 'Turnaround '+_name, text: text }).catch((err) => {
         if(err && err.name === 'AbortError') return; // user backed out of the share sheet themselves — not a failure
         fallbackCopy();
       });
@@ -9628,20 +9677,19 @@ function buildFlightRow(flight, i){
   const statusText = (isComplete
     ? '<span style="color:var(--go);">Finalizado</span>'
     : filled+' / '+total+' campos registados') + createdTimeHtml + createdByHtml;
-  const reportBtnHtml = isComplete
+  const reportBtnHtml = false   // the print icon was removed
     ? '<button type="button" class="turnaround-view-btn" data-action="report" title="Relatório do voo (temporariamente desativado)" style="opacity:0.45;">'+
       '<svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 9V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v5M4 17h16M6 9h12a2 2 0 0 1 2 2v4a1 1 0 0 1-1 1h-2M6 9a2 2 0 0 0-2 2v4a1 1 0 0 0 1 1h2M7 14h10v6H7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="2" y1="22" x2="22" y2="2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'+
       '</button>'
     : '';
   const shareBtnHtml = isComplete
-    ? '<button type="button" class="turnaround-view-btn" data-action="share" title="Partilhar voo (temporariamente desativado)" style="opacity:0.45;">'+
+    ? '<button type="button" class="turnaround-view-btn" data-action="share" title="Partilhar voo">'+
       '<svg viewBox="0 0 24 24" width="16" height="16">'+
       '<circle cx="6" cy="12" r="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/>'+
       '<circle cx="18" cy="6" r="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/>'+
       '<circle cx="18" cy="18" r="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/>'+
       '<line x1="8.1" y1="10.7" x2="15.9" y2="7.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'+
       '<line x1="8.1" y1="13.3" x2="15.9" y2="16.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'+
-      '<line x1="2" y1="22" x2="22" y2="2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'+
       '</svg>'+
       '</button>'
     : '';
@@ -9655,11 +9703,12 @@ function buildFlightRow(flight, i){
   if(isComplete){
     // Both temporarily disabled — kept visible (crossed-out) rather than removed, so the
     // buttons are ready to switch back on later without rebuilding this part of the UI.
-    row.querySelector('[data-action="report"]').addEventListener('click', (e) => {
+    const _rp = row.querySelector('[data-action="report"]'); if(_rp) _rp.addEventListener('click', (e) => {
       e.stopPropagation();
     });
     row.querySelector('[data-action="share"]').addEventListener('click', (e) => {
       e.stopPropagation();
+      shareFlightReport(flight);   // opens the phone's share sheet: WhatsApp, e-mail, whatever the person picks
     });
   }
   row.addEventListener('click', () => selectFlight(flight));
