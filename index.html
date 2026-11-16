@@ -879,6 +879,9 @@
   .old-time-strike{ color: var(--text-dim); text-decoration: line-through; }
 
   /* ---- hour filter chips ---- */
+  .dcs-lbl{ display:flex; align-items:center; justify-content:center; gap:14px; }
+  .dcs-lbl::before, .dcs-lbl::after{ content:""; flex:1; height:1px; background:var(--border); }
+  html.theme-pro .dcs-lbl{ display:none; }
   .hour-filter-row{ display:flex; gap:32px; justify-content:center; }
   .request-type-chip{
     flex:1; text-align:center; cursor:pointer; user-select:none;
@@ -1998,6 +2001,7 @@
         </div>
       </div>
       <div class="field" style="margin-top:20px; display:flex; gap:24px; flex-wrap:wrap; justify-content:center;">
+        <label class="dcs-lbl" style="flex:0 0 100%; margin-bottom:-10px;">Departure Control System</label>
         <label class="checkbox-label" style="flex:0 0 auto;">
           <span class="sys-badge">AT</span>
           <span class="mono-label">Altea</span>
