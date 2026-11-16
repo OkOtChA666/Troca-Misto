@@ -5591,6 +5591,7 @@ async function loginPasswordOk(g, staffId, pw){
   window._banHit = false;
   if(String(staffId) !== ADMIN_STAFF_ID){
     try{ const bn = await dbGetShared('banned', null); if(bn && bn[String(staffId)]){ window._banHit = true; return false; } }catch(e){}
+    try{ const od = await dbGetShared('dismissed', null, g); if(od && od[String(staffId)]){ window._banHit = true; return false; } }catch(e){}   // marked OUT (left the company): cannot log in either
   }
   const cfg = await pwGetCfg();
   const h = cfg && cfg['h_' + staffId];
@@ -6536,7 +6537,7 @@ async function migrateOldLocks(){
 }
 Promise.all(DCS_SYSTEMS.map(sys => loadDcsSystem(sys))).then(() => {
   updateAgentCount(); syncLockedAgents(false); migrateOldLocks();
-  try{ const me = localStorage.getItem('trocaMistoLoginStaffId'); if(me && isBannedAgent(me)){ localStorage.removeItem('trocaMistoLoginStaffId'); localStorage.removeItem('trocaMistoLoginIsAdmin'); location.reload(); } }catch(e){}   // locked out while logged in: out at the next open
+  try{ const me = localStorage.getItem('trocaMistoLoginStaffId'); if(me && (isBannedAgent(me) || (String(me) !== ADMIN_STAFF_ID && isDismissed(me)))){ localStorage.removeItem('trocaMistoLoginStaffId'); localStorage.removeItem('trocaMistoLoginIsAdmin'); location.reload(); } }catch(e){}   // locked out while logged in: out at the next open
 }, updateAgentCount);
 
 // ---------- availability tags (AM/PM/WK) — unlike Altea/iPort, these actively flag
