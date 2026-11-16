@@ -675,6 +675,11 @@
   .tool-name{ font-family:var(--mono); font-weight:700; font-size:14px; letter-spacing:0.1em; color:var(--text); }
   .tool-desc{ font-family:var(--sans); font-size:12px; color:var(--text-dim); margin-top:3px; }
   .tool-arrow{ margin-left:auto; color:#4a5570; }
+  .tool-card.here{ position:relative; }
+  .tool-card.here::after{ content:''; position:absolute; right:18px; top:50%; width:10px; height:10px; margin-top:-5px; border-radius:50%; background:var(--cyan); box-shadow:0 0 8px rgba(95,224,255,.7); }
+  .tool-card.here .tool-arrow{ display:none; }
+  .tool-card.dept-off{ opacity:.5; }
+  .tool-card.dept-off .tool-ic{ color:#5f6a82; background:rgba(95,106,130,.08); border-color:rgba(95,106,130,.3); }
   .tool-arrow svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .fl-meta{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; color:#5f6a82; margin:10px 2px; }
   .fl-cnt{ display:inline-block; margin-left:6px; font-size:10.5px; padding:2px 6px; border-radius:9px; background:rgba(255,179,0,.14); color:var(--amber); }
@@ -10328,7 +10333,8 @@ function soDeptSetup(){
   if(aj && holder && aj.parentElement !== holder) holder.appendChild(aj);
   [['ttae',''],['sup','sup'],['disp','disp']].forEach(([k, g]) => {
     const c = document.getElementById('so-dept-' + k); if(!c) return;
-    const d = c.querySelector('.tool-desc'); if(d) d.textContent = (k === 'ttae' ? 'Check-In' : k === 'sup' ? 'Back-office' : 'Dispatchers') + (g === GROUP ? ' · estás aqui' : '');
+    const d = c.querySelector('.tool-desc'); if(d) d.textContent = (k === 'ttae' ? 'Check-In' : k === 'sup' ? 'Back-office' : 'Dispatchers') + '';
+    c.classList.toggle('here', g === GROUP); c.classList.toggle('dept-off', g !== GROUP);
   });
 }
 function soEnterDept(g){
