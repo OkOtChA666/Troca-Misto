@@ -637,6 +637,12 @@
   .swap-card-name{ font-size:14px; font-weight:600; color:var(--text); line-height:1.3; }
   .swap-card-now{ font-size:12px; color:var(--text-dim); }
   .swap-card-hours{ margin-top:4px; font-size:16px; font-weight:600; color:var(--amber); white-space:nowrap; }
+  .gh-pill{ display:inline-flex; align-items:center; gap:6px; background:#0f1729; border-radius:999px; padding:3px 10px; font:500 10px var(--sans); color:#9aa6c2; }
+  .gh-pill .gh-dot{ width:6px; height:6px; border-radius:50%; background:#2ecc71; display:inline-block; }
+  .gh-pill.warn{ background:#241d0a; color:#e0b44a; }
+  .gh-pill.warn .gh-dot{ background:#f0b429; }
+  .gh-pill.down{ background:#2a1219; color:#fda4af; }
+  .gh-pill.down .gh-dot{ background:#ef4444; }
   .swap-vf{ position:relative; display:inline-flex; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .swap-vf-tip{ display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:8px; z-index:5; background:#10203a; border:1px solid #2f6fb0; border-radius:999px; padding:6px 14px; white-space:nowrap; font-size:11px; font-weight:500; color:#cfe3fb; }
   .swap-vf-tip.show{ display:block; }
@@ -1851,6 +1857,7 @@
     </div>
     <p class="eyebrow">TTAE GRUPO · FAO · PAX</p>
     <h1>TROCA-MISTO™</h1>
+    <div style="display:flex; justify-content:flex-end; margin:0 0 6px;"><span id="gh-status" class="gh-pill" style="display:none;"><span class="gh-dot"></span><span id="gh-status-txt"></span></span></div>
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
@@ -7028,6 +7035,20 @@ document.addEventListener('click', function(e){
   document.querySelectorAll('.swap-vf-tip.show').forEach(t => { if(!vf || !vf.contains(t)) t.classList.remove('show'); });
   if(vf){ const t = vf.querySelector('.swap-vf-tip'); if(t){ const on = t.classList.toggle('show'); clearTimeout(window._vfTimer); if(on) window._vfTimer = setTimeout(() => t.classList.remove('show'), 3000); } }
 });
+// tiny GitHub status indicator (the app is hosted on GitHub Pages): checks on open and every 5 min; hides itself if the check fails
+async function ghStatusCheck(){
+  const el = document.getElementById('gh-status'), tx = document.getElementById('gh-status-txt');
+  if(!el || !tx) return;
+  try{
+    const r = await fetch('https://www.githubstatus.com/api/v2/status.json', { cache:'no-store' });
+    const j = await r.json();
+    const ind = j && j.status && j.status.indicator;
+    el.className = 'gh-pill' + (ind === 'none' ? '' : (ind === 'minor' ? ' warn' : ' down'));
+    tx.textContent = ind === 'none' ? 'GitHub Operational' : (ind === 'minor' ? 'GitHub com problemas' : 'GitHub em baixo');
+    el.style.display = (ind === 'none' || ind === 'minor' || ind === 'major' || ind === 'critical') ? 'inline-flex' : 'none';
+  }catch(e){ el.style.display = 'none'; }
+}
+window.addEventListener('load', function(){ ghStatusCheck(); setInterval(function(){ if(!document.hidden) ghStatusCheck(); }, 300000); });
 function freshDelBtn(id){ const o = document.getElementById(id); const n = o.cloneNode(true); n.disabled = false; o.parentNode.replaceChild(n, o); return n; }
 function swapCardHtml(nameA, hoursA, nameB, hoursB, btnId, idx){
   const wB = DATA.workers.find(w => w.name === nameB);
