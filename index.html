@@ -5726,11 +5726,12 @@ function toggleUserMenu(){
         for(let i = ti + 1; i < N; i++){ const e2 = getEffectiveEntry(me, i); if(e2 && e2.status === 'off'){ offTxt = WD[realDateForIdx(i).getDay()] + ' ' + String(DATA.days[i]).padStart(2, '0'); break; } }
         // 15 min after clocking out (or after the shift end when planete shows no clock-in), the card shows TOMORROW
         try{
-          if(en && (en.status === 'work' || en.status === 'partial') && ti + 1 < N){
+          if(en && ti + 1 < N){
             const nw = new Date(), nowMin = nw.getHours() * 60 + nw.getMinutes();
             const pp0 = (MT_DOC && MT_DOC.date === sfToday()) ? mtMyPunch(mtStaffId()) : null;
             let done = false;
-            if(pp0 && pp0[1]){ const o = mtToMin(pp0[1]); done = (o != null && nowMin >= o + 15); }
+            if(!(en.status === 'work' || en.status === 'partial')){ done = nowMin >= 21 * 60; }   // day off: from 21:00 the card shows tomorrow
+            else if(pp0 && pp0[1]){ const o = mtToMin(pp0[1]); done = (o != null && nowMin >= o + 15); }
             else if(!(pp0 && pp0[0])){ const sh0 = mtShiftBounds(me); done = !!(sh0 && sh0.work && nowMin >= sh0.e0 + 15); }
             if(done){
               const et = getEffectiveEntry(me, ti + 1);
@@ -9155,7 +9156,7 @@ function mtKindFor(c){
     const nm = String(c.name || '').replace(/^<\s*/, '').trim();
     for(const t of tasks){
       const lab = String(t[0] || '').replace(/^<\s*/, '').trim();
-      if(lab === nm && (t[1] + '–' + t[2]) === c.nw){ const colr = mtColor(t[3]); const k = colr ? MT_KINDS[colr] : null; if(k) return { label:k[0], bg:colr, fg:k[1] }; }
+      if(lab === nm && (t[1] + '–' + t[2]) === c.nw){ const colr = mtColor(t[3]); const k = colr ? MT_KINDS[colr] : null; if(k) return { label:(GROUP === 'disp' && colr === '#0066cc') ? 'DISPATCHER' : k[0], bg:(GROUP === 'disp' && colr === '#0066cc') ? '#249200' : colr, fg:k[1] }; }
     }
   }catch(e){}
   return null;
@@ -13412,7 +13413,8 @@ function mtTasksBodyHtml(staffId, me, now, sameDay){
       }
       const colr = mtColor(t[3]);
       const kind = MT_KINDS[colr] || null;
-      const kindHtml = kind ? '<span class="mt-kind" style="background:' + colr + ';color:' + kind[1] + '">' + kind[0] + '</span>' : '<span class="mt-kind mt-kind-empty"></span>';
+      const vcol = (GROUP === 'disp' && colr === '#0066cc') ? '#249200' : colr;   // dispatchers' flights are green, like on the platform
+      const kindHtml = kind ? '<span class="mt-kind" style="background:' + vcol + ';color:' + kind[1] + '">' + (vcol !== colr ? 'DISPATCHER' : kind[0]) + '</span>' : '<span class="mt-kind mt-kind-empty"></span>';
       const nk = label.replace(/^<\s*/, '').trim();
       const bdg = badges[nk] ? '<span class="mt-chip chg">' + badges[nk] + '</span>' : '';
       const tabHtml = mtCornerHtml(mtFlightInfo(mtKey(t)), colr);
@@ -13423,7 +13425,7 @@ function mtTasksBodyHtml(staffId, me, now, sameDay){
                 '<div class="mt-break-word">BREAK</div>' + chip + '<div class="mt-side">' + bdg + '</div></div>');
         return;
       }
-      (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + colr + ';--c:' + colr + '"' : '') + '>' +
+      (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + vcol + ';--c:' + vcol + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
               '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + '</div>' +
               chip + '<div class="mt-side">' + bdg + '</div>' + tabHtml + teamHtml + '</div>');
