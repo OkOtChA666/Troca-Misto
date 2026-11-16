@@ -12871,7 +12871,7 @@ function mtTaFor(t){
     let best = null; const today = sfToday();
     Object.keys(MT_TA).forEach(k => { const v = MT_TA[k]; if(!v || typeof v !== 'object' || v._day !== today) return; if(keys[sfKey(k)] || keys[sfKey(v._arr)] || keys[sfKey(v._dep)]) best = v; });
     if(!best) return null;
-    return TURNAROUND_ROWS.flat().some(f => { const r = normalizeFieldRecord(best[f.key]); return r && r.value; }) ? best : null;
+    return best;   // the turnaround exists (created): the clock shows, even before the first time is registered
   }catch(e){ return null; }
 }
 function mtTaPopup(rec, title){
