@@ -12925,6 +12925,7 @@ function mtKeyRaw(t){
 function mtDestHtml(f, colr){
   if(!f || typeof f !== 'object') return '';
   const code = colr === '#dbffaa' ? (f.o || f.d) : f.d;       // arrivals: where it came from; others: where it goes
+  if(GROUP === 'disp' && colr === '#0066cc' && f.o && f.d && String(f.o) !== String(f.d)) return '<span class="mt-dest" style="display:inline-flex;flex-direction:column;gap:2px;line-height:1.25;align-self:center"><span>' + mtEsc(String(f.o).slice(0, 4)) + '</span><span>' + mtEsc(String(f.d).slice(0, 4)) + '</span></span>';   // a dispatcher's aircraft: origin on the arrival line, destination on the departure line
   return code ? '<span class="mt-dest">' + mtEsc(String(code).slice(0, 4)) + '</span>' : '';
 }
 // Check-in desks like "27,28-29" read better as "27-29" when they are one continuous run; anything with a gap stays as it is.
