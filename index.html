@@ -1935,10 +1935,10 @@
     </div>
     <div id="logged-in-tab-row" style="display:flex; align-items:center; justify-content:space-between; gap:16px; border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px; padding:10px 16px; font-size:11px; font-family:var(--mono); width:100%; box-sizing:border-box; margin:-1px auto 0; background:#080D18; position:relative; z-index:1; box-shadow: inset 0 3px 6px rgba(0,0,0,0.4);">
       <span id="user-menu-btn" role="button" tabindex="0" style="display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); flex:0 1 auto; min-width:0; cursor:pointer; font-size:14px;">
-        <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; flex:none;">
+        <span style="position:relative; display:inline-flex; flex:none;"><svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; flex:none;">
           <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
           <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
+        </svg><i id="user-punch-dot" title="Entrada registada" style="display:none; position:absolute; top:-1px; right:-2px; width:5px; height:5px; border-radius:50%; background:#2ecc71; box-shadow:0 0 4px #2ecc71;"></i></span>
         <span id="logged-in-clip" style="display:block; flex:0 1 auto; min-width:0; max-width:250px; overflow:hidden; white-space:nowrap;"><span id="logged-in-as-display" style="display:inline-block; white-space:nowrap;"></span></span>
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M6 9l6 6 6-6"/></svg>
       </span>
@@ -12627,7 +12627,7 @@ function mtMarkSeen(){
   try{ localStorage.setItem(mtSeenKey(), String(Math.max.apply(null, l.map(x => x[0])))); } catch(e){}
   mtUpdateBadge();
 }
-function mtUpdateBadge(){ renderNotificationsBadge(); }   // the bell carries the number now (the red badges on ÁREA PESSOAL / AS MINHAS TAREFAS are gone)
+function mtUpdateBadge(){ renderNotificationsBadge(); try{ const d = document.getElementById('user-punch-dot'); if(d) d.style.display = mtIsLive(mtStaffId()) ? 'block' : 'none'; }catch(e){} }   // the bell carries the number now (the red badges on ÁREA PESSOAL / AS MINHAS TAREFAS are gone)
 // "Open" now means: the AS MINHAS TAREFAS tab inside ÁREA PESSOAL is the visible one.
 function mtOpenOverlay(){
   const p = document.getElementById('panel-my-swaps'), t = document.getElementById('area-tab-tasks');
