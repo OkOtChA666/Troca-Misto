@@ -11859,9 +11859,11 @@ function parseSchedulePages(pages){
       N = hdr.length; firstWeekday = hdr[0].s;
       const hy = hdr[0].y;
       const dn = items.filter(i => /^\d{1,2}$/.test(i.s) && Math.abs(i.y - hy) < 3 && i.x > hdr[0].x && i.x < hdr[0].x + 30)[0];
-      firstDay = dn ? parseInt(dn.s, 10) : 1;
+      const dn2 = dn || items.filter(i => /^\d{1,2}$/.test(i.s) && i.y < hy - 3 && i.y > hy - 24 && Math.abs((i.x + i.w / 2) - (hdr[0].x + hdr[0].w / 2)) < 14)[0];   // header with the day number on its own line under the weekday
+      firstDay = dn2 ? parseInt(dn2.s, 10) : 1;
       const mm = items.filter(i => SCHED_MONTHS_EN.includes(i.s) && i.y < hy && i.y > hy - 14)[0];
-      const mm2 = mm || items.filter(i => SCHED_MONTHS_EN.includes(i.s) && Math.abs(i.y - hy) < 3 && i.x > hdr[0].x)[0];   // single-line header: the month sits on the weekday line
+      const mm1 = mm || items.filter(i => SCHED_MONTHS_EN.includes(i.s) && i.y < hy - 14 && i.y > hy - 44 && Math.abs((i.x + i.w / 2) - (hdr[0].x + hdr[0].w / 2)) < 20)[0];
+      const mm2 = mm1 || items.filter(i => SCHED_MONTHS_EN.includes(i.s) && Math.abs(i.y - hy) < 3 && i.x > hdr[0].x)[0];   // single-line header: the month sits on the weekday line
       if(mm2) monthIdx = SCHED_MONTHS_EN.indexOf(mm2.s);
     } else if(hdr.length !== N){
       problems.push('Página ' + (pi+1) + ': ' + hdr.length + ' dias no cabeçalho em vez de ' + N + '.');
@@ -12170,6 +12172,7 @@ function renderScheduleUpload(msg){
     }));
     return;
   }
+  if(SU.merge){ renderScheduleMerge(msg); return; }
   const P = SU.parsed;
   const cur = new Set(DATA.workers.map(w => w.id));
   const nxt = new Set(P.workers.map(w => w.id));
@@ -12212,6 +12215,44 @@ function renderScheduleUpload(msg){
   renderScheduleCells();
   refreshScheduleChecks();
 }
+// PDF with only some days (e.g. one agent whose stay was extended): only those agents and those days are changed, everyone else is left untouched
+function suMergeChanges(){
+  const P = SU.parsed, out = [], unknown = [];
+  P.workers.forEach(w => {
+    const dw = DATA.workers.find(x => x.id === w.id);
+    if(!dw){ unknown.push(w); return; }
+    P.days.forEach((d, di) => {
+      const idx = DATA.days.indexOf(d);
+      if(idx < 0) return;
+      const nv = String(w.s[di] || '').trim(), ov = String((dw.s || [])[idx] || '').trim();
+      if(nv !== ov) out.push({ w, dw, d, di, idx, ov, nv });
+    });
+  });
+  return { changes: out, unknown };
+}
+function renderScheduleMerge(msg){
+  const P = SU.parsed, body = document.getElementById('schedule-upload-body');
+  const d0 = P.days[0], d1 = P.days[P.days.length - 1];
+  let html = '<div class="su-sub"><b>Atualização parcial</b> · dias <b>' + d0 + '–' + d1 + '</b> de ' + suEsc(DATA.month) + ' · só estes agentes mudam: <b>' + P.workers.map(w => suEsc(w.name)).join(', ') + '</b>. Todos os outros ficam como estão.</div>';
+  html += '<div id="su-checks"></div><div id="su-mg"></div>';
+  html += '<div class="su-h">Células para rever <span id="su-count"></span></div><div id="su-cells"></div>';
+  html += '<div class="su-actions"><button type="button" class="flag-btn" id="su-back">Escolher outro PDF</button><button type="button" class="confirm-btn" id="su-save">Gravar alterações</button></div>';
+  html += '<div id="su-status" class="su-status">' + (msg ? suEsc(msg) : '') + '</div>';
+  body.innerHTML = html;
+  document.getElementById('su-back').addEventListener('click', () => { SU = null; renderScheduleUpload(); });
+  document.getElementById('su-save').addEventListener('click', onScheduleSaveClick);
+  renderScheduleCells();
+  refreshScheduleChecks();
+}
+function renderMergeList(){
+  const box = document.getElementById('su-mg'); if(!box) return;
+  const m = suMergeChanges();
+  let h = '<div class="su-h">O que vai mudar (' + m.changes.length + ')</div>';
+  if(!m.changes.length) h += '<div class="su-ok">Nada muda — o horário já está igual.</div>';
+  else h += '<div class="su-look">' + m.changes.map(c => '<div><span>' + suEsc(c.dw.name.split(' ')[0]) + ' · ' + c.d + ' ' + suEsc(SU.weekdayLabels[c.di]) + '</span> ' + suEsc(c.ov || '—') + ' → <b>' + suEsc(c.nv) + '</b></div>').join('') + '</div>';
+  if(m.unknown.length) h += '<div class="su-warn">⚠ Não estão no horário atual e ficam de fora: ' + m.unknown.map(w => suEsc(w.id + ' ' + w.name)).join(', ') + '</div>';
+  box.innerHTML = h;
+}
 function suEntryValid(e){ return SU_ENTRY_RE.test(String(e || '').trim()); }
 function renderScheduleCells(){
   const P = SU.parsed, box = document.getElementById('su-cells');
@@ -12244,6 +12285,17 @@ function suInvalidEntries(){
 function refreshScheduleChecks(){
   if(!SU) return;
   const P = SU.parsed, out = [];
+  if(SU.merge){
+    const bad = suInvalidEntries(), mg = suMergeChanges();
+    out.push(bad.length ? ['bad', bad.length + ' célula(s) por corrigir (a vermelho abaixo).'] : ['ok', 'Todas as células estão válidas.']);
+    SU.canSave = !bad.length && mg.changes.length > 0;
+    document.getElementById('su-checks').innerHTML = out.map(([k, t]) => '<div class="su-chk ' + k + '">' + (k === 'ok' ? '✓ ' : '✗ ') + suEsc(t) + '</div>').join('');
+    const nErr = P.cells.filter(c => c.level === 'error').length;
+    document.getElementById('su-count').textContent = '— ' + nErr + ' por corrigir, ' + (P.cells.length - nErr) + ' com suposição';
+    document.getElementById('su-save').disabled = !SU.canSave;
+    renderMergeList();
+    return;
+  }
   const m = /^(\d{4})-(\d{2})$/.exec(SU.month || '');
   let monthOk = !!m;
   if(!m) out.push(['bad', 'Escolhe o mês.']);
@@ -12289,7 +12341,9 @@ async function onScheduleFileChosen(ev){
     const month = y + '-' + String(mo).padStart(2, '0');
     const PT_WD = { Sun: 'Dom', Mon: 'Seg', Tue: 'Ter', Wed: 'Qua', Thu: 'Qui', Fri: 'Sex', Sat: 'Sáb' };
     const weekdayLabels = parsed.days.map((d, i) => PT_WD[SCHED_WEEKDAYS[new Date(y, mo - 1, d).getDay()]]);
-    SU = { parsed, month, version: y + '.' + String(mo).padStart(2, '0') + '.01', weekdayLabels };
+    const dimU = new Date(y, mo, 0).getDate();
+    const merge = (parsed.days.length < dimU || parsed.days[0] !== 1) && month === DATA.month;   // a PDF for only some days of the running month: update just the agents in it
+    SU = { parsed, month, version: y + '.' + String(mo).padStart(2, '0') + '.01', weekdayLabels, merge };
     renderScheduleUpload();
   } catch(err){
     st.textContent = 'Erro a ler o PDF: ' + (err && err.message ? err.message : err);
@@ -12298,6 +12352,11 @@ async function onScheduleFileChosen(ev){
 function onScheduleSaveClick(){
   if(!SU || !SU.canSave) return;
   const P = SU.parsed;
+  if(SU.merge){
+    const mg = suMergeChanges();
+    showConfirmDialog('Atualizar <b>' + mg.changes.length + '</b> dia(s) de <b>' + suEsc(P.workers.filter(w => DATA.workers.some(x => x.id === w.id)).map(w => w.name).join(', ')) + '</b>?<br><br>Mais ninguém é alterado. Trocas e pedidos ficam como estão.', () => saveMergedSchedule(), false, 'Gravar');
+    return;
+  }
   const clear = document.getElementById('su-clear').checked;
   showConfirmDialog(
     'Gravar o horário de <b>' + suEsc(SU.month) + '</b> com <b>' + P.workers.length + '</b> agentes?<br><br>' +
@@ -12306,6 +12365,22 @@ function onScheduleSaveClick(){
     (clear ? '<br><br><b>Vou apagar</b> as trocas, os pedidos e as alterações de horário do mês anterior.' : '<br><br>As trocas e pedidos atuais ficam como estão.'),
     () => saveUploadedSchedule(clear), false, 'Gravar'
   );
+}
+async function saveMergedSchedule(){
+  const st = document.getElementById('su-status');
+  const mg = suMergeChanges();
+  st.textContent = 'A guardar ponto de restauro…';
+  const rp = await suMakeRestorePoint();
+  if(!rp.ok){ st.textContent = rp.why + ' Nada foi alterado.'; return; }
+  const sched = JSON.parse(JSON.stringify(DATA));
+  mg.changes.forEach(c => { const w = sched.workers.find(x => x.id === c.dw.id); if(w){ w.s = (w.s || []).slice(); w.s[c.idx] = c.nv; } });
+  sched.uploadedAt = Date.now(); sched.uploadedBy = ADMIN_STAFF_ID;
+  st.textContent = 'A gravar…';
+  const ok = await dbSetShared('schedule', sched);
+  if(!ok){ st.textContent = 'Não consegui gravar (sem ligação ou sem permissão). Nada foi alterado.'; return; }
+  try{ localStorage.setItem(SCHEDULE_CACHE_KEY, JSON.stringify(sched)); sessionStorage.setItem('schedReloaded', String(sched.uploadedAt)); } catch(e){}
+  st.textContent = 'Horário gravado ✓ A recarregar…';
+  setTimeout(() => location.reload(), 900);
 }
 async function saveUploadedSchedule(clear){
   const st = document.getElementById('su-status');
