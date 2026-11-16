@@ -1,0 +1,35 @@
+name: Planete sync DISPATCHERS
+on:
+  schedule:
+    # separate from the check-in sync (planete-sync.yml), which is not touched. Odd minutes, 4 times an hour.
+    - cron: '14,29,44,59 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: planete-sync-disp
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - run: echo "START=$(date +%s)" >> $GITHUB_ENV
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install playwright@1.48.0
+      - run: npx playwright install --with-deps chromium
+      - run: node tools/planete-sync-disp.mjs
+        env:
+          PLANETE_DISP_USER: ${{ secrets.PLANETE_DISP_USER }}
+          PLANETE_DISP_PASS: ${{ secrets.PLANETE_DISP_PASS }}
+          LOOP_MINUTES: '50'
+      - name: Start the next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ $(( $(date +%s) - START )) -gt 600 ]; then gh workflow run planete-sync-disp.yml --ref main; fi
