@@ -12411,7 +12411,7 @@ function maybeShowSwapTip(boxId){
 // Shows the logged-in agent's own tasks for today, read from the copy that the scheduled job
 // (tools/planete-sync.mjs on GitHub) saves in the database every few minutes.
 let MT_UNSUB = null, MT_LISTENING = false, MT_TICK = null, MT_DOC = null, MT_ERR = false;
-let DISP_DOC = null, DISP_UNSUB = null;   // TTAE: the dispatchers' copy of the day (see mtDispFor)
+let DISP_DOC = null, DISP_UNSUB = null, TT_DOC = null;   // TTAE: the dispatchers' copy of the day (see mtDispFor)
 function mtEsc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function mtToMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
 function mtPad(n){ return String(n).padStart(2, '0'); }
@@ -12468,7 +12468,7 @@ function mtListen(){
       if(GROUP === 'disp'){
         // DISPATCHER: the tasks come from their own copy (disptasks); the flight details (gate, stand, destination) from the shared day copy (tasks)
         let dd = null, fl = null; const merge = () => { if(dd === null) return; MT_DOC = dd ? Object.assign({}, dd, { flights: fl || '' }) : false; MT_ERR = false; mtUpdateBadge(); try{ qwRender(); }catch(e){} if(mtOpenOverlay()) renderMyTasks(); };
-        _u2 = db.collection('data').doc('tasks').onSnapshot(snap => { fl = snap.exists ? (snap.data().flights || '') : ''; merge(); }, () => {});
+        _u2 = db.collection('data').doc('tasks').onSnapshot(snap => { fl = snap.exists ? (snap.data().flights || '') : ''; TT_DOC = snap.exists ? snap.data() : null; MT_TEAM_FOR = null; merge(); }, () => {});
         const _u1 = db.collection('data').doc('disptasks').onSnapshot(snap => { dd = snap.exists ? snap.data() : false; merge(); }, () => { MT_ERR = true; if(mtOpenOverlay()) renderMyTasks(); });
         MT_UNSUB = () => { try{ _u1(); }catch(e){} try{ _u2(); }catch(e){} };
         MT_LISTENING = false; return;
@@ -12972,6 +12972,26 @@ function mtDispFor(t, colr){
     return Object.keys(o).map(k => o[k]);
   }catch(e){ return []; }
 }
+// DISPATCHER side: the check-in agents (PARTIDA = at the gate, ACOLHIMENTO) working the same aircraft, from the check-in copy of the day (data/tasks)
+function mtTtaeFor(t, colr){
+  const none = { dep: [], arr: [] };
+  try{
+    if(GROUP !== 'disp' || (colr !== '#0066cc' && colr !== '#dbffaa') || !TT_DOC || !TT_DOC.a || !MT_DOC || TT_DOC.date !== MT_DOC.date) return none;
+    const want = mtKeyId(mtKey(t)); if(!want) return none;
+    const dep = {}, arr = {};
+    Object.keys(TT_DOC.a).forEach(id => {
+      let rec = null; try{ rec = JSON.parse(TT_DOC.a[id]); }catch(e){}
+      if(!rec || !rec.t) return;
+      rec.t.forEach(x => {
+        if(!x[5] || mtKeyId(x[5]) !== want) return;
+        const c = mtColor(x[3]);
+        const row = [id, (typeof NAME_FIXES !== 'undefined' && NAME_FIXES[id]) || rec.n || id, mtToMin(x[1]), mtToMin(x[2]), x[0] || ''];
+        if(c === '#0066cc') dep[id] = row; else if(c === '#dbffaa') arr[id] = row;
+      });
+    });
+    return { dep: Object.keys(dep).map(k => dep[k]), arr: Object.keys(arr).map(k => arr[k]) };
+  }catch(e){ return none; }
+}
 function mtTeamHtml(t, colr, rowKey){
   const sup = sfSupFor(t, colr);                                   // name of the supervisor who picked this flight ('' if nobody did)
   let list = mtTeamFor(t, colr), supOnly = false;
@@ -12979,7 +12999,8 @@ function mtTeamHtml(t, colr, rowKey){
   const other = (function(){ const o = {}; mtOtherSide(t, colr).forEach(x => { if(!mineIds[x[0]]) o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); })();
   const otherLabel = colr === '#dbffaa' ? 'PARTIDA' : 'ACOLHIMENTO';
   const disp = mtDispFor(t, colr);
-  if(!list || (colr === '#dbffaa' && list.length < 2 && !other.length && !disp.length)){ if(!sup) return ''; list = []; supOnly = true; }   // an arrival card alone: a tab only when a supervisor picked the flight     // arrival (ACOLHIMENTO) cards: a tab only when a supervisor picked the flight
+  const tt = mtTtaeFor(t, colr), ttN = tt.dep.length + tt.arr.length;
+  if(!list || (colr === '#dbffaa' && list.length < 2 && !other.length && !disp.length && !ttN)){ if(!sup) return ''; list = []; supOnly = true; }   // an arrival card alone: a tab only when a supervisor picked the flight     // arrival (ACOLHIMENTO) cards: a tab only when a supervisor picked the flight
   const me = String(mtStaffId());
   const srt = l => l.slice().sort((p, q) => {
     if(showDesks){ const a = deskOf(p), b = deskOf(q); if(a !== null && b !== null && a !== b) return a - b; if(a !== null && b === null) return -1; if(a === null && b !== null) return 1; }
@@ -13031,9 +13052,21 @@ function mtTeamHtml(t, colr, rowKey){
     const ids = Object.keys(miss);
     if(ids.length === 1 && free.length === 1) INF[ids[0]] = free[0];
   }
-  if(now.length < 2 && !later.length && !sup && !other.length && !disp.length) return '';           // alone: nothing to show (unless a supervisor picked the flight, or the other half of the turnaround has people)
+  if(now.length < 2 && !later.length && !sup && !other.length && !disp.length && !ttN) return '';           // alone: nothing to show (unless a supervisor picked the flight, or the other half of the turnaround has people)
   const icon = '<svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-  return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + ((supOnly ? other.length + disp.length : now.length + other.length + disp.length) ? '<b>' + (supOnly ? other.length + disp.length : now.length + other.length + disp.length) + '</b>' : '') + '</div>' +
+  if(GROUP === 'disp'){
+    // a dispatcher's list: supervisor, who is at the gate (PARTIDA, LR), ACOLHIMENTO, and the dispatchers on the aircraft
+    const depL = tt.dep.concat(colr === '#dbffaa' ? other : []), arrL = tt.arr.concat(colr === '#0066cc' ? other : []);
+    const parts = [];
+    if(sup) parts.push('<h6>SUPERVISOR</h6><div class="supn">' + mtEsc(niceListName(sup)) + '</div>');
+    if(depL.length) parts.push('<h6>PARTIDA</h6>' + srt(depL.filter(x => !isLR(x))).map(x => nm(x)).join('') + (depL.some(isLR) ? (depL.some(x => !isLR(x)) ? '<div class="supsep"></div>' : '') + srt(depL.filter(isLR)).map(x => nm(x)).join('') : ''));
+    if(arrL.length) parts.push('<h6>ACOLHIMENTO</h6>' + srt(arrL).map(x => nm(x)).join(''));
+    const showNow = now.length > 1 || (now.length === 1 && String(now[0][0]) !== me);   // only me on this aircraft: no DISPATCHER section
+    if(showNow) parts.push((parts.length ? '<h6>DISPATCHER</h6>' : '') + srt(now.filter(x => !isLR(x))).map(x => nm(x)).join('') + (now.some(isLR) ? srt(now.filter(isLR)).map(x => nm(x)).join('') : ''));
+    const cnt = (showNow ? now.length : 0) + depL.length + arrL.length;
+    return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + (cnt ? '<b>' + cnt + '</b>' : '') + '</div><div class="mt-pop">' + parts.join('<div class="supsep"></div>') + '</div>';
+  }
+  return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + ((supOnly ? other.length + disp.length + ttN : now.length + other.length + disp.length + ttN) ? '<b>' + (supOnly ? other.length + disp.length + ttN : now.length + other.length + disp.length + ttN) + '</b>' : '') + '</div>' +
          '<div class="mt-pop">' + (sup ? '<h6>SUPERVISOR</h6><div class="supn">' + mtEsc(niceListName(sup)) + '</div>' : '') +
          (supOnly ? '' : ((sup ? '<div class="supsep"></div>' : '')) + srt(now.filter(x => !isLR(x))).map(x => nm(x)).join('') +
            (now.some(isLR) ? (now.some(x => !isLR(x)) ? '<div class="supsep"></div>' : '') + srt(now.filter(isLR)).map(x => nm(x)).join('') : '')) +
