@@ -2942,13 +2942,30 @@ function withoutLocked(d){
   APPLIED_LOCK_IDS = readLockCache();
   return Object.assign({}, d, { workers: d.workers.filter(w => !APPLIED_LOCK_IDS.includes(String(w.id))) });
 }
+// One-off: SOUSA DIOGO (9501066) was planned until 15 Nov and stays through the winter — his updated 16–30 Nov days are applied on top of the November roster, nobody else is touched.
+// A later upload of the November schedule that already has these days simply gets the same values.
+const SCHED_PATCHES = [
+  { group: '', month: '2026-11', id: '9501066', from: 16, s: ['FO','0600-1100','DC','DS','1600-2000','1500-2000','1500-2000','1500-2000','FO','DC','DS','0600-1000','0600-1100','0600-1100','0600-1000'] }
+];
+function applySchedPatches(d){
+  try{
+    SCHED_PATCHES.forEach(p => {
+      if(p.group !== GROUP || d.month !== p.month) return;
+      const w = d.workers.find(x => x.id === p.id); if(!w) return;
+      const s = (w.s || []).slice();
+      p.s.forEach((v, k) => { const idx = d.days.indexOf(p.from + k); if(idx >= 0) s[idx] = v; });
+      d = Object.assign({}, d, { workers: d.workers.map(x => x === w ? Object.assign({}, w, { s }) : x) });
+    });
+  }catch(e){}
+  return d;
+}
 const DATA = (function(){
   try{
     const c = JSON.parse(localStorage.getItem(SCHEDULE_CACHE_KEY) || 'null');
     if(c && c.month && c.month >= BASE_DATA.month && c.days && c.days.length && c.workers && c.workers.length
-       && c.workers.every(w => w && w.id && w.name && Array.isArray(w.s) && w.s.length === c.days.length)) return withoutLocked(applyNameFixes(c));
+       && c.workers.every(w => w && w.id && w.name && Array.isArray(w.s) && w.s.length === c.days.length)) return applySchedPatches(withoutLocked(applyNameFixes(c)));
   } catch(e){}
-  return withoutLocked(applyNameFixes(BASE_DATA));
+  return applySchedPatches(withoutLocked(applyNameFixes(BASE_DATA)));
 })();
 // ---------- Mod. 625 "Troca ou Substituição de Serviço" form template (base64 fillable PDF) ----------
 // TOGGLE: flip to true once authorized to use this on the live board. Currently a placeholder
