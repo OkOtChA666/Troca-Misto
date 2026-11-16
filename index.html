@@ -13066,7 +13066,7 @@ function mtTeamHtml(t, colr, rowKey){
     const cnt = (showNow ? now.length : 0) + depL.length + arrL.length;
     return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + (cnt ? '<b>' + cnt + '</b>' : '') + '</div><div class="mt-pop">' + parts.join('<div class="supsep"></div>') + '</div>';
   }
-  return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + ((supOnly ? other.length + disp.length + ttN : now.length + other.length + disp.length + ttN) ? '<b>' + (supOnly ? other.length + disp.length + ttN : now.length + other.length + disp.length + ttN) + '</b>' : '') + '</div>' +
+  return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + ((supOnly ? other.length : now.length + other.length) ? '<b>' + (supOnly ? other.length : now.length + other.length) + '</b>' : '') + '</div>' +   // the dispatcher is listed but not counted
          '<div class="mt-pop">' + (sup ? '<h6>SUPERVISOR</h6><div class="supn">' + mtEsc(niceListName(sup)) + '</div>' : '') +
          (supOnly ? '' : ((sup ? '<div class="supsep"></div>' : '')) + srt(now.filter(x => !isLR(x))).map(x => nm(x)).join('') +
            (now.some(isLR) ? (now.some(x => !isLR(x)) ? '<div class="supsep"></div>' : '') + srt(now.filter(isLR)).map(x => nm(x)).join('') : '')) +
