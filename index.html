@@ -966,8 +966,9 @@
   .sk2-sw{ min-width:64px; height:38px; padding:0 12px; border-radius:10px; border:1px solid #2a3858; background:transparent; color:#8fa0c4; font:700 12px var(--mono); letter-spacing:.06em; cursor:pointer; }
   .sk2-sw.on{ background:rgba(95,224,255,.16); border-color:#5fe0ff; color:#5fe0ff; }
   .sk2-sw.red.on{ background:rgba(255,93,108,.18); border-color:#ff5d6c; color:#ff8a96; }
-  #skills-chips{ display:flex; gap:6px; flex-wrap:wrap; padding:0 0 10px; }
-  #skills-chips button{ font:700 11px var(--mono); letter-spacing:.06em; padding:6px 11px; border-radius:999px; border:1px solid #2a3858; background:transparent; color:#8fa0c4; cursor:pointer; }
+  #skills-chips{ display:flex; gap:6px; flex-wrap:nowrap; overflow-x:auto; padding:0 0 10px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  #skills-chips::-webkit-scrollbar{ display:none; }
+  #skills-chips button{ flex:none; white-space:nowrap; font:700 11px var(--mono); letter-spacing:.06em; padding:6px 11px; border-radius:999px; border:1px solid #2a3858; background:transparent; color:#8fa0c4; cursor:pointer; }
   #skills-chips button.on{ background:rgba(95,224,255,.14); border-color:#5fe0ff; color:#5fe0ff; }
   #skills-chips button b{ margin-left:5px; color:#fff; }
   .skills-col-label{
@@ -6560,20 +6561,25 @@ function checkAvailabilityConflict(workerId, idx, proposedStart, proposedEnd){
 }
 
 function updateSkillsStats(){
-  const el = document.getElementById('skills-stats');
-  if(!el) return;
-  if(GROUP === 'sup' || GROUP === 'disp'){
-    const lk = DCS_SYSTEMS.find(x => x.key === 'banned');
-    const nL = Object.keys(lk.store).length, nO = DATA.workers.filter(w => isDismissed(w.id)).length;
-    el.innerHTML = '<b>'+DATA.workers.length+'</b> agentes' + (nL ? ' · <b style="color:#ff5d6c">'+nL+'</b> LOCK' : '') + (nO ? ' · <b style="color:#ff5d6c">'+nO+'</b> OUT' : '');
-    return;
-  }
-  const count = Object.keys(ALTEA).filter(id => ALTEA[id]).length;
-  const nOut = DATA.workers.filter(w => isDismissed(w.id)).length;
-  const nLk = Object.keys(DCS_SYSTEMS.find(x => x.key === 'banned').store).length;
-  el.innerHTML = '<b>'+count+'</b> of '+DATA.workers.length+' marked with Altea / all systems' + (nLk ? ' · <b style="color:#ff5d6c">'+nLk+'</b> LOCK' : '') + (nOut ? ' · <b style="color:#ff5d6c">'+nOut+'</b> OUT' : '');
+  const el = document.getElementById('skills-stats'); if(el){ el.innerHTML = ''; el.style.display = 'none'; }   // the filter chips above the list show these numbers
+  try{ skRenderChips(); }catch(e){}
 }
-let SK_CHIP = 'all';
+let SK_SEL = [];   // chips switched on (several at once: a person must match all of them)
+// filter chips above the list: see only the people marked with one thing (the row slides sideways when it does not fit)
+function skRenderChips(){
+  const box = document.getElementById('skills-list'); if(!box) return;
+  const isSup = GROUP === 'sup' || GROUP === 'disp';
+  let chips = document.getElementById('skills-chips');
+  if(!chips){ chips = document.createElement('div'); chips.id = 'skills-chips'; box.parentNode.insertBefore(chips, box); }
+  const ip = DCS_SYSTEMS.find(x => x.key === 'iport');
+  const test = { all: () => true, altea: w => hasAltea(w.id), iport: w => hasDcsSystem(ip, w.id), banned: w => isBannedAgent(w.id), blocked: w => isBlocked(w.id) && !isDismissed(w.id), out: w => isDismissed(w.id), heart: w => isSupporter(w.id) };
+  const defs = [['all', 'TODOS']].concat(isSup ? [] : [['altea', 'ALTEA'], ['iport', 'IPORT']]).concat([['banned', '🔒 LOCK'], ['blocked', 'INCOG'], ['out', 'OUT']]).concat(!isSup && isAdminSession ? [['heart', '♥']] : []);
+  const keep = chips.scrollLeft;
+  chips.innerHTML = defs.map(([k, lab]) => '<button type="button" data-k="' + k + '" class="' + ((k === 'all' ? !SK_SEL.length : SK_SEL.includes(k)) ? 'on' : '') + '">' + lab + (k === 'all' ? '<b>' + DATA.workers.length + '</b>' : '<b>' + DATA.workers.filter(test[k]).length + '</b>') + '</button>').join('');
+  chips.scrollLeft = keep;
+  chips.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { const k = b.getAttribute('data-k'); if(k === 'all') SK_SEL = []; else SK_SEL = SK_SEL.includes(k) ? SK_SEL.filter(x => x !== k) : SK_SEL.concat(k); renderSkillsList(document.getElementById('skills-filter').value); }));
+  window._skTest = test;
+}
 function renderSkillsList(filter){
   const box = document.getElementById('skills-list');
   if(!box) return;
@@ -6610,24 +6616,15 @@ function renderSkillsList(filter){
       if(c.supporter) toggleSupporter(id);
       else if(c.altea) toggleAltea(id);
       else { toggleDcsSystem(c.sys, id, name); try{ updateSkillsStats(); }catch(e){} }
-      paint();
+      paint(); try{ skRenderChips(); }catch(e){}
     }));
     paint();
     box.appendChild(row);
   }
 
-  // filter chips: see only the people marked with one thing
-  {
-    let chips = document.getElementById('skills-chips');
-    if(!chips){ chips = document.createElement('div'); chips.id = 'skills-chips'; box.parentNode.insertBefore(chips, box); }
-    const test = { all: () => true, banned: w => isBannedAgent(w.id), blocked: w => isBlocked(w.id) && !isDismissed(w.id), out: w => isDismissed(w.id), heart: w => isSupporter(w.id) };
-    const defs = [['all', 'TODOS'], ['banned', '🔒 LOCK'], ['blocked', 'INCOG'], ['out', 'OUT']].concat(!isSup && isAdminSession ? [['heart', '♥']] : []);
-    chips.innerHTML = defs.map(([k, lab]) => '<button type="button" data-k="' + k + '" class="' + (SK_CHIP === k ? 'on' : '') + '">' + lab + (k === 'all' ? '' : '<b>' + DATA.workers.filter(test[k]).length + '</b>') + '</button>').join('');
-    chips.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { SK_CHIP = b.getAttribute('data-k'); renderSkillsList(document.getElementById('skills-filter').value); }));
-    window._skTest = test;
-  }
+  skRenderChips();
   DATA.workers
-    .filter(w => (!f || w.name.toLowerCase().includes(f)) && window._skTest[SK_CHIP](w))
+    .filter(w => (!f || w.name.toLowerCase().includes(f)) && SK_SEL.every(k => window._skTest[k](w)))
     .forEach(w => addRow(w.id, w.name, false));
 
   // locked-out people who are not on this month's schedule stay listed so they can be unlocked
