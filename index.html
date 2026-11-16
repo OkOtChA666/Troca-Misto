@@ -6444,6 +6444,9 @@ const DCS_SYSTEMS = [
   { key: 'availAM', label: 'AM', abbr: 'AM', store: {} }, // only available for morning shifts (ending by/around 12:00)
   { key: 'availPM', label: 'PM', abbr: 'PM', store: {} }, // only available for afternoon shifts (starting from ~13:00)
   { key: 'availWK', label: 'WK', abbr: 'WK', store: {} }, // only available on weekends
+  // DISPATCHER skills (only used in the DISPATCHER department; the names are placeholders for now)
+  { key: 'skill1', label: 'SKILL 1', abbr: 'S1', store: {} },
+  { key: 'skill2', label: 'SKILL 2', abbr: 'S2', store: {} },
   { key: 'blocked', label: 'INCOG', abbr: 'INC', store: {} }, // hidden from every search/picker across the app
   // LOCK: the person cannot log in anywhere (all departments, one shared list). They stay on the schedule and in every list. Value = the name, so they stay listed here even when they are not on this month's schedule.
   { key: 'banned', label: '🔒 LOCK', abbr: 'LCK', store: {} },
@@ -6536,7 +6539,7 @@ async function migrateOldLocks(){
     location.reload();
   }catch(e){}
 }
-Promise.all(DCS_SYSTEMS.map(sys => loadDcsSystem(sys))).then(() => {
+Promise.all(DCS_SYSTEMS.filter(sys => !/^skill/.test(sys.key) || GROUP === 'disp').map(sys => loadDcsSystem(sys))).then(() => {
   updateAgentCount(); syncLockedAgents(false); migrateOldLocks();
   try{ const me = localStorage.getItem('trocaMistoLoginStaffId'); if(me && (isBannedAgent(me) || (String(me) !== ADMIN_STAFF_ID && isDismissed(me)))){ localStorage.removeItem('trocaMistoLoginStaffId'); localStorage.removeItem('trocaMistoLoginIsAdmin'); location.reload(); } }catch(e){}   // locked out while logged in: out at the next open
 }, updateAgentCount);
@@ -6572,8 +6575,9 @@ function skRenderChips(){
   let chips = document.getElementById('skills-chips');
   if(!chips){ chips = document.createElement('div'); chips.id = 'skills-chips'; box.parentNode.insertBefore(chips, box); }
   const ip = DCS_SYSTEMS.find(x => x.key === 'iport');
-  const test = { all: () => true, altea: w => hasAltea(w.id), iport: w => hasDcsSystem(ip, w.id), banned: w => isBannedAgent(w.id), blocked: w => isBlocked(w.id) && !isDismissed(w.id), out: w => isDismissed(w.id), heart: w => isSupporter(w.id) };
-  const defs = [['all', 'TODOS']].concat(isSup ? [] : [['altea', 'ALTEA'], ['iport', 'IPORT']]).concat([['banned', '🔒 LOCK'], ['blocked', 'INCOG'], ['out', 'OUT']]).concat(!isSup && isAdminSession ? [['heart', '♥']] : []);
+  const s1 = DCS_SYSTEMS.find(x => x.key === 'skill1'), s2 = DCS_SYSTEMS.find(x => x.key === 'skill2');
+  const test = { all: () => true, skill1: w => hasDcsSystem(s1, w.id), skill2: w => hasDcsSystem(s2, w.id), altea: w => hasAltea(w.id), iport: w => hasDcsSystem(ip, w.id), banned: w => isBannedAgent(w.id), blocked: w => isBlocked(w.id) && !isDismissed(w.id), out: w => isDismissed(w.id), heart: w => isSupporter(w.id) };
+  const defs = [['all', 'TODOS']].concat(GROUP === 'disp' ? [['skill1', 'SKILL 1'], ['skill2', 'SKILL 2']] : isSup ? [] : [['altea', 'ALTEA'], ['iport', 'IPORT']]).concat([['banned', '🔒 LOCK'], ['blocked', 'INCOG'], ['out', 'OUT']]).concat(!isSup && isAdminSession ? [['heart', '♥']] : []);
   const keep = chips.scrollLeft;
   chips.innerHTML = defs.map(([k, lab]) => '<button type="button" data-k="' + k + '" class="' + ((k === 'all' ? !SK_SEL.length : SK_SEL.includes(k)) ? 'on' : '') + '">' + lab + (k === 'all' ? '<b>' + DATA.workers.length + '</b>' : '<b>' + DATA.workers.filter(test[k]).length + '</b>') + '</button>').join('');
   chips.scrollLeft = keep;
@@ -6587,13 +6591,13 @@ function renderSkillsList(filter){
   box.innerHTML = '';
   const isSup = GROUP === 'sup' || GROUP === 'disp';
   // TTAE: Altea + every system except LOCKED. SUPERVISÃO: only INCOG, OUT and LOCKED.
-  const systems = DCS_SYSTEMS.filter(sys => sys.key !== 'locked' && (isSup ? ['blocked','dismissed','banned'].includes(sys.key) : true));
+  const systems = DCS_SYSTEMS.filter(sys => sys.key !== 'locked' && (GROUP === 'disp' ? ['skill1','skill2','blocked','dismissed','banned'].includes(sys.key) : GROUP === 'sup' ? ['blocked','dismissed','banned'].includes(sys.key) : !/^skill/.test(sys.key)));
   const cols = (isSup ? [] : [{ altea:true, label:'Altea' }]).concat(systems.map(sys => ({ sys, label: sys.label })));
   if(!isSup && isAdminSession) cols.push({ supporter:true, label:'♥' });
   box.classList.toggle('skills-compact', cols.some(c => c.supporter));   // the extra heart column must not squeeze the names
 
   // compact rows: name + small tags for what is switched on; tap the row to open the labelled switches (grouped)
-  const grpOf = c => c.altea || (c.sys && c.sys.key === 'iport') ? 'SISTEMAS' : c.supporter ? 'APOIO' : (c.sys && ['availAM','availPM','availWK'].includes(c.sys.key)) ? 'DISPONIBILIDADE' : 'ACESSO';
+  const grpOf = c => c.altea || (c.sys && c.sys.key === 'iport') ? 'SISTEMAS' : c.supporter ? 'APOIO' : (c.sys && ['availAM','availPM','availWK'].includes(c.sys.key)) ? 'DISPONIBILIDADE' : (c.sys && /^skill/.test(c.sys.key)) ? 'SKILLS' : 'ACESSO';
   const isOn = (c, id) => c.supporter ? isSupporter(id) : c.altea ? hasAltea(id) : hasDcsSystem(c.sys, id);
   const tagCls = c => (c.sys && c.sys.key === 'banned') ? ' red' : (c.sys && c.sys.key === 'dismissed') ? ' red' : '';
   const tagLab = c => c.supporter ? '♥' : c.altea ? 'ALTEA' : c.label.replace('🔒 ', '').toUpperCase();
@@ -6604,7 +6608,7 @@ function renderSkillsList(filter){
       row.querySelector('.sk2-tags').innerHTML = cols.filter(c => isOn(c, id)).map(c => '<span class="sk2-tag' + tagCls(c) + '">' + escapeHtml(tagLab(c)) + '</span>').join('');
       row.querySelectorAll('.sk2-sw').forEach(b => { b.classList.toggle('on', isOn(cols[+b.dataset.i], id)); });
     };
-    const groups = ['SISTEMAS', 'DISPONIBILIDADE', 'ACESSO', 'APOIO'].map(g => {
+    const groups = ['SISTEMAS', 'SKILLS', 'DISPONIBILIDADE', 'ACESSO', 'APOIO'].map(g => {
       const items = cols.map((c, i) => [c, i]).filter(([c]) => grpOf(c) === g); if(!items.length) return '';
       return '<div class="sk2-g"><div class="sk2-gl">' + (g === 'APOIO' ? 'APOIANTE' : g) + '</div><div class="sk2-sws">' + items.map(([c, i]) => '<button type="button" class="sk2-sw' + tagCls(c) + '" data-i="' + i + '">' + escapeHtml(tagLab(c)) + '</button>').join('') + '</div></div>';
     }).join('');
@@ -7482,7 +7486,7 @@ function renderCoverResults(results, idx){
     if(!swapped){
       const _h = TYPICAL_HOURS[r.worker.id], _ip = DCS_SYSTEMS.find(x => x.key === 'iport');
       const _t = (lab, val, on) => '<div class="pc-tile"><i>' + lab + '</i><b' + (on ? ' class="on-' + on + '"' : '') + '>' + val + '</b></div>';
-      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + (GROUP === 'sup' ? '' : _t('ALTEA', hasAltea(r.worker.id) ? window.PC_OK : window.PC_NO, hasAltea(r.worker.id) ? 'cyan' : 'red') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? window.PC_OK : window.PC_NO, (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : 'red')) + '</div><div class="nd-block pc-sel"><div class="nd-label">' + extraLongDate(idx).toUpperCase() + '</div>' + escapeHtml(codeLabel) + '</div>');
+      detail.insertAdjacentHTML('afterbegin', '<div class="pc-tiles">' + _t('HORAS', _h ? _h + 'H' : '—', _h ? 'amber' : '') + (GROUP === 'sup' ? '' : GROUP === 'disp' ? ['skill1', 'skill2'].map(k => { const sy = DCS_SYSTEMS.find(x => x.key === k), on = !!(sy && hasDcsSystem(sy, r.worker.id)); return _t(sy.label, on ? window.PC_OK : window.PC_NO, on ? 'cyan' : 'red'); }).join('') : _t('ALTEA', hasAltea(r.worker.id) ? window.PC_OK : window.PC_NO, hasAltea(r.worker.id) ? 'cyan' : 'red') + _t('IPORT', (_ip && hasDcsSystem(_ip, r.worker.id)) ? window.PC_OK : window.PC_NO, (_ip && hasDcsSystem(_ip, r.worker.id)) ? 'cyan' : 'red')) + '</div><div class="nd-block pc-sel"><div class="nd-label">' + extraLongDate(idx).toUpperCase() + '</div>' + escapeHtml(codeLabel) + '</div>');
     }
     if(flagged) detail.appendChild(buildFlagWarning(r.worker.id, idx));
     if(swapped) detail.appendChild(buildSwapWarning(r.worker.id, idx));
