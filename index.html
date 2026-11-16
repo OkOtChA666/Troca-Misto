@@ -375,8 +375,9 @@
   html.themed h1::before{ content:"Troca-Misto"; font:700 24px var(--sans); letter-spacing:-.01em; color:var(--text); }
   html.themed #logged-in-tab-row{ display:contents !important; }
   html.themed #notifications-bell-link{ order:3; width:40px; height:40px; justify-content:center; border:1px solid var(--border); border-radius:50%; background:var(--panel); color:var(--text) !important; }
-  html.themed #notifications-badge{ top:8px !important; right:9px !important; width:8px; height:8px; min-width:8px !important; padding:0 !important; border-radius:50%; font-size:0 !important; }
+  html.themed #notifications-badge{ top:0 !important; right:-7px !important; }
   html.themed #notif-count, html.themed #logout-link{ display:none !important; }
+  #notif-count{ display:none !important; }   /* the number is in the red dot on the bell now */
   html.themed #user-menu-btn{ order:4; flex:none !important; gap:8px !important; padding:4px 14px 4px 4px; border-radius:999px; background:var(--panel); border:1px solid var(--border); color:var(--text) !important; font-size:0 !important; }
   html.themed #user-menu-btn > svg, html.themed #user-menu-btn #logged-in-clip{ display:none !important; }
   html.themed #user-menu-btn::before{ content:attr(data-ini); width:32px; height:32px; border-radius:50%; background:var(--acc); color:var(--on-acc); font:800 12px var(--sans); display:flex; align-items:center; justify-content:center; }
@@ -1567,7 +1568,7 @@
   /* notification bell: a round button; yellow with a red dot while something is unread, quiet grey otherwise */
   #notifications-bell-link{ width:32px; height:32px; box-sizing:border-box; flex:none; justify-content:center; margin:-6px 4px -6px 10px; transition:color .2s; }
   #notifications-bell-link.has-unread{ color:#ffb020 !important; }
-  #notifications-badge{ top:3px !important; right:3px !important; min-width:0 !important; width:9px; height:9px !important; padding:0 !important; font-size:0 !important; border:2px solid #080D18; border-radius:50% !important; box-sizing:content-box; }
+  #notifications-badge{ top:0 !important; right:-7px !important; min-width:12px !important; width:auto; height:12px !important; padding:0 2px !important; font-size:9px !important; line-height:12px; border:2px solid #080D18; border-radius:9px !important; box-sizing:content-box; }   /* the unread number sits in the red dot */
   .mt-pill{ font-family:var(--mono); font-size:12px; font-weight:700; background:#e8eefc; color:#0b1220; padding:2px 10px; border-radius:4px; margin-left:10px; white-space:nowrap; flex:none; }
   .mt-pop .supn{ color:#FF9F5A; font-weight:700; }
   .mt-pop .supn + h6{ margin-top:10px; }
@@ -1906,11 +1907,11 @@
       </span>
       <span id="notif-count" title="Notificações" style="margin-left:auto; min-width:24px; text-align:center; font:700 11px var(--mono); border-radius:999px; padding:3px 8px; color:#5a6788; background:#0f1626; border:1px solid #1c2a44; cursor:default; transition:color .2s, background .2s, border-color .2s;">0</span>
       <span id="notifications-bell-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--text-dim); position:relative; cursor:pointer;" title="Notificações">
-        <svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle;">
-          <path d="M4 19l1.5-2V11a6.5 6.5 0 0 1 13 0v6L20 19H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M9 19a3 3 0 0 0 6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <svg viewBox="0 0 24 24" width="22" height="22" style="vertical-align:middle;">
+          <path d="M4 19l1.5-2V11a6.5 6.5 0 0 1 13 0v6L20 19H4z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 19a3 3 0 0 0 6 0" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
-        <span id="notifications-badge" class="hidden" style="position:absolute; top:-6px; right:-8px; background:var(--nogo); color:#fff; font-size:9px; font-weight:700; line-height:1; min-width:14px; height:14px; border-radius:7px; display:flex; align-items:center; justify-content:center; padding:0 3px;">0</span>
+        <span id="notifications-badge" class="hidden" style="position:absolute; top:-4px; right:-6px; background:var(--nogo); color:#fff; font-size:10px; font-weight:700; line-height:1; min-width:16px; height:16px; border-radius:8px; box-shadow:0 0 0 2px #080D18; display:flex; align-items:center; justify-content:center; padding:0 3px;">0</span>
       </span>
       <span id="logout-link" class="stat-link" style="margin-left:auto; display:none; align-items:center; gap:5px; color:var(--nogo);" title="Terminar sessão">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
