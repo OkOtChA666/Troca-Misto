@@ -1328,6 +1328,8 @@
   .ag-d{ font-family:'Outfit', var(--mono); }
   .ag-d small{ font-family:var(--mono); color:#d3d9e6; }
   .ag-d small.bd{ background:#e8eefc; color:#0b1220 !important; border-radius:4px; padding:1px 5px; font-weight:700; opacity:1; }
+  .ag-d{ position:relative; }
+  .ag-d.hol::after{ content:'F'; position:absolute; top:3px; right:4px; font:700 8px/1 var(--mono); color:#ffd36b; letter-spacing:0; }   /* public holiday: a small F in the corner, the day keeps its work / off colour */
   .ag-d.past{ opacity:.5; } .ag-d.today{ outline:2px solid var(--amber); }
   /* labels: plain off-white for times, a badge for codes (DC, DS, SWAP, DUPLO, MED...) */
   .ag-sum{ display:flex; gap:8px; margin-top:14px; font-family:'Outfit', var(--sans); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#8fa0c4; text-align:center; }
@@ -12464,6 +12466,18 @@ function updateAreaHubDot(){
   let n = 0; try{ const sn = mtSeen(); n = mtChanges().filter(x => x[0] > sn).length; }catch(e){}
   d.classList.toggle('on', n > 0);
 }
+// Portuguese public holidays (national + Faro's city day, 7 September), worked out for any year: fixed dates + Easter-based ones
+function ptHolidays(y){
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;   // Easter Sunday
+  const easter = new Date(y, mo - 1, da), add = n => { const x = new Date(easter); x.setDate(x.getDate() + n); return x; };
+  const L = {}; const put = (dt, nm) => { L[(dt.getMonth() + 1) + '-' + dt.getDate()] = nm; };
+  [[1,1,'Ano Novo'],[4,25,'Dia da Liberdade'],[5,1,'Dia do Trabalhador'],[6,10,'Dia de Portugal'],[8,15,'Assunção de Nossa Senhora'],[9,7,'Dia da Cidade de Faro'],[10,5,'Implantação da República'],[11,1,'Todos os Santos'],[12,1,'Restauração da Independência'],[12,8,'Imaculada Conceição'],[12,25,'Natal']].forEach(x => { L[x[0] + '-' + x[1]] = x[2]; });
+  put(add(-2), 'Sexta-feira Santa'); put(easter, 'Páscoa'); put(add(60), 'Corpo de Deus');
+  return L;
+}
+function holidayName(dt){ try{ return ptHolidays(dt.getFullYear())[(dt.getMonth() + 1) + '-' + dt.getDate()] || ''; }catch(e){ return ''; } }
 // A MINHA AGENDA: read-only month of my own shifts (tap a day for its details)
 async function renderAgenda(){
   const body = document.getElementById('agenda-body'); if(!body) return;
@@ -12489,6 +12503,7 @@ async function renderAgenda(){
     if(cls.charAt(0) === 'w') nWork++; else nOff++; if(lab === 'SWAP') nSwap++;
     if(isPastDay(idx) && !isTodayDay(idx)) cls += ' past';
     if(isTodayDay(idx)) cls += ' today';
+    if(holidayName(realDateForIdx(idx - 0))) cls += ' hol';
     h += '<div class="ag-d ' + cls + '" data-idx="' + idx + '">' + day + '<small' + (/^(\d{1,2}:\d{2}|DC|DS|FO)$/.test(String(lab).trim()) || !String(lab).trim() ? '' : ' class="bd"') + '>' + mtEsc(lab) + '</small></div>';
   });
   h += '</div><div class="ag-sum"><div><b style="color:#ff5d73">' + nWork + '</b>trabalho</div><div><b style="color:#2fd18a">' + nOff + '</b>folgas</div><div><b>' + nSwap + '</b>trocas</div></div>';
