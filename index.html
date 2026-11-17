@@ -12594,7 +12594,18 @@ function maybeShowSwapTip(boxId){
 // Shows the logged-in agent's own tasks for today, read from the copy that the scheduled job
 // (tools/planete-sync.mjs on GitHub) saves in the database every few minutes.
 let MT_UNSUB = null, MT_LISTENING = false, MT_TICK = null, MT_DOC = null, MT_ERR = false;
-let DISP_DOC = null, DISP_UNSUB = null, TT_DOC = null;   // TTAE: the dispatchers' copy of the day (see mtDispFor)
+let DISP_DOC = null, DISP_UNSUB = null, TT_DOC = null;
+// Dispatchers marked INCOG or OUT (in the DISPATCHER department) are left out of the list shown in the check-in PARTIDA / ACOLHIMENTO cards. Refreshed at most every 5 minutes.
+let DISP_HIDE = null, DISP_HIDE_AT = 0;
+async function mtLoadDispHide(){
+  if(Date.now() - DISP_HIDE_AT < 300000) return;
+  DISP_HIDE_AT = Date.now();
+  try{
+    const a = await dbGetShared('blocked', {}, 'disp'), o = await dbGetShared('dismissed', {}, 'disp');
+    DISP_HIDE = Object.assign({}, a || {}, o || {}); MT_TEAM_FOR = null;
+    if(mtOpenOverlay()) renderMyTasks();
+  }catch(e){}
+}   // TTAE: the dispatchers' copy of the day (see mtDispFor)
 function mtEsc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function mtToMin(t){ const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
 function mtPad(n){ return String(n).padStart(2, '0'); }
@@ -12663,7 +12674,7 @@ function mtListen(){
         () => { MT_ERR = true; if(mtOpenOverlay()) renderMyTasks(); }
       );
       if(GROUP === '' && !DISP_UNSUB) DISP_UNSUB = db.collection('data').doc('disptasks').onSnapshot(   // the dispatchers working the same flight show in the PARTIDA / ACOLHIMENTO list
-        snap => { DISP_DOC = snap.exists ? snap.data() : null; MT_TEAM_FOR = null; if(mtOpenOverlay()) renderMyTasks(); }, () => {});
+        snap => { DISP_DOC = snap.exists ? snap.data() : null; MT_TEAM_FOR = null; mtLoadDispHide(); if(mtOpenOverlay()) renderMyTasks(); }, () => {});
       if(GROUP !== 'sup' && !SUPC_UNSUB) SUPC_UNSUB = db.collection('data').doc('sup_claims').onSnapshot(
         snap => { SUPC = snap.exists ? snap.data() : null; if(mtOpenOverlay()) renderMyTasks(); }, () => {});
       MT_LISTENING = false;
@@ -13179,9 +13190,10 @@ function mtDispFor(t, colr){
     const want = mtKeyId(mtKey(t)); if(!want) return [];
     const out = [];
     Object.keys(DISP_DOC.a).forEach(id => {
+      const hid = !!(DISP_HIDE && DISP_HIDE[id]);   // INCOG / OUT in the DISPATCHER department: the name shows as ???
       let rec = null; try{ rec = JSON.parse(DISP_DOC.a[id]); }catch(e){}
       if(!rec || !rec.t) return;
-      rec.t.forEach(x => { if(String(x[3]) === '919' && x[5] && mtKeyId(x[5]) === want){ out.push([id, rec.n || id, mtToMin(x[1]), mtToMin(x[2]), x[0] || '']); } });
+      rec.t.forEach(x => { if(String(x[3]) === '919' && x[5] && mtKeyId(x[5]) === want){ out.push([id, hid ? '???' : (rec.n || id), mtToMin(x[1]), mtToMin(x[2]), x[0] || '']); } });
     });
     const o = {}; out.forEach(x => { o[x[0]] = x; });
     return Object.keys(o).map(k => o[k]);
