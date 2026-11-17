@@ -646,6 +646,11 @@
   .gh-pill.warn .gh-dot{ background:#f0b429; }
   .gh-pill.down{ background:#2a1219; color:#fda4af; }
   .gh-pill.down .gh-dot{ background:#ef4444; }
+  .board-header{ position:relative; }
+  .board-logo{ display:none !important; }
+  #gh-status.gh-pill{ position:absolute; top:0; right:0; border-radius:0 13px 0 10px; padding:6px 12px 5px; background:#101b33; border:1px solid #1c2a47; border-top:0; border-right:0; letter-spacing:.12em; font-size:10px; color:#9aa6c2; }
+  #gh-status.gh-pill.warn{ background:#241d0a; border-color:#4a3a10; color:#e0b44a; }
+  #gh-status.gh-pill.down{ background:#2a1219; border-color:#5a2230; color:#fda4af; }
   .swap-vf{ position:relative; display:inline-flex; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .swap-vf-tip{ display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:8px; z-index:5; background:#10203a; border:1px solid #2f6fb0; border-radius:999px; padding:6px 14px; white-space:nowrap; font-size:11px; font-weight:500; color:#cfe3fb; }
   .swap-vf-tip.show{ display:block; }
@@ -1931,6 +1936,7 @@
 
 
   <div class="board-header">
+    <span id="gh-status" class="gh-pill" style="display:none;"><span class="gh-dot"></span><span id="gh-status-txt"></span></span>
     <div class="board-logo" aria-hidden="true">
       <svg viewBox="-8 -16 66 66" width="62" height="62">
         <defs>
@@ -1948,7 +1954,7 @@
         <rect x="48" y="-10" width="2" height="2" fill="#5FE0FF" opacity="0.2"/>
       </svg>
     </div>
-    <div style="display:flex; align-items:center; justify-content:flex-start; gap:16px; margin:0 0 6px;"><p class="eyebrow" style="margin:0; white-space:nowrap;">TTAE GRUPO · FAO · PAX</p><span id="gh-status" class="gh-pill" style="display:none;"><span class="gh-dot"></span><span id="gh-status-txt"></span></span></div>
+    <div style="display:flex; align-items:center; justify-content:flex-start; gap:16px; margin:0 0 6px;"><p class="eyebrow" style="margin:0; white-space:nowrap;">TTAE GRUPO · FAO · PAX</p></div>
     <h1>TROCA-MISTO</h1>
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
