@@ -1632,6 +1632,9 @@
   .mt-row.has-tab .mt-side{ align-self:flex-start; }
   .mt-row.now{ border-color:rgba(51,214,139,0.55); }
   .mt-row.past{ opacity:0.45; }
+  /* book-spine look: the kind (CHECK-IN, PARTIDA...) is written vertically on the coloured left edge */
+  .mt-row:has(.mt-kind:not(.mt-kind-empty)){ border-left-width:30px; }
+  .mt-row .mt-kind:not(.mt-kind-empty){ position:absolute; left:-30px; top:0; bottom:0; width:30px; margin:0; padding:0; background:none !important; display:flex; align-items:center; justify-content:center; writing-mode:vertical-rl; transform:rotate(180deg); font-size:10px; letter-spacing:.16em; }
   .mt-empty{ color:var(--text-dim); font-size:13.5px; padding:14px 2px; line-height:1.5; }
   .mt-foot{ font-style:italic; font-size:11.5px; color:var(--text-dim); line-height:1.5; margin-top:12px; }
 @keyframes nmmq{to{transform:translateX(calc(-1*var(--w)))}}
