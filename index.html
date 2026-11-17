@@ -63,7 +63,7 @@
   .legal-ft.main{ margin:22px 0 10px; }
   .ft-row{ font:12px var(--sans); color:#c9d0de; } .ft-row a{ color:#5aa9ff; font-weight:600; text-decoration:none; } .ft-row i{ font-style:normal; margin:0 8px; color:#6d7790; } .ft-rights{ margin-top:2px; }
   .pp-text{ padding:0 2px; font-size:13px; line-height:1.6; color:#9aa6bf; }
-  .pp-text p{ margin:0 0 10px; } .pp-text h4{ margin:20px 0 8px; font:700 13.5px var(--sans); color:var(--text); } .pp-text ul{ margin:0 0 8px; padding-left:18px; } .pp-text li{ margin-bottom:4px; } .pp-text li b{ color:var(--text); font-weight:600; } .pp-text li::marker{ color:var(--amber); } .pp-text p{ margin:0 0 12px; } .pp-text a{ color:#5aa9ff; font-weight:600; text-decoration:none; } .pp-text p:last-child{ margin-bottom:0; }
+  .pp-text p{ margin:0 0 10px; } .pp-text h4{ margin:20px 0 8px; font:700 13.5px var(--sans); color:var(--text); } .pp-text ul{ margin:0 0 8px; padding-left:18px; } .pp-text li{ margin-bottom:4px; } .pp-text li b{ color:var(--text); font-weight:600; } .pp-text h3{ margin:0 0 6px; font:800 15px var(--mono); letter-spacing:.06em; color:var(--amber); } .pp-text h5{ margin:14px 0 6px; font:700 12.5px var(--sans); color:var(--text); } .pp-text hr{ border:0; border-top:1px solid var(--border); margin:16px 0; } .pp-text li::marker{ color:var(--amber); } .pp-text p{ margin:0 0 12px; } .pp-text a{ color:#5aa9ff; font-weight:600; text-decoration:none; } .pp-text p:last-child{ margin-bottom:0; }
   .support-wrap{ margin:10px 0 4px; }
   .support-lk{ display:inline-flex; align-items:center; gap:8px; color:var(--text); background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:9px 18px; font:600 12px var(--mono); letter-spacing:.1em; text-transform:uppercase; text-decoration:none; }
   .support-lk:active{ background:var(--amber-glow); }
@@ -1753,7 +1753,7 @@
     <div class="access-error hidden" id="access-portal-error">Número ou password incorretos.</div>
     <button type="button" class="access-btn hidden" id="access-portal-btn">ENTRAR</button>
   </div>
-  <div class="legal-ft hidden portal" id="legal-ft-portal"><div class="ft-row">© 2026 Gonçalo Madeira<i>·</i><a href="#" class="ft-pp">Política de Privacidade</a><i>·</i><a href="mailto:trocamisto@proton.me">Contacto</a></div><div class="ft-rights">Todos os direitos reservados.</div></div>
+  <div class="legal-ft hidden portal" id="legal-ft-portal"><div class="ft-row">© 2026 TROCA-MISTO<i>·</i><a href="#" class="ft-pp">Política de Privacidade</a><i>·</i><a href="mailto:trocamisto@proton.me">Contacto</a></div><div class="ft-rights">Todos os direitos reservados.</div></div>
 </div>
 
 <div id="maintenance-screen" class="hidden">
@@ -1819,14 +1819,14 @@
 </div>
 <div class="modal-overlay hidden" id="privacy-modal" style="z-index:100002;">
   <div class="modal-box" style="text-align:left; width:340px; max-height:92vh; overflow:auto;">
-    <div style="text-align:center;"><div style="font:800 15px var(--mono); letter-spacing:.1em; color:var(--amber); margin:4px 0 2px;">POLÍTICA DE PRIVACIDADE</div><div style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">Privacidade e utilização de dados pessoais</div></div>
+    <div style="text-align:center;"></div>
     <div class="pp-text" data-pp="policy"></div>
     <button type="button" class="btn" id="privacy-close" style="margin-top:14px; width:100%;">FECHAR</button>
   </div>
 </div>
 <div class="modal-overlay hidden" id="pp-edit-modal" style="z-index:100003;">
   <div class="modal-box" style="text-align:left; width:340px; max-height:92vh; overflow:auto;">
-    <div style="text-align:center; font:800 15px var(--mono); letter-spacing:.1em; color:var(--amber); margin:4px 0 12px;">TEXTO DE PRIVACIDADE</div>
+    <div style="text-align:center; font:800 15px var(--mono); letter-spacing:.1em; color:var(--amber); margin:4px 0 12px;" id="pp-edit-title">TEXTO DE PRIVACIDADE</div>
       <div style="text-transform:none; letter-spacing:normal;">
         <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Texto de privacidade<span style="display:block; margin-top:3px; font-size:11px; opacity:.75;">Linha em branco = novo parágrafo · ## título · * lista · **negrito** · [texto] = abre a Política de Privacidade</span></div>
         <textarea id="pp-edit" rows="14" style="width:100%; box-sizing:border-box; margin-top:8px; padding:10px; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:8px; font:12px/1.5 var(--mono); resize:vertical;"></textarea>
@@ -2770,6 +2770,10 @@
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Texto de privacidade</span>
         <button type="button" class="btn" id="pp-open" style="font-size:11px; padding:7px 14px; flex:none; width:auto; min-width:0; margin:0; border-radius:8px;">EDITAR</button>
       </div>
+      <div style="display:flex; align-items:center; gap:12px; margin-top:12px; justify-content:space-between; text-transform:none; letter-spacing:normal;">
+        <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Política de Privacidade</span>
+        <button type="button" class="btn" id="pp-open2" style="font-size:11px; padding:7px 14px; flex:none; width:auto; min-width:0; margin:0; border-radius:8px;">EDITAR</button>
+      </div>
       <label style="display:flex; align-items:center; gap:12px; cursor:pointer; text-transform:none; letter-spacing:normal; margin-top:16px; justify-content:space-between;">
         <span style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim);">Aviso legal no fundo da app</span>
         <span class="pill-toggle">
@@ -2966,7 +2970,7 @@
     </div>
   </div>
 
-  <div class="legal-ft hidden main" id="legal-ft-main"><div class="ft-row">© 2026 Gonçalo Madeira<i>·</i><a href="#" class="ft-pp">Política de Privacidade</a><i>·</i><a href="mailto:trocamisto@proton.me">Contacto</a></div><div class="ft-rights">Todos os direitos reservados.</div><div class="support-wrap"><a class="support-lk" href="https://revolut.me/okotcha" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#FFB300" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-9-9.2C1.8 7.3 4 4.5 7 4.5c2 0 3.5 1.2 5 3 1.5-1.8 3-3 5-3 3 0 5.2 2.8 4 6.3C19 15.5 12 20 12 20z"/></svg>Apoiar o projecto</a></div></div>
+  <div class="legal-ft hidden main" id="legal-ft-main"><div class="ft-row">© 2026 TROCA-MISTO<i>·</i><a href="#" class="ft-pp">Política de Privacidade</a><i>·</i><a href="mailto:trocamisto@proton.me">Contacto</a></div><div class="ft-rights">Todos os direitos reservados.</div><div class="support-wrap"><a class="support-lk" href="https://revolut.me/okotcha" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#FFB300" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-9-9.2C1.8 7.3 4 4.5 7 4.5c2 0 3.5 1.2 5 3 1.5-1.8 3-3 5-3 3 0 5.2 2.8 4 6.3C19 15.5 12 20 12 20z"/></svg>Apoiar o projecto</a></div></div>
 </div>
 
 <script>
@@ -3009,7 +3013,7 @@ const GROUP = (function(){ try{ const g = localStorage.getItem('trocaMistoGroup'
 const GROUP_LABEL = GROUPS[GROUP];
 const PEOPLE_WORD = GROUP === 'sup' ? ['Supervisor', 'Supervisores'] : GROUP === 'disp' ? ['Dispatcher', 'Dispatchers'] : ['Agente', 'Agentes'];   // what a person on the schedule is called in this department
 try{ if(GROUP){ document.documentElement.classList.add('grp-' + GROUP); if(GROUP === 'sup' || GROUP === 'disp'){ const wl = document.getElementById('stat-workers-label'); if(wl) wl.textContent = GROUP === 'sup' ? 'SUPERVISORES' : 'DISPATCHERS'; } const eb = document.querySelector('.eyebrow'); if(eb) eb.textContent = GROUP_LABEL + ' · FAO · PAX'; } }catch(e){}
-const GLOBAL_KEY = /Enabled$|^maintenance$|^flightlist$|^flightairlines$|^aistaff$|^tasks$|^taskreq$|^banned$|^privacyText$/;   // settings and check-in-only data: one copy for everybody
+const GLOBAL_KEY = /Enabled$|^maintenance$|^flightlist$|^flightairlines$|^aistaff$|^tasks$|^taskreq$|^banned$|^privacyText$|^privacyPolicy$/;   // settings and check-in-only data: one copy for everybody
 function gScope(key, g){ g = (g === undefined ? GROUP : g); return g && !GLOBAL_KEY.test(key) ? g + '_' + key : key; }
 function gColl(name, g){ g = (g === undefined ? GROUP : g); return g && (name === 'swaps' || name === 'requests') ? g + '_' + name : name; }
 const SCHEDULE_CACHE_KEY = 'trocaMistoScheduleCache' + (GROUP ? '_' + GROUP : '');
@@ -3340,22 +3344,28 @@ const PP_DEFAULT = [
 'As palavras-passe são protegidas através de hashing PBKDF2, não sendo armazenadas em texto simples.'
 ].join('\n');
 let PP_TEXT = PP_DEFAULT;
+const POLICY_DEFAULT = "# POLÍTICA DE PRIVACIDADE\n\n**TROCA-MISTO | Proteção de Dados e Privacidade**\n\n*Última atualização: novembro de 2026*\n\n## 1. Introdução\n\nO TROCA-MISTO é uma plataforma independente, desenvolvida para facilitar a organização de horários, folgas, trocas de turnos e outras informações relacionadas com a atividade profissional dos seus utilizadores.\n\nA plataforma não constitui um serviço oficial da entidade empregadora, não representa qualquer entidade empregadora e não substitui os respetivos sistemas ou procedimentos internos.\n\nA presente Política de Privacidade explica quais os dados pessoais tratados, as finalidades desse tratamento, as condições de acesso e conservação da informação e os direitos dos utilizadores.\n\n## 2. Responsabilidade pelo tratamento\n\nO tratamento de dados pessoais realizado através do TROCA-MISTO é da responsabilidade da equipa de administração do TROCA-MISTO, nos termos do Regulamento Geral sobre a Proteção de Dados (RGPD).\n\n**Contacto para questões relacionadas com privacidade:**\n\nEmail: trocamisto@proton.me\n\n## 3. Dados pessoais tratados\n\nConsoante as funcionalidades utilizadas, poderão ser tratados os seguintes dados:\n\n### 3.1. Dados de identificação\n- Nome do colaborador.\n- Número de colaborador.\n- Fotografia de perfil, caso seja adicionada.\n\n### 3.2. Dados profissionais e de planeamento\n- Horários de trabalho.\n- Folgas e dias de descanso.\n- Departamento ou área de trabalho.\n- Informação associada a voos e respetivas tarefas, quando aplicável.\n\n### 3.3. Registos de atividade\n- Pedidos de troca de turnos.\n- Confirmações e alterações de trocas.\n- Registos de horas extraordinárias.\n- Informação necessária ao funcionamento das funcionalidades de gestão e planeamento.\n\n### 3.4. Dados de autenticação e segurança\n- Número de colaborador utilizado para identificação.\n- Informação técnica associada à autenticação.\n- Hashes de palavras-passe processados através do algoritmo PBKDF2.\n- Informação técnica necessária à segurança e gestão das sessões.\n\nAs palavras-passe não são armazenadas em texto simples.\n\n### 3.5. Dados técnicos\n- Tokens necessários ao funcionamento das notificações push.\n- Informação técnica necessária à comunicação com os serviços Firebase.\n- Registos técnicos de funcionamento e segurança, quando existentes.\n\n## 4. Finalidades do tratamento\n\nOs dados pessoais são tratados para as seguintes finalidades:\n\n- Identificação e autenticação dos utilizadores.\n- Consulta de horários, folgas e disponibilidade.\n- Gestão de pedidos de troca de turnos.\n- Organização e consulta de tarefas associadas a voos.\n- Registo e consulta de horas extraordinárias.\n- Envio de notificações relacionadas com a atividade da plataforma.\n- Gestão administrativa dos colaboradores e respetivas permissões.\n- Segurança, manutenção e funcionamento da plataforma.\n\nOs dados não são utilizados para fins de publicidade comportamental ou comercialização de informação pessoal.\n\n## 5. Visibilidade e acesso aos dados\n\nO acesso à informação é condicionado pela estrutura de permissões da plataforma.\n\n### 5.1. Colaboradores\n\nOs colaboradores poderão consultar determinadas informações dos colegas pertencentes ao mesmo departamento, nomeadamente dados de identificação, horários e folgas, de acordo com as funcionalidades disponibilizadas.\n\nNas funcionalidades relacionadas com tarefas de voo, a informação poderá ser disponibilizada aos colaboradores associados ao mesmo voo.\n\n### 5.2. Administradores\n\nOs administradores dispõem de permissões de gestão limitadas aos departamentos sob a sua responsabilidade.\n\nO acesso administrativo destina-se exclusivamente às tarefas necessárias à gestão e manutenção da plataforma.\n\n### 5.3. Acesso técnico\n\nOs fornecedores de serviços tecnológicos poderão tratar ou aceder a determinados dados na medida necessária à prestação dos serviços de infraestrutura, armazenamento, comunicação e manutenção.\n\n## 6. Serviços tecnológicos utilizados\n\nO funcionamento do TROCA-MISTO depende de serviços externos de infraestrutura.\n\n### 6.1. GitHub Pages\n\nUtilizado para alojar e disponibilizar a interface da plataforma, incluindo os respetivos ficheiros HTML, CSS e JavaScript.\n\n### 6.2. Google Firebase\n\nSão utilizados os seguintes serviços:\n\n- **Cloud Firestore:** armazenamento e gestão da informação da plataforma, incluindo as fotografias de perfil.\n- **Firebase Cloud Messaging:** suporte ao envio de notificações push.\n\nA base de dados Firebase está configurada na região dos Países Baixos.\n\nO tratamento realizado por estes fornecedores encontra-se sujeito às respetivas condições contratuais e políticas de privacidade.\n\n## 7. Notificações\n\nO TROCA-MISTO utiliza Firebase Cloud Messaging para disponibilizar notificações push relacionadas com as funcionalidades da plataforma.\n\nPara esse efeito, poderão ser utilizados identificadores técnicos ou tokens associados ao dispositivo do utilizador.\n\nAs notificações destinam-se a informar os colaboradores sobre acontecimentos relevantes, nomeadamente pedidos de troca, alterações de horários e outras atualizações.\n\n## 8. Análise e monitorização de utilização\n\nÀ data da presente política, o Google Analytics não se encontra ativo na aplicação.\n\nEmbora exista um identificador de medição nas configurações do projeto Firebase, a plataforma não inicializa atualmente o serviço Firebase Analytics.\n\nConsequentemente, não existe atualmente recolha de estatísticas de visitas através desse serviço.\n\nEsta situação poderá ser atualizada caso sejam introduzidas novas funcionalidades de análise ou monitorização.\n\n## 9. Conservação e eliminação dos dados\n\nA conservação dos dados depende da respetiva finalidade e necessidade operacional.\n\n### 9.1. Horários\n\nOs horários são atualizados mensalmente, sendo os dados do período anterior substituídos no processo de atualização.\n\n### 9.2. Trocas de turnos\n\nOs registos de trocas são eliminados mensalmente, não existindo conservação permanente do histórico de trocas na plataforma.\n\n### 9.3. Mapas mensais em PDF\n\nOs ficheiros PDF originais utilizados na importação dos horários não são conservados após o processo de importação.\n\n### 9.4. Fotografias e dados de perfil\n\nAs fotografias e restantes informações de perfil são conservadas enquanto forem necessárias à disponibilização das funcionalidades correspondentes, ou até ser solicitada a respetiva eliminação, quando aplicável.\n\n### 9.5. Dados de autenticação e notificações\n\nOs dados necessários à autenticação e ao funcionamento das notificações são conservados enquanto a conta e as funcionalidades correspondentes permanecerem ativas, sem prejuízo de outras obrigações de conservação aplicáveis.\n\nOs prazos específicos de eliminação e eventuais cópias de segurança deverão ser definidos e respeitados pelo responsável pelo tratamento.\n\n## 10. Segurança da informação\n\nSão utilizadas medidas técnicas destinadas a proteger os dados pessoais contra acessos não autorizados, perda, alteração ou divulgação indevida.\n\nEntre as medidas implementadas encontram-se:\n\n- Proteção das palavras-passe através de hashing PBKDF2.\n- Separação de permissões entre departamentos.\n- Limitação dos acessos administrativos.\n- Utilização de serviços de armazenamento e infraestrutura Firebase.\n\nA segurança dos dados depende igualmente da configuração adequada das regras de acesso, autenticação, armazenamento e permissões dos serviços utilizados.\n\nApesar das medidas adotadas, nenhum sistema informático pode garantir segurança absoluta.\n\n## 11. Direitos dos titulares dos dados\n\nNos termos do RGPD, os utilizadores poderão exercer, quando aplicável, os seguintes direitos:\n\n- Direito de acesso aos dados pessoais.\n- Direito de retificação de dados incorretos ou incompletos.\n- Direito ao apagamento dos dados.\n- Direito à limitação do tratamento.\n- Direito de oposição ao tratamento.\n- Direito à portabilidade dos dados, quando aplicável.\n- Direito de retirar o consentimento, quando o tratamento se baseie nesse fundamento.\n\nOs pedidos poderão ser apresentados através dos mecanismos disponibilizados na plataforma ou através do endereço:\n\n**trocamisto@proton.me**\n\nOs pedidos serão analisados e tratados nos termos e prazos previstos na legislação aplicável.\n\nOs utilizadores têm ainda o direito de apresentar reclamação junto da Comissão Nacional de Proteção de Dados (CNPD).\n\n## 12. Eliminação de conta\n\nOs utilizadores poderão solicitar a eliminação da respetiva conta através das funcionalidades disponibilizadas na plataforma ou por contacto com o endereço de privacidade.\n\nA eliminação deverá abranger os dados pessoais associados à conta que já não sejam necessários para qualquer finalidade legítima ou obrigação legal de conservação.\n\nA eliminação de uma conta poderá implicar a perda de acesso às funcionalidades e informações associadas.\n\nA execução do pedido deverá respeitar os requisitos legais aplicáveis e contemplar os dados existentes nos diferentes serviços utilizados pela plataforma.\n\n## 13. Transferências internacionais de dados\n\nEmbora a infraestrutura Firebase utilizada para armazenamento esteja localizada nos Países Baixos, a utilização de fornecedores tecnológicos internacionais poderá implicar operações de tratamento ou transferências de dados para outros países.\n\nSempre que existam transferências internacionais, estas deverão respeitar os requisitos e garantias previstos no RGPD.\n\n## 14. Alterações à Política de Privacidade\n\nO TROCA-MISTO poderá atualizar a presente Política de Privacidade sempre que existam alterações relevantes nas funcionalidades, infraestrutura, práticas de tratamento ou requisitos legais aplicáveis.\n\nSempre que as alterações tenham impacto significativo na privacidade dos utilizadores, estes deverão ser devidamente informados.\n\nA versão atualizada estará permanentemente disponível na plataforma.\n\n## 15. Contactos\n\nPara qualquer questão relacionada com privacidade, proteção de dados, acesso, retificação ou eliminação de informação pessoal, poderá ser utilizado o seguinte endereço:\n\n**trocamisto@proton.me**\n\n---\n\n**TROCA-MISTO**\n\nUma plataforma independente, desenvolvida para simplificar a organização e a colaboração entre colegas.";
+let POLICY_TEXT = POLICY_DEFAULT;
 function ppEsc(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function ppInline(t){ return ppEsc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\[([^\]]+)\]/g,'<a href="#" class="ft-pp">$1</a>'); }
-function ppToHtml(txt){   // blank line = new paragraph, "## " = heading, "* " = bullet, **bold**, [link text] = opens the privacy policy
+function ppInline(t){ return ppEsc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\[([^\]]+)\]/g,'<a href="#" class="ft-pp">$1</a>'); }
+function ppToHtml(txt){   // blank line = new paragraph, # / ## / ### = headings, "* " or "- " = bullet, --- = line, **bold**, *italic*, [link text] = opens the privacy policy
   let out = '', list = false;
   const close = () => { if(list){ out += '</ul>'; list = false; } };
   String(txt).split('\n').forEach(line => {
     const t = line.trim();
     if(!t){ close(); return; }
-    if(t.startsWith('## ')){ close(); out += '<h4>' + ppInline(t.slice(3)) + '</h4>'; }
-    else if(t.startsWith('* ')){ if(!list){ out += '<ul>'; list = true; } out += '<li>' + ppInline(t.slice(2)) + '</li>'; }
+    if(t === '---'){ close(); out += '<hr>'; }
+    else if(t.startsWith('### ')){ close(); out += '<h5>' + ppInline(t.slice(4)) + '</h5>'; }
+    else if(t.startsWith('## ')){ close(); out += '<h4>' + ppInline(t.slice(3)) + '</h4>'; }
+    else if(t.startsWith('# ')){ close(); out += '<h3>' + ppInline(t.slice(2)) + '</h3>'; }
+    else if(t.startsWith('* ') || t.startsWith('- ')){ if(!list){ out += '<ul>'; list = true; } out += '<li>' + ppInline(t.slice(2)) + '</li>'; }
     else { close(); out += '<p>' + ppInline(t) + '</p>'; }
   });
   close(); return out;
 }
 function renderPrivacyText(){
   document.querySelectorAll('.pp-text').forEach(el => {
+    if(el.dataset.pp === 'policy'){ el.innerHTML = ppToHtml(POLICY_TEXT); return; }
     el.innerHTML = ppToHtml(PP_TEXT) + (el.dataset.pp === 'consent' ? '<p>Recomendamos a leitura da <a href="#" class="ft-pp">Política de Privacidade</a>, disponível permanentemente na plataforma, onde podes consultar informação detalhada sobre o tratamento dos teus dados e os teus direitos.</p>' : '');
   });
 }
@@ -3363,6 +3373,8 @@ async function loadPrivacyText(){
   const doc = await dbGetShared('privacyText', null);
   if(doc && typeof doc.text === 'string' && doc.text.trim()) PP_TEXT = doc.text;
   CONSENT_VERSION = '1' + (doc && doc.rev ? '.' + doc.rev : '');
+  const pol = await dbGetShared('privacyPolicy', null);
+  if(pol && typeof pol.text === 'string' && pol.text.trim()) POLICY_TEXT = pol.text;
   renderPrivacyText();
   return doc;
 }
@@ -11049,13 +11061,21 @@ document.getElementById('staff-edit-sched-toggle').addEventListener('change', as
   }
   try{ renderAreaHubOrder(); }catch(err){}
 });
-document.getElementById('pp-open').onclick = () => { document.getElementById('pp-edit').value = PP_TEXT; document.getElementById('pp-edit-modal').classList.remove('hidden'); };
+let ppKind = 'consent';
+function ppOpenEditor(kind){ ppKind = kind; document.getElementById('pp-edit').value = kind === 'policy' ? POLICY_TEXT : PP_TEXT; document.getElementById('pp-edit-title').textContent = kind === 'policy' ? 'POLÍTICA DE PRIVACIDADE' : 'TEXTO DE PRIVACIDADE'; document.getElementById('pp-save-again').style.display = kind === 'policy' ? 'none' : ''; document.getElementById('pp-edit-modal').classList.remove('hidden'); }
+document.getElementById('pp-open').onclick = () => ppOpenEditor('consent');
+document.getElementById('pp-open2').onclick = () => ppOpenEditor('policy');
 document.getElementById('pp-close').onclick = (e) => { e.preventDefault(); document.getElementById('pp-edit-modal').classList.add('hidden'); };
 (function(){
   const ta = document.getElementById('pp-edit'), msg = document.getElementById('pp-msg');
   const say = t => { msg.textContent = t; setTimeout(() => { if(msg.textContent === t) msg.textContent = ''; }, 4000); };
   async function save(again){
     const txt = ta.value.trim(); if(!txt){ say('O texto não pode ficar vazio.'); return; }
+    if(ppKind === 'policy'){
+      const ok = await dbSetShared('privacyPolicy', { text: txt });
+      if(!ok){ say('Não foi possível guardar agora.'); return; }
+      POLICY_TEXT = txt; renderPrivacyText(); say('Guardado.'); return;
+    }
     const cur = await dbGetShared('privacyText', null);
     const rev = ((cur && cur.rev) || 0) + (again ? 1 : 0);
     const ok = await dbSetShared('privacyText', { text: txt, rev });
@@ -11065,7 +11085,7 @@ document.getElementById('pp-close').onclick = (e) => { e.preventDefault(); docum
   }
   document.getElementById('pp-save').onclick = () => save(false);
   document.getElementById('pp-save-again').onclick = () => save(true);
-  document.getElementById('pp-reset').onclick = (e) => { e.preventDefault(); ta.value = PP_DEFAULT; say('Texto original posto na caixa. Carrega em GUARDAR para aplicar.'); };
+  document.getElementById('pp-reset').onclick = (e) => { e.preventDefault(); ta.value = ppKind === 'policy' ? POLICY_DEFAULT : PP_DEFAULT; say('Texto original posto na caixa. Carrega em GUARDAR para aplicar.'); };
 })();
 document.getElementById('consent-enabled-toggle').addEventListener('change', async (e) => {
   const newValue = e.target.checked;
