@@ -1541,7 +1541,7 @@
   .mt-chip.chg{ color:var(--swap); background:var(--swap-dim); border:1px solid rgba(185,140,255,0.35); }
   .mt-row{ border-left-width:5px; }
   .mt-kind{ font-family:var(--mono); font-size:10px; letter-spacing:0.08em; padding:2px 6px; border-radius:4px; white-space:nowrap; color:#fff; margin-right:8px; font-weight:700; }
-  .mt-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .mt-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:14px; }
   .mt-side{ display:flex; flex-direction:column; gap:5px; align-items:flex-end; }
   .mt-row{ padding:12px 14px; }
   .mt-time{ min-width:0; font-size:15px; }
@@ -1632,6 +1632,10 @@
   .mt-row.has-tab .mt-side{ align-self:flex-start; }
   .mt-row.now{ border-color:rgba(51,214,139,0.55); }
   .mt-row.past{ opacity:0.45; }
+  /* time header: a faint band in the card's colour that fades out to the right, with the time centred in it */
+  .mt-row{ isolation:isolate; }
+  .mt-row:has(.mt-kind:not(.mt-kind-empty))::before{ content:""; position:absolute; left:0; right:0; top:0; height:32px; z-index:-1; pointer-events:none; background:linear-gradient(90deg, color-mix(in srgb, var(--c) 24%, transparent), transparent 85%); border-radius:0 9px 0 0; }
+  .mt-main > .mt-time{ margin-top:-6px; margin-bottom:6px; }
   /* book-spine look: the kind (CHECK-IN, PARTIDA...) is written vertically on the coloured left edge */
   .mt-row:has(.mt-kind:not(.mt-kind-empty)){ border-left-width:22px; }
   .mt-row .mt-kind:not(.mt-kind-empty){ position:absolute; left:-22px; top:0; bottom:0; width:22px; margin:0; padding:0; background:none !important; display:flex; align-items:center; justify-content:center; writing-mode:vertical-rl; transform:rotate(180deg); font-size:9px; letter-spacing:.12em; }
