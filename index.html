@@ -13242,7 +13242,7 @@ function mtTeamHtml(t, colr, rowKey){
     const d = deskOf(x), isMe = String(x[0]) === me;
     // check-in popovers always reserve the badge column (an invisible one when the desks are hidden), so the popover keeps the same width either way
     const badge = isLR(x) ? '<span class="mt-desk">LR</span>' : colr !== '#0099ff' ? '' : (d !== null ? '<span class="mt-desk' + (isMe ? ' me' : '') + '">' + d + '</span>' : '<span class="mt-desk" style="visibility:hidden;">00</span>');
-    return '<div' + ((c || isMe) ? ' class="' + (c || '') + (isMe ? ' me' : '') + '"' : '') + (badge ? ' style="display:flex; justify-content:space-between; align-items:center; gap:14px;"' : '') + '><span>' + mtEsc(niceListName(x[1])) + '</span>' + badge + '</div>';
+    return '<div' + ((c || isMe) ? ' class="' + (c || '') + (isMe ? ' me' : '') + '"' : '') + (badge ? ' style="display:flex; justify-content:space-between; align-items:center; gap:14px;"' : '') + '><span>' + (isMe ? 'Tu' : mtEsc(niceListName(x[1]))) + '</span>' + badge + '</div>';
   };
   // "A SEGUIR": people who take over the desks later: name, start time (one aligned column) and desk
   const hhmm = m => mtPad(Math.floor((m % 1440) / 60)) + ':' + mtPad(m % 60);
