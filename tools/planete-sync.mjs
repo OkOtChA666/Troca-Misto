@@ -2,6 +2,7 @@
 // Prints only counts and status. If anything goes wrong it keeps the previous copy untouched.
 import { fetchTasks } from './planete-fetch.mjs';
 import { fetchFlights, buildFlightMap } from './f4s-fetch.mjs';
+import { fetchAdsb, updateLive, regKey, toDoc, fromDoc } from './adsb-live.mjs';
 
 
 const PROJECT = 'troca-misto';
@@ -68,8 +69,7 @@ export function buildDoc(parsed, now = Date.now(), changes = {}, fl = null) {
   const a = {};
   parsed.agents.forEach((ag) => {
     const rec = { n: ag.name, t: ag.tasks.map(t => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0, t.fkey || '']) };
-    if (/\bSWAP\b/i.test(ag.rmq || '')) rec.x = 'SWAP';      // planete marks this agent with a SWAP remark (also when it comes with another one, e.g. "SWAP | TKT")
-    if (ag.rmq) rec.r = String(ag.rmq).trim().slice(0, 40);      // the whole remark text (SWAP, TKT, DC, DS, FO…), used by SUGESTÕES DE HORAS EXTRA
+    if (/^SWAP/i.test(ag.rmq || '')) rec.x = 'SWAP';      // planete marks this agent with a SWAP remark
     if (ag.plan) rec.s = ag.plan;      // the service planete has for the agent today [start, end]
     if (ag.k === 0 || ag.k === 1) rec.k = ag.k;      // 1 = check-in agent, 0 = other role (balcão, supervisão, lost…)
     if (ag.punch && (ag.punch[0] || ag.punch[1])) rec.p = ag.punch;      // real clock-in / clock-out times (green / red dots in planete)
@@ -93,6 +93,23 @@ const HDR = { Referer: 'https://trocamisto.pt/', Origin: 'https://trocamisto.pt'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const lisbonHour = () => parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', hour12: false }).format(new Date()), 10) % 24;
 const isNight = () => { const h = lisbonHour(); return h >= 1 && h < 3; };   // nobody works 01:00-03:00
+
+// ---- live plane positions (free ADS-B data) -> data/flightlive, about once a minute. Never blocks or breaks the tasks. ----
+let LIVE_SCHED = {}, LIVE_PREV = null;
+async function liveTick() {
+  try {
+    if (LIVE_PREV === null) {   // first tick of this run: pick up where the last run stopped (landing / take-off times of today)
+      try { const g = await fetch(BASE + 'flightlive?key=' + API_KEY, { headers: HDR }); LIVE_PREV = g.ok ? fromDoc(await g.json()) : {}; } catch (e) { LIVE_PREV = {}; }
+    }
+    const ac = await fetchAdsb();
+    if (!ac) { console.log('LIVE SKIPPED: no ADS-B source answered'); return; }
+    const now = Date.now();
+    LIVE_PREV = updateLive(LIVE_PREV, ac, now, LIVE_SCHED);
+    const r = await fetch(BASE + 'flightlive?key=' + API_KEY, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body: JSON.stringify(toDoc(LIVE_PREV, now)) });
+    const n = Object.values(LIVE_PREV);
+    console.log('LIVE: ' + (r.ok ? 'saved' : 'HTTP ' + r.status) + ' aircraft=' + ac.length + ' tracked=' + n.length + ' inbound=' + n.filter((x) => x.i).length);
+  } catch (e) { console.log('LIVE SKIPPED: ' + String(e && e.message ? e.message : e).slice(0, 120)); }
+}
 
 // One read of the platform + one save. Returns true if saved.
 async function syncOnce(USER, PASS) {
@@ -119,6 +136,12 @@ async function syncOnce(USER, PASS) {
   if (FU && FP) {
     try {
       const f = await fetchFlights({ user: FU, pass: FP });
+      try {   // which planes matter for the live line (today's registrations) and when they are due
+        const sc = {};
+        f.dep.forEach((r) => { const k = regKey(r.reg); if (k) sc[k] = sc[k] || ''; });
+        f.arr.forEach((r) => { const k = regKey(r.reg); if (k) { const m = /(\d{1,2}:\d{2})/.exec(r.sta || ''); sc[k] = m ? m[1].padStart(5, '0') : (sc[k] || ''); } });
+        if (Object.keys(sc).length) LIVE_SCHED = sc;
+      } catch (e) {}
       // full flight lists (Arrivals / Departures) for the app's VOOS screen — separate document, never blocks the tasks
       try {
         const slim = (x) => x.map((r) => { const o = {}; Object.keys(r).forEach((k) => { if (r[k]) o[k] = r[k]; }); return o; });
@@ -172,7 +195,7 @@ async function main() {
   const RUN_MIN = parseInt(process.env.LOOP_MINUTES || '0', 10);     // 0 = one read and stop (manual test)
   const EVERY_MS = 5 * 60 * 1000, MIN_GAP_MS = 60 * 1000, POLL_MS = 15 * 1000;
   const deadline = Date.now() + RUN_MIN * 60 * 1000;
-  if (!RUN_MIN) { await syncOnce(USER, PASS); return; }
+  if (!RUN_MIN) { await syncOnce(USER, PASS); await liveTick(); return; }
   let lastStart = 0, lastReq = await readRequest();
   while (Date.now() < deadline) {
     if (isNight()) {
@@ -184,11 +207,14 @@ async function main() {
     }
     lastStart = Date.now();
     await syncOnce(USER, PASS);
+    await liveTick();
+    let lastLive = Date.now();
     const lastEnd = Date.now();
     let pending = false;
     // wait for the next 5-minute mark, or an "Atualizar" request (at most one read per minute)
     while (Date.now() < deadline && Date.now() - lastStart < EVERY_MS) {
       await sleep(POLL_MS);
+      if (Date.now() - lastLive >= 60 * 1000 && !isNight()) { lastLive = Date.now(); await liveTick(); }
       const req = await readRequest();
       if (req > lastReq) { lastReq = req; pending = true; }
       if (pending && Date.now() - lastEnd >= MIN_GAP_MS) { console.log('REFRESH requested from the app'); break; }
