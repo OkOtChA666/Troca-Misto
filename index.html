@@ -14071,6 +14071,7 @@ window.PC_NO = '<svg viewBox="0 0 24 24" width="18" height="18" style="display:b
 </script>
 <script>
 // First visit on a phone with no saved schedule: show a short loading message until the schedule arrives from the database (the app then reloads by itself).
+// If the database answers but has no schedule for this department, say so (instead of looking like a broken connection).
 (function(){
   try{
     if(typeof DATA === 'undefined' || (DATA.workers && DATA.workers.length)) return;
@@ -14079,11 +14080,34 @@ window.PC_NO = '<svg viewBox="0 0 24 24" width="18" height="18" style="display:b
     o.style.cssText = 'position:fixed; inset:0; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:#0a1120; color:#9fb0d0; font:500 14px/1.4 system-ui,sans-serif; text-align:center; padding:24px;';
     o.innerHTML = '<style>@keyframes schedspin{to{transform:rotate(360deg)}}</style><div style="width:34px; height:34px; border-radius:50%; border:3px solid #1d2842; border-top-color:#ffb020; animation:schedspin .9s linear infinite;"></div><div id="sched-loading-t">A carregar horários…</div>';
     document.body.appendChild(o);
-    setTimeout(() => {
-      const t = document.getElementById('sched-loading-t'); if(!t) return; try{ t.previousElementSibling.style.display = 'none'; }catch(e){}
-      t.innerHTML = 'Sem ligação ao servidor.<br><button id="sched-retry" style="margin-top:14px; padding:10px 22px; border-radius:10px; border:1px solid #ffb020; background:transparent; color:#ffb020; font:700 13px system-ui,sans-serif; letter-spacing:.06em;">TENTAR OUTRA VEZ</button>';
-      document.getElementById('sched-retry').onclick = () => location.reload();
-    }, 10000);
+    const BTN = 'margin-top:14px; padding:10px 22px; border-radius:10px; border:1px solid #ffb020; background:transparent; color:#ffb020; font:700 13px system-ui,sans-serif; letter-spacing:.06em;';
+    const BTN2 = 'margin-top:10px; padding:10px 22px; border-radius:10px; border:1px solid #2b3a5e; background:transparent; color:#9fb0d0; font:700 13px system-ui,sans-serif; letter-spacing:.06em;';
+    let settled = false;
+    const stopSpin = t => { try{ t.previousElementSibling.style.display = 'none'; }catch(e){} };
+    const retry = () => location.reload();
+    const showError = () => {
+      if(settled) return; settled = true;
+      const t = document.getElementById('sched-loading-t'); if(!t) return; stopSpin(t);
+      t.innerHTML = 'Sem ligação ao servidor.<br><button id="sched-retry" style="' + BTN + '">TENTAR OUTRA VEZ</button>';
+      document.getElementById('sched-retry').onclick = retry;
+    };
+    const showMissing = () => {
+      if(settled) return; settled = true;
+      const t = document.getElementById('sched-loading-t'); if(!t) return; stopSpin(t);
+      t.innerHTML = 'Ainda não há horário carregado para este departamento.<div style="margin-top:6px; font-size:12px; color:#6d7a96;">O administrador tem de carregar o horário.</div>'
+        + '<button id="sched-retry" style="' + BTN + '">TENTAR OUTRA VEZ</button>'
+        + (GROUP ? '<br><button id="sched-back" style="' + BTN2 + '">VOLTAR AO CHECK-IN</button>' : '');
+      document.getElementById('sched-retry').onclick = retry;
+      const bk = document.getElementById('sched-back');
+      if(bk) bk.onclick = () => { try{ localStorage.removeItem('trocaMistoGroup'); }catch(e){} location.reload(); };
+    };
+    // ask the database straight away: no schedule saved = say so now
+    Promise.resolve().then(() => getDb()).then(db => db ? db.collection('data').doc(gScope('schedule')).get() : null).then(snap => {
+      if(!snap) return;
+      const d = snap.exists ? snap.data() : null;
+      if(!d || !d.workers || !d.workers.length) showMissing();
+    }).catch(() => {});
+    setTimeout(showError, 10000);
   }catch(e){}
 })();
 </script>
