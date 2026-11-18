@@ -10203,6 +10203,7 @@ function flvListen(){
       try{ if(snap.exists){ const d = snap.data(); FLV = { at: parseInt(d.at, 10) || 0, ac: JSON.parse(d.json) || {} }; } }catch(e){}
       try{ if(!document.getElementById('panel-flights').classList.contains('hidden')) renderFlights(); }catch(e){}
       try{ if(typeof mtOpenOverlay === 'function' && mtOpenOverlay()) renderMyTasks(); }catch(e){}
+      try{ if(GROUP === 'sup' && typeof renderSupAll === 'function') renderSupAll(); }catch(e){}
     }, () => { FLV = null; });
   }).catch(() => { FLV_UNSUB = null; });
 }
@@ -13717,6 +13718,7 @@ function sfTurnaroundHtml(key){
   }).join('') + '</div></div>';
 }
 function sfRows(mineOnly){
+  flvListen();
   const pf = sfPrefs();
   let data = {}; try{ data = JSON.parse(FL_DOC.json) || {}; }catch(e){}
   const keep = {}; String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keep[c] = 1; });
@@ -13751,10 +13753,11 @@ function sfRows(mineOnly){
     if(pf.ta) more.push(sfTurnaroundHtml(key));
     const moreH = open ? '<div class="sf-more">' + (more.length ? more.join('') : '<div style="grid-column:1/3">Sem informação</div>') + '</div>' : '';
     const tabsH = sfTabsHtml(key, r.std);
+    const liveH = flvInfo(r.reg, 'dep');
     const popOpen = !!tabsH && SF_OPEN.indexOf(key + ':') === 0;
     html += '<div class="fl-row sf-row' + (popOpen ? ' open' : '') + (who === me ? ' me' : '') + (past ? ' past' : '') + '" data-sfk="' + escapeHtml(key) + '" data-sfl="' + escapeHtml(label) + '">' +
       '<div class="fl-tm">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
-      '<div><div class="fl-fn">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '<i class="sf-chev">' + (open ? '▲' : '▼') + '</i></div>' + moreH + '</div>' +
+      '<div><div class="fl-fn">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '<i class="sf-chev">' + (open ? '▲' : '▼') + '</i></div>' + liveH + moreH + '</div>' +
       (mineOnly ? '<div></div>' : '<div class="sf-pickbox">' + (p ? '<div class="sf-pick" style="background:' + p.col + '">' + escapeHtml(p.ini) + '</div><div class="sf-who">' + escapeHtml(p.first) + '</div>' : '<div class="sf-pick free">+</div>') + '</div>') +
       tabsH + (cor.length ? '<div class="sf-corner">' + cor.join('') + '</div>' : '') + '</div>';
   });
