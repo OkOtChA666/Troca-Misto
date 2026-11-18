@@ -707,6 +707,21 @@
   .fl-chip.g{ color:#3ddc97; border-color:rgba(61,220,151,.4); }
   .fl-st{ font-family:var(--mono); font-weight:600; font-size:10.5px; margin-top:5px; text-align:right; color:#3ddc97; }
   .fl-st.d{ color:var(--amber); }
+  /* live plane line (CHEGADA EM ~X MIN / ATERROU / DESCOLOU) — free ADS-B data, see flvInfo() */
+  .flv{ display:flex; align-items:center; gap:8px; font:700 11px/1.2 var(--mono) !important; letter-spacing:.05em !important; color:#5fe0ff; text-transform:none; }
+  .flv s{ display:inline-block; flex:none; margin:0 6px 0 2px; width:6px; height:6px; border-radius:50%; background:#5fe0ff; box-shadow:0 0 0 3px rgba(95,224,255,.18); text-decoration:none; }
+  .flv.late{ color:var(--amber); } .flv.late s{ background:var(--amber); box-shadow:0 0 0 3px rgba(255,179,0,.18); }
+  .flv.done{ color:#3ddc97; } .flv.done s{ background:#3ddc97; box-shadow:none; }
+  .flv-bar{ height:3px; border-radius:2px; background:#131c31; position:relative; margin-top:6px; }
+  .flv-bar b{ position:absolute; left:0; top:0; bottom:0; border-radius:2px; background:linear-gradient(90deg,#1c6f87,#5fe0ff); }
+  .flv-bar.late b{ background:linear-gradient(90deg,#8a6200,#FFB300); }
+  .fl-row .flv{ justify-content:flex-end; margin-top:5px; gap:0; }
+  .fl-row .flv-bar{ grid-column:1 / -1; margin-top:2px; }
+  .mt-main .flv{ margin-top:-4px; }
+  /* "new task" tab on the right edge of a task card (mirror of the PARTIDA / ACOLHIMENTO tab on the left) */
+  .mt-nova{ position:absolute; right:-1px; top:50%; margin-top:-26px; width:24px; height:52px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; writing-mode:vertical-rl; background:#e3d4ff; color:#4a2a8a; font:800 11px var(--mono); letter-spacing:.14em; border-radius:10px 0 0 10px; }
+  .mt-nova span{ display:block; transform:rotate(180deg); }
+  .mt-row.has-nova .mt-main{ padding-right:26px; }
   .ai-rule{ font-family:var(--mono); font-size:11px; color:#6d7790; border:1px dashed #27344f; border-radius:8px; padding:8px 10px; margin-bottom:12px; line-height:1.5; }
   .ai-rule b{ color:var(--cyan); font-weight:600; }
   .ai-rl2{ margin-top:14px; border:1px dashed #27344f; border-radius:8px; overflow:hidden; }
@@ -10176,6 +10191,42 @@ function flMergeRanges(s){
   }
   return out.join(',');
 }
+// ===== live plane positions (data/flightlive, written about once a minute by the sync from free ADS-B data) =====
+let FLV = null, FLV_UNSUB = null;
+function flvListen(){
+  if(FLV_UNSUB) return;
+  FLV_UNSUB = true;
+  getDb().then(db => {
+    if(!db){ FLV_UNSUB = null; return; }
+    FLV_UNSUB = db.collection('data').doc('flightlive').onSnapshot(snap => {
+      FLV = null;
+      try{ if(snap.exists){ const d = snap.data(); FLV = { at: parseInt(d.at, 10) || 0, ac: JSON.parse(d.json) || {} }; } }catch(e){}
+      try{ if(!document.getElementById('panel-flights').classList.contains('hidden')) renderFlights(); }catch(e){}
+      try{ if(typeof mtOpenOverlay === 'function' && mtOpenOverlay()) renderMyTasks(); }catch(e){}
+    }, () => { FLV = null; });
+  }).catch(() => { FLV_UNSUB = null; });
+}
+// The live line for one aircraft. reg = registration (EI-DYA), kind = 'dep' (departure / its plane) or 'arr' (arrival).
+// Returns '' when nothing is known (plane not seen, data old) — the card then looks exactly as before.
+function flvInfo(reg, kind){
+  const k = String(reg || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if(!k || !FLV || !FLV.ac) return '';
+  const r = FLV.ac[k]; if(!r) return '';
+  const now = Date.now(), fresh = now - (FLV.at || 0) < 8 * 60000;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const hm = ms => { const d = new Date(ms); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  const line = (txt, cls, pct) => '<div class="flv ' + cls + '"><s></s>' + txt + '</div>' + (pct === null ? '' : '<div class="flv-bar ' + cls + '"><b style="width:' + pct + '%"></b></div>');
+  if(kind === 'dep' && r.to && r.to >= today.getTime()) return line('DESCOLOU ' + hm(r.to), 'done', null);
+  if(kind === 'arr' && r.ld && r.ld >= today.getTime()) return line('ATERROU ' + hm(r.ld), 'done', null);
+  if(fresh && r.i && r.s === 'a' && typeof r.e === 'number' && r.e <= 120){
+    let late = false;
+    if(r.sa){ const m = /^(\d{1,2}):(\d{2})$/.exec(r.sa); if(m){ const due = new Date(); due.setHours(+m[1], +m[2], 0, 0); late = (now + r.e * 60000) - due.getTime() > 10 * 60000; } }
+    const pct = Math.max(4, Math.min(100, Math.round((1 - r.d / 150) * 100)));
+    return line('CHEGADA EM ~' + r.e + ' MIN', late ? 'late' : '', pct);
+  }
+  return '';
+}
+
 function renderFlights(){
   const box = document.getElementById('flights-list');
   const upd = document.getElementById('fl-updated');
@@ -10212,9 +10263,11 @@ function renderFlights(){
     let status = dep ? (r.rem || r.grem || '') : '';
     if(/^\s*gate\s*at\s*$/i.test(String(status))) status = '';   // not needed — gate chip already shows it
     const delayed = est && est !== sched;
+    let flvTop = '', flvBar = '';
+    { const lv = flvInfo(r.reg, dep ? 'dep' : 'arr'); if(lv){ const i = lv.indexOf('<div class="flv-bar'); flvTop = i < 0 ? lv : lv.slice(0, i); flvBar = i < 0 ? '' : lv.slice(i); } }
     out.push('<div class="fl-row' + (past ? ' past' : '') + '"><div class="fl-tm">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
       '<div><div class="fl-fn">' + escapeHtml(f.code + ' ' + f.num) + (place ? '<span>' + escapeHtml(place) + '</span>' : '') + '</div><div class="fl-al">' + escapeHtml(FL_NAMES[f.code] || f.code) + '</div></div>' +
-      '<div><div class="fl-ch">' + chips.join('') + '</div>' + (status ? '<div class="fl-st' + (delayed ? ' d' : '') + '">' + escapeHtml(String(status).toUpperCase()) + '</div>' : '') + '</div></div>');
+      '<div><div class="fl-ch">' + chips.join('') + '</div>' + (status ? '<div class="fl-st' + (delayed ? ' d' : '') + '">' + escapeHtml(String(status).toUpperCase()) + '</div>' : '') + flvTop + '</div>' + flvBar + '</div>');
   });
   box.innerHTML = out.length ? out.join('') : '<div class="hint" style="text-align:center; padding:24px 0;">Sem voos das nossas companhias.</div>';
 }
@@ -10227,6 +10280,7 @@ async function openFlights(){
   document.querySelector('.tabs').classList.add('hidden');
   document.getElementById('panel-flights').classList.remove('hidden');
   FL_TAB = 'dep';
+  flvListen();
   document.getElementById('flights-tab-dep').classList.add('active');
   document.getElementById('flights-tab-arr').classList.remove('active');
   renderFlights();
@@ -12855,6 +12909,7 @@ function mtOpenOverlay(){
   return !!(p && t && !p.classList.contains('hidden') && !t.classList.contains('hidden'));
 }
 function mtListen(){
+  flvListen();
   mtTaListen();
   if(MT_UNSUB || MT_LISTENING) return;
   MT_LISTENING = true;
@@ -13900,20 +13955,23 @@ function mtTasksBodyHtml(staffId, me, now, sameDay){
       const vcol = (GROUP === 'disp' && colr === '#0066cc') ? '#249200' : colr;   // dispatchers' flights are green, like on the platform
       const kindHtml = kind ? '<span class="mt-kind" style="background:' + vcol + ';color:' + kind[1] + '">' + (vcol !== colr ? 'DISPATCHER' : kind[0]) + '</span>' : '<span class="mt-kind mt-kind-empty"></span>';
       const nk = label.replace(/^<\s*/, '').trim();
-      const bdg = badges[nk] ? '<span class="mt-chip chg">' + badges[nk] + '</span>' : '';
+      const bdg = badges[nk] ? '<div class="mt-nova"><span>NOVA</span></div>' : '';
+      const bdgChip = badges[nk] ? '<span class="mt-chip chg">' + badges[nk] + '</span>' : '';   // breaks keep the small chip
       const rowKey = mtKey(t) + '|' + colr + '|' + start;
       const _ta = (colr === '#0066cc' || colr === '#dbffaa') ? mtTaFor(t) : null;   // only the flights (departure / acolhimento), not the check-in desks
       const tabHtml = mtCornerHtml(mtFlightInfo(mtKey(t)), colr, _ta, rowKey, nk.replace(/_/g, ' / '));
       const teamHtml = mtTeamHtml(t, colr, rowKey);
       if(/^(break|pausa|pause)$/i.test(nk)){
         (stacked ? stackRows : liveRows).push('<div class="mt-row mt-break' + cls + '"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + '</div>' +
-                '<div class="mt-break-word">BREAK</div>' + chip + '<div class="mt-side">' + bdg + '</div></div>');
+                '<div class="mt-break-word">BREAK</div>' + chip + '<div class="mt-side">' + bdgChip + '</div></div>');
         return;
       }
-      (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + vcol + ';--c:' + vcol + '"' : '') + '>' +
+      const _fi = mtFlightInfo(mtKey(t));
+      const liveHtml = (_fi && _fi.r && (colr === '#0066cc' || colr === '#dbffaa')) ? flvInfo(_fi.r, colr === '#dbffaa' ? 'arr' : 'dep') : '';
+      (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + (bdg ? ' has-nova' : '') + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + vcol + ';--c:' + vcol + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
-              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + '</div>' +
-              chip + '<div class="mt-side">' + bdg + '</div>' + tabHtml + teamHtml + '</div>');
+              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + liveHtml + '</div>' +
+              chip + '<div class="mt-side"></div>' + bdg + tabHtml + teamHtml + '</div>');
     });
     if(stackRows.length) html += '<div class="mt-pstack' + (mtPastOpen ? ' open' : '') + '">' + stackRows.join('') + '</div>';
     html += liveRows.join('');
