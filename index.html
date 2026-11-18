@@ -720,6 +720,11 @@
   .mt-main .flv{ margin-top:-4px; }
   /* "new task" tab on the right edge of a task card (mirror of the PARTIDA / ACOLHIMENTO tab on the left) */
   .mt-nova{ position:absolute; right:-1px; top:50%; margin-top:-26px; width:24px; height:52px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; writing-mode:vertical-rl; background:#e3d4ff; color:#4a2a8a; font:800 11px var(--mono); letter-spacing:.14em; border-radius:10px 0 0 10px; }
+  .flv-credit{ margin-top:18px; text-align:center; font-style:normal; opacity:.7; }
+  .flv-credit a{ display:inline-flex; align-items:baseline; gap:8px; text-decoration:none; color:inherit; }
+  .flv-credit a span{ font-size:9px; letter-spacing:1px; font-weight:600; color:var(--text-dim); }
+  .flv-credit a strong{ font-size:15px; font-weight:700; color:#dfe6f5; }
+  .flv-credit div{ margin-top:6px; font-size:11px; color:var(--text-dim); }
   .mt-nova span{ display:block; transform:rotate(180deg); }
   .mt-row.has-nova .mt-main{ padding-right:26px; }
   .ai-rule{ font-family:var(--mono); font-size:11px; color:#6d7790; border:1px dashed #27344f; border-radius:8px; padding:8px 10px; margin-bottom:12px; line-height:1.5; }
@@ -10228,6 +10233,13 @@ function flvInfo(reg, kind){
   return '';
 }
 
+// small thank-you to the free data sources; only shown while live planes are being tracked
+function flvCredit(){
+  try{
+    if(!FLV || !FLV.ac || !Object.keys(FLV.ac).length || Date.now() - (FLV.at || 0) > 30 * 60000) return '';
+    return '<div class="flv-credit"><a href="https://adsb.lol/" target="_blank" rel="noopener noreferrer"><span>POWERED BY</span><strong>adsb.lol</strong></a><div>Dados de voos fornecidos por adsb.lol e adsb.fi</div></div>';
+  }catch(e){ return ''; }
+}
 function renderFlights(){
   const box = document.getElementById('flights-list');
   const upd = document.getElementById('fl-updated');
@@ -14010,7 +14022,7 @@ function renderMyTasks(){
   }
 
   html += mtTasksBodyHtml(staffId, me, now, sameDay);
-  html += '<div class="mt-foot"><span style="color:var(--amber);">' + updTxt + '.</span><div style="height:12px;"></div>Em caso de dúvida, confirma sempre na plataforma oficial.</div>';
+  html += '<div class="mt-foot"><span style="color:var(--amber);">' + updTxt + '.</span><div style="height:12px;"></div>Em caso de dúvida, confirma sempre na plataforma oficial.' + flvCredit() + '</div>';
   body.innerHTML = html;
 }
 let mtPastOpen = false, mtStackBusy = false;
