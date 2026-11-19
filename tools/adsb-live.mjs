@@ -66,10 +66,11 @@ export function fmtReg(raw) {
 // Look up single planes by registration, so a plane can be followed long before it is inside the 150 nm circle.
 // raw: { KEY: 'G-EZUA' } registrations as written by the airline list; sched: { KEY: 'HH:MM' scheduled arrival }.
 // Only planes due within the next ~2 h (and not already seen) are asked for, at most 12 per call, one per second.
-export async function fetchFar(sched, raw, seen, nowMs, fetchFn = fetch, maxN = 20, gapMs = 1100) {
+export async function fetchFar(sched, raw, seen, nowMs, fetchFn = fetch, maxN = 24, gapMs = 1100, dep = {}) {
   const lis = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(nowMs));
   const nowMin = parseInt(lis.slice(0, 2), 10) * 60 + parseInt(lis.slice(3, 5), 10);
   // who is worth asking for: due between 20 min ago and 100 min from now (the app only shows the last 90 min), the closest ones first
+  let info_late = 0;
   const todo = [];
   for (const k of Object.keys(sched)) {
     const m = /^(\d{1,2}):(\d{2})$/.exec(sched[k] || '');
@@ -80,8 +81,22 @@ export async function fetchFar(sched, raw, seen, nowMs, fetchFn = fetch, maxN = 
     todo.push({ k, diff });
   }
   todo.sort((x, y) => Math.abs(x.diff) - Math.abs(y.diff));
+  // a very late plane: its arrival time has long passed, but it leaves again soon (departure time = ETD if there is one) and it is not at Faro yet
+  const late = [];
+  for (const k of Object.keys(dep)) {
+    if (seen.has(k) || !raw[k] || todo.some((x) => x.k === k)) continue;
+    const m = /^(\d{1,2}):(\d{2})$/.exec(dep[k] || '');
+    if (!m) continue;
+    let dd = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) - nowMin;
+    if (dd > 720) dd -= 1440; if (dd < -720) dd += 1440;
+    if (dd < -10 || dd > 150) continue;
+    late.push({ k, diff: dd });
+  }
+  late.sort((x, y) => x.diff - y.diff);
+  late.forEach((x) => { if (todo.length < maxN) { todo.push(x); sched[x.k] = sched[x.k] || ''; } });
+  info_late = late.length;
   const out = [];
-  const info = { due: todo.length, asked: 0, found: 0, missing: [] };
+  const info = { due: todo.length, late: info_late, asked: 0, found: 0, missing: [] };
   for (const t of todo.slice(0, maxN)) {
     info.asked++;
     let got = 0;
