@@ -95,7 +95,7 @@ const lisbonHour = () => parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: '
 const isNight = () => { const h = lisbonHour(); return h >= 1 && h < 3; };   // nobody works 01:00-03:00
 
 // ---- live plane positions (free ADS-B data) -> data/flightlive, about once a minute. Never blocks or breaks the tasks. ----
-let LIVE_SCHED = {}, LIVE_RAW = {}, LIVE_PREV = null;
+let LIVE_SCHED = {}, LIVE_RAW = {}, LIVE_DEP = {}, LIVE_PREV = null;
 async function liveTick() {
   try {
     if (LIVE_PREV === null) {   // first tick of this run: pick up where the last run stopped (landing / take-off times of today)
@@ -106,9 +106,9 @@ async function liveTick() {
     const now = Date.now();
     try {   // planes due soon that are still far away: ask for them one by one by registration
       const seen = new Set(ac.map((a) => regKey(a.r)));
-      const far = await fetchFar(LIVE_SCHED, LIVE_RAW, seen, now);
+      const far = await fetchFar(LIVE_SCHED, LIVE_RAW, seen, now, undefined, undefined, undefined, LIVE_DEP);
       far.forEach((a) => { if (!seen.has(regKey(a.r))) { seen.add(regKey(a.r)); ac.push(a); } });
-      if (far.info) console.log('FAR: due=' + far.info.due + ' asked=' + far.info.asked + ' found=' + far.info.found + (far.info.missing.length ? ' not-found=' + far.info.missing.slice(0, 8).join(',') : ''));
+      if (far.info) console.log('FAR: due=' + far.info.due + ' asked=' + far.info.asked + ' late=' + far.info.late + ' found=' + far.info.found + (far.info.missing.length ? ' not-found=' + far.info.missing.slice(0, 8).join(',') : ''));
     } catch (e) {}
     LIVE_PREV = updateLive(LIVE_PREV, ac, now, LIVE_SCHED);
     const r = await fetch(BASE + 'flightlive?key=' + API_KEY, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body: JSON.stringify(toDoc(LIVE_PREV, now)) });
@@ -151,7 +151,8 @@ async function syncOnce(USER, PASS) {
         const arrBy = {}; f.arr.forEach((r) => { const s = split(r.n); const m = /(\d{1,2}:\d{2})/.exec(r.sta || ''); if (s && m) arrBy[s[0] + s[1]] = m[1].padStart(5, '0'); });
         f.dep.forEach((r) => { const k = regKey(r.reg); if (!k || sc[k]) return; const s = split(r.n); if (!s) return; const t = arrBy[s[0] + (s[1] - 1)] || arrBy[s[0] + (s[1] - 2)]; if (t) sc[k] = t; });
         console.log('LIVE-PLAN: planes=' + Object.keys(sc).length + ' with-arrival-time=' + Object.values(sc).filter(Boolean).length);
-        if (Object.keys(sc).length) { LIVE_SCHED = sc; LIVE_RAW = raw; }
+        const dp = {}; f.dep.forEach((r) => { const k = regKey(r.reg); const m = /(\d{1,2}:\d{2})/.exec(r.etd || r.std || ''); if (k && m) dp[k] = m[1].padStart(5, '0'); });
+        if (Object.keys(sc).length) { LIVE_SCHED = sc; LIVE_RAW = raw; LIVE_DEP = dp; }
       } catch (e) {}
       // full flight lists (Arrivals / Departures) for the app's VOOS screen — separate document, never blocks the tasks
       try {
