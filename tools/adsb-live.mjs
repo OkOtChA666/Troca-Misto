@@ -39,6 +39,52 @@ export async function fetchAdsb(fetchFn = fetch) {
   return null;
 }
 
+// Minutes until landing from distance (nm), ground speed (kt) and altitude (ft).
+// A plane descends about 3 nm per 1000 ft and slows to ~280 kt on the way down; the rest is flown at its current speed.
+// A few minutes are added for the turn onto final and the speed reduction (less when it is already close).
+export function etaMin(d, gs, altFt) {
+  const alt = typeof altFt === 'number' && altFt > 0 ? altFt : 0;
+  const speed = Math.max(gs || 0, 130);
+  const descDist = Math.min(d, (alt / 1000) * 3);
+  const cruiseDist = d - descDist;
+  const descSpeed = Math.max(150, Math.min(speed, 280));
+  const hours = cruiseDist / speed + descDist / descSpeed;
+  return Math.round(hours * 60 + Math.min(4, d / 5));
+}
+
+// Look up single planes by registration, so a plane can be followed long before it is inside the 150 nm circle.
+// raw: { KEY: 'G-EZUA' } registrations as written by the airline list; sched: { KEY: 'HH:MM' scheduled arrival }.
+// Only planes due within the next ~2 h (and not already seen) are asked for, at most 12 per call, one per second.
+export async function fetchFar(sched, raw, seen, nowMs, fetchFn = fetch, maxN = 12, gapMs = 1100) {
+  const lis = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(nowMs));
+  const nowMin = parseInt(lis.slice(0, 2), 10) * 60 + parseInt(lis.slice(3, 5), 10);
+  const out = [];
+  let n = 0;
+  for (const k of Object.keys(sched)) {
+    if (n >= maxN) break;
+    const m = /^(\d{1,2}):(\d{2})$/.exec(sched[k] || '');
+    if (!m || seen.has(k) || !raw[k]) continue;
+    let diff = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) - nowMin;
+    if (diff > 720) diff -= 1440; if (diff < -720) diff += 1440;
+    if (diff < -20 || diff > 150) continue;                                    // due between 20 min ago and 2.5 h from now
+    n++;
+    const reg = encodeURIComponent(raw[k]);
+    for (const u of ['https://api.adsb.lol/v2/reg/' + reg, 'https://opendata.adsb.fi/api/v2/registration/' + reg]) {
+      try {
+        const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+        const r = await fetchFn(u, { signal: ctl.signal, headers: { 'User-Agent': 'troca-misto/1.0 (shift swap board)' } });
+        clearTimeout(t);
+        if (!r.ok) continue;
+        const j = await r.json();
+        const list = j.ac || j.aircraft;
+        if (Array.isArray(list)) { list.forEach((a) => out.push(a)); break; }
+      } catch (e) { /* try the next source */ }
+    }
+    await new Promise((res) => setTimeout(res, gapMs));
+  }
+  return out;
+}
+
 // prev: { REG: entry } from the last minute; ac: aircraft list; sched: { REG: 'HH:MM' scheduled arrival } (also tells which planes matter)
 // entry: { d: distance nm, e: minutes to land, s: 'a' air | 'g' ground, i: 1 coming in to land, ld: landed at (ms), to: took off at (ms), sa: scheduled arrival, t: last seen (ms) }
 export function updateLive(prev, ac, now, sched = {}) {
@@ -63,7 +109,7 @@ export function updateLive(prev, ac, now, sched = {}) {
     } else {
       if (toward && d > 1.5) {
         e.i = 1; delete e.ld; delete e.to;                                      // a new rotation: forget the earlier landing / take-off
-        e.e = Math.round((d / Math.max(gs, 130)) * 60);                        // minutes: distance / speed (never slower than 130 kt)
+        e.e = etaMin(d, gs, a.alt_baro);                                        // minutes to land (see etaMin)
       } else if (p && p.s === 'g' && d < 20 && !e.to) e.to = now;              // was on the ground, now airborne and leaving
     }
     out[k] = e;
