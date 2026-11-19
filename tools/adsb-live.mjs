@@ -52,6 +52,17 @@ export function etaMin(d, gs, altFt) {
   return Math.round(hours * 60 + Math.min(4, d / 5));
 }
 
+// The airline list writes registrations without the hyphen ("OOSBE"); the ADS-B sources want "OO-SBE".
+const PFX2 = ['OO','EI','EC','CS','HB','PH','LN','SE','OY','OH','SP','OK','HA','YR','LY','ES','YL','TC','UR','SX','TF','LX','OE','EW','EK','ER','LZ','YU','9A','9H','4X','A6','A7','RA','VP','VQ','ZS','SU','TS','CN','5A','JY'];
+const PFX1 = ['G','D','F','I'];
+export function fmtReg(raw) {
+  const k = regKey(raw);
+  if (/-/.test(String(raw || ''))) return String(raw).toUpperCase();
+  for (const p of PFX2) if (k.startsWith(p) && k.length > p.length + 1) return p + '-' + k.slice(p.length);
+  for (const p of PFX1) if (k.startsWith(p) && k.length > 3) return p + '-' + k.slice(1);
+  return k;
+}
+
 // Look up single planes by registration, so a plane can be followed long before it is inside the 150 nm circle.
 // raw: { KEY: 'G-EZUA' } registrations as written by the airline list; sched: { KEY: 'HH:MM' scheduled arrival }.
 // Only planes due within the next ~2 h (and not already seen) are asked for, at most 12 per call, one per second.
@@ -74,8 +85,9 @@ export async function fetchFar(sched, raw, seen, nowMs, fetchFn = fetch, maxN = 
   for (const t of todo.slice(0, maxN)) {
     info.asked++;
     let got = 0;
-    const reg = encodeURIComponent(raw[t.k]);
-    for (const u of ['https://api.adsb.lol/v2/reg/' + reg, 'https://opendata.adsb.fi/api/v2/registration/' + reg]) {
+    const forms = [fmtReg(raw[t.k]), regKey(raw[t.k])].filter((v, i, a) => a.indexOf(v) === i).map(encodeURIComponent);
+    const urls = []; forms.forEach((reg) => urls.push('https://api.adsb.lol/v2/reg/' + reg, 'https://opendata.adsb.fi/api/v2/registration/' + reg));
+    for (const u of urls) {
       try {
         const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 8000);
         const r = await fetchFn(u, { signal: ctl.signal, headers: { 'User-Agent': 'troca-misto/1.0 (shift swap board)' } });
