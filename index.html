@@ -13528,7 +13528,8 @@ function mtTeamHtml(t, colr, rowKey){
   // LR (limited release) reinforcement: listed below a divider, with an LR badge
   const isLR = x => /(^|\s)LR$/i.test(String(x[4] || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim());
   const ini = n => { const w = String(n || '').trim().split(/\s+/).filter(Boolean); const a = w.length ? w[0].charAt(0) : '', b = w.length > 1 ? w[w.length - 1].charAt(0) : (w[0] || '').charAt(1); const r = (a + b).toUpperCase(); return /[A-ZÀ-Ý]/.test(r) ? r : '?'; };
-  const av = (name, col) => '<span class="mt-av" style="background:' + col + '">' + mtEsc(ini(name)) + '</span>';
+  const dk = col => col === '#dbffaa' ? ';color:#0b1220' : '';
+  const av = (name, col) => '<span class="mt-av" style="background:' + col + dk(col) + '">' + mtEsc(ini(name)) + '</span>';
   const nm = (x, col) => {
     const d = deskOf(x), isMe = String(x[0]) === me;
     // check-in popovers always reserve the badge column (an invisible one when the desks are hidden), so the popover keeps the same width either way
@@ -13537,9 +13538,9 @@ function mtTeamHtml(t, colr, rowKey){
     return '<div class="mt-pp' + (isMe ? ' me' : '') + (isLR(x) ? ' lr' : '') + '">' + av(nice, col || '#3a4f7c') + '<span class="mt-pn">' + mtEsc(nice) + '</span>' + badge + '</div>';
   };
   const names = (l, col) => srt(l.filter(x => !isLR(x))).map(x => nm(x, col)).join('') + srt(l.filter(isLR)).map(x => nm(x, col)).join('');
-  const sec = (items) => items.map((it, i) => it.t ? '<div class="mt-h' + (i === 0 ? ' f' : '') + '" style="background:' + it.c + '">' + it.t + '</div>' + it.b : '<div class="mt-g0">' + it.b + '</div>').join('');
+  const sec = (items) => items.map((it, i) => it.t ? '<div class="mt-h' + (i === 0 ? ' f' : '') + '" style="background:' + it.c + dk(it.c) + '">' + it.t + '</div>' + it.b : '<div class="mt-g0">' + it.b + '</div>').join('');
   const supRow = '<div class="mt-pp">' + av(sup || '', '#d9661a') + '<span class="mt-pn">' + mtEsc(niceListName(sup || '')) + '</span></div>';
-  const SUPC = '#d9661a', DISPC = '#7a5cff', PARTC = '#0066cc', ACOLC = '#5a9a1e';
+  const SUPC = '#d9661a', DISPC = '#249200', PARTC = '#0066cc', ACOLC = '#dbffaa';   // the same colours as the cards (pale lime needs dark text)
   // "A SEGUIR": people who take over the desks later: name, start time (one aligned column) and desk
   const hhmm = m => mtPad(Math.floor((m % 1440) / 60)) + ':' + mtPad(m % 60);
   const laterRow = x => {
@@ -13593,7 +13594,7 @@ function mtTeamHtml(t, colr, rowKey){
          '<div class="mt-pop">' + sec((function(){
            const it = [];
            if(sup) it.push({ t: 'SUPERVISOR', c: SUPC, b: supRow });
-           if(!supOnly && now.length) it.push({ t: colr === '#0099ff' ? 'NESTE VOO' : '', c: '#0099ff', b: names(now, colr === '#0099ff' ? '#0099ff' : '#3a4f7c') });
+           if(!supOnly && now.length){ const own = colr === '#0099ff' ? ['NESTE VOO', '#0099ff'] : colr === '#0066cc' ? ['PARTIDA', PARTC] : colr === '#dbffaa' ? ['ACOLHIMENTO', ACOLC] : ['', '#3a4f7c']; it.push({ t: own[0], c: own[1], b: names(now, own[1]) }); }
            if(other.length) it.push({ t: otherLabel, c: otherLabel === 'PARTIDA' ? PARTC : ACOLC, b: names(other, otherLabel === 'PARTIDA' ? PARTC : ACOLC) });
            if(disp.length) it.push({ t: 'DISPATCHER', c: DISPC, b: names(disp, DISPC) });
            if(later.length) it.push({ t: 'A SEGUIR', c: '#3a4f7c', b: srt(later).map(x => laterRow(x)).join('') });
