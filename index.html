@@ -1633,15 +1633,17 @@
   .mt-pop div{ padding:2px 0; }
   .mt-pop .me{ color:#7ef0c4; }
   /* team popover: coloured rounded title tabs edge to edge, a round initials badge for each person */
-  .mt-row.team-open .mt-pop{ padding:0 0 8px; border-radius:14px; min-width:236px; bottom:38px; transform-origin:22px 100%; }
+  .mt-row.team-open .mt-pop{ padding:0 0 8px; border-radius:14px; min-width:270px; bottom:38px; transform-origin:22px 100%; }
   .mt-pop:after{ content:""; position:absolute; left:14px; bottom:-7px; width:12px; height:12px; background:#22355c; border-right:1px solid #8fa0c4; border-bottom:1px solid #8fa0c4; transform:rotate(45deg); border-radius:0 0 3px 0; }   /* little arrow down to the people tab */
-  .mt-row.pop-in .mt-pop{ animation:mtPopIn .16s ease-out; }
-  @keyframes mtPopIn{ from{ opacity:0; transform:translateY(6px) scale(.94); } to{ opacity:1; transform:none; } }
-  @media (prefers-reduced-motion:reduce){ .mt-row.pop-in .mt-pop{ animation:none; } }
-  .mt-pop .mt-h{ font-size:9.5px; font-weight:800; letter-spacing:.14em; color:#fff; padding:5px 14px 4px; margin:10px 0 4px; border-radius:10px 10px 0 0; box-shadow:0 -4px 7px rgba(0,0,0,.4); position:relative; z-index:1; }
+  .mt-row.pop-in .mt-pop{ animation:mtPopIn .32s cubic-bezier(.2,.9,.3,1.12) both; }
+  .mt-row.pop-out .mt-pop{ animation:mtPopOut .18s ease-in both; }
+  @keyframes mtPopIn{ from{ opacity:0; transform:translateY(16px) scale(.82); } 60%{ opacity:1; } to{ opacity:1; transform:none; } }
+  @keyframes mtPopOut{ from{ opacity:1; transform:none; } to{ opacity:0; transform:translateY(10px) scale(.9); } }
+  @media (prefers-reduced-motion:reduce){ .mt-row.pop-in .mt-pop, .mt-row.pop-out .mt-pop{ animation:none; } }
+  .mt-pop .mt-h{ font-size:10.5px; font-weight:800; letter-spacing:.14em; color:#fff; padding:6px 14px 5px; margin:12px 0 6px; border-radius:10px 10px 0 0; box-shadow:0 -4px 7px rgba(0,0,0,.4); position:relative; z-index:1; }
   .mt-pop .mt-h.f{ margin-top:0; box-shadow:none; border-radius:13px 13px 0 0; }
   .mt-pop .mt-g0{ padding:8px 0 0; }
-  .mt-pop .mt-pp{ display:flex; align-items:center; gap:9px; padding:3px 10px; margin:0 4px; border-radius:9px; }
+  .mt-pop .mt-pp{ display:flex; align-items:center; gap:12px; padding:5px 12px; margin:0 4px; border-radius:12px; font-size:15px; }
   .mt-pop .mt-pp.me{ background:rgba(126,240,196,.14); font-weight:700; }
   .mt-pop .mt-pp.lr{ opacity:.85; }
   .mt-pop .mt-pp.lr .mt-av{ opacity:.6; }
@@ -1649,7 +1651,7 @@
   .mt-pop .mt-av img{ width:100%; height:100%; object-fit:cover; display:block; }
   .mt-pop .mt-pn{ flex:1; white-space:nowrap; }
   .mt-pop .mt-pt{ font-size:10.5px; font-weight:700; color:#8fa0c4; width:46px; text-align:center; line-height:1; }
-  .mt-pop .mt-av{ width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:800; color:#fff; flex:none; }
+  .mt-pop .mt-av{ width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#fff; flex:none; }
   .mt-pop .mt-desk-toggle{ margin:6px 14px 0; }
   /* notification bell: a round button; yellow with a red dot while something is unread, quiet grey otherwise */
   #notifications-bell-link{ width:32px; height:32px; box-sizing:border-box; flex:none; justify-content:center; margin:-6px 4px -6px 10px; transition:color .2s; }
@@ -14092,7 +14094,11 @@ document.addEventListener('click', ev => {
   if(!tb) return;
   const row = tb.closest('.mt-row'), k = tb.getAttribute('data-k');
   const on = !row.classList.contains('team-open');
-  row.classList.toggle('team-open', on); row.classList.toggle('pop-in', on); mtTeamOpen[k] = on;
+  if(on){ row.classList.remove('pop-out'); row.classList.add('team-open', 'pop-in'); mtTeamOpen[k] = true; }
+  else{   // fade it away first, then hide it
+    mtTeamOpen[k] = false; row.classList.remove('pop-in'); row.classList.add('pop-out');
+    setTimeout(() => { if(!mtTeamOpen[k]) row.classList.remove('team-open', 'pop-out'); }, 190);
+  }
 });
 
 // ---------- ALTERAÇÃO DE HORÁRIO (self-service, from ÁREA PESSOAL) ----------
