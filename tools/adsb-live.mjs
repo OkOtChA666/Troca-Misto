@@ -55,33 +55,41 @@ export function etaMin(d, gs, altFt) {
 // Look up single planes by registration, so a plane can be followed long before it is inside the 150 nm circle.
 // raw: { KEY: 'G-EZUA' } registrations as written by the airline list; sched: { KEY: 'HH:MM' scheduled arrival }.
 // Only planes due within the next ~2 h (and not already seen) are asked for, at most 12 per call, one per second.
-export async function fetchFar(sched, raw, seen, nowMs, fetchFn = fetch, maxN = 12, gapMs = 1100) {
+export async function fetchFar(sched, raw, seen, nowMs, fetchFn = fetch, maxN = 20, gapMs = 1100) {
   const lis = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(nowMs));
   const nowMin = parseInt(lis.slice(0, 2), 10) * 60 + parseInt(lis.slice(3, 5), 10);
-  const out = [];
-  let n = 0;
+  // who is worth asking for: due between 20 min ago and 100 min from now (the app only shows the last 90 min), the closest ones first
+  const todo = [];
   for (const k of Object.keys(sched)) {
-    if (n >= maxN) break;
     const m = /^(\d{1,2}):(\d{2})$/.exec(sched[k] || '');
     if (!m || seen.has(k) || !raw[k]) continue;
     let diff = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) - nowMin;
     if (diff > 720) diff -= 1440; if (diff < -720) diff += 1440;
-    if (diff < -20 || diff > 150) continue;                                    // due between 20 min ago and 2.5 h from now
-    n++;
-    const reg = encodeURIComponent(raw[k]);
+    if (diff < -20 || diff > 100) continue;
+    todo.push({ k, diff });
+  }
+  todo.sort((x, y) => Math.abs(x.diff) - Math.abs(y.diff));
+  const out = [];
+  const info = { due: todo.length, asked: 0, found: 0, missing: [] };
+  for (const t of todo.slice(0, maxN)) {
+    info.asked++;
+    let got = 0;
+    const reg = encodeURIComponent(raw[t.k]);
     for (const u of ['https://api.adsb.lol/v2/reg/' + reg, 'https://opendata.adsb.fi/api/v2/registration/' + reg]) {
       try {
-        const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+        const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 8000);
         const r = await fetchFn(u, { signal: ctl.signal, headers: { 'User-Agent': 'troca-misto/1.0 (shift swap board)' } });
-        clearTimeout(t);
+        clearTimeout(tm);
         if (!r.ok) continue;
         const j = await r.json();
         const list = j.ac || j.aircraft;
-        if (Array.isArray(list)) { list.forEach((a) => out.push(a)); break; }
+        if (Array.isArray(list)) { list.forEach((a) => out.push(a)); got = list.length; if (got) break; }
       } catch (e) { /* try the next source */ }
     }
+    if (got) info.found++; else info.missing.push(raw[t.k] + '@' + sched[t.k]);
     await new Promise((res) => setTimeout(res, gapMs));
   }
+  out.info = info;
   return out;
 }
 
