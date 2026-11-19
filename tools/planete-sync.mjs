@@ -146,6 +146,11 @@ async function syncOnce(USER, PASS) {
         const sc = {}, raw = {};
         f.dep.forEach((r) => { const k = regKey(r.reg); if (k) { sc[k] = sc[k] || ''; raw[k] = r.reg; } });
         f.arr.forEach((r) => { const k = regKey(r.reg); if (k) { raw[k] = r.reg; const m = /(\d{1,2}:\d{2})/.exec(r.sta || ''); sc[k] = m ? m[1].padStart(5, '0') : (sc[k] || ''); } });
+        // a departure with a registration but no matching arrival row (the arrival list often has no registration): use the arrival of the same airline with the number just before it (SN3801 in, SN3802 out)
+        const split = (n) => { const m = /^([A-Z0-9]{2})(\d{1,4})[A-Z]?$/.exec(String(n || '').toUpperCase().replace(/[^A-Z0-9]/g, '')); return m ? [m[1], parseInt(m[2], 10)] : null; };
+        const arrBy = {}; f.arr.forEach((r) => { const s = split(r.n); const m = /(\d{1,2}:\d{2})/.exec(r.sta || ''); if (s && m) arrBy[s[0] + s[1]] = m[1].padStart(5, '0'); });
+        f.dep.forEach((r) => { const k = regKey(r.reg); if (!k || sc[k]) return; const s = split(r.n); if (!s) return; const t = arrBy[s[0] + (s[1] - 1)] || arrBy[s[0] + (s[1] - 2)]; if (t) sc[k] = t; });
+        console.log('LIVE-PLAN: planes=' + Object.keys(sc).length + ' with-arrival-time=' + Object.values(sc).filter(Boolean).length);
         if (Object.keys(sc).length) { LIVE_SCHED = sc; LIVE_RAW = raw; }
       } catch (e) {}
       // full flight lists (Arrivals / Departures) for the app's VOOS screen — separate document, never blocks the tasks
