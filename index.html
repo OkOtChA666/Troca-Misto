@@ -1632,6 +1632,23 @@
   .mt-pop h6{ margin:0 0 6px; font-size:10px; letter-spacing:.14em; color:#ffb020; }
   .mt-pop div{ padding:2px 0; }
   .mt-pop .me{ color:#7ef0c4; }
+  /* team popover: coloured rounded title tabs edge to edge, a round initials badge for each person */
+  .mt-row.team-open .mt-pop{ padding:0 0 8px; border-radius:14px; min-width:236px; bottom:38px; transform-origin:22px 100%; }
+  .mt-pop:after{ content:""; position:absolute; left:14px; bottom:-7px; width:12px; height:12px; background:#22355c; border-right:1px solid #8fa0c4; border-bottom:1px solid #8fa0c4; transform:rotate(45deg); border-radius:0 0 3px 0; }   /* little arrow down to the people tab */
+  .mt-row.pop-in .mt-pop{ animation:mtPopIn .16s ease-out; }
+  @keyframes mtPopIn{ from{ opacity:0; transform:translateY(6px) scale(.94); } to{ opacity:1; transform:none; } }
+  @media (prefers-reduced-motion:reduce){ .mt-row.pop-in .mt-pop{ animation:none; } }
+  .mt-pop .mt-h{ font-size:9.5px; font-weight:800; letter-spacing:.14em; color:#fff; padding:5px 14px 4px; margin:10px 0 4px; border-radius:10px 10px 0 0; box-shadow:0 -4px 7px rgba(0,0,0,.4); position:relative; z-index:1; }
+  .mt-pop .mt-h.f{ margin-top:0; box-shadow:none; border-radius:13px 13px 0 0; }
+  .mt-pop .mt-g0{ padding:8px 0 0; }
+  .mt-pop .mt-pp{ display:flex; align-items:center; gap:9px; padding:3px 10px; margin:0 4px; border-radius:9px; }
+  .mt-pop .mt-pp.me{ background:rgba(126,240,196,.14); font-weight:700; }
+  .mt-pop .mt-pp.lr{ opacity:.85; }
+  .mt-pop .mt-pp.lr .mt-av{ opacity:.6; }
+  .mt-pop .mt-pn{ flex:1; white-space:nowrap; }
+  .mt-pop .mt-pt{ font-size:10.5px; font-weight:700; color:#8fa0c4; width:46px; text-align:center; line-height:1; }
+  .mt-pop .mt-av{ width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:800; color:#fff; flex:none; }
+  .mt-pop .mt-desk-toggle{ margin:6px 14px 0; }
   /* notification bell: a round button; yellow with a red dot while something is unread, quiet grey otherwise */
   #notifications-bell-link{ width:32px; height:32px; box-sizing:border-box; flex:none; justify-content:center; margin:-6px 4px -6px 10px; transition:color .2s; }
   #notifications-bell-link.has-unread{ color:#ffb020 !important; }
@@ -13510,18 +13527,26 @@ function mtTeamHtml(t, colr, rowKey){
   const deskOf = x => showDesks ? (function(){ const d = mtDeskFor(x[4], deskList); return d !== null ? d : (INF[x[0]] !== undefined ? INF[x[0]] : null); })() : null;
   // LR (limited release) reinforcement: listed below a divider, with an LR badge
   const isLR = x => /(^|\s)LR$/i.test(String(x[4] || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim());
-  const nm = (x, c) => {
+  const ini = n => { const w = String(n || '').trim().split(/\s+/).filter(Boolean); const a = w.length ? w[0].charAt(0) : '', b = w.length > 1 ? w[w.length - 1].charAt(0) : (w[0] || '').charAt(1); const r = (a + b).toUpperCase(); return /[A-ZÀ-Ý]/.test(r) ? r : '?'; };
+  const av = (name, col) => '<span class="mt-av" style="background:' + col + '">' + mtEsc(ini(name)) + '</span>';
+  const nm = (x, col) => {
     const d = deskOf(x), isMe = String(x[0]) === me;
     // check-in popovers always reserve the badge column (an invisible one when the desks are hidden), so the popover keeps the same width either way
     const badge = isLR(x) ? '<span class="mt-desk">LR</span>' : colr !== '#0099ff' ? '' : (d !== null ? '<span class="mt-desk' + (isMe ? ' me' : '') + '">' + d + '</span>' : '<span class="mt-desk" style="visibility:hidden;">00</span>');
-    return '<div' + ((c || isMe) ? ' class="' + (c || '') + (isMe ? ' me' : '') + '"' : '') + (badge ? ' style="display:flex; justify-content:space-between; align-items:center; gap:14px;"' : '') + '><span>' + (isMe ? 'Tu' : mtEsc(niceListName(x[1]))) + '</span>' + badge + '</div>';
+    const nice = isMe ? 'Tu' : niceListName(x[1]);
+    return '<div class="mt-pp' + (isMe ? ' me' : '') + (isLR(x) ? ' lr' : '') + '">' + av(nice, col || '#3a4f7c') + '<span class="mt-pn">' + mtEsc(nice) + '</span>' + badge + '</div>';
   };
+  const names = (l, col) => srt(l.filter(x => !isLR(x))).map(x => nm(x, col)).join('') + srt(l.filter(isLR)).map(x => nm(x, col)).join('');
+  const sec = (items) => items.map((it, i) => it.t ? '<div class="mt-h' + (i === 0 ? ' f' : '') + '" style="background:' + it.c + '">' + it.t + '</div>' + it.b : '<div class="mt-g0">' + it.b + '</div>').join('');
+  const supRow = '<div class="mt-pp">' + av(sup || '', '#d9661a') + '<span class="mt-pn">' + mtEsc(niceListName(sup || '')) + '</span></div>';
+  const SUPC = '#d9661a', DISPC = '#7a5cff', PARTC = '#0066cc', ACOLC = '#5a9a1e';
   // "A SEGUIR": people who take over the desks later: name, start time (one aligned column) and desk
   const hhmm = m => mtPad(Math.floor((m % 1440) / 60)) + ':' + mtPad(m % 60);
   const laterRow = x => {
     const d = deskOf(x);
     const badge = isLR(x) ? '<span class="mt-desk">LR</span>' : (d !== null ? '<span class="mt-desk">' + d + '</span>' : '<span class="mt-desk" style="visibility:hidden;">00</span>');
-    return '<div style="display:grid; grid-template-columns:1fr 46px auto; column-gap:10px; align-items:center;"><span>' + mtEsc(niceListName(x[1])) + '</span><span style="font-size:10.5px; color:#8fa0c4; text-align:center; line-height:1;">' + (x[2] !== null ? hhmm(x[2]) : '') + '</span>' + badge + '</div>';
+    const nice = niceListName(x[1]);
+    return '<div class="mt-pp">' + av(nice, '#3a4f7c') + '<span class="mt-pn">' + mtEsc(nice) + '</span><span class="mt-pt">' + (x[2] !== null ? hhmm(x[2]) : '') + '</span>' + badge + '</div>';
   };
   let now = (function(){ const o = {}; list.forEach(x => { o[x[0]] = x; }); return Object.keys(o).map(k => o[k]); })(), later = [], head = 'NESTE VOO', isCommon = false;
   if(colr === '#0099ff'){
@@ -13556,21 +13581,24 @@ function mtTeamHtml(t, colr, rowKey){
     // a dispatcher's list: supervisor, who is at the gate (PARTIDA, LR), ACOLHIMENTO, and the dispatchers on the aircraft
     const depL = tt.dep.concat(colr === '#dbffaa' ? other : []), arrL = tt.arr.concat(colr === '#0066cc' ? other : []);
     const parts = [];
-    if(sup) parts.push('<h6>SUPERVISOR</h6><div class="supn">' + mtEsc(niceListName(sup)) + '</div>');
-    if(depL.length) parts.push('<h6>PARTIDA</h6>' + srt(depL.filter(x => !isLR(x))).map(x => nm(x)).join('') + (depL.some(isLR) ? (depL.some(x => !isLR(x)) ? '<div class="supsep"></div>' : '') + srt(depL.filter(isLR)).map(x => nm(x)).join('') : ''));
-    if(arrL.length) parts.push('<h6>ACOLHIMENTO</h6>' + srt(arrL).map(x => nm(x)).join(''));
+    if(sup) parts.push({ t: 'SUPERVISOR', c: SUPC, b: supRow });
+    if(depL.length) parts.push({ t: 'PARTIDA', c: PARTC, b: names(depL, PARTC) });
+    if(arrL.length) parts.push({ t: 'ACOLHIMENTO', c: ACOLC, b: names(arrL, ACOLC) });
     const showNow = now.length > 1 || (now.length === 1 && String(now[0][0]) !== me);   // only me on this aircraft: no DISPATCHER section
-    if(showNow) parts.push((parts.length ? '<h6>DISPATCHER</h6>' : '') + srt(now.filter(x => !isLR(x))).map(x => nm(x)).join('') + (now.some(isLR) ? srt(now.filter(isLR)).map(x => nm(x)).join('') : ''));
+    if(showNow) parts.push({ t: parts.length ? 'DISPATCHER' : '', c: DISPC, b: names(now, DISPC) });
     const cnt = (showNow ? now.length : 0) + depL.length + arrL.length;
-    return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + (cnt ? '<b>' + cnt + '</b>' : '') + '</div><div class="mt-pop">' + parts.join('<div class="supsep"></div>') + '</div>';
+    return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + (cnt ? '<b>' + cnt + '</b>' : '') + '</div><div class="mt-pop">' + sec(parts) + '</div>';
   }
   return '<div class="mt-team" data-k="' + mtEsc(rowKey) + '">' + icon + ((supOnly ? other.length : now.length + other.length) ? '<b>' + (supOnly ? other.length : now.length + other.length) + '</b>' : '') + '</div>' +   // the dispatcher is listed but not counted
-         '<div class="mt-pop">' + (sup ? '<h6>SUPERVISOR</h6><div class="supn">' + mtEsc(niceListName(sup)) + '</div>' : '') +
-         (supOnly ? '' : ((sup ? '<div class="supsep"></div>' : '')) + srt(now.filter(x => !isLR(x))).map(x => nm(x)).join('') +
-           (now.some(isLR) ? (now.some(x => !isLR(x)) ? '<div class="supsep"></div>' : '') + srt(now.filter(isLR)).map(x => nm(x)).join('') : '')) +
-         (other.length ? ((supOnly || !now.length) && !sup ? '' : '<div class="supsep"></div>') + '<h6>' + otherLabel + '</h6>' + srt(other).map(x => nm(x)).join('') : '') +
-         (disp.length ? ((sup || now.length || other.length) ? '<div class="supsep"></div>' : '') + '<h6>DISPATCHER</h6>' + srt(disp).map(x => nm(x)).join('') : '') +
-         (later.length ? '<h6 style="margin-top:10px;">A SEGUIR</h6>' + srt(later).map(x => laterRow(x)).join('') : '') +
+         '<div class="mt-pop">' + sec((function(){
+           const it = [];
+           if(sup) it.push({ t: 'SUPERVISOR', c: SUPC, b: supRow });
+           if(!supOnly && now.length) it.push({ t: colr === '#0099ff' ? 'NESTE VOO' : '', c: '#0099ff', b: names(now, colr === '#0099ff' ? '#0099ff' : '#3a4f7c') });
+           if(other.length) it.push({ t: otherLabel, c: otherLabel === 'PARTIDA' ? PARTC : ACOLC, b: names(other, otherLabel === 'PARTIDA' ? PARTC : ACOLC) });
+           if(disp.length) it.push({ t: 'DISPATCHER', c: DISPC, b: names(disp, DISPC) });
+           if(later.length) it.push({ t: 'A SEGUIR', c: '#3a4f7c', b: srt(later).map(x => laterRow(x)).join('') });
+           return it;
+         })()) +
          (colr === '#0099ff' && isCommon ? '<div class="mt-desk-toggle" role="switch" aria-checked="' + mtShowDesks() + '"><span>MOSTRAR BALCÕES</span><span class="mt-sw' + (mtShowDesks() ? ' on' : '') + '"></span></div>' : '') + '</div>';
 }
 // Task name for display only: "COM EZY/EJU(/EZS) 2ºB" -> "COM EZY" + a white pill with "2ºB"
@@ -14052,7 +14080,7 @@ document.addEventListener('click', ev => {
   if(!tb) return;
   const row = tb.closest('.mt-row'), k = tb.getAttribute('data-k');
   const on = !row.classList.contains('team-open');
-  row.classList.toggle('team-open', on); mtTeamOpen[k] = on;
+  row.classList.toggle('team-open', on); row.classList.toggle('pop-in', on); mtTeamOpen[k] = on;
 });
 
 // ---------- ALTERAÇÃO DE HORÁRIO (self-service, from ÁREA PESSOAL) ----------
