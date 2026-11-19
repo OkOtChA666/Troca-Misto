@@ -10224,10 +10224,10 @@ function flvInfo(reg, kind){
   const line = (txt, cls, pct) => '<div class="flv ' + cls + '"><s></s>' + txt + '</div>' + (pct === null ? '' : '<div class="flv-bar ' + cls + '"><b style="width:' + pct + '%"></b></div>');
   if(kind === 'dep' && r.to && r.to >= today.getTime()) return line('DESCOLOU ' + hm(r.to), 'done', null);
   if(kind === 'arr' && r.ld && r.ld >= today.getTime()) return line('ATERROU ' + hm(r.ld), 'done', null);
-  if(fresh && r.i && r.s === 'a' && typeof r.e === 'number' && r.e <= 120){
+  if(fresh && r.i && r.s === 'a' && typeof r.e === 'number' && r.e <= 90){
     let late = false;
     if(r.sa){ const m = /^(\d{1,2}):(\d{2})$/.exec(r.sa); if(m){ const due = new Date(); due.setHours(+m[1], +m[2], 0, 0); late = (now + r.e * 60000) - due.getTime() > 10 * 60000; } }
-    const pct = Math.max(4, Math.min(100, Math.round((1 - r.d / 150) * 100)));
+    const pct = Math.max(4, Math.min(100, Math.round((1 - r.e / 90) * 100)));
     return line('CHEGADA EM ~' + r.e + ' MIN', late ? 'late' : '', pct);
   }
   return '';
