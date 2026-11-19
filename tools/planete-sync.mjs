@@ -2,7 +2,7 @@
 // Prints only counts and status. If anything goes wrong it keeps the previous copy untouched.
 import { fetchTasks } from './planete-fetch.mjs';
 import { fetchFlights, buildFlightMap } from './f4s-fetch.mjs';
-import { fetchAdsb, updateLive, regKey, toDoc, fromDoc } from './adsb-live.mjs';
+import { fetchAdsb, fetchFar, updateLive, regKey, toDoc, fromDoc } from './adsb-live.mjs';
 
 
 const PROJECT = 'troca-misto';
@@ -95,7 +95,7 @@ const lisbonHour = () => parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: '
 const isNight = () => { const h = lisbonHour(); return h >= 1 && h < 3; };   // nobody works 01:00-03:00
 
 // ---- live plane positions (free ADS-B data) -> data/flightlive, about once a minute. Never blocks or breaks the tasks. ----
-let LIVE_SCHED = {}, LIVE_PREV = null;
+let LIVE_SCHED = {}, LIVE_RAW = {}, LIVE_PREV = null;
 async function liveTick() {
   try {
     if (LIVE_PREV === null) {   // first tick of this run: pick up where the last run stopped (landing / take-off times of today)
@@ -104,6 +104,11 @@ async function liveTick() {
     const ac = await fetchAdsb();
     if (!ac) { console.log('LIVE SKIPPED: no ADS-B source answered'); return; }
     const now = Date.now();
+    try {   // planes due soon that are still far away: ask for them one by one by registration
+      const seen = new Set(ac.map((a) => regKey(a.r)));
+      const far = await fetchFar(LIVE_SCHED, LIVE_RAW, seen, now);
+      far.forEach((a) => { if (!seen.has(regKey(a.r))) { seen.add(regKey(a.r)); ac.push(a); } });
+    } catch (e) {}
     LIVE_PREV = updateLive(LIVE_PREV, ac, now, LIVE_SCHED);
     const r = await fetch(BASE + 'flightlive?key=' + API_KEY, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body: JSON.stringify(toDoc(LIVE_PREV, now)) });
     const n = Object.values(LIVE_PREV);
@@ -137,10 +142,10 @@ async function syncOnce(USER, PASS) {
     try {
       const f = await fetchFlights({ user: FU, pass: FP });
       try {   // which planes matter for the live line (today's registrations) and when they are due
-        const sc = {};
-        f.dep.forEach((r) => { const k = regKey(r.reg); if (k) sc[k] = sc[k] || ''; });
-        f.arr.forEach((r) => { const k = regKey(r.reg); if (k) { const m = /(\d{1,2}:\d{2})/.exec(r.sta || ''); sc[k] = m ? m[1].padStart(5, '0') : (sc[k] || ''); } });
-        if (Object.keys(sc).length) LIVE_SCHED = sc;
+        const sc = {}, raw = {};
+        f.dep.forEach((r) => { const k = regKey(r.reg); if (k) { sc[k] = sc[k] || ''; raw[k] = r.reg; } });
+        f.arr.forEach((r) => { const k = regKey(r.reg); if (k) { raw[k] = r.reg; const m = /(\d{1,2}:\d{2})/.exec(r.sta || ''); sc[k] = m ? m[1].padStart(5, '0') : (sc[k] || ''); } });
+        if (Object.keys(sc).length) { LIVE_SCHED = sc; LIVE_RAW = raw; }
       } catch (e) {}
       // full flight lists (Arrivals / Departures) for the app's VOOS screen — separate document, never blocks the tasks
       try {
