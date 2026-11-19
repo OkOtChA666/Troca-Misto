@@ -108,6 +108,7 @@ async function liveTick() {
       const seen = new Set(ac.map((a) => regKey(a.r)));
       const far = await fetchFar(LIVE_SCHED, LIVE_RAW, seen, now);
       far.forEach((a) => { if (!seen.has(regKey(a.r))) { seen.add(regKey(a.r)); ac.push(a); } });
+      if (far.info) console.log('FAR: due=' + far.info.due + ' asked=' + far.info.asked + ' found=' + far.info.found + (far.info.missing.length ? ' not-found=' + far.info.missing.slice(0, 8).join(',') : ''));
     } catch (e) {}
     LIVE_PREV = updateLive(LIVE_PREV, ac, now, LIVE_SCHED);
     const r = await fetch(BASE + 'flightlive?key=' + API_KEY, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body: JSON.stringify(toDoc(LIVE_PREV, now)) });
