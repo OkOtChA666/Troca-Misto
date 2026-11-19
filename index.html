@@ -13364,7 +13364,15 @@ function sfSupFor(t, colr){
     if(GROUP === 'sup' || (colr !== '#0066cc' && colr !== '#dbffaa') || !SUPC || !SUPC.c || SUPC.date !== sfToday()) return '';
     const id = SUPC.c[sfDepKey(t[5])]; if(!id) return '';
     if(!SUP_NAMES){ SUP_NAMES = {}; dbGetShared('schedule', null, 'sup').then(d => { if(d && d.workers){ d.workers.forEach(w => { SUP_NAMES[w.id] = w.name; }); if(mtOpenOverlay()) renderMyTasks(); } }).catch(() => {}); }
+    if(SUP_PHOTOS === null){ SUP_PHOTOS = {}; dbGetShared('photos', null, 'sup').then(d => { if(d && typeof d === 'object'){ SUP_PHOTOS = d; if(mtOpenOverlay()) renderMyTasks(); } }).catch(() => {}); }
     return String(SUP_NAMES[id] || '').toUpperCase();   // same format as the other staff names: SURNAME GIVEN
+  }catch(e){ return ''; }
+}
+let SUP_PHOTOS = null;   // photos of the supervisors (their own department's photo list), loaded once so check-in agents can see who picked the flight
+function sfSupIdFor(t, colr){
+  try{
+    if(GROUP === 'sup' || (colr !== '#0066cc' && colr !== '#dbffaa') || !SUPC || !SUPC.c || SUPC.date !== sfToday()) return '';
+    return String(SUPC.c[sfDepKey(t[5])] || '');
   }catch(e){ return ''; }
 }
 let MT_TEAM_FOR = null, MT_TEAM_ALL = [];
@@ -13531,7 +13539,7 @@ function mtTeamHtml(t, colr, rowKey){
   const isLR = x => /(^|\s)LR$/i.test(String(x[4] || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim());
   const ini = n => { const w = String(n || '').trim().split(/\s+/).filter(Boolean); const a = w.length ? w[0].charAt(0) : '', b = w.length > 1 ? w[w.length - 1].charAt(0) : (w[0] || '').charAt(1); const r = (a + b).toUpperCase(); return /[A-ZÀ-Ý]/.test(r) ? r : '?'; };
   const dk = col => col === '#dbffaa' ? ';color:#0b1220' : '';
-  const av = (name, col, id) => { const ph = id !== undefined && id !== null && typeof photoOf === 'function' ? photoOf(id) : ''; return '<span class="mt-av" style="background:' + col + dk(col) + '">' + (ph ? '<img src="' + ph + '" alt="">' : mtEsc(ini(name))) + '</span>'; };
+  const av = (name, col, id, ph2) => { const ph = ph2 || (id !== undefined && id !== null && typeof photoOf === 'function' ? photoOf(id) : ''); return '<span class="mt-av" style="background:' + col + dk(col) + '">' + (ph ? '<img src="' + ph + '" alt="">' : mtEsc(ini(name))) + '</span>'; };
   const nm = (x, col) => {
     const d = deskOf(x), isMe = String(x[0]) === me;
     // check-in popovers always reserve the badge column (an invisible one when the desks are hidden), so the popover keeps the same width either way
@@ -13541,7 +13549,8 @@ function mtTeamHtml(t, colr, rowKey){
   };
   const names = (l, col) => srt(l.filter(x => !isLR(x))).map(x => nm(x, col)).join('') + srt(l.filter(isLR)).map(x => nm(x, col)).join('');
   const sec = (items) => items.map((it, i) => it.t ? '<div class="mt-h' + (i === 0 ? ' f' : '') + '" style="background:' + it.c + dk(it.c) + '">' + it.t + '</div>' + it.b : '<div class="mt-g0">' + it.b + '</div>').join('');
-  const supRow = '<div class="mt-pp">' + av(sup || '', '#d9661a') + '<span class="mt-pn">' + mtEsc(niceListName(sup || '')) + '</span></div>';
+  const supId = sfSupIdFor(t, colr);
+  const supRow = '<div class="mt-pp">' + av(sup || '', '#d9661a', null, (supId && SUP_PHOTOS && SUP_PHOTOS[supId]) || '') + '<span class="mt-pn">' + mtEsc(niceListName(sup || '')) + '</span></div>';
   const SUPC = '#d9661a', DISPC = '#249200', PARTC = '#0066cc', ACOLC = '#dbffaa';   // the same colours as the cards (pale lime needs dark text)
   // "A SEGUIR": people who take over the desks later: name, start time (one aligned column) and desk
   const hhmm = m => mtPad(Math.floor((m % 1440) / 60)) + ':' + mtPad(m % 60);
