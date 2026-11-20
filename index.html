@@ -10305,7 +10305,7 @@ function renderFlights(){
     const f = flSplit(r.n);
     if(!f.code || !keep[f.code] || !flToday(dep ? r.std : r.sta)) return;
     const sched = flTime(dep ? r.std : r.sta);
-    const est = dep ? flTime(r.etd) : '';
+    const est = flTime(dep ? r.etd : r.eta);   // arrivals: the estimated time (ETA) once the sync reads it
     const sm = flMin(sched);
     const past = sm !== null && nowMin - sm > 30 && nowMin - sm < 720;
     const place = dep ? (r.des || '') : (r.org || '');
