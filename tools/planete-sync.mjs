@@ -159,6 +159,7 @@ async function syncOnce(USER, PASS) {
         const slim = (x) => x.map((r) => { const o = {}; Object.keys(r).forEach((k) => { if (r[k]) o[k] = r[k]; }); return o; });
         const air = {}; [...f.dep, ...f.arr].forEach((r) => { const m = /^([A-Z0-9]{2,3}?)(\d{1,4}[A-Z]?)$/.exec(r.n || ''); const c = m ? m[1] : (r.n || '?'); air[c] = (air[c] || 0) + 1; });
         console.log('REGISTRATION: ' + (f.cols && f.cols.regDep ? 'column "' + f.cols.regDep + '" — ' + f.dep.filter((x) => x.reg).length + ' of ' + f.dep.length + ' departures have it' : 'no column found. Departure columns: ' + (f.cols ? f.cols.dep.join(',') : '?')));
+        console.log('CTOT: ' + (f.cols && f.cols.dep && f.cols.dep.some((h) => /ctot/i.test(h)) ? 'column found — ' + f.dep.filter((x) => x.ctot).length + ' of ' + f.dep.length + ' departures have a value' : 'no CTOT column. Departure columns: ' + (f.cols && f.cols.dep ? f.cols.dep.join(',') : '?')));
         console.log('ARRIVAL-ETA: ' + (f.arr.some((x) => x.eta) ? f.arr.filter((x) => x.eta).length + ' of ' + f.arr.length + ' arrivals have an estimated time' : 'no ETA found. Arrival columns: ' + (f.cols && f.cols.arr ? f.cols.arr.join(',') : '?')));
         console.log('AIRLINES: ' + Object.keys(air).sort().map((c) => c + '=' + air[c]).join(' '));
         const fbody = JSON.stringify({ fields: { json: sv(JSON.stringify({ dep: slim(f.dep), arr: slim(f.arr) })), at: iv(now), date: sv(parsed.date) } });
