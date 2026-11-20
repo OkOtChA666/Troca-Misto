@@ -1,0 +1,31 @@
+<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Teste foto</title>
+<style>body{font-family:system-ui;background:#0d1426;color:#dbe7ff;margin:0;padding:18px;max-width:480px}input,textarea,button{width:100%;box-sizing:border-box;font:16px system-ui;padding:12px;margin:8px 0;border-radius:10px;border:1px solid #2a3a5c;background:#0a1020;color:#dbe7ff}button{background:#ffb020;color:#111;font-weight:800;border:0}pre{white-space:pre-wrap;background:#0a1020;border:1px solid #2a3a5c;border-radius:10px;padding:10px;font-size:13px}</style></head><body>
+<h3>Teste: enviar foto por email</h3>
+<input id="name" placeholder="Nome (ex. 11280)" value="TESTE">
+<textarea id="msg" rows="3" placeholder="Mensagem">Teste de foto</textarea>
+<input id="file" type="file" accept="image/*">
+<button id="go">ENVIAR</button>
+<pre id="log">À espera…</pre>
+<script>
+const EMAIL='trocamisto@proton.me', log=t=>{document.getElementById('log').textContent+='\n'+t};
+async function shrink(f){
+  const bmp=await createImageBitmap(f), s=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+  const c=document.createElement('canvas'); c.width=Math.round(bmp.width*s); c.height=Math.round(bmp.height*s);
+  c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+  return await new Promise(r=>c.toBlob(r,'image/jpeg',0.8));
+}
+document.getElementById('go').onclick=async()=>{
+  const f=document.getElementById('file').files[0]; document.getElementById('log').textContent='A começar…';
+  const fd=new FormData();
+  fd.append('Nome',document.getElementById('name').value); fd.append('Mensagem',document.getElementById('msg').value);
+  fd.append('_subject','TESTE foto · TROCA-MISTO'); fd.append('_captcha','false'); fd.append('_template','table');
+  if(f){ const b=await shrink(f); log('Foto: '+Math.round(f.size/1024)+' KB → '+Math.round(b.size/1024)+' KB'); fd.append('attachment',b,'screenshot.jpg'); } else log('Sem foto.');
+  try{
+    const r=await fetch('https://formsubmit.co/ajax/'+EMAIL,{method:'POST',body:fd,headers:{'Accept':'application/json'}});
+    const t=await r.text(); log('Resposta '+r.status+': '+t.slice(0,300));
+  }catch(e){
+    log('AJAX falhou ('+e.message+'). A tentar o método normal…');
+    try{ await fetch('https://formsubmit.co/'+EMAIL,{method:'POST',body:fd,mode:'no-cors'}); log('Pedido enviado (sem resposta legível). Vê o email.'); }catch(e2){ log('Falhou: '+e2.message); }
+  }
+};
+</script></body></html>
