@@ -2477,6 +2477,12 @@
       <div style="font:13.5px/1.5 var(--sans); color:var(--text-dim);">Encontraste um problema ou tens uma sugestão? Escreve aqui e nós recebemos.</div>
       <select id="support-type" style="width:100%; box-sizing:border-box; margin-top:12px; background:var(--panel); border:1px solid var(--border); border-radius:10px; color:var(--text); font:15px var(--sans); padding:12px; appearance:none; -webkit-appearance:none; background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2214%22 height=%228%22 viewBox=%220 0 14 8%22><path d=%22M1 1l6 6 6-6%22 fill=%22none%22 stroke=%22%235a6788%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>'); background-repeat:no-repeat; background-position:right 14px center; padding-right:38px;"><option value="Sugestão">Sugestão</option><option value="BUG">BUG</option><option value="Reset da Password">Reset da Password</option><option value="Outro">Outro</option></select>
       <textarea id="support-msg" rows="6" maxlength="1500" placeholder="Escreve aqui…" style="width:100%; box-sizing:border-box; margin-top:10px; background:var(--panel); border:1px solid var(--border); border-radius:10px; color:var(--text); font:15px/1.5 var(--sans); padding:12px; resize:vertical;"></textarea>
+      <div id="support-shot-box" style="display:none; margin-top:12px; border:1px dashed #3a557f; border-radius:12px; padding:12px; text-align:center;">
+        <div style="color:var(--text-dim); font:12.5px var(--sans);">Screenshot (opcional) · o teu código</div>
+        <div id="support-shot-code" style="font:800 24px var(--mono); letter-spacing:.08em; color:var(--amber); margin:2px 0 4px;"></div>
+        <div style="color:var(--text-dim); font:12px/1.4 var(--sans);">Escreve-o no nome do ficheiro</div>
+        <a id="support-shot-link" href="#" target="_blank" rel="noopener" style="display:block; margin-top:10px; border:1px solid #3a557f; border-radius:10px; padding:11px; color:var(--cyan); text-decoration:none; font:700 14px var(--sans);">📎 Anexar screenshot</a>
+      </div>
       <button type="button" class="btn" id="support-send-btn" style="margin-top:12px;">ENVIAR</button>
       <div id="support-send-status" style="font:13px/1.4 var(--sans); margin-top:10px; min-height:18px;"></div>
     </div></div>
@@ -2895,6 +2901,10 @@
         <input type="text" id="support-email-input" autocomplete="off" spellcheck="false" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--mono); font-size:13px;">
         <div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn" id="support-email-save-btn" style="flex:1; margin:0;">Guardar</button><button type="button" class="btn" id="support-email-test-btn" style="flex:1; margin:0;">Enviar teste</button></div>
         <div id="support-email-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px; word-break:break-word;"></div>
+        <div style="font-family:var(--sans); font-size:13px; font-style:italic; color:var(--text-dim); margin:18px 0 6px;">Link para screenshots (Dropbox «File request»). Vazio = o botão não aparece</div>
+        <input type="text" id="shot-link-input" autocomplete="off" spellcheck="false" placeholder="https://www.dropbox.com/request/…" style="width:100%; box-sizing:border-box; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px; color:var(--text); font-family:var(--sans); font-size:13px;">
+        <div style="display:flex; gap:8px; margin-top:10px;"><button type="button" class="btn" id="shot-link-save-btn" style="flex:1; margin:0;">Guardar link</button></div>
+        <div id="shot-link-status" style="font-family:var(--sans); font-size:11px; color:var(--go); margin-top:6px; min-height:14px; word-break:break-word;"></div>
         <button type="button" id="new-email-btn" style="width:100%; margin-top:10px; background:transparent; border:1px dashed #8a6a14; color:var(--amber); border-radius:8px; padding:10px 0; font:800 12px var(--sans); letter-spacing:.06em; cursor:pointer;">NOVO EMAIL</button>
         <div id="new-email-box" style="display:none; margin-top:10px; border:1px solid var(--border-soft); background:rgba(255,255,255,.02); border-radius:10px; padding:12px; font-family:var(--sans); font-size:12.5px; line-height:1.5; color:var(--text-dim);">
           <b style="color:var(--text);">Para receber os emails noutro endereço:</b>
@@ -3059,7 +3069,7 @@ const GROUP = (function(){ try{ const g = localStorage.getItem('trocaMistoGroup'
 const GROUP_LABEL = GROUPS[GROUP];
 const PEOPLE_WORD = GROUP === 'sup' ? ['Supervisor', 'Supervisores'] : GROUP === 'disp' ? ['Dispatcher', 'Dispatchers'] : ['Agente', 'Agentes'];   // what a person on the schedule is called in this department
 try{ if(GROUP){ document.documentElement.classList.add('grp-' + GROUP); if(GROUP === 'sup' || GROUP === 'disp'){ const wl = document.getElementById('stat-workers-label'); if(wl) wl.textContent = GROUP === 'sup' ? 'SUPERVISORES' : 'DISPATCHERS'; } const eb = document.querySelector('.eyebrow'); if(eb) eb.textContent = GROUP_LABEL + ' · FAO · PAX'; } }catch(e){}
-const GLOBAL_KEY = /Enabled$|^maintenance$|^flightlist$|^flightairlines$|^aistaff$|^tasks$|^taskreq$|^banned$|^privacyText$|^privacyPolicy$/;   // settings and check-in-only data: one copy for everybody
+const GLOBAL_KEY = /Enabled$|^maintenance$|^flightlist$|^flightairlines$|^aistaff$|^tasks$|^taskreq$|^banned$|^privacyText$|^privacyPolicy$|^shotLink$/;   // settings and check-in-only data: one copy for everybody
 function gScope(key, g){ g = (g === undefined ? GROUP : g); return g && !GLOBAL_KEY.test(key) ? g + '_' + key : key; }
 function gColl(name, g){ g = (g === undefined ? GROUP : g); return g && (name === 'swaps' || name === 'requests') ? g + '_' + name : name; }
 const SCHEDULE_CACHE_KEY = 'trocaMistoScheduleCache' + (GROUP ? '_' + GROUP : '');
@@ -11002,6 +11012,21 @@ document.getElementById('support-email-test-btn').addEventListener('click', asyn
   st.style.color = ok ? 'var(--go)' : 'var(--nogo)';
   st.textContent = (ok ? 'Pedido aceite. ' : 'Não foi possível enviar. ') + SUPPORT_EMAIL_LAST;   // stays on screen so the real answer can be read
 });
+// ---------- LINK PARA SCREENSHOTS (SUPORTE): Dropbox "File request" link, edited in RULES (admin); empty = no button ----------
+let shotLink = '';
+const shotLinkOk = (u) => /^https:\/\/(www\.)?dropbox\.com\/request\/[A-Za-z0-9_-]+$/.test(u);
+async function loadShotLink(){
+  try{ const doc = await dbGetShared('shotLink', null); shotLink = (doc && shotLinkOk(String(doc.url || ''))) ? String(doc.url) : ''; }catch(e){}
+  try{ const i = document.getElementById('shot-link-input'); if(i) i.value = shotLink; }catch(e){}
+}
+setTimeout(loadShotLink, 0);
+document.getElementById('shot-link-save-btn').addEventListener('click', async () => {
+  const st = document.getElementById('shot-link-status'), v = document.getElementById('shot-link-input').value.trim();
+  if(v && !shotLinkOk(v)){ st.style.color = 'var(--nogo)'; st.textContent = 'Este não é um link «File request» (tem de ter dropbox.com/request/…).'; return; }
+  const ok = await dbSetShared('shotLink', { url: v }); if(ok) shotLink = v;
+  st.style.color = ok ? 'var(--go)' : 'var(--nogo)'; st.textContent = ok ? (v ? 'Guardado.' : 'Guardado. Botão desligado.') : 'Não foi possível guardar agora.';
+  setTimeout(() => { st.textContent = ''; }, 2500);
+});
 // ---------- AVISO ANTES DE SUBMETER UMA TROCA: warning with a 5-second countdown after pressing TROCAR (switched on/off and addressed from RULES, admin only) ----------
 let swapWarning = { enabled:false, dest:'-----------' };
 async function loadSwapWarning(){
@@ -13127,6 +13152,7 @@ function showAreaTab(which){
   document.getElementById('area-tab-btn-tasks').classList.toggle('active', tasks);
   document.getElementById('area-tab-swaps').classList.toggle('hidden', tasks || reqs || agenda || themes || prefs || support);
   document.getElementById('area-tab-tasks').classList.toggle('hidden', !tasks);
+  if(support){ supShotRefresh(); loadShotLink().then(supShotRefresh); }
   if(tasks) openMyTasks(); else { closeMyTasks(); if(prefs) renderPrefs(); else if(themes) renderThemePicker(); else if(agenda) renderAgenda(); else if(reqs) reqsShow('mine'); else renderMySwapsList(myTrocasExpanded); }
 }
 // SUPORTE: after a message is sent, the button waits 5 minutes before the next one (remembered on this phone)
@@ -13142,15 +13168,33 @@ function supWaitTick(){
   const draw = () => { const l = supWaitLeft(); if(l <= 0){ supWaitTick(); return; } const m = Math.floor(l / 60000), sc = Math.floor((l % 60000) / 1000); btn.disabled = true; btn.textContent = 'ENVIAR (espera ' + m + ':' + String(sc).padStart(2, '0') + ')'; };
   draw(); SUP_TIMER = setInterval(draw, 1000);
 }
+// SUPORTE: the screenshot box (code + Dropbox button) sits above ENVIAR for BUG and Sugestão, only while a link is saved in RULES
+let SUP_CODE = '';
+function supNewCode(typ){ return (/bug/i.test(typ) ? 'BUG' : /sug/i.test(typ) ? 'SUG' : 'MSG') + '-' + String(Math.floor(1000 + Math.random() * 9000)); }
+function supShotRefresh(){
+  const box = document.getElementById('support-shot-box'); if(!box) return;
+  const typ = document.getElementById('support-type').value, on = !!shotLink && /bug|sug/i.test(typ);
+  box.style.display = on ? '' : 'none';
+  if(!on) return;
+  if(!SUP_CODE || SUP_CODE.slice(0, 3) !== (/bug/i.test(typ) ? 'BUG' : 'SUG')) SUP_CODE = supNewCode(typ);
+  document.getElementById('support-shot-code').textContent = SUP_CODE;
+  document.getElementById('support-shot-link').href = shotLink;
+}
+document.getElementById('support-type').addEventListener('change', supShotRefresh);
 document.getElementById('support-send-btn').addEventListener('click', async () => {
   if(supWaitLeft() > 0){ supWaitTick(); return; }
   const box = document.getElementById('support-msg'), st = document.getElementById('support-send-status'), btn = document.getElementById('support-send-btn');
   const msg = (box.value || '').trim();
   if(!msg){ st.style.color = 'var(--text-dim)'; st.textContent = 'Escreve primeiro a tua mensagem.'; return; }
   btn.disabled = true; st.style.color = 'var(--text-dim)'; st.textContent = 'A enviar…';
-  const ok = await sendSupportEmail({ 'Tipo': document.getElementById('support-type').value, 'Mensagem': msg, 'De': (window._loggedName || '?') + ' (n.º ' + (window._loggedId || window.MY_ASK_ID || '?') + ')', 'Enviado em': new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' }) }, 'TROCA-MISTO · Suporte · ' + document.getElementById('support-type').value);
+  const typ = document.getElementById('support-type').value;
+  const shotOn = document.getElementById('support-shot-box').style.display !== 'none';
+  const code = shotOn ? SUP_CODE : supNewCode(typ);   // the same code the person saw above, so the email matches the screenshot
+  const ok = await sendSupportEmail({ 'Código': code, 'Tipo': typ, 'Mensagem': msg, 'De': (window._loggedName || '?') + ' (n.º ' + (window._loggedId || window.MY_ASK_ID || '?') + ')', 'Enviado em': new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' }) }, 'TROCA-MISTO · Suporte · ' + typ + ' · ' + code);
   btn.disabled = false;
-  if(ok){ try{ localStorage.setItem(supLastKey(), String(Date.now())); }catch(e){} supWaitTick(); box.value = ''; st.style.color = 'var(--go)'; st.textContent = 'Mensagem enviada. Obrigado!'; }
+  if(ok){ try{ localStorage.setItem(supLastKey(), String(Date.now())); }catch(e){} supWaitTick(); box.value = ''; st.style.color = 'var(--go)'; st.textContent = 'Mensagem enviada. Obrigado!';
+    SUP_CODE = ''; supShotRefresh();   // next message gets a new code
+  }
   else { st.style.color = '#ff5d73'; st.textContent = 'Não foi possível enviar. Tenta mais tarde.'; supWaitTick(); }
 });
 document.getElementById('area-tab-btn-swaps').addEventListener('click', () => showAreaTab('swaps'));
