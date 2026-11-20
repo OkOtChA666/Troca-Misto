@@ -694,7 +694,16 @@
   #my-swaps-title-head{ display:none; }
   .swap-sort-tab .fl-cnt{ font-weight:700; font-size:10px; padding:1px 6px; margin-left:5px; letter-spacing:0; }
   .swap-sort-tab.active .fl-cnt{ background:rgba(95,224,255,.16); color:var(--cyan); }
-  .fl-row{ display:grid; grid-template-columns:54px 1fr auto; gap:10px; align-items:center; background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .fl-row{ position:relative; display:block; background:var(--panel-2); border:1px solid var(--border-soft); border-left:4px solid #0099ff; border-radius:12px; overflow:hidden; padding:0 0 11px; margin-bottom:10px; }
+  .fl-row.arr{ border-left-color:#dbffaa; }
+  .fl-h{ background:linear-gradient(90deg,rgba(11,42,74,.95),transparent); padding:8px 14px; font:700 15px var(--mono); color:var(--text); display:flex; align-items:baseline; gap:8px; }
+  .fl-h small{ font-size:12px; font-weight:600; color:var(--amber); }
+  .fl-tag{ position:absolute; top:0; right:0; font:800 9px var(--mono); letter-spacing:.06em; padding:3px 9px; border-bottom-left-radius:8px; background:#2ecc71; color:#04230f; }
+  .fl-tag.d{ background:#ffb020; color:#2a1c00; }
+  .fl-n{ padding:9px 14px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .fl-pill{ font:700 11px var(--mono); background:#e8eefc; color:#0b1220; padding:2px 8px; border-radius:4px; white-space:nowrap; }
+  .fl-row .fl-al{ padding:2px 14px 8px; margin-top:0; }
+  .fl-ft{ display:flex; gap:6px; padding:0 14px; flex-wrap:wrap; }
   .fl-row.past{ opacity:.4; }
   .fl-tm{ font-family:var(--mono); font-weight:600; font-size:16px; color:var(--text); }
   .fl-tm small{ display:block; font-weight:500; font-size:10.5px; color:var(--amber); }
@@ -715,8 +724,8 @@
   .flv-bar{ height:3px; border-radius:2px; background:#131c31; position:relative; margin-top:6px; }
   .flv-bar b{ position:absolute; left:0; top:0; bottom:0; border-radius:2px; background:linear-gradient(90deg,#1c6f87,#5fe0ff); }
   .flv-bar.late b{ background:linear-gradient(90deg,#8a6200,#FFB300); }
-  .fl-row .flv{ justify-content:flex-end; margin-top:5px; gap:0; }
-  .fl-row .flv-bar{ grid-column:1 / -1; margin-top:2px; }
+  .fl-row .flv{ margin:0 0 0 auto; gap:0; }
+  .fl-row .flv-bar{ margin:2px 14px 10px; }
   .mt-main .flv{ margin-top:-4px; }
   /* "new task" tab on the right edge of a task card (mirror of the PARTIDA / ACOLHIMENTO tab on the left) */
   .mt-nova{ position:absolute; right:-1px; top:50%; margin-top:-26px; width:24px; height:52px; box-sizing:border-box; display:flex; align-items:center; justify-content:center; writing-mode:vertical-rl; background:#e3d4ff; color:#4a2a8a; font:800 11px var(--mono); letter-spacing:.14em; border-radius:10px 0 0 10px; }
@@ -10307,9 +10316,13 @@ function renderFlights(){
     const delayed = est && est !== sched;
     let flvTop = '', flvBar = '';
     { const lv = flvInfo(r.reg, dep ? 'dep' : 'arr'); if(lv){ const i = lv.indexOf('<div class="flv-bar'); flvTop = i < 0 ? lv : lv.slice(0, i); flvBar = i < 0 ? '' : lv.slice(i); } }
-    out.push('<div class="fl-row' + (past ? ' past' : '') + '"><div class="fl-tm">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
-      '<div><div class="fl-fn">' + escapeHtml(f.code + ' ' + f.num) + (place ? '<span>' + escapeHtml(place) + '</span>' : '') + '</div><div class="fl-al">' + escapeHtml(FL_NAMES[f.code] || f.code) + '</div></div>' +
-      '<div><div class="fl-ch">' + chips.join('') + '</div>' + (status ? '<div class="fl-st' + (delayed ? ' d' : '') + '">' + escapeHtml(String(status).toUpperCase()) + '</div>' : '') + flvTop + '</div>' + flvBar + '</div>');
+    const regTxt = String(r.reg || '').trim().toUpperCase();
+    out.push('<div class="fl-row' + (dep ? '' : ' arr') + (past ? ' past' : '') + '">' +
+      (status ? '<span class="fl-tag' + (delayed ? ' d' : '') + '">' + escapeHtml(String(status).toUpperCase()) + '</span>' : '') +
+      '<div class="fl-h">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
+      '<div class="fl-n"><span class="fl-fn">' + escapeHtml(f.code + ' ' + f.num) + (place ? '<span>' + escapeHtml(place) + '</span>' : '') + '</span>' + (regTxt ? '<span class="fl-pill">' + escapeHtml(regTxt) + '</span>' : '') + flvTop + '</div>' +
+      '<div class="fl-al">' + escapeHtml(FL_NAMES[f.code] || f.code) + '</div>' + flvBar +
+      (chips.length ? '<div class="fl-ft">' + chips.join('') + '</div>' : '') + '</div>');
   });
   box.innerHTML = out.length ? out.join('') : '<div class="hint" style="text-align:center; padding:24px 0;">Sem voos das nossas companhias.</div>';
 }
