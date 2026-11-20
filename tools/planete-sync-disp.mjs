@@ -14,7 +14,60 @@ const URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databa
 const sv = (s) => ({ stringValue: String(s) });
 const iv = (n) => ({ integerValue: String(Math.round(n)) });
 
-export function buildDispDoc(parsed, now = Date.now()) {
+// ---- change detection: compares the new read with the previous one, per agent ----
+// COMM is a typo of COM that the coordinators sometimes write and later correct: both count as the same task, so fixing the spelling is not reported as a removed + new task
+const norm = (l) => String(l || '').replace(/^<\s*/, '').trim().replace(/^COMM\b/i, 'COM');
+const tup = (t) => ({ l: norm(t[0]), s: t[1], e: t[2], c: t[4] ? 1 : 0 });
+const key = (x) => [x.l, x.s, x.e, x.c].join('|');
+export function diffTasks(prevT, newT) {
+  const P = prevT.map(tup), N = newT.map(tup);
+  const pool = new Map();
+  P.forEach((x) => { const k = key(x); (pool.get(k) || pool.set(k, []).get(k)).push(x); });
+  const added = [];
+  N.forEach((x) => { const l = pool.get(key(x)); if (l && l.length) l.pop(); else added.push(x); });
+  const removed = []; pool.forEach((l) => l.forEach((x) => removed.push(x)));
+  const out = [];
+  removed.forEach((r) => {
+    const i = added.findIndex((a) => a.l === r.l);
+    if (i >= 0) {
+      const a = added.splice(i, 1)[0];
+      if (r.s !== a.s || r.e !== a.e) out.push(r.l + ': ' + r.s + '–' + r.e + ' → ' + a.s + '–' + a.e);
+      else out.push(r.l + (a.c ? ': alterada pelo coordenador' : ': atualizada'));
+    } else out.push('Removida: ' + r.l + ' ' + r.s + '–' + r.e);
+  });
+  added.forEach((a) => out.push('Nova: ' + a.l + ' ' + a.s + '–' + a.e));
+  return out;
+}
+// prev = { date, a:{id:jsonString}, ch:{id:jsonString} } read back from the database (or null)
+export function buildChanges(parsed, prev, now = Date.now()) {
+  const ch = {};
+  if (!prev || prev.date !== parsed.date) return ch;       // new day: start clean
+  parsed.agents.forEach((ag) => {
+    let hist = [];
+    try { hist = prev.ch && prev.ch[ag.id] ? JSON.parse(prev.ch[ag.id]) : []; } catch (e) { hist = []; }
+    const before = prev.a && prev.a[ag.id];
+    if (before) {
+      try {
+        const pt = JSON.parse(before).t || [];
+        const nt = ag.tasks.map((t) => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0]);
+        diffTasks(pt, nt).forEach((txt) => hist.push([now, txt]));
+      } catch (e) {}
+    }
+    hist = hist.slice(-8);
+    if (hist.length) ch[ag.id] = hist;
+  });
+  return ch;
+}
+export function readPrev(json) {
+  try {
+    const f = json.fields || {};
+    const mapStr = (m) => { const o = {}; const ff = (m && m.mapValue && m.mapValue.fields) || {}; Object.keys(ff).forEach((k) => { o[k] = ff[k].stringValue; }); return o; };
+    return { date: f.date && f.date.stringValue, a: mapStr(f.a), ch: mapStr(f.ch), flights: f.flights && f.flights.stringValue, flightsAt: f.flightsAt && parseInt(f.flightsAt.integerValue, 10) };
+  } catch (e) { return null; }
+}
+
+
+export function buildDispDoc(parsed, now = Date.now(), changes = {}) {
   const a = {};
   parsed.agents.forEach((ag) => {
     const rec = { n: ag.name, t: ag.tasks.map((t) => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0, t.fkey || '']) };
@@ -31,6 +84,7 @@ export function buildDispDoc(parsed, now = Date.now()) {
     agentCount: iv(parsed.agents.length),
     taskCount: iv(parsed.taskCount),
     a: { mapValue: { fields: a } },
+    ch: { mapValue: { fields: Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, sv(JSON.stringify(v))])) } },   // what changed for each agent today (the server reads this to send the push)
   } };
 }
 
@@ -52,7 +106,13 @@ async function syncOnce(USER, PASS) {
     console.log('SKIPPED: the page looked incomplete (agents=' + (parsed.agents || []).length + ') — keeping the previous copy');
     return false;
   }
-  const body = JSON.stringify(buildDispDoc(parsed));
+  // read the previous copy back, to see what changed since the last read (never blocks the save)
+  let changes = {};
+  try {
+    const g = await fetch(URL, { headers: HDR });
+    if (g.ok) changes = buildChanges(parsed, readPrev(await g.json()));
+  } catch (e) {}
+  const body = JSON.stringify(buildDispDoc(parsed, Date.now(), changes));
   const res = await fetch(URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body });
   if (!res.ok) {
     const t = (await res.text()).replace(/\s+/g, ' ').slice(0, 300);
