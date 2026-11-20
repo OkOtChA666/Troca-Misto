@@ -13199,7 +13199,8 @@ document.getElementById('support-send-btn').addEventListener('click', async () =
   if(!msg){ st.style.color = 'var(--text-dim)'; st.textContent = 'Escreve primeiro a tua mensagem.'; return; }
   btn.disabled = true; st.style.color = 'var(--text-dim)'; st.textContent = 'A enviar…';
   const supFields = { 'Tipo': document.getElementById('support-type').value, 'Mensagem': msg, 'De': (window._loggedName || '?') + ' (n.º ' + (window._loggedId || window.MY_ASK_ID || '?') + ')', 'Enviado em': new Date().toLocaleString('pt-PT', { timeZone:'Europe/Lisbon' }) };
-  const supSubject = 'TROCA-MISTO · Suporte · ' + supFields['Tipo'] + (SUP_PHOTO ? ' · com foto' : '');
+  const supStamp = (() => { const q = {}; new Intl.DateTimeFormat('en-GB', { timeZone:'Europe/Lisbon', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }).formatToParts(new Date()).forEach(x => { q[x.type] = x.value; }); return q.day + q.month + q.year + (q.hour === '24' ? '00' : q.hour) + q.minute; })();
+  const supSubject = String(supFields['Tipo']).toUpperCase() + ' ' + supStamp;   // e.g. BUG 201120260233 (day month year hour minute, Lisbon time)
   const ok = SUP_PHOTO ? await sendSupportWithPhoto(supFields, supSubject) : await sendSupportEmail(supFields, supSubject);
   btn.disabled = false;
   if(ok){ try{ localStorage.setItem(supLastKey(), String(Date.now())); }catch(e){} supWaitTick(); box.value = ''; supPhotoClear(); st.style.color = 'var(--go)'; st.textContent = 'Mensagem enviada. Obrigado!'; }
