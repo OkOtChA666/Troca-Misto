@@ -58,6 +58,7 @@ export async function fetchFlights({ user, pass }) {
     const dep = d.rows.map((r) => ({
       n: flightKey(r[d.col('FLTNr.')]), std: norm(r[d.col('STD')]), etd: norm(r[d.col('ETD')]), pos: norm(r[d.col('POS')]),
       reg: d.regIdx >= 0 ? norm(r[d.regIdx]).slice(0, 10) : '', des: opt(d, r, ['DES','DEST','Destination']), cki: norm(r[d.col('CKI1')]), gt: norm(r[d.col('GT')]), grem: norm(r[d.col('GREM')]), rem: norm(r[d.col('Remarks')]),
+      ctot: (() => { const k = d.H.findIndex((h) => /ctot/i.test(h)); const m = k >= 0 ? /(\d{1,2}:\d{2})\s*([A-Z])?$/.exec(norm(r[k])) : null; return m && m[2] === 'C' ? m[1].padStart(5, '0') : ''; })(),   // the "EOBT / CTOT" column shows "16:15 E" (estimated off-block) or "16:15 C" (CTOT, the take-off slot): only the C ones count
     }));
 
     await page.goto(BASE + 'Arrivals.aspx', { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -118,6 +119,7 @@ export function buildFlightMap(items, { dep, arr }) {
       if (/cancel/i.test(d.rem)) o.x = 'C';
       else if (/gate closed/i.test(d.rem)) { o.x = 'G'; const m = /(\d{1,2}:\d{2})/.exec(d.grem); if (m) o.xt = m[1]; }
       if (d.etd && bare(d.etd) !== bare(d.std)) o.e = bare(d.etd);
+      if (d.ctot) o.ct = d.ctot;
     }
     if (a && a.org) o.o = a.org;
     if (a && a.gate) o.ga = a.gate;
