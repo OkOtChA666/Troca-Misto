@@ -62,12 +62,13 @@ export async function fetchFlights({ user, pass }) {
 
     await page.goto(BASE + 'Arrivals.aspx', { waitUntil: 'domcontentloaded', timeout: 45000 });
     await page.waitForTimeout(2500);
-    let arr = [];
+    let arr = [], arrCols = [];
     try {
       const a = await readTable(page, ['FLTNr.', 'STA', 'POS']);
-      arr = a.rows.map((r) => ({ reg: a.regIdx >= 0 ? norm(r[a.regIdx]).slice(0, 10) : '', n: flightKey(r[a.col('FLTNr.')]), sta: norm(r[a.col('STA')]), org: opt(a, r, ['ORG','ORIG','Origin']), gate: opt(a, r, ['GT','GATE','EXIT','Exit Door','DOOR']), pos: norm(r[a.col('POS')]) }));
+      arr = a.rows.map((r) => ({ reg: a.regIdx >= 0 ? norm(r[a.regIdx]).slice(0, 10) : '', n: flightKey(r[a.col('FLTNr.')]), sta: norm(r[a.col('STA')]), org: opt(a, r, ['ORG','ORIG','Origin']), gate: opt(a, r, ['GT','GATE','EXIT','Exit Door','DOOR']), pos: norm(r[a.col('POS')]), eta: (() => { const i = a.H.findIndex((h) => /^eta/i.test(h)); return i >= 0 ? norm(r[i]).slice(0, 8) : ''; })() }));
+      arrCols = a.H;   // the arrival columns, only for the log (is there an ETA column?)
     } catch (e) { /* arrivals are a bonus; departures are enough */ }
-    return { dep, arr, cols: { dep: d.H, regDep: d.regIdx >= 0 ? d.H[d.regIdx] : '' } };
+    return { dep, arr, cols: { dep: d.H, arr: arrCols, regDep: d.regIdx >= 0 ? d.H[d.regIdx] : '' } };
   } finally { await browser.close(); }
 }
 
