@@ -698,6 +698,13 @@
   .fl-row.arr{ border-left-color:#dbffaa; }
   .fl-h{ background:linear-gradient(90deg,rgba(11,42,74,.95),transparent); padding:8px 14px; font:700 15px var(--mono); color:var(--text); display:flex; align-items:baseline; gap:8px; }
   .fl-h small{ font-size:12px; font-weight:600; color:var(--amber); }
+  .fl-ctot, .mt-ctot{ margin-left:12px; font:600 11px var(--mono); background:#d6bcff; color:#2a1052; padding:2px 8px; border-radius:4px; align-self:center; white-space:nowrap; }
+  .mt-ctot{ margin-left:8px; }
+  .fl-ctot b, .mt-ctot b{ font-weight:800; }
+  .fl-ctot-sw{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:14px 0 4px; padding:12px 14px; border-radius:10px; background:#151d2e; font:600 13px var(--mono); color:var(--text); cursor:pointer; }
+  .fl-ctot-sw i{ width:42px; height:24px; border-radius:12px; background:#3a4560; position:relative; flex:none; transition:background .15s; }
+  .fl-ctot-sw i::after{ content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:left .15s; }
+  .fl-ctot-sw.on i{ background:#8b5cf6; } .fl-ctot-sw.on i::after{ left:21px; }
   .fl-tag{ position:absolute; top:0; right:0; font:800 9px var(--mono); letter-spacing:.06em; padding:3px 9px; border-bottom-left-radius:8px; background:#2ecc71; color:#04230f; min-width:104px; text-align:center; box-sizing:border-box; white-space:nowrap; }
   .fl-tag.d{ background:#ffb020; color:#2a1c00; }
   .fl-tag.r{ background:#ff5d6c; color:#2a0007; }
@@ -10284,6 +10291,8 @@ function flvCredit(){
     return '<div class="flv-credit"><a href="https://adsb.lol/" target="_blank" rel="noopener noreferrer"><span>POWERED BY</span><strong>adsb.lol</strong></a><div>Dados de voos fornecidos por adsb.lol e adsb.fi</div></div>';
   }catch(e){ return ''; }
 }
+function ctotOn(){ if(GROUP !== 'disp') return false; try{ return localStorage.getItem('tm_ctot') === '1'; }catch(e){ return false; } }
+function ctotToggle(){ try{ localStorage.setItem('tm_ctot', ctotOn() ? '0' : '1'); }catch(e){} renderFlights(); try{ renderMyTasks(); }catch(e){} }
 function renderFlights(){
   const box = document.getElementById('flights-list');
   const upd = document.getElementById('fl-updated');
@@ -10325,12 +10334,12 @@ function renderFlights(){
     const regTxt = String(r.reg || '').trim().toUpperCase();
     out.push('<div class="fl-row' + (dep ? '' : ' arr') + (past ? ' past' : '') + (chips.length ? ' hasft' : '') + '">' +
       (status ? '<span class="fl-tag' + (/clos|fecha/i.test(status) ? ' r' : delayed ? ' d' : '') + '">' + escapeHtml(String(status).toUpperCase()) + '</span>' : '') +
-      '<div class="fl-h">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
+      '<div class="fl-h">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + (dep && r.ctot && ctotOn() ? '<span class="fl-ctot">CTOT <b>' + escapeHtml(r.ctot) + '</b></span>' : '') + '</div>' +
       '<div class="fl-n"><span class="fl-fn">' + escapeHtml(f.code + ' ' + f.num) + (place ? '<span>' + escapeHtml(place) + '</span>' : '') + '</span>' + (regTxt ? '<span class="fl-pill">' + escapeHtml(regTxt) + '</span>' : '') + flvTop + '</div>' +
       '<div class="fl-al">' + escapeHtml(FL_NAMES[f.code] || f.code) + '</div>' + flvBar +
       (chips.length ? '<div class="fl-ft">' + chips.join('') + '</div>' : '') + '</div>');
   });
-  box.innerHTML = out.length ? out.join('') : '<div class="hint" style="text-align:center; padding:24px 0;">Sem voos das nossas companhias.</div>';
+  box.innerHTML = (out.length ? out.join('') : '<div class="hint" style="text-align:center; padding:24px 0;">Sem voos das nossas companhias.</div>') + (GROUP === 'disp' ? '<div class="fl-ctot-sw' + (ctotOn() ? ' on' : '') + '" onclick="ctotToggle()"><span>CTOT</span><i></i></div>' : '');
 }
 function stopFlightsListen(){
   if(FL_UNSUB){ try{ FL_UNSUB(); }catch(e){} FL_UNSUB = null; }
@@ -14116,7 +14125,7 @@ function mtTasksBodyHtml(staffId, me, now, sameDay){
       const _fi = mtFlightInfo(mtKey(t));
       const liveHtml = (_fi && _fi.r && (colr === '#0066cc' || colr === '#dbffaa')) ? flvInfo(_fi.r, colr === '#dbffaa' ? 'arr' : 'dep') : '';
       (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + (bdg ? ' has-nova' : '') + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + vcol + ';--c:' + vcol + '"' : '') + '>' +
-              '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + '</div>' +
+              '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + (_fi && _fi.ct && ctotOn() ? '<span class="mt-ctot">CTOT <b>' + mtEsc(_fi.ct) + '</b></span>' : '') + '</div>' +
               '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + liveHtml + '</div>' +
               chip + '<div class="mt-side"></div>' + bdg + tabHtml + teamHtml + '</div>');
     });
