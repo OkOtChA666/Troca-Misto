@@ -700,10 +700,16 @@
   .fl-h small{ font-size:12px; font-weight:600; color:var(--amber); }
   .fl-tag{ position:absolute; top:0; right:0; font:800 9px var(--mono); letter-spacing:.06em; padding:3px 9px; border-bottom-left-radius:8px; background:#2ecc71; color:#04230f; }
   .fl-tag.d{ background:#ffb020; color:#2a1c00; }
+  .fl-tag.r{ background:#ff5d6c; color:#2a0007; }
   .fl-n{ padding:9px 14px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .fl-pill{ font:700 11px var(--mono); background:#e8eefc; color:#0b1220; padding:2px 8px; border-radius:4px; white-space:nowrap; }
   .fl-row .fl-al{ padding:2px 14px 8px; margin-top:0; }
-  .fl-ft{ display:flex; gap:6px; padding:0 14px; flex-wrap:wrap; }
+  .fl-row.hasft{ padding-bottom:30px; }
+  .fl-ft{ position:absolute; right:14px; bottom:-1px; display:flex; gap:6px; }
+  .fl-ft .fl-chip{ background:#e8eefc; color:#46526b; border:0; border-radius:10px 10px 0 0; height:26px; padding:0 11px; display:flex; align-items:center; font-weight:400; font-size:12px; }
+  .fl-ft .fl-chip b{ color:#0b1220; font-weight:700; margin-left:6px; }
+  .fl-ft .fl-chip.g{ color:#46526b; }
+  .fl-ft .fl-chip.g b{ color:#0a7a46; }
   .fl-row.past{ opacity:.4; }
   .fl-tm{ font-family:var(--mono); font-weight:600; font-size:16px; color:var(--text); }
   .fl-tm small{ display:block; font-weight:500; font-size:10.5px; color:var(--amber); }
@@ -10305,11 +10311,11 @@ function renderFlights(){
     const place = dep ? (r.des || '') : (r.org || '');
     const chips = [];
     if(dep){
-      if(r.cki) chips.push('<span class="fl-chip">CKI ' + escapeHtml(flMergeRanges(r.cki)) + '</span>');
-      if(r.gt) chips.push('<span class="fl-chip' + (/board|embar/i.test(r.grem || '') ? ' g' : '') + '">GT ' + escapeHtml(r.gt) + '</span>');
+      if(r.cki) chips.push('<span class="fl-chip">CKI<b>' + escapeHtml(flMergeRanges(r.cki).replace(/-/g, ' – ')) + '</b></span>');
+      if(r.gt) chips.push('<span class="fl-chip' + (/board|embar/i.test(r.grem || '') ? ' g' : '') + '">GT<b>' + escapeHtml(r.gt) + '</b></span>');
     } else {
-      if(r.gate) chips.push('<span class="fl-chip">EXIT ' + escapeHtml(r.gate) + '</span>');
-      if(r.pos) chips.push('<span class="fl-chip">POS ' + escapeHtml(r.pos) + '</span>');
+      if(r.gate) chips.push('<span class="fl-chip">EXIT<b>' + escapeHtml(r.gate) + '</b></span>');
+      if(r.pos) chips.push('<span class="fl-chip">POS<b>' + escapeHtml(r.pos) + '</b></span>');
     }
     let status = dep ? (r.rem || r.grem || '') : '';
     if(/^\s*gate\s*at\s*$/i.test(String(status))) status = '';   // not needed — gate chip already shows it
@@ -10317,8 +10323,8 @@ function renderFlights(){
     let flvTop = '', flvBar = '';
     { const lv = flvInfo(r.reg, dep ? 'dep' : 'arr'); if(lv){ const i = lv.indexOf('<div class="flv-bar'); flvTop = i < 0 ? lv : lv.slice(0, i); flvBar = i < 0 ? '' : lv.slice(i); } }
     const regTxt = String(r.reg || '').trim().toUpperCase();
-    out.push('<div class="fl-row' + (dep ? '' : ' arr') + (past ? ' past' : '') + '">' +
-      (status ? '<span class="fl-tag' + (delayed ? ' d' : '') + '">' + escapeHtml(String(status).toUpperCase()) + '</span>' : '') +
+    out.push('<div class="fl-row' + (dep ? '' : ' arr') + (past ? ' past' : '') + (chips.length ? ' hasft' : '') + '">' +
+      (status ? '<span class="fl-tag' + (/clos|fecha/i.test(status) ? ' r' : delayed ? ' d' : '') + '">' + escapeHtml(String(status).toUpperCase()) + '</span>' : '') +
       '<div class="fl-h">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
       '<div class="fl-n"><span class="fl-fn">' + escapeHtml(f.code + ' ' + f.num) + (place ? '<span>' + escapeHtml(place) + '</span>' : '') + '</span>' + (regTxt ? '<span class="fl-pill">' + escapeHtml(regTxt) + '</span>' : '') + flvTop + '</div>' +
       '<div class="fl-al">' + escapeHtml(FL_NAMES[f.code] || f.code) + '</div>' + flvBar +
