@@ -1645,8 +1645,7 @@
   .mt-pop .mt-g0{ padding:8px 0 0; }
   .mt-pop .mt-pp{ display:flex; align-items:center; gap:12px; padding:5px 12px; margin:0 4px; border-radius:12px; font-size:15px; }
   .mt-pop .mt-pp.me{ background:rgba(126,240,196,.14); font-weight:700; }
-  .mt-pop .mt-pp.lr{ opacity:.85; }
-  .mt-pop .mt-pp.lr .mt-av{ opacity:.6; }
+  .mt-pop .mt-pp.nopunch{ filter:grayscale(1); opacity:.7; }   /* shift already started and no clock-in yet: black and white */
   .mt-pop .mt-av{ overflow:hidden; }
   .mt-pop .mt-av img{ width:100%; height:100%; object-fit:cover; display:block; }
   .mt-pop .mt-pn{ flex:1; white-space:nowrap; }
@@ -13600,7 +13599,7 @@ function mtTeamHtml(t, colr, rowKey){
     // check-in popovers always reserve the badge column (an invisible one when the desks are hidden), so the popover keeps the same width either way
     const badge = isLR(x) ? '<span class="mt-desk">LR</span>' : colr !== '#0099ff' ? '' : (d !== null ? '<span class="mt-desk' + (isMe ? ' me' : '') + '">' + d + '</span>' : '<span class="mt-desk" style="visibility:hidden;">00</span>');
     const nice = isMe ? 'Tu' : niceListName(x[1]);
-    return '<div class="mt-pp' + (isMe ? ' me' : '') + (isLR(x) ? ' lr' : '') + '">' + av(nice, col || '#3a4f7c', x[0]) + '<span class="mt-pn">' + mtEsc(nice) + '</span>' + badge + '</div>';
+    return '<div class="mt-pp' + (isMe ? ' me' : '') + (isLR(x) ? ' lr' : '') + (mtNotClockedIn(x[0]) ? ' nopunch' : '') + '">' + av(nice, col || '#3a4f7c', x[0]) + '<span class="mt-pn">' + mtEsc(nice) + '</span>' + badge + '</div>';
   };
   const names = (l, col) => srt(l.filter(x => !isLR(x))).map(x => nm(x, col)).join('') + srt(l.filter(isLR)).map(x => nm(x, col)).join('');
   const sec = (items) => items.map((it, i) => it.t ? '<div class="mt-h' + (i === 0 ? ' f' : '') + '" style="background:' + it.c + dk(it.c) + '">' + it.t + '</div>' + it.b : '<div class="mt-g0">' + it.b + '</div>').join('');
@@ -13976,6 +13975,19 @@ function mtShiftBounds(me){
 // real clock-in / clock-out times (green / red dots in planete), saved by the sync next to the person's tasks
 function mtMyPunch(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; return r && r.p ? r.p : null; }catch(e){ return null; } }
 // live: clocked in today (planete) and not clocked out yet = at the airport right now (any date being searched)
+// shift already started today and no clock-in yet (only when today's clock-in data is really there, so nobody turns grey by mistake)
+function mtNotClockedIn(id){
+  try{
+    if(!MT_DOC || !MT_DOC.a || MT_DOC.date !== sfToday()) return false;
+    if(!Object.keys(MT_DOC.a).some(k => { const p = mtPunchOf(k); return !!(p && p[0]); })) return false;
+    const w = DATA.workers.find(x => x.id === id), sh = w ? mtShiftBounds(w) : null;
+    if(!sh || !sh.work) return false;
+    const d = new Date(), now = d.getHours() * 60 + d.getMinutes();
+    if(now < sh.s0 || now >= sh.e0) return false;
+    const p = mtPunchOf(id);
+    return !(p && p[0]);
+  }catch(e){ return false; }
+}
 function mtIsLive(id){ try{ if(!MT_DOC || MT_DOC.date !== sfToday()) return false; const p = mtPunchOf(id); return !!(p && p[0] && !p[1]); }catch(e){ return false; } }
 function mtPunchOf(id){ try{ const r = MT_DOC && MT_DOC.a && MT_DOC.a[id] ? JSON.parse(MT_DOC.a[id]) : null; return r && r.p ? r.p : null; }catch(e){ return null; } }
 // ---------- QUEM ESTÁ A TRABALHAR (admin settings, APP tab): pick someone clocked in right now, tap the card to see their tasks ----------
