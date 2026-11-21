@@ -3090,7 +3090,8 @@ const GROUP_LABEL = GROUPS[GROUP];
 const PEOPLE_WORD = GROUP === 'sup' ? ['Supervisor', 'Supervisores'] : GROUP === 'disp' ? ['Dispatcher', 'Dispatchers'] : ['Agente', 'Agentes'];   // what a person on the schedule is called in this department
 try{ if(GROUP){ document.documentElement.classList.add('grp-' + GROUP); if(GROUP === 'sup' || GROUP === 'disp'){ const wl = document.getElementById('stat-workers-label'); if(wl) wl.textContent = GROUP === 'sup' ? 'SUPERVISORES' : 'DISPATCHERS'; } const eb = document.querySelector('.eyebrow'); if(eb) eb.textContent = GROUP_LABEL + ' · FAO · PAX'; } }catch(e){}
 const GLOBAL_KEY = /Enabled$|^maintenance$|^flightlist$|^flightairlines$|^aistaff$|^tasks$|^taskreq$|^banned$|^privacyText$|^privacyPolicy$/;   // settings and check-in-only data: one copy for everybody
-function gScope(key, g){ g = (g === undefined ? GROUP : g); return g && !GLOBAL_KEY.test(key) ? g + '_' + key : key; }
+function gScope(key, g){ g = (g === undefined ? GROUP : g); if(g === 'disp' && key === 'flightairlines') return 'disp_flightairlines';   // dispatchers have their own airline list
+  return g && !GLOBAL_KEY.test(key) ? g + '_' + key : key; }
 function gColl(name, g){ g = (g === undefined ? GROUP : g); return g && (name === 'swaps' || name === 'requests') ? g + '_' + name : name; }
 const SCHEDULE_CACHE_KEY = 'trocaMistoScheduleCache' + (GROUP ? '_' + GROUP : '');
 const SUP_ADMINS = ['4337'];   // department admins of SUPERVISÃO (they only get ALTERAÇÃO DE HORÁRIOS)
@@ -10207,12 +10208,17 @@ document.getElementById('flights-back-btn').addEventListener('click', openTools)
 
 // Airlines we work for (codes as they appear at the start of the flight number). Editable in RULES.
 const FL_AIRLINES_DEFAULT = 'HV,TO,U2,EC,DS,AY,SK,DY,D8,DX,V7,SN,EW,E4,W6,W4,W9,LG,TB,X3,6B,OR,BY,FI,TS,BT,QS';
-const FL_NAMES = { HV:'Transavia', TO:'Transavia France', U2:'EasyJet', EC:'EasyJet Europe', DS:'EasyJet Switzerland', AY:'Finnair', SK:'SAS', DY:'Norwegian', D8:'Norwegian', DX:'Norwegian', V7:'Volotea', SN:'Brussels Airlines', EW:'Eurowings', E4:'Enter Air', W6:'Wizz Air', W4:'Wizz Air Malta', W9:'Wizz Air UK', LG:'Luxair', TB:'TUI fly', X3:'TUI fly', '6B':'TUI fly', OR:'TUI fly', BY:'TUI', FI:'Icelandair', TS:'Air Transat', BT:'airBaltic', QS:'Smartwings' };
+const FL_NAMES = { HV:'Transavia', TO:'Transavia France', U2:'EasyJet', EC:'EasyJet Europe', DS:'EasyJet Switzerland', AY:'Finnair', SK:'SAS', DY:'Norwegian', D8:'Norwegian', DX:'Norwegian', V7:'Volotea', SN:'Brussels Airlines', EW:'Eurowings', E4:'Enter Air', W6:'Wizz Air', W4:'Wizz Air Malta', W9:'Wizz Air UK', LG:'Luxair', TB:'TUI fly', X3:'TUI fly', '6B':'TUI fly', OR:'TUI fly', BY:'TUI', FI:'Icelandair', TS:'Air Transat', BT:'airBaltic', QS:'Smartwings', LS:'Jet2', LH:'Lufthansa' };
 let flAirlines = FL_AIRLINES_DEFAULT;
 let flAirlineNames = {};   // names given by the admin to codes he added: { 'FR': 'Ryanair' }
 async function loadFlAirlines(){
   const d = await dbGetShared('flightairlines', null);
   if(d && typeof d.codes === 'string') flAirlines = d.codes;
+  else if(GROUP === 'disp'){   // first time for dispatchers: the usual list + Jet2 and Lufthansa
+    const g = await dbGetShared('flightairlines', null, '');
+    const base = (g && typeof g.codes === 'string') ? g.codes : FL_AIRLINES_DEFAULT;
+    flAirlines = base + ',LS,LH';
+  }
   const n = await dbGetShared('airlinenames', null);
   if(n && n.map && typeof n.map === 'object') flAirlineNames = n.map;
 }
@@ -10894,7 +10900,7 @@ document.getElementById('custom2-toggle-btn').addEventListener('click', () => {
   loadFlAirlines().then(() => { document.getElementById('flight-airlines-input').value = flAirlines; renderAirlineChips(); });
 });
 // AIRLINES tab: the airline codes shown as chips grouped by company (the hidden textarea keeps the list, as before)
-const AIRLINE_GROUPS = [['Transavia',['HV','TO']],['easyJet',['U2','EC','DS']],['TUI',['X3','TB','6B','OR','BY']],['Norwegian',['DY','D8']],['Wizz Air',['W6','W4','W9']],['Eurowings',['EW']],['SAS',['SK']],['Finnair',['AY']],['Icelandair',['FI']],['Volotea',['V7']],['Brussels Airlines',['SN']],['Enter Air',['E4']],['Luxair',['LG']],['Air Transat',['TS']],['airBaltic',['BT']],['Smartwings',['QS']],['AirPost',['5O']]];
+const AIRLINE_GROUPS = [['Transavia',['HV','TO']],['easyJet',['U2','EC','DS']],['TUI',['X3','TB','6B','OR','BY']],['Norwegian',['DY','D8']],['Wizz Air',['W6','W4','W9']],['Eurowings',['EW']],['SAS',['SK']],['Finnair',['AY']],['Icelandair',['FI']],['Volotea',['V7']],['Brussels Airlines',['SN']],['Enter Air',['E4']],['Luxair',['LG']],['Air Transat',['TS']],['airBaltic',['BT']],['Smartwings',['QS']],['AirPost',['5O']],['Jet2',['LS']],['Lufthansa',['LH']]];
 function airlineList(){ return String(flAirlines).split(/[\s,;]+/).map(x => x.trim().toUpperCase()).filter(Boolean).filter((c, i, a) => a.indexOf(c) === i); }
 function airlineNameOf(c){
   if(flAirlineNames[c]) return flAirlineNames[c];
