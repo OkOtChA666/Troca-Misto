@@ -1586,6 +1586,13 @@
   .mt-warn .i{ color:#ffb21a; font-size:20px; line-height:1; } .mt-warn b{ display:block; color:#ffd166; font-size:13px; margin-bottom:3px; }
   .mt-warn p{ margin:0; color:#c8b98a; font-size:12.5px; line-height:1.5; } .mt-warn em{ font-style:normal; color:#fff; font-weight:700; }
   .mt-warn .bd{ display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; } .mt-warn .bd span{ font:800 11px var(--mono); letter-spacing:.06em; padding:3px 9px; border-radius:5px; background:#3a2f0e; color:#ffd166; border:1px solid #6b5a1f; }
+  .mt-warn{ position:relative; }
+  .mt-warn .x{ position:absolute; top:6px; right:8px; width:30px; height:30px; background:none; border:0; color:#a8997a; font-size:22px; line-height:1; cursor:pointer; padding:0; }
+  .mt-warn > div:nth-of-type(2) b{ padding-right:28px; }
+  .mt-warn .ac{ display:flex; gap:10px; margin-top:12px; }
+  .mt-warn .ac button{ flex:1; font:700 12px var(--mono); letter-spacing:.08em; padding:10px 0; border-radius:8px; cursor:pointer; }
+  .mt-warn .b1{ background:#ffb21a; color:#1a1400; border:0; }
+  .mt-warn .b2{ background:none; border:1px solid #6b5a1f; color:#d9c88f; }
   .mt-strip{ border:1px solid #243457; border-radius:12px; background:#0b1325; padding:11px 14px 10px; margin:0 0 12px; }
   .mt-srow{ display:flex; align-items:flex-end; justify-content:space-between; font-family:var(--mono); }
   .mt-lab{ font-size:9.5px; letter-spacing:.16em; color:#7d89a3; margin-bottom:5px; }
@@ -14283,6 +14290,22 @@ function mtPunchHtml(p){
   return '<div class="mt-punch">' + (p[0] ? '<span><i class="mt-pd in"></i><b>' + mtEsc(p[0]) + '</b></span>' : '') + (p[1] ? '<span style="margin-left:auto;"><i class="mt-pd out"></i><b>' + mtEsc(p[1]) + '</b></span>' : '') + '</div>';
 }
 // the shift Planete has today differs from the one in the app (PDF + swaps + changes): ask the person if there was a swap or a change
+let MT_WARN = null;
+function mtWarnClose(){ try{ if(MT_WARN) localStorage.setItem(MT_WARN.key, '1'); }catch(e){} renderMyTasks(); }
+function mtWarnYes(){
+  const w = MT_WARN; if(!w || w.idx < 0) return;
+  const me = DATA.workers.find(x => String(x.id) === String(w.staffId)); if(!me) return;
+  showConfirmDialog('Registar a alteração de hoje?<br><br><span style="text-decoration:line-through; opacity:.6;">' + escapeHtml(w.old || 'folga') + '</span> → <b>' + escapeHtml(w.sv + ' - ' + w.ev) + '</b><br><br><span style="font-size:12px;">O novo horário vem da Planete. Só confirmes se o Suporte Operacional te comunicou a alteração.</span>', async () => {
+    const key = overrideKey(me.id, w.idx);
+    const baseEntry = computeSwapResolvedEntry(me, w.idx);
+    const existing = SCHEDULE_OVERRIDES[key];
+    SCHEDULE_OVERRIDES[key] = { start: w.sv.replace(':',''), end: w.ev.replace(':',''), originalStart: existing ? existing.originalStart : baseEntry.start, originalEnd: existing ? existing.originalEnd : baseEntry.end, ts: Date.now(), by: 'self' };
+    await saveScheduleOverrides();
+    try{ localStorage.setItem(w.key, '1'); }catch(e){}
+    try{ if(typeof refreshRecentSwapsLists === 'function') refreshRecentSwapsLists(); if(typeof refreshAllDateSelectCounts === 'function') refreshAllDateSelectCounts(); }catch(e){}
+    renderMyTasks();
+  }, false, 'SIM, GUARDAR', false, null, 'CANCELAR');
+}
 function mtShiftWarnHtml(staffId, me){
   try{
     if(!MT_DOC || MT_DOC.date !== sfToday() || !MT_DOC.a || !MT_DOC.a[staffId]) return '';
@@ -14293,8 +14316,13 @@ function mtShiftWarnHtml(staffId, me){
     const app = sh.work ? hh(sh.start) + ' – ' + hh(sh.end) : '';
     if(sh.work && hh(sh.start) === pl0 && hh(sh.end) === pl1) return '';
     const tags = ['PALT', 'SWAP', 'DC', 'DS', 'FO'].filter(t => new RegExp('(^|[^A-Z])' + t + '([^A-Z]|$)').test(String(rec.r || '').toUpperCase() + (rec.x ? ' ' + rec.x : '')));
-    return '<div class="mt-warn"><div class="i">⚠</div><div><b>Horário diferente do previsto</b><p>A Planete mostra <em>' + mtEsc(pl0 + ' – ' + pl1) + '</em>, mas o PDF ' + (sh.work ? 'tem <em>' + mtEsc(app) + '</em>' : 'tem <em>folga</em>') + '. Fizeste uma troca ou uma alteração de horário?</p>' +
-      (tags.length ? '<div class="bd">' + tags.map(t => '<span>' + t + '</span>').join('') + '</div>' : '') + '</div></div>';
+    const key = 'mtWarnX:' + staffId + ':' + MT_DOC.date + ':' + pl0 + '-' + pl1 + ':' + app;
+    try{ if(localStorage.getItem(key)) return ''; }catch(e){}
+    let idx = -1; for(let i = 0; i < N; i++){ if(isTodayDay(i)){ idx = i; break; } }
+    MT_WARN = { key:key, idx:idx, sv:pl0, ev:pl1, old:app, staffId:staffId };
+    return '<div class="mt-warn"><button type="button" class="x" onclick="mtWarnClose()" aria-label="Fechar">×</button><div class="i">⚠</div><div><b>Horário diferente do previsto</b><p>A Planete mostra <em>' + mtEsc(pl0 + ' – ' + pl1) + '</em>, mas o PDF ' + (sh.work ? 'tem <em>' + mtEsc(app) + '</em>' : 'tem <em>folga</em>') + '. Fizeste uma troca ou uma alteração de horário?</p>' +
+      (tags.length ? '<div class="bd">' + tags.map(t => '<span>' + t + '</span>').join('') + '</div>' : '') +
+      '<div class="ac">' + (staffEditSchedEnabled && idx >= 0 ? '<button type="button" class="b1" onclick="mtWarnYes()">SIM, MUDOU</button>' : '') + '<button type="button" class="b2" onclick="mtWarnClose()">NÃO</button></div></div></div>';
   }catch(e){ return ''; }
 }
 function mtShiftPillsHtml(me, nowMin, punch){
