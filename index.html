@@ -2637,11 +2637,17 @@
   <!-- DOCUMENTOS PANEL -->
   <div class="panel hidden" id="panel-docs">
     <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
-      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">DOCUMENTOS</div>
+      <div id="docs-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">DOCUMENTOS</div>
       <div style="display:flex; align-items:center; gap:10px;"><button type="button" id="docs-edit-btn" class="round-back hidden" aria-label="Editar" title="Editar"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
       <button type="button" id="docs-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button></div>
     </div>
-    <div class="swap-sort-toggle" style="margin:0 0 10px;">
+    <div id="docs-menu">
+    <div class="tool-card" data-dm="tempos"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.8 1.8M9.5 3h5"/></svg></div><div><div class="tool-name">TEMPOS</div><div class="tool-desc">Check-in e gate por companhia</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+    <div class="tool-card" data-dm="wiwo"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div><div><div class="tool-name">WIWO</div><div class="tool-desc">Companhias WIWO</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+    <div class="tool-card" data-dm="contactos"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/></svg></div><div><div class="tool-name">CONTACTOS</div><div class="tool-desc">Números internos</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+    <div class="tool-card" data-dm="quick"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><div><div class="tool-name">QUICK SUMMARY</div><div class="tool-desc">Resumo de cada companhia</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+    </div>
+    <div class="swap-sort-toggle hidden" style="margin:0 0 10px;">
       <div class="swap-sort-tab active" data-dt="tempos"><span>TEMPOS</span><div class="dash"></div></div>
       <div class="swap-sort-tab" data-dt="wiwo"><span>WIWO</span><div class="dash"></div></div>
       <div class="swap-sort-tab" data-dt="contactos"><span>CONTACTOS</span><div class="dash"></div></div>
@@ -10273,7 +10279,7 @@ const DOC_TEMPOS = [
 const DOC_WIWO = [['easyJet','U2 · EC · DS'],['Eurowings','EW'],['Norwegian','DY · D8'],['Transavia','HV · TO'],['Volotea','V7'],['Wizz Air','W6'],['Icelandair','FI'],['SAS','SK'],['Finnair','AY'],['Air Transat','TS']];
 const DOC_CONTACTOS = [['Supervisão · Coord.','62405'],['Supervisão · Super.','61496'],['Balcão','62406 / 62885'],['Sala Descanso','61498'],['Tapete Partidas','61424 / 61952'],['Portas 101-129','638 + (01 a 29)'],['Porta 322','61303 / 63855'],['Check-In','636 + nº balcão'],['Lost & Found','62407'],['Lounge','61069'],['Fardamento','61958'],['OPS / Suporte','62428 / 61622'],['RH','62462 / 62410'],['My Way','63373 / 61742'],['Incidências','62002'],['Cruz Vermelha','61020'],['Polícia PSP','62688'],];
 const DOC_ICAO = {"HV": "TRA", "TO": "TVF", "BY": "TOM", "X3": "TUI", "TB": "JAF", "OR": "TFL", "6B": "BLX", "EW": "EWG", "V7": "VOE", "W6": "WZZ", "BT": "BTI", "TS": "TSC", "D8": "NAX", "DY": "IBK", "SK": "SAS", "LG": "LGL", "SN": "BRU", "AY": "FIN", "OK": "CSA", "EC": "EJU", "U2": "EZY", "FI": "ICE", "E4": "ENT", "5O": "FPO"};
-let DOC_TAB = 'tempos';
+let DOC_TAB = null;   // null = the DOCUMENTOS menu
 const DOC_SYS = { GONOW:'#2fbf71', ALTEA:'#3b9bff', ERES:'#e0b074', IPORT:'#c9d2e6' };
 let DOC = null, DOC_EDIT = false, DOC_Q = -1;
 const DOC_QP = ['TEMPOS','PECTABS','BAGAGEM','NOTAS','EXTRA'];   // pages of a company's QUICK SUMMARY (pages 2-5 hold test text for now)
@@ -10299,11 +10305,16 @@ function renderDocs(){
   if(!DOC) DOC = docDefaults();
   const inp = document.getElementById('docs-search');
   const q = (inp.value || '').trim().toLowerCase();
+  const inMenu = !DOC_TAB;
+  document.getElementById('docs-menu').classList.toggle('hidden', !inMenu);
+  document.getElementById('docs-title').textContent = inMenu ? 'DOCUMENTOS' : ({ tempos:'TEMPOS', wiwo:'WIWO', contactos:'CONTACTOS', quick:'QUICK SUMMARY' })[DOC_TAB];
+  document.getElementById('docs-list').classList.toggle('hidden', inMenu);
+  if(inMenu){ document.getElementById('docs-sb').classList.add('hidden'); document.getElementById('docs-foot').textContent = ''; document.getElementById('docs-edit-btn').classList.add('hidden'); return; }
   document.getElementById('docs-clear').classList.toggle('hidden', !q);
   document.querySelectorAll('#panel-docs [data-dt]').forEach(t => t.classList.toggle('active', t.dataset.dt === DOC_TAB));
-  const eb = document.getElementById('docs-edit-btn'); eb.classList.toggle('hidden', !isAdminSession); eb.classList.toggle('on', DOC_EDIT && isAdminSession);
+  const eb = document.getElementById('docs-edit-btn'); eb.classList.toggle('hidden', !isAdminSession || DOC_TAB === 'quick'); eb.classList.toggle('on', DOC_EDIT && isAdminSession);
   const ed = DOC_EDIT && isAdminSession && DOC_TAB !== 'quick';
-  document.getElementById('docs-sb').classList.toggle('hidden', DOC_TAB === 'quick' && DOC_Q >= 0);
+  document.getElementById('docs-sb').classList.toggle('hidden', DOC_TAB === 'quick' && DOC_Q >= 0);   // search box is shown again here
   inp.placeholder = DOC_TAB === 'contactos' ? 'Procurar contacto…' : 'Procurar companhia…';
   document.getElementById('docs-foot').textContent = DOC_TAB === 'tempos' ? 'Tempos antes da partida · CKIN abre/fecha · GATE remoto/manga' : DOC_TAB === 'wiwo' ? 'Companhias WIWO' : '';
   const esc = escapeHtml, pen = i => ed ? '<span class="dc-pen" data-ed="' + i + '">✎</span>' : '';
@@ -10375,11 +10386,15 @@ function openDocs(){
   document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
   document.querySelector('.tabs').classList.add('hidden');
   document.getElementById('panel-docs').classList.remove('hidden');
-  DOC_EDIT = false; DOC_Q = -1;
+  DOC_EDIT = false; DOC_Q = -1; DOC_TAB = null; document.getElementById('docs-search').value = '';
   renderDocs(); docsLoad();
 }
 document.getElementById('tool-card-docs').addEventListener('click', openDocs);
-document.getElementById('docs-back-btn').addEventListener('click', openTools);
+document.getElementById('docs-back-btn').addEventListener('click', () => {
+  if(DOC_TAB){ DOC_TAB = null; DOC_Q = -1; DOC_EDIT = false; document.getElementById('docs-search').value = ''; renderDocs(); }
+  else openTools();
+});
+document.querySelectorAll('#docs-menu [data-dm]').forEach(c => c.addEventListener('click', () => { DOC_TAB = c.dataset.dm; DOC_Q = -1; DOC_EDIT = false; document.getElementById('docs-search').value = ''; renderDocs(); }));
 document.getElementById('docs-search').addEventListener('input', renderDocs);
 document.getElementById('docs-edit-btn').addEventListener('click', () => { DOC_EDIT = !DOC_EDIT; renderDocs(); });
 document.getElementById('docs-list').addEventListener('click', e => {
