@@ -702,11 +702,12 @@
   .dc-sb input{ flex:1; min-width:0; background:none; border:0; outline:0; color:var(--text); font:500 16px var(--sans); padding:13px 0; }
   .dc-sb button{ background:none; border:0; color:inherit; font-size:22px; line-height:1; padding:4px; cursor:pointer; }
   .dc-gh{ font:800 12px var(--mono); letter-spacing:.15em; margin:14px 0 6px 4px; }
-  .dc-r{ display:grid; grid-template-columns:30px 1fr auto auto; gap:8px; align-items:center; background:#151d2e; border-left:4px solid; border-radius:8px; padding:9px 8px; margin-bottom:4px; font-size:13px; }
+  .dc-r{ display:grid; grid-template-columns:38px 1fr auto auto; gap:8px; align-items:center; background:#151d2e; border-left:4px solid; border-radius:8px; padding:9px 8px; margin-bottom:4px; font-size:13px; }
   .dc-r b{ font:800 13px var(--mono); } .dc-r .n{ color:#c8d3ea; font-size:12.5px; min-width:0; }
   .dc-r .t, .dc-r .g{ font:700 12.5px var(--mono); text-align:center; white-space:nowrap; } .dc-r .t{ min-width:78px; } .dc-r .g{ min-width:58px; }
   .dc-r i{ color:#55627f; font-style:normal; margin:0 3px; }
-  .dc-hd{ display:grid; grid-template-columns:30px 1fr auto auto; gap:8px; font:600 10px var(--mono); color:#8a97b5; padding:0 8px; } .dc-hd span:nth-child(3){ min-width:78px; text-align:center; } .dc-hd span:nth-child(4){ min-width:58px; text-align:center; }
+  .dc-hd{ display:grid; grid-template-columns:38px 1fr auto auto; gap:8px; font:600 9.5px var(--mono); color:#8a97b5; padding:2px 12px 0 12px; line-height:1.25; } .dc-hd span:nth-child(3){ min-width:78px; text-align:center; } .dc-hd span:nth-child(4){ min-width:58px; text-align:center; }
+  .dc-r b em{ display:block; font:600 10px var(--mono); color:#8a97b5; font-style:normal; margin-top:2px; }
   .dc-c{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:#151d2e; border-left:4px solid #7fd0ff; border-radius:8px; padding:11px 10px; margin-bottom:4px; }
   .dc-c span{ font-size:14px; color:#dbe4f7; } .dc-c b{ font:700 13px var(--mono); text-align:right; }
   .dc-foot{ color:#6c7a99; font-size:11px; text-align:center; padding:14px 8px 8px; }
@@ -10249,6 +10250,7 @@ const DOC_TEMPOS = [
 ];
 const DOC_WIWO = [['easyJet','U2 · EC · DS'],['Eurowings','EW'],['Norwegian','DY · D8'],['Transavia','HV · TO'],['Volotea','V7'],['Wizz Air','W6'],['Icelandair','FI'],['SAS','SK'],['Finnair','AY'],['Air Transat','TS']];
 const DOC_CONTACTOS = [['Supervisão · Coord.','62405'],['Supervisão · Super.','61496'],['Balcão','62406 / 62885'],['Sala Descanso','61498'],['Tapete Partidas','61424 / 61952'],['Portas 101-129','638 + (01 a 29)'],['Porta 322','61303 / 63855'],['Check-In','636 + nº balcão'],['Lost & Found','62407'],['Lounge','61069'],['Fardamento','61958'],['OPS / Suporte','62428 / 61622'],['RH','62462 / 62410'],['My Way','63373 / 61742'],['Incidências','62002'],['Cruz Vermelha','61020'],['Polícia PSP','62688'],];
+const DOC_ICAO = {"HV": "TRA", "TO": "TVF", "BY": "TOM", "X3": "TUI", "TB": "JAF", "OR": "TFL", "6B": "BLX", "EW": "EWG", "V7": "VOE", "W6": "WZZ", "BT": "BTI", "TS": "TSC", "D8": "NAX", "DY": "IBK", "SK": "SAS", "LG": "LGL", "SN": "BRU", "AY": "FIN", "OK": "CSA", "EC": "EJU", "U2": "EZY", "FI": "ICE", "E4": "ENT", "5O": "FPO"};
 let DOC_TAB = 'tempos';
 function renderDocs(){
   const inp = document.getElementById('docs-search');
@@ -10263,11 +10265,12 @@ function renderDocs(){
     DOC_TEMPOS.forEach(g => {
       const rows = g[2].filter(match);
       if(!rows.length) return;
-      html += '<div class="dc-gh" style="color:' + g[1] + '">' + g[0] + '</div><div class="dc-hd"><span></span><span></span><span>CKIN</span><span>GATE</span></div>' + rows.map(r => '<div class="dc-r" style="border-left-color:' + g[1] + '"><b>' + r[0] + '</b><span class="n">' + r[1] + '</span><span class="t">' + r[2] + '<i>/</i>' + r[3] + '</span><span class="g">' + r[4] + "'<i>/</i>" + r[5] + "'</span></div>").join('');
+      html += '<div class="dc-gh" style="color:' + g[1] + '">' + g[0] + '</div>' + rows.map(r => '<div class="dc-r" style="border-left-color:' + g[1] + '"><b>' + r[0] + '<em>' + (DOC_ICAO[r[0]] || '') + '</em></b><span class="n">' + r[1] + '</span><span class="t">' + r[2] + '<i>/</i>' + r[3] + '</span><span class="g">' + r[4] + "'<i>/</i>" + r[5] + "'</span></div>").join('');
     });
   } else {
     html = (DOC_TAB === 'wiwo' ? DOC_WIWO : DOC_CONTACTOS).filter(match).map(r => '<div class="dc-c"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('');
   }
+  if(DOC_TAB === 'tempos' && html) html = '<div class="dc-hd"><span>IATA<br>ICAO</span><span>OPERADOR</span><span>CKIN<br>ABRE / FECHA</span><span>GATE<br>REMOTO / MANGA</span></div>' + html;
   document.getElementById('docs-list').innerHTML = html || '<div class="hint" style="text-align:center; padding:24px 0;">Nada encontrado.</div>';
 }
 function openDocs(){
