@@ -1582,6 +1582,10 @@
   .mt-title{ font-family:var(--mono); font-size:13px; letter-spacing:0.12em; color:var(--amber); font-weight:700; }
   .mt-who{ font-size:13px; color:var(--text); margin-bottom:4px; }
   /* shift pill + countdown (admin-only test) */
+  .mt-warn{ display:flex; gap:12px; align-items:flex-start; border:1px solid #6b5a1f; background:#17140a; border-radius:12px; padding:12px 14px; margin:0 0 12px; }
+  .mt-warn .i{ color:#ffb21a; font-size:20px; line-height:1; } .mt-warn b{ display:block; color:#ffd166; font-size:13px; margin-bottom:3px; }
+  .mt-warn p{ margin:0; color:#c8b98a; font-size:12.5px; line-height:1.5; } .mt-warn em{ font-style:normal; color:#fff; font-weight:700; }
+  .mt-warn .bd{ display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; } .mt-warn .bd span{ font:800 11px var(--mono); letter-spacing:.06em; padding:3px 9px; border-radius:5px; background:#3a2f0e; color:#ffd166; border:1px solid #6b5a1f; }
   .mt-strip{ border:1px solid #243457; border-radius:12px; background:#0b1325; padding:11px 14px 10px; margin:0 0 12px; }
   .mt-srow{ display:flex; align-items:flex-end; justify-content:space-between; font-family:var(--mono); }
   .mt-lab{ font-size:9.5px; letter-spacing:.16em; color:#7d89a3; margin-bottom:5px; }
@@ -14278,6 +14282,21 @@ function mtPunchHtml(p){
   if(!p || (!p[0] && !p[1])) return '';
   return '<div class="mt-punch">' + (p[0] ? '<span><i class="mt-pd in"></i><b>' + mtEsc(p[0]) + '</b></span>' : '') + (p[1] ? '<span style="margin-left:auto;"><i class="mt-pd out"></i><b>' + mtEsc(p[1]) + '</b></span>' : '') + '</div>';
 }
+// the shift Planete has today differs from the one in the app (PDF + swaps + changes): ask the person if there was a swap or a change
+function mtShiftWarnHtml(staffId, me){
+  try{
+    if(!MT_DOC || MT_DOC.date !== sfToday() || !MT_DOC.a || !MT_DOC.a[staffId]) return '';
+    const rec = JSON.parse(MT_DOC.a[staffId]); if(!rec || !rec.s || !rec.s[0] || !rec.s[1]) return '';
+    const sh = mtShiftBounds(me); if(!sh) return '';
+    const hh = v => { const m = /^(\d{1,2}):?(\d{2})$/.exec(String(v)); return m ? m[1].padStart(2, '0') + ':' + m[2] : String(v); };
+    const pl0 = hh(rec.s[0]), pl1 = hh(rec.s[1]);
+    const app = sh.work ? hh(sh.start) + ' – ' + hh(sh.end) : '';
+    if(sh.work && hh(sh.start) === pl0 && hh(sh.end) === pl1) return '';
+    const tags = ['PALT', 'SWAP', 'DC', 'DS', 'FO'].filter(t => new RegExp('(^|[^A-Z])' + t + '([^A-Z]|$)').test(String(rec.r || '').toUpperCase() + (rec.x ? ' ' + rec.x : '')));
+    return '<div class="mt-warn"><div class="i">⚠</div><div><b>Horário diferente do previsto</b><p>A Planete mostra <em>' + mtEsc(pl0 + ' – ' + pl1) + '</em>, mas o PDF ' + (sh.work ? 'tem <em>' + mtEsc(app) + '</em>' : 'tem <em>folga</em>') + '. Fizeste uma troca ou uma alteração de horário?</p>' +
+      (tags.length ? '<div class="bd">' + tags.map(t => '<span>' + t + '</span>').join('') + '</div>' : '') + '</div></div>';
+  }catch(e){ return ''; }
+}
 function mtShiftPillsHtml(me, nowMin, punch){
   try{
     const sh = mtShiftBounds(me); if(!sh) return '';
@@ -14373,7 +14392,7 @@ function renderMyTasks(){
   // the "Atualizado às X (há X min)" line now lives at the bottom, above the note (see mt-foot)
   const updTxt = 'Atualizado às ' + (upd ? mtPad(upd.getHours()) + ':' + mtPad(upd.getMinutes()) : '—') +
           (ageMin !== null ? ' (há ' + (ageMin < 60 ? ageMin + ' min' : Math.floor(ageMin / 60) + ' h ' + (ageMin % 60) + ' min') + ')' : '');
-  html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes(), mtMyPunch(staffId));   // TURNO bar (shift, countdown / day off) for everybody
+  html += mtShiftPillsHtml(me, now.getHours() * 60 + now.getMinutes(), mtMyPunch(staffId)) + mtShiftWarnHtml(staffId, me);   // TURNO bar (shift, countdown / day off) for everybody, plus the warning when Planete's shift differs
   if(ageMin !== null && ageMin > 60) html += '<div class="mt-warn red">Dados desatualizados há mais de 1 hora — confirma sempre na plataforma oficial.</div>';
   else if(ageMin !== null && ageMin > 15) html += '<div class="mt-warn amber">Os dados têm mais de 15 minutos — confirma na plataforma oficial se tiveres dúvidas.</div>';
   const sameDay = MT_DOC.date === todayIso;
