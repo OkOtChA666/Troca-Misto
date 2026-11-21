@@ -728,6 +728,8 @@
   .dq-p{ flex:0 0 100%; scroll-snap-align:start; box-sizing:border-box; min-height:250px; padding:0 2px; }
   .dq-sec{ font:800 11px var(--mono); letter-spacing:.15em; color:#7fd0ff; margin:14px 0 8px 2px; }
   .dq-g{ display:grid; grid-template-columns:1fr 1fr; gap:8px; } .dq-k{ background:#151d2e; border-radius:10px; padding:11px 12px; } .dq-k span{ display:block; font:600 10px var(--mono); letter-spacing:.08em; color:#8a97b5; margin-bottom:5px; } .dq-k b{ font:800 20px var(--mono); }
+  .dq-one{ display:flex; justify-content:space-between; align-items:center; background:#151d2e; border-left:4px solid #7fd0ff; border-radius:10px; padding:16px 14px; } .dq-one b{ font:800 18px var(--sans); } .dq-one b.nv{ color:#55627f; font-weight:600; font-style:italic; } .dq-one span{ color:var(--amber); font-size:17px; } .dq-one.adm{ cursor:pointer; }
+  .dq-k em{ color:var(--amber); font-style:normal; font-size:14px; float:right; } .dq-k.adm{ cursor:pointer; } .dq-m .dq-k b{ font-size:16px; } .dq-k i.nv{ color:#55627f; font-weight:600; font-size:14px; }
   .dq-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:#151d2e; border-radius:10px; padding:13px 12px; margin-bottom:6px; font-size:14px; } .dq-row span{ color:#8fa0c4; } .dq-row b{ font-weight:700; text-align:right; }
   .dq-dots{ display:flex; justify-content:center; gap:9px; margin-top:16px; } .dq-dots i{ width:8px; height:8px; border-radius:50%; background:#2a3550; cursor:pointer; transition:width .15s; } .dq-dots i.on{ background:#7fd0ff; width:22px; border-radius:4px; }
   .dc-foot{ color:#6c7a99; font-size:11px; text-align:center; padding:14px 8px 8px; }
@@ -10281,23 +10283,23 @@ const DOC_CONTACTOS = [['Supervisão · Coord.','62405'],['Supervisão · Super.
 const DOC_ICAO = {"HV": "TRA", "TO": "TVF", "BY": "TOM", "X3": "TUI", "TB": "JAF", "OR": "TFL", "6B": "BLX", "EW": "EWG", "V7": "VOE", "W6": "WZZ", "BT": "BTI", "TS": "TSC", "D8": "NAX", "DY": "IBK", "SK": "SAS", "LG": "LGL", "SN": "BRU", "AY": "FIN", "OK": "CSA", "EC": "EJU", "U2": "EZY", "FI": "ICE", "E4": "ENT", "5O": "FPO"};
 let DOC_TAB = null;   // null = the DOCUMENTOS menu
 const DOC_SYS = { GONOW:'#2fbf71', ALTEA:'#3b9bff', ERES:'#e0b074', IPORT:'#c9d2e6' };
-let DOC = null, DOC_EDIT = false, DOC_Q = -1;
-const DOC_QP = ['TEMPOS','PECTABS','BAGAGEM','NOTAS','EXTRA'];   // pages of a company's QUICK SUMMARY (pages 2-5 hold test text for now)
+let DOC = null, DOC_EDIT = false, DOC_Q = -1, DOC_QN = 0;
+const DOC_QP = ['TEMPOS','BAGAGEM','NOTAS','EXTRA'];   // pages of a company's QUICK SUMMARY (pages 2-5 hold test text for now)
 const DOC_GIB = [['Lorem ipsum','dolor sit amet'],['Consectetur','adipiscing elit'],['Sed do eiusmod','tempor incididunt'],['Ut labore','et dolore magna']];
 function docDefaults(){
   const t = []; DOC_TEMPOS.forEach(g => g[2].forEach(r => t.push({ s:g[0], c:r[0], i:DOC_ICAO[r[0]] || '', n:r[1], o:r[2], cl:r[3], gr:r[4], gm:r[5] })));
-  return { tempos:t, wiwo:DOC_WIWO.map(r => ({ n:r[0], c:r[1] })), contactos:DOC_CONTACTOS.map(r => ({ n:r[0], t:r[1] })) };
+  return { tempos:t, wiwo:DOC_WIWO.map(r => ({ n:r[0], c:r[1] })), contactos:DOC_CONTACTOS.map(r => ({ n:r[0], t:r[1] })), pec:{} };
 }
 async function docsLoad(){
   DOC = docDefaults();
   try{
     const d = await dbGetShared('docsData', null);
-    if(d){ ['tempos','wiwo','contactos'].forEach(k => { if(Array.isArray(d[k])) DOC[k] = d[k]; }); }
+    if(d){ ['tempos','wiwo','contactos'].forEach(k => { if(Array.isArray(d[k])) DOC[k] = d[k]; }); if(d.pec && typeof d.pec === 'object') DOC.pec = d.pec; }
   }catch(e){}
   renderDocs();
 }
 async function docsSave(){
-  const ok = await dbSetShared('docsData', { tempos:DOC.tempos, wiwo:DOC.wiwo, contactos:DOC.contactos });
+  const ok = await dbSetShared('docsData', { tempos:DOC.tempos, wiwo:DOC.wiwo, contactos:DOC.contactos, pec:DOC.pec || {} });
   if(!ok) alert('Não foi possível guardar agora.');
   return ok;
 }
@@ -10333,7 +10335,10 @@ function renderDocs(){
   } else if(DOC_TAB === 'quick'){
     if(DOC_Q >= 0 && DOC.tempos[DOC_Q]){
       const r = DOC.tempos[DOC_Q], col = DOC_SYS[r.s] || '#c9d2e6';
-      const pages = DOC_QP.map((t, n) => n === 0 ? '<div class="dq-p"><div class="dq-sec">CHECK-IN</div><div class="dq-g"><div class="dq-k"><span>ABRE</span><b>' + esc(r.o) + '</b></div><div class="dq-k"><span>FECHA</span><b>' + esc(r.cl) + '</b></div></div><div class="dq-sec">GATE</div><div class="dq-g"><div class="dq-k"><span>FECHA REMOTO</span><b>' + esc(r.gr) + "'</b></div><div class=\"dq-k\"><span>FECHA MANGA</span><b>" + esc(r.gm) + "'</b></div></div></div>" : '<div class="dq-p"><div class="dq-sec">' + t + '</div>' + DOC_GIB.map(g => '<div class="dq-row"><span>' + g[0] + '</span><b>' + g[1] + '</b></div>').join('') + '</div>').join('');
+      const ad = isAdminSession ? '<em>✎</em>' : '';
+      const tile = (lab, val, attr) => '<div class="dq-k' + (isAdminSession ? ' adm' : '') + '"' + (isAdminSession ? ' ' + attr : '') + '><span>' + lab + '</span><b>' + val + ad + '</b></div>';
+      const pv = key => { const v = (DOC.pec && DOC.pec[r.c] && DOC.pec[r.c][key]) || ''; return v ? esc(v) : '<i class="nv">por definir</i>'; };
+      const pages = DOC_QP.map((t, n) => n === 0 ? '<div class="dq-p"><div class="dq-sec">CHECK-IN</div><div class="dq-g">' + tile('ABRE', esc(r.o), 'data-tm="1"') + tile('FECHA', esc(r.cl), 'data-tm="1"') + '</div><div class="dq-sec">GATE</div><div class="dq-g">' + tile('FECHA REMOTO', esc(r.gr) + "'", 'data-tm="1"') + tile('FECHA MANGA', esc(r.gm) + "'", 'data-tm="1"') + '</div><div class="dq-sec">MATERIAL</div><div class="dq-g dq-m">' + tile('ROLO', pv('rolo'), 'data-pec="rolo"') + tile('CARTÃO DE EMBARQUE', pv('cartoes'), 'data-pec="cartoes"') + '</div></div>' : '<div class="dq-p"><div class="dq-sec">' + t + '</div>' + DOC_GIB.map(g => '<div class="dq-row"><span>' + g[0] + '</span><b>' + g[1] + '</b></div>').join('') + '</div>').join('');
       html += '<div class="dq-hero" style="border-left-color:' + col + '"><div class="c">' + esc(r.c) + '<small>' + esc(r.i || '') + '</small></div><div class="n">' + esc(r.n) + '</div><span class="dq-tag" style="color:' + col + '">' + esc(r.s) + '</span></div><div class="dq-pg" id="dq-pg">1/' + DOC_QP.length + ' · ' + DOC_QP[0] + '</div><div class="dq-sl" id="dq-sl">' + pages + '</div><div class="dq-dots" id="dq-dots">' + DOC_QP.map((t, n) => '<i data-dp="' + n + '"' + (n === 0 ? ' class="on"' : '') + '></i>').join('') + '</div>';
     } else {
       html += DOC.tempos.map((r, i) => ({ r, i })).filter(x => !q || (x.r.c + ' ' + x.r.n).toLowerCase().indexOf(q) >= 0).map(x => '<div class="dc-c q" data-q="' + x.i + '"><span><b>' + esc(x.r.c) + '</b>' + esc(x.r.n) + '</span></div>').join('');
@@ -10345,15 +10350,16 @@ function renderDocs(){
   }
   document.getElementById('docs-list').innerHTML = html || '<div class="hint" style="text-align:center; padding:24px 0;">Nada encontrado.</div>';
   const sl = document.getElementById('dq-sl');
+  if(sl && DOC_QN > 0){ sl.scrollLeft = sl.clientWidth * DOC_QN; document.querySelectorAll('#dq-dots i').forEach((d, k) => d.classList.toggle('on', k === DOC_QN)); document.getElementById('dq-pg').textContent = (DOC_QN + 1) + '/' + DOC_QP.length + ' · ' + DOC_QP[DOC_QN]; }
   if(sl) sl.addEventListener('scroll', () => {
-    const n = Math.max(0, Math.min(DOC_QP.length - 1, Math.round(sl.scrollLeft / sl.clientWidth)));
+    const n = Math.max(0, Math.min(DOC_QP.length - 1, Math.round(sl.scrollLeft / sl.clientWidth))); DOC_QN = n;
     document.querySelectorAll('#dq-dots i').forEach((d, k) => d.classList.toggle('on', k === n));
     document.getElementById('dq-pg').textContent = (n + 1) + '/' + DOC_QP.length + ' · ' + DOC_QP[n];
   }, { passive: true });
 }
 // the edit form (admin only): one small pop-up for all three tabs
-function docsForm(idx){
-  const k = DOC_TAB, isNew = idx < 0, cur = isNew ? {} : DOC[k][idx];
+function docsForm(idx, tabArg, noDelete){
+  const k = tabArg || DOC_TAB, isNew = idx < 0, cur = isNew ? {} : DOC[k][idx];
   const v = x => escapeHtml(cur[x] == null ? '' : String(cur[x]));
   const f = (id, label, val, ph) => '<label>' + label + '</label><input id="df-' + id + '" value="' + val + '" placeholder="' + (ph || '') + '" autocomplete="off">';
   let body;
@@ -10365,7 +10371,7 @@ function docsForm(idx){
   else body = f('n', 'NOME', v('n'), 'Lounge') + f('t', 'NÚMERO', v('t'), '61069');
   const ov = document.createElement('div'); ov.className = 'modal-overlay'; ov.style.zIndex = '100001'; ov.style.alignItems = 'flex-start'; ov.style.overflowY = 'auto';
   ov.innerHTML = '<div class="modal-box dc-form" style="width:340px; margin-top:40px;"><div style="font:700 13px var(--mono);letter-spacing:.14em;color:var(--amber);text-align:center;">' + (isNew ? 'ADICIONAR' : 'EDITAR') + '</div>' + body +
-    '<div class="modal-actions" style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">' + (isNew ? '' : '<button type="button" class="flag-btn" id="df-del" style="padding:10px 12px; font-size:11.5px; margin-top:0; color:var(--nogo);">Apagar</button>') +
+    '<div class="modal-actions" style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">' + (isNew || noDelete ? '' : '<button type="button" class="flag-btn" id="df-del" style="padding:10px 12px; font-size:11.5px; margin-top:0; color:var(--nogo);">Apagar</button>') +
     '<span style="flex:1"></span><button type="button" class="flag-btn" id="df-cancel" style="padding:10px 14px; font-size:11.5px; margin-top:0;">Cancelar</button><button type="button" class="confirm-btn" id="df-ok" style="padding:10px 14px; font-size:11.5px;">Guardar</button></div></div>';
   document.body.appendChild(ov);
   const close = () => ov.remove();
@@ -10391,7 +10397,7 @@ function openDocs(){
   renderDocs(); docsLoad();
 }
 document.getElementById('tool-card-docs').addEventListener('click', openDocs);
-document.getElementById('dq-top').addEventListener('click', () => { DOC_Q = -1; renderDocs(); });
+document.getElementById('dq-top').addEventListener('click', () => { DOC_Q = -1; DOC_QN = 0; renderDocs(); });
 document.getElementById('docs-back-btn').addEventListener('click', () => {
   if(DOC_TAB){ DOC_TAB = null; DOC_Q = -1; DOC_EDIT = false; document.getElementById('docs-search').value = ''; renderDocs(); }
   else openTools();
@@ -10401,7 +10407,12 @@ document.getElementById('docs-search').addEventListener('input', renderDocs);
 document.getElementById('docs-edit-btn').addEventListener('click', () => { DOC_EDIT = !DOC_EDIT; renderDocs(); });
 document.getElementById('docs-list').addEventListener('click', e => {
   if(e.target.closest('#docs-add')){ docsForm(-1); return; }
-  const qr = e.target.closest('[data-q]'); if(qr){ DOC_Q = parseInt(qr.dataset.q, 10); renderDocs(); return; }
+  const qr = e.target.closest('[data-q]'); if(qr){ DOC_Q = parseInt(qr.dataset.q, 10); DOC_QN = 0; renderDocs(); return; }
+  const tm = e.target.closest('[data-tm]'); if(tm && isAdminSession){ docsForm(DOC_Q, 'tempos', true); return; }
+  const pc = e.target.closest('[data-pec]'); if(pc && isAdminSession && DOC.tempos[DOC_Q]){
+    const code = DOC.tempos[DOC_Q].c, k = pc.dataset.pec; if(!DOC.pec) DOC.pec = {}; const o = DOC.pec[code] || (DOC.pec[code] = {});
+    o[k] = o[k] === 'Companhia' ? 'Portway' : 'Companhia'; renderDocs(); docsSave(); return;
+  }
   if(e.target.closest('#dq-back')){ DOC_Q = -1; renderDocs(); return; }
   const dp = e.target.closest('[data-dp]'); if(dp){ const sl = document.getElementById('dq-sl'); sl.scrollTo({ left: sl.clientWidth * parseInt(dp.dataset.dp, 10), behavior: 'smooth' }); return; }
   const pe = e.target.closest('[data-ed]'); if(pe) docsForm(parseInt(pe.dataset.ed, 10));
