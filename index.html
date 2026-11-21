@@ -1470,12 +1470,12 @@
   div.area-card > .ac-ic{ width:50px; height:auto; border-radius:0; border:0; }
   div.area-card > div:not(.ac-ic){ padding:16px 0; align-self:center; }
   /* FERRAMENTAS cards: same look as the ÁREA PESSOAL cards (icon block on the left edge, no arrow) */
-  #panel-tools .tool-card, #so-menu .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
-  #panel-tools .tool-card > .tool-arrow, #so-menu .tool-card > .tool-arrow{ display:none; }
-  #panel-tools .tool-card > .tool-ic, #so-menu .tool-card > .tool-ic{ width:50px; height:auto; border-radius:0; border:0; background:#0f2236; color:#4fd1f0; }
-  html.themed #panel-tools .tool-card, html.themed #so-menu .tool-card{ border-radius:var(--r); }
-  html.themed #panel-tools .tool-card > .tool-ic, html.themed #so-menu .tool-card > .tool-ic{ background:var(--panel-2); color:var(--text); }
-  #panel-tools .tool-card > div:not(.tool-ic), #so-menu .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
+  #panel-tools .tool-card, #so-menu .tool-card, #docs-menu .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
+  #panel-tools .tool-card > .tool-arrow, #so-menu .tool-card > .tool-arrow, #docs-menu .tool-card > .tool-arrow{ display:none; }
+  #panel-tools .tool-card > .tool-ic, #so-menu .tool-card > .tool-ic, #docs-menu .tool-card > .tool-ic{ width:50px; height:auto; border-radius:0; border:0; background:#0f2236; color:#4fd1f0; }
+  html.themed #panel-tools .tool-card, html.themed #so-menu .tool-card, html.themed #docs-menu .tool-card{ border-radius:var(--r); }
+  html.themed #panel-tools .tool-card > .tool-ic, html.themed #so-menu .tool-card > .tool-ic, html.themed #docs-menu .tool-card > .tool-ic{ background:var(--panel-2); color:var(--text); }
+  #panel-tools .tool-card > div:not(.tool-ic), #so-menu .tool-card > div:not(.tool-ic), #docs-menu .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
   #panel-tools .tool-name, #so-menu .tool-name{ font-size:15px; letter-spacing:.12em; }
   #panel-tools .tool-desc, #so-menu .tool-desc{ font-size:13px; margin-top:4px; }
   #so-agentes-menu .tool-card, #so-horarios-menu .tool-card, #so-app-menu .tool-card, #so-depts .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
@@ -2600,7 +2600,7 @@
     </div>
     <div class="tool-card" id="tool-card-docs">
       <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></div>
-      <div><div class="tool-name">DOCUMENTOS</div><div class="tool-desc">Tempos de check-in e gate</div></div>
+      <div><div class="tool-name">INFORMAÇÃO ÚTIL</div><div class="tool-desc">Tempos de check-in e gate</div></div>
       <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
     <div class="tool-card" id="tool-card-forecast">
@@ -2637,7 +2637,7 @@
   <!-- DOCUMENTOS PANEL -->
   <div class="panel hidden" id="panel-docs">
     <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
-      <div id="docs-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">DOCUMENTOS</div>
+      <div id="docs-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">INFORMAÇÃO ÚTIL</div>
       <div style="display:flex; align-items:center; gap:10px;"><button type="button" id="docs-edit-btn" class="round-back hidden" aria-label="Editar" title="Editar"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button>
       <button type="button" id="docs-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button></div>
     </div>
@@ -10307,7 +10307,7 @@ function renderDocs(){
   const q = (inp.value || '').trim().toLowerCase();
   const inMenu = !DOC_TAB;
   document.getElementById('docs-menu').classList.toggle('hidden', !inMenu);
-  document.getElementById('docs-title').textContent = inMenu ? 'DOCUMENTOS' : ({ tempos:'TEMPOS', wiwo:'WIWO', contactos:'CONTACTOS', quick:'QUICK SUMMARY' })[DOC_TAB];
+  document.getElementById('docs-title').textContent = inMenu ? 'INFORMAÇÃO ÚTIL' : ({ tempos:'TEMPOS', wiwo:'WIWO', contactos:'CONTACTOS', quick:'QUICK SUMMARY' })[DOC_TAB];
   document.getElementById('docs-list').classList.toggle('hidden', inMenu);
   if(inMenu){ document.getElementById('docs-sb').classList.add('hidden'); document.getElementById('docs-foot').textContent = ''; document.getElementById('docs-edit-btn').classList.add('hidden'); return; }
   document.getElementById('docs-clear').classList.toggle('hidden', !q);
