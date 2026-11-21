@@ -717,6 +717,19 @@
   .dc-form label{ display:block; font:600 10.5px var(--mono); letter-spacing:.08em; color:#8fa0c4; margin:10px 0 4px; }
   .dc-form input, .dc-form select{ width:100%; box-sizing:border-box; background:#0b1220; color:var(--text); border:1px solid #1d2a44; border-radius:8px; padding:10px; font:500 15px var(--sans); }
   .dc-form .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  #panel-docs .swap-sort-toggle{ gap:12px; justify-content:center; overflow-x:auto; } #panel-docs .swap-sort-tab span{ font-size:11px; letter-spacing:.04em; white-space:nowrap; }
+  .dc-c.q{ cursor:pointer; } .dc-c.q span b{ font:800 13px var(--mono); margin-right:10px; } .dc-c.q::after{ content:'›'; color:#55627f; font-size:20px; }
+  .dq-back{ display:inline-block; font:700 12px var(--mono); letter-spacing:.1em; color:#7fd0ff; padding:6px 2px 12px; cursor:pointer; }
+  .dq-hero{ background:#151d2e; border-left:4px solid #2fbf71; border-radius:12px; padding:14px; margin-bottom:12px; }
+  .dq-hero .c{ font:800 28px var(--mono); } .dq-hero .c small{ font:600 13px var(--mono); color:#8a97b5; margin-left:8px; } .dq-hero .n{ font-size:16px; color:#dbe4f7; margin-top:2px; }
+  .dq-tag{ display:inline-block; margin-top:10px; font:800 11px var(--mono); letter-spacing:.12em; padding:4px 10px; border-radius:999px; background:#12331f; color:#2fbf71; }
+  .dq-pg{ font:700 11px var(--mono); letter-spacing:.14em; color:#8a97b5; text-align:center; margin:6px 0 2px; }
+  .dq-sl{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; } .dq-sl::-webkit-scrollbar{ display:none; }
+  .dq-p{ flex:0 0 100%; scroll-snap-align:start; box-sizing:border-box; min-height:250px; padding:0 2px; }
+  .dq-sec{ font:800 11px var(--mono); letter-spacing:.15em; color:#7fd0ff; margin:14px 0 8px 2px; }
+  .dq-g{ display:grid; grid-template-columns:1fr 1fr; gap:8px; } .dq-k{ background:#151d2e; border-radius:10px; padding:11px 12px; } .dq-k span{ display:block; font:600 10px var(--mono); letter-spacing:.08em; color:#8a97b5; margin-bottom:5px; } .dq-k b{ font:800 20px var(--mono); }
+  .dq-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:#151d2e; border-radius:10px; padding:13px 12px; margin-bottom:6px; font-size:14px; } .dq-row span{ color:#8fa0c4; } .dq-row b{ font-weight:700; text-align:right; }
+  .dq-dots{ display:flex; justify-content:center; gap:9px; margin-top:16px; } .dq-dots i{ width:8px; height:8px; border-radius:50%; background:#2a3550; cursor:pointer; transition:width .15s; } .dq-dots i.on{ background:#7fd0ff; width:22px; border-radius:4px; }
   .dc-foot{ color:#6c7a99; font-size:11px; text-align:center; padding:14px 8px 8px; }
   .fl-h small{ font-size:12px; font-weight:600; color:var(--amber); }
   .fl-ctot, .mt-ctot{ margin-left:12px; font:600 11px var(--mono); background:#d6bcff; color:#2a1052; padding:2px 8px; border-radius:4px; align-self:center; white-space:nowrap; }
@@ -2632,8 +2645,9 @@
       <div class="swap-sort-tab active" data-dt="tempos"><span>TEMPOS</span><div class="dash"></div></div>
       <div class="swap-sort-tab" data-dt="wiwo"><span>WIWO</span><div class="dash"></div></div>
       <div class="swap-sort-tab" data-dt="contactos"><span>CONTACTOS</span><div class="dash"></div></div>
+      <div class="swap-sort-tab" data-dt="quick"><span>QUICK SUMMARY</span><div class="dash"></div></div>
     </div>
-    <div class="dc-sb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><input type="text" id="docs-search" placeholder="Procurar companhia…" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" id="docs-clear" class="hidden" aria-label="Limpar">×</button></div>
+    <div class="dc-sb" id="docs-sb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><input type="text" id="docs-search" placeholder="Procurar companhia…" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" id="docs-clear" class="hidden" aria-label="Limpar">×</button></div>
     <div id="docs-list"></div>
     <div class="dc-foot" id="docs-foot"></div>
   </div>
@@ -10261,7 +10275,9 @@ const DOC_CONTACTOS = [['Supervisão · Coord.','62405'],['Supervisão · Super.
 const DOC_ICAO = {"HV": "TRA", "TO": "TVF", "BY": "TOM", "X3": "TUI", "TB": "JAF", "OR": "TFL", "6B": "BLX", "EW": "EWG", "V7": "VOE", "W6": "WZZ", "BT": "BTI", "TS": "TSC", "D8": "NAX", "DY": "IBK", "SK": "SAS", "LG": "LGL", "SN": "BRU", "AY": "FIN", "OK": "CSA", "EC": "EJU", "U2": "EZY", "FI": "ICE", "E4": "ENT", "5O": "FPO"};
 let DOC_TAB = 'tempos';
 const DOC_SYS = { GONOW:'#2fbf71', ALTEA:'#3b9bff', ERES:'#e0b074', IPORT:'#c9d2e6' };
-let DOC = null, DOC_EDIT = false;
+let DOC = null, DOC_EDIT = false, DOC_Q = -1;
+const DOC_QP = ['TEMPOS','PECTABS','BAGAGEM','NOTAS','EXTRA'];   // pages of a company's QUICK SUMMARY (pages 2-5 hold test text for now)
+const DOC_GIB = [['Lorem ipsum','dolor sit amet'],['Consectetur','adipiscing elit'],['Sed do eiusmod','tempor incididunt'],['Ut labore','et dolore magna']];
 function docDefaults(){
   const t = []; DOC_TEMPOS.forEach(g => g[2].forEach(r => t.push({ s:g[0], c:r[0], i:DOC_ICAO[r[0]] || '', n:r[1], o:r[2], cl:r[3], gr:r[4], gm:r[5] })));
   return { tempos:t, wiwo:DOC_WIWO.map(r => ({ n:r[0], c:r[1] })), contactos:DOC_CONTACTOS.map(r => ({ n:r[0], t:r[1] })) };
@@ -10286,7 +10302,8 @@ function renderDocs(){
   document.getElementById('docs-clear').classList.toggle('hidden', !q);
   document.querySelectorAll('#panel-docs [data-dt]').forEach(t => t.classList.toggle('active', t.dataset.dt === DOC_TAB));
   const eb = document.getElementById('docs-edit-btn'); eb.classList.toggle('hidden', !isAdminSession); eb.classList.toggle('on', DOC_EDIT && isAdminSession);
-  const ed = DOC_EDIT && isAdminSession;
+  const ed = DOC_EDIT && isAdminSession && DOC_TAB !== 'quick';
+  document.getElementById('docs-sb').classList.toggle('hidden', DOC_TAB === 'quick' && DOC_Q >= 0);
   inp.placeholder = DOC_TAB === 'contactos' ? 'Procurar contacto…' : 'Procurar companhia…';
   document.getElementById('docs-foot').textContent = DOC_TAB === 'tempos' ? 'Tempos antes da partida · CKIN abre/fecha · GATE remoto/manga' : DOC_TAB === 'wiwo' ? 'Companhias WIWO' : '';
   const esc = escapeHtml, pen = i => ed ? '<span class="dc-pen" data-ed="' + i + '">✎</span>' : '';
@@ -10301,12 +10318,26 @@ function renderDocs(){
       body += '<div class="dc-gh" style="color:' + col + '">' + esc(sy) + '</div>' + rs.map(x => '<div class="dc-r' + (ed ? ' ed' : '') + '" style="border-left-color:' + col + '"><b>' + esc(x.r.c) + '<em>' + esc(x.r.i || '') + '</em></b><span class="n">' + esc(x.r.n) + '</span><span class="t">' + esc(x.r.o) + '<i>/</i>' + esc(x.r.cl) + '</span><span class="g">' + esc(x.r.gr) + "'<i>/</i>" + esc(x.r.gm) + "'</span>" + pen(x.i) + '</div>').join('');
     });
     if(body) html += '<div class="dc-hd' + (ed ? ' ed' : '') + '"><span>IATA<br>ICAO</span><span>OPERADOR</span><span>CKIN<br>ABRE / FECHA</span><span>GATE<br>REM / MANGA</span><span></span></div>' + body;
+  } else if(DOC_TAB === 'quick'){
+    if(DOC_Q >= 0 && DOC.tempos[DOC_Q]){
+      const r = DOC.tempos[DOC_Q], col = DOC_SYS[r.s] || '#c9d2e6';
+      const pages = DOC_QP.map((t, n) => n === 0 ? '<div class="dq-p"><div class="dq-sec">CHECK-IN</div><div class="dq-g"><div class="dq-k"><span>ABRE</span><b>' + esc(r.o) + '</b></div><div class="dq-k"><span>FECHA</span><b>' + esc(r.cl) + '</b></div></div><div class="dq-sec">GATE</div><div class="dq-g"><div class="dq-k"><span>FECHA REMOTO</span><b>' + esc(r.gr) + "'</b></div><div class=\"dq-k\"><span>FECHA MANGA</span><b>" + esc(r.gm) + "'</b></div></div></div>" : '<div class="dq-p"><div class="dq-sec">' + t + '</div>' + DOC_GIB.map(g => '<div class="dq-row"><span>' + g[0] + '</span><b>' + g[1] + '</b></div>').join('') + '</div>').join('');
+      html += '<div class="dq-back" id="dq-back">‹ TODAS</div><div class="dq-hero" style="border-left-color:' + col + '"><div class="c">' + esc(r.c) + '<small>' + esc(r.i || '') + '</small></div><div class="n">' + esc(r.n) + '</div><span class="dq-tag" style="color:' + col + '">' + esc(r.s) + '</span></div><div class="dq-pg" id="dq-pg">1/' + DOC_QP.length + ' · ' + DOC_QP[0] + '</div><div class="dq-sl" id="dq-sl">' + pages + '</div><div class="dq-dots" id="dq-dots">' + DOC_QP.map((t, n) => '<i data-dp="' + n + '"' + (n === 0 ? ' class="on"' : '') + '></i>').join('') + '</div>';
+    } else {
+      html += DOC.tempos.map((r, i) => ({ r, i })).filter(x => !q || (x.r.c + ' ' + x.r.n).toLowerCase().indexOf(q) >= 0).map(x => '<div class="dc-c q" data-q="' + x.i + '"><span><b>' + esc(x.r.c) + '</b>' + esc(x.r.n) + '</span></div>').join('');
+    }
   } else if(DOC_TAB === 'wiwo'){
     html += DOC.wiwo.map((r, i) => ({ r, i })).filter(x => !q || (x.r.n + ' ' + x.r.c).toLowerCase().indexOf(q) >= 0).map(x => '<div class="dc-c ed"><span>' + esc(x.r.n) + '</span><b>' + esc(x.r.c) + '</b>' + pen(x.i) + '</div>').join('');
   } else {
     html += DOC.contactos.map((r, i) => ({ r, i })).filter(x => !q || (x.r.n + ' ' + x.r.t).toLowerCase().indexOf(q) >= 0).map(x => '<div class="dc-c ed"><span>' + esc(x.r.n) + '</span><b>' + esc(x.r.t) + '</b>' + pen(x.i) + '</div>').join('');
   }
   document.getElementById('docs-list').innerHTML = html || '<div class="hint" style="text-align:center; padding:24px 0;">Nada encontrado.</div>';
+  const sl = document.getElementById('dq-sl');
+  if(sl) sl.addEventListener('scroll', () => {
+    const n = Math.max(0, Math.min(DOC_QP.length - 1, Math.round(sl.scrollLeft / sl.clientWidth)));
+    document.querySelectorAll('#dq-dots i').forEach((d, k) => d.classList.toggle('on', k === n));
+    document.getElementById('dq-pg').textContent = (n + 1) + '/' + DOC_QP.length + ' · ' + DOC_QP[n];
+  }, { passive: true });
 }
 // the edit form (admin only): one small pop-up for all three tabs
 function docsForm(idx){
@@ -10344,7 +10375,7 @@ function openDocs(){
   document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
   document.querySelector('.tabs').classList.add('hidden');
   document.getElementById('panel-docs').classList.remove('hidden');
-  DOC_EDIT = false;
+  DOC_EDIT = false; DOC_Q = -1;
   renderDocs(); docsLoad();
 }
 document.getElementById('tool-card-docs').addEventListener('click', openDocs);
@@ -10353,9 +10384,12 @@ document.getElementById('docs-search').addEventListener('input', renderDocs);
 document.getElementById('docs-edit-btn').addEventListener('click', () => { DOC_EDIT = !DOC_EDIT; renderDocs(); });
 document.getElementById('docs-list').addEventListener('click', e => {
   if(e.target.closest('#docs-add')){ docsForm(-1); return; }
+  const qr = e.target.closest('[data-q]'); if(qr){ DOC_Q = parseInt(qr.dataset.q, 10); renderDocs(); return; }
+  if(e.target.closest('#dq-back')){ DOC_Q = -1; renderDocs(); return; }
+  const dp = e.target.closest('[data-dp]'); if(dp){ const sl = document.getElementById('dq-sl'); sl.scrollTo({ left: sl.clientWidth * parseInt(dp.dataset.dp, 10), behavior: 'smooth' }); return; }
   const pe = e.target.closest('[data-ed]'); if(pe) docsForm(parseInt(pe.dataset.ed, 10));
 });
-document.querySelectorAll('#panel-docs [data-dt]').forEach(t => t.addEventListener('click', () => { DOC_TAB = t.dataset.dt; renderDocs(); }));
+document.querySelectorAll('#panel-docs [data-dt]').forEach(t => t.addEventListener('click', () => { DOC_TAB = t.dataset.dt; DOC_Q = -1; renderDocs(); }));
 document.getElementById('docs-clear').addEventListener('click', () => { const i = document.getElementById('docs-search'); i.value = ''; renderDocs(); i.focus(); });
 
 // Airlines we work for (codes as they appear at the start of the flight number). Editable in RULES.
