@@ -697,6 +697,19 @@
   .fl-row{ position:relative; display:block; background:#151d2e; border:1px solid #2a3a5e; border-left:4px solid #0099ff; border-radius:12px; overflow:hidden; padding:0 0 11px; margin-bottom:10px; }
   .fl-row.arr{ border-left-color:#dbffaa; }
   .fl-h{ background:linear-gradient(90deg,rgba(11,42,74,.95),transparent); padding:8px 14px; font:700 15px var(--mono); color:var(--text); display:flex; align-items:baseline; gap:8px; }
+  .dc-sb{ display:flex; align-items:center; gap:10px; margin:0 0 12px; padding:0 14px; border:1px solid var(--border); border-radius:12px; background:var(--panel); color:var(--muted, #8a97b5); }
+  .dc-sb:focus-within{ border-color:#2b6cb0; }
+  .dc-sb input{ flex:1; min-width:0; background:none; border:0; outline:0; color:var(--text); font:500 16px var(--sans); padding:13px 0; }
+  .dc-sb button{ background:none; border:0; color:inherit; font-size:22px; line-height:1; padding:4px; cursor:pointer; }
+  .dc-gh{ font:800 12px var(--mono); letter-spacing:.15em; margin:14px 0 6px 4px; }
+  .dc-r{ display:grid; grid-template-columns:30px 1fr auto auto; gap:8px; align-items:center; background:#151d2e; border-left:4px solid; border-radius:8px; padding:9px 8px; margin-bottom:4px; font-size:13px; }
+  .dc-r b{ font:800 13px var(--mono); } .dc-r .n{ color:#c8d3ea; font-size:12.5px; min-width:0; }
+  .dc-r .t, .dc-r .g{ font:700 12.5px var(--mono); text-align:center; white-space:nowrap; } .dc-r .t{ min-width:78px; } .dc-r .g{ min-width:58px; }
+  .dc-r i{ color:#55627f; font-style:normal; margin:0 3px; }
+  .dc-hd{ display:grid; grid-template-columns:30px 1fr auto auto; gap:8px; font:600 10px var(--mono); color:#8a97b5; padding:0 8px; } .dc-hd span:nth-child(3){ min-width:78px; text-align:center; } .dc-hd span:nth-child(4){ min-width:58px; text-align:center; }
+  .dc-c{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:#151d2e; border-left:4px solid #7fd0ff; border-radius:8px; padding:11px 10px; margin-bottom:4px; }
+  .dc-c span{ font-size:14px; color:#dbe4f7; } .dc-c b{ font:700 13px var(--mono); text-align:right; }
+  .dc-foot{ color:#6c7a99; font-size:11px; text-align:center; padding:14px 8px 8px; }
   .fl-h small{ font-size:12px; font-weight:600; color:var(--amber); }
   .fl-ctot, .mt-ctot{ margin-left:12px; font:600 11px var(--mono); background:#d6bcff; color:#2a1052; padding:2px 8px; border-radius:4px; align-self:center; white-space:nowrap; }
   .mt-ctot{ margin-left:8px; }
@@ -2564,6 +2577,11 @@
       <div><div class="tool-name">VOOS</div><div class="tool-desc">Partidas e chegadas do dia</div></div>
       <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
+    <div class="tool-card" id="tool-card-docs">
+      <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></div>
+      <div><div class="tool-name">DOCUMENTOS</div><div class="tool-desc">Tempos de check-in e gate</div></div>
+      <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+    </div>
     <div class="tool-card" id="tool-card-forecast">
       <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
       <div><div class="tool-name">PREVISÃO</div><div class="tool-desc">Pessoas necessárias por hora</div></div>
@@ -2593,6 +2611,22 @@
     </div>
     <div class="fl-meta"><span id="fl-updated">A CARREGAR…</span><span>SÓ AS NOSSAS COMPANHIAS</span></div>
     <div id="flights-list"></div>
+  </div>
+
+  <!-- DOCUMENTOS PANEL -->
+  <div class="panel hidden" id="panel-docs">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">DOCUMENTOS</div>
+      <button type="button" id="docs-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+    </div>
+    <div class="swap-sort-toggle" style="margin:0 0 10px;">
+      <div class="swap-sort-tab active" data-dt="tempos"><span>TEMPOS</span><div class="dash"></div></div>
+      <div class="swap-sort-tab" data-dt="wiwo"><span>WIWO</span><div class="dash"></div></div>
+      <div class="swap-sort-tab" data-dt="contactos"><span>CONTACTOS</span><div class="dash"></div></div>
+    </div>
+    <div class="dc-sb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><input type="text" id="docs-search" placeholder="Procurar companhia…" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="button" id="docs-clear" class="hidden" aria-label="Limpar">×</button></div>
+    <div id="docs-list"></div>
+    <div class="dc-foot" id="docs-foot"></div>
   </div>
 
   <!-- TURNAROUND PANEL -->
@@ -10205,6 +10239,48 @@ document.getElementById('tools-back-btn').addEventListener('click', closeTools);
 document.getElementById('tool-card-turnaround').addEventListener('click', openTurnaround);
 document.getElementById('tool-card-flights').addEventListener('click', openFlights);
 document.getElementById('flights-back-btn').addEventListener('click', openTools);
+// ---------- DOCUMENTOS · TEMPOS (check-in and gate times per airline, from the board at the desk) ----------
+// [code, name, check-in opens (before departure), check-in closes, gate closes remote stand, gate closes jet bridge (minutes)]
+const DOC_TEMPOS = [
+  ['GONOW', '#2fbf71', [['HV','Transavia','2h10','0h40',20,15],['TO','Transavia France','2h10','0h40',20,15],['BY','TUI Airways','2h30','0h45',15,10],['X3','TUI fly Deutschland','2h30','0h45',15,10],['TB','TUI fly Belgium','2h30','0h45',15,10],['OR','TUI fly Netherlands','2h30','0h45',15,10],['6B','TUI fly Nordic','2h30','0h45',15,10],['EW','Eurowings','2h00','0h40',15,15],['V7','Volotea','2h00','0h40',20,20],['W6','Wizz Air','2h00','0h40',20,15]]],
+  ['ALTEA', '#3b9bff', [['BT','airBaltic','2h00','0h40',15,10],['TS','Air Transat','4h00','1h00',15,10],['D8','Norwegian Int.','2h00','0h45',15,15],['DY','Norwegian Shuttle','2h00','0h45',15,15],['SK','SAS','2h30','0h45',15,10],['LG','Luxair','2h00','0h45',10,10],['SN','Brussels Airlines','2h00','0h40',15,10],['AY','Finnair','2h30','0h45',10,10],['OK','Czech Airlines','2h00','0h30',20,15]]],
+  ['ERES', '#e0b074', [['EC','easyJet Europe','2h40','1h00',25,20],['U2','easyJet UK','2h40','1h00',25,20]]],
+  ['IPORT', '#c9d2e6', [['FI','Icelandair','2h30','0h30',15,15],['E4','Enter Air','2h00','0h45',20,20],['5O','Air Europe Postal','2h00','0h30',15,15]]]
+];
+const DOC_WIWO = [['easyJet','U2 · EC · DS'],['Eurowings','EW'],['Norwegian','DY · D8'],['Transavia','HV · TO'],['Volotea','V7'],['Wizz Air','W6'],['Icelandair','FI'],['SAS','SK'],['Finnair','AY'],['Air Transat','TS']];
+const DOC_CONTACTOS = [['Supervisão · Coord.','62405'],['Supervisão · Super.','61496 / 289 889405'],['Balcão PTW','62406 / 62885'],['Sala Descanso','61498'],['Tapete Partidas','61424 / 61952'],['Mangas A/B','ver abaixo'],['Portas 101-129','638 + (01 a 29)'],['Porta 322','61303 / 63855'],['Check-In','636 + nº balcão'],['Coor. Placa','62401'],['Lost & Found','62407'],['Lounge','61069'],['Fardamento','61958'],['OPS / Suporte','62428 / 61622'],['RH','62462 / 62410'],['My Way','63373 / 61742'],['Incidências','62002'],['Carga','62625'],['Cruz Vermelha','61020'],['Polícia PSP','62688'],['Controlo segurança','63015'],['Ryanair','62773'],['Menzies','61977-8'],['Alminhas','61360'],['Carlsberg','61708'],['Pomodoro','61707']];
+let DOC_TAB = 'tempos';
+function renderDocs(){
+  const inp = document.getElementById('docs-search');
+  const q = (inp.value || '').trim().toLowerCase();
+  document.getElementById('docs-clear').classList.toggle('hidden', !q);
+  document.querySelectorAll('#panel-docs [data-dt]').forEach(t => t.classList.toggle('active', t.dataset.dt === DOC_TAB));
+  inp.placeholder = DOC_TAB === 'contactos' ? 'Procurar contacto…' : 'Procurar companhia…';
+  document.getElementById('docs-foot').textContent = DOC_TAB === 'tempos' ? 'Tempos antes da partida · CKIN abre/fecha · GATE remoto/manga' : DOC_TAB === 'wiwo' ? 'Companhias WIWO' : '';
+  const match = r => !q || (r[0] + ' ' + r[1]).toLowerCase().indexOf(q) >= 0;
+  let html = '';
+  if(DOC_TAB === 'tempos'){
+    DOC_TEMPOS.forEach(g => {
+      const rows = g[2].filter(match);
+      if(!rows.length) return;
+      html += '<div class="dc-gh" style="color:' + g[1] + '">' + g[0] + '</div><div class="dc-hd"><span></span><span></span><span>CKIN</span><span>GATE</span></div>' + rows.map(r => '<div class="dc-r" style="border-left-color:' + g[1] + '"><b>' + r[0] + '</b><span class="n">' + r[1] + '</span><span class="t">' + r[2] + '<i>/</i>' + r[3] + '</span><span class="g">' + r[4] + "'<i>/</i>" + r[5] + "'</span></div>").join('');
+    });
+  } else {
+    html = (DOC_TAB === 'wiwo' ? DOC_WIWO : DOC_CONTACTOS).filter(match).map(r => '<div class="dc-c"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>').join('');
+  }
+  document.getElementById('docs-list').innerHTML = html || '<div class="hint" style="text-align:center; padding:24px 0;">Nada encontrado.</div>';
+}
+function openDocs(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector('.tabs').classList.add('hidden');
+  document.getElementById('panel-docs').classList.remove('hidden');
+  renderDocs();
+}
+document.getElementById('tool-card-docs').addEventListener('click', openDocs);
+document.getElementById('docs-back-btn').addEventListener('click', openTools);
+document.getElementById('docs-search').addEventListener('input', renderDocs);
+document.querySelectorAll('#panel-docs [data-dt]').forEach(t => t.addEventListener('click', () => { DOC_TAB = t.dataset.dt; renderDocs(); }));
+document.getElementById('docs-clear').addEventListener('click', () => { const i = document.getElementById('docs-search'); i.value = ''; renderDocs(); i.focus(); });
 
 // Airlines we work for (codes as they appear at the start of the flight number). Editable in RULES.
 const FL_AIRLINES_DEFAULT = 'HV,TO,U2,EC,DS,AY,SK,DY,D8,DX,V7,SN,EW,E4,W6,W4,W9,LG,TB,X3,6B,OR,BY,FI,TS,BT,QS';
