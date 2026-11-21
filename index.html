@@ -702,17 +702,17 @@
   .dc-sb input{ flex:1; min-width:0; background:none; border:0; outline:0; color:var(--text); font:500 16px var(--sans); padding:13px 0; }
   .dc-sb button{ background:none; border:0; color:inherit; font-size:22px; line-height:1; padding:4px; cursor:pointer; }
   .dc-gh{ font:800 12px var(--mono); letter-spacing:.15em; margin:14px 0 6px 4px; }
-  .dc-r{ display:grid; grid-template-columns:38px 1fr auto auto; gap:8px; align-items:center; background:#151d2e; border-left:4px solid; border-radius:8px; padding:9px 8px; margin-bottom:4px; font-size:13px; }
+  .dc-r{ display:grid; grid-template-columns:36px minmax(0,1fr) 84px 68px; gap:8px; align-items:center; background:#151d2e; border-left:4px solid; border-radius:8px; padding:9px 8px; margin-bottom:4px; font-size:13px; }
   .dc-r b{ font:800 13px var(--mono); } .dc-r .n{ color:#c8d3ea; font-size:12.5px; min-width:0; }
-  .dc-r .t, .dc-r .g{ font:700 12.5px var(--mono); text-align:center; white-space:nowrap; } .dc-r .t{ min-width:78px; } .dc-r .g{ min-width:58px; }
+  .dc-r .t, .dc-r .g{ font:700 12.5px var(--mono); text-align:center; white-space:nowrap; } .dc-r .t, .dc-r .g{ font-size:12px; }
   .dc-r i{ color:#55627f; font-style:normal; margin:0 3px; }
-  .dc-hd{ display:grid; grid-template-columns:38px 1fr auto auto; gap:8px; font:600 9.5px var(--mono); color:#8a97b5; padding:2px 12px 0 12px; line-height:1.25; } .dc-hd span:nth-child(3){ min-width:78px; text-align:center; } .dc-hd span:nth-child(4){ min-width:58px; text-align:center; }
+  .dc-hd{ display:grid; grid-template-columns:36px minmax(0,1fr) 84px 68px; gap:8px; font:700 9.5px var(--mono); letter-spacing:0; color:#cfe3ff; background:#1b3a66; border-radius:10px; padding:9px 8px 9px 12px; margin:0 0 6px; line-height:1.25; align-items:center; position:sticky; top:0; z-index:5; box-shadow:0 4px 10px rgba(0,0,0,.35); } .dc-hd span:nth-child(n+3){ text-align:center; white-space:nowrap; } .dc-hd span:nth-child(5){ display:none; }
   .dc-r b em{ display:block; font:600 10px var(--mono); color:#8a97b5; font-style:normal; margin-top:2px; }
   .dc-c{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:#151d2e; border-left:4px solid #7fd0ff; border-radius:8px; padding:11px 10px; margin-bottom:4px; }
   .dc-c span{ font-size:14px; color:#dbe4f7; } .dc-c b{ font:700 13px var(--mono); text-align:right; }
   .dc-add{ margin:0 0 10px; padding:12px; border:1px dashed #3b9bff; color:#7fd0ff; border-radius:12px; font:700 13px var(--mono); text-align:center; cursor:pointer; }
   .dc-pen{ color:var(--amber); font-size:16px; padding:0 2px 0 6px; cursor:pointer; }
-  .dc-r.ed{ grid-template-columns:38px 1fr auto auto 22px; } .dc-c.ed span:first-child{ flex:1; }
+  .dc-r.ed, .dc-hd.ed{ grid-template-columns:36px minmax(0,1fr) 84px 68px 18px; } .dc-c.ed span:first-child{ flex:1; }
   #docs-edit-btn.on{ background:#2a2210; border-color:#6b5416; }
   .dc-form label{ display:block; font:600 10.5px var(--mono); letter-spacing:.08em; color:#8fa0c4; margin:10px 0 4px; }
   .dc-form input, .dc-form select{ width:100%; box-sizing:border-box; background:#0b1220; color:var(--text); border:1px solid #1d2a44; border-radius:8px; padding:10px; font:500 15px var(--sans); }
@@ -10300,7 +10300,7 @@ function renderDocs(){
       const col = DOC_SYS[sy] || '#c9d2e6';
       body += '<div class="dc-gh" style="color:' + col + '">' + esc(sy) + '</div>' + rs.map(x => '<div class="dc-r' + (ed ? ' ed' : '') + '" style="border-left-color:' + col + '"><b>' + esc(x.r.c) + '<em>' + esc(x.r.i || '') + '</em></b><span class="n">' + esc(x.r.n) + '</span><span class="t">' + esc(x.r.o) + '<i>/</i>' + esc(x.r.cl) + '</span><span class="g">' + esc(x.r.gr) + "'<i>/</i>" + esc(x.r.gm) + "'</span>" + pen(x.i) + '</div>').join('');
     });
-    if(body) html += '<div class="dc-hd"><span>IATA<br>ICAO</span><span>OPERADOR</span><span>CKIN<br>ABRE / FECHA</span><span>GATE<br>REMOTO / MANGA</span></div>' + body;
+    if(body) html += '<div class="dc-hd' + (ed ? ' ed' : '') + '"><span>IATA<br>ICAO</span><span>OPERADOR</span><span>CKIN<br>ABRE / FECHA</span><span>GATE<br>REM / MANGA</span><span></span></div>' + body;
   } else if(DOC_TAB === 'wiwo'){
     html += DOC.wiwo.map((r, i) => ({ r, i })).filter(x => !q || (x.r.n + ' ' + x.r.c).toLowerCase().indexOf(q) >= 0).map(x => '<div class="dc-c ed"><span>' + esc(x.r.n) + '</span><b>' + esc(x.r.c) + '</b>' + pen(x.i) + '</div>').join('');
   } else {
