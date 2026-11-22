@@ -3147,7 +3147,6 @@
       </div>
 
       <div class="recent-swaps-section">
-        <div class="results-head"><span>ALTERAÇÃO DE HORÁRIOS</span></div>
         <div id="schedule-override-list"></div>
       </div>
     </div>
@@ -10853,6 +10852,7 @@ document.getElementById('schedule-override-save-btn').addEventListener('click', 
   const start = startVal.replace(':','');
   const end = endVal.replace(':','');
   const key = overrideKey(scheduleOverrideWorker.id, idx);
+  AH_OPEN.add(idx);   // the day just changed stays open so the new line is visible
   // "original" = the swap-resolved time BEFORE any correction — correctly reflects a covering
   // shift's borrowed time (not the person's own raw off-day PDF code) when that applies.
   const baseEntry = computeSwapResolvedEntry(scheduleOverrideWorker, idx);
@@ -10870,7 +10870,7 @@ document.getElementById('schedule-override-save-btn').addEventListener('click', 
   if(typeof refreshAllDateSelectCounts === 'function') refreshAllDateSelectCounts();
 });
 let AH_SHOW_PAST = false;
-const AH_COLL = new Set();   // days folded in the ALTERAÇÃO DE HORÁRIOS list
+const AH_OPEN = new Set();   // days the user opened in the ALTERAÇÃO DE HORÁRIOS list (every day starts folded)
 function renderScheduleOverrideList(){
   const list = document.getElementById('schedule-override-list');
   if(!list) return;
@@ -10922,14 +10922,14 @@ function renderScheduleOverrideList(){
     if(past && !AH_SHOW_PAST) return;
     if(e.idx !== lastIdx){   // one heading per day, so the date is not repeated in every row
       lastIdx = e.idx;
-      const nDay = entries.filter(y => y.idx === e.idx).length, coll = AH_COLL.has(e.idx), col = past ? 'var(--text-dim)' : 'var(--amber)';
+      const nDay = entries.filter(y => y.idx === e.idx).length, coll = !AH_OPEN.has(e.idx), col = past ? 'var(--text-dim)' : 'var(--amber)';
       const h = document.createElement('div');
       h.style.cssText = 'display:flex;align-items:center;gap:10px;margin:16px 0 4px;padding:11px 12px;cursor:pointer;border:1px solid var(--border);border-left:3px solid ' + col + ';border-radius:8px;background:rgba(255,255,255,.03);font-family:var(--mono);font-size:14px;font-weight:800;letter-spacing:.06em;color:' + col;
       h.innerHTML = '<span style="flex:1;min-width:0;">' + escapeHtml(extraLongDate(e.idx).toUpperCase()) + '</span><span style="font-weight:700;font-size:12px;color:var(--text-dim);">' + nDay + '</span><span style="font-size:11px;color:var(--text-dim);">' + (coll ? '▶' : '▼') + '</span>';
-      h.addEventListener('click', () => { if(AH_COLL.has(e.idx)) AH_COLL.delete(e.idx); else AH_COLL.add(e.idx); renderScheduleOverrideList(); });
+      h.addEventListener('click', () => { if(AH_OPEN.has(e.idx)) AH_OPEN.delete(e.idx); else AH_OPEN.add(e.idx); renderScheduleOverrideList(); });
       list.appendChild(h);
     }
-    if(AH_COLL.has(e.idx)) return;
+    if(!AH_OPEN.has(e.idx)) return;
     const row = document.createElement('div');
     row.className = 'row';
     row.style.animationDelay = (i*20)+'ms';
