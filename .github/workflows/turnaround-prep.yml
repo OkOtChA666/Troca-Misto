@@ -1,0 +1,32 @@
+name: Turnaround prep
+on:
+  schedule:
+    # GitHub often skips or delays runs, so ask at odd minutes, 4 times an hour; each run loops by itself (every 2 min) for ~50 min
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: turnaround-prep
+  cancel-in-progress: false
+jobs:
+  prep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - run: echo "START=$(date +%s)" >> $GITHUB_ENV
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/turnaround-prep.mjs
+        env:
+          LOOP_MINUTES: '50'
+      # GitHub's timer often skips runs, so a run that worked a full session starts the next one itself
+      - name: Start the next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ $(( $(date +%s) - START )) -gt 600 ]; then gh workflow run turnaround-prep.yml --ref main; fi
