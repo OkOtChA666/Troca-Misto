@@ -27,6 +27,7 @@ export function parseRegulation(html) {
   }
   // 2) tasks: every div with class "metier-N tache…"
   let date = null, taskCount = 0, orphan = 0;
+  const dayCount = {};   // how many tasks belong to each day: the day most tasks belong to is the date of the page (one leftover task from yesterday must not decide it)
   const divRe = /<div\b([^>]*\bclass="metier-(\d+) tache[^"]*"[^>]*)><font>([^<]*)<\/font>/g;
   while ((m = divRe.exec(html))) {
     const attrs = m[1];
@@ -35,7 +36,7 @@ export function parseRegulation(html) {
     const lm = /^(\d+)-(\d{4}-\d{2}-\d{2})\s+(.*)$/.exec(link);
     if (!lm) { orphan++; continue; }
     const [, agentId, day, rest] = lm;
-    date = date || day;
+    date = date || day; dayCount[day] = (dayCount[day] || 0) + 1;
     const times = rest.match(/\b\d{1,2}:\d{2}\b/g) || [];
     let start = null, end = null;
     if (times.length >= 2) { start = hhmm(times[times.length - 2]); end = hhmm(times[times.length - 1]); }
@@ -65,5 +66,6 @@ export function parseRegulation(html) {
     ag.punch = [ins[0] || '', outs.length ? outs[outs.length - 1] : ''];
   }
   agents.forEach((a) => a.tasks.sort((x, y) => String(x.start).localeCompare(String(y.start))));
+  const days = Object.keys(dayCount); if(days.length > 1) date = days.sort((a, b) => dayCount[b] - dayCount[a] || (a < b ? 1 : -1))[0];
   return { date, agents: [...agents.values()], taskCount, orphan };
 }
