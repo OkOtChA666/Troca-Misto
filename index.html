@@ -14092,16 +14092,13 @@ function sfTabsHtml(key, std){
   const tm0 = sfTeams()[key + '@' + String(flTime(std)).replace(/\D/g, '')], xx = SF_X[key];
   if(!tm0 && !xx) return '';
   const tm = { p: (tm0 && tm0.p) || {}, a: Object.assign({}, (tm0 && tm0.a) || {}, xx ? xx.a : {}), d: Object.assign({}, (tm0 && tm0.d) || {}, xx ? xx.d : {}), lr: (tm0 && tm0.lr) || {} };
-  let tabs = '', pop = '';
-  [['p', 'PARTIDA', '#0066cc'], ['a', 'ACOLHIMENTO', '#9fe870']].forEach(([r, lab, col]) => {
-    if(!sfPrefs()[r === 'p' ? 'pa' : 'ac']) return;
-    const names = Object.keys(tm[r]).map(id => tm[r][id]).sort((x, y) => String(x).localeCompare(String(y)));
-    if(!names.length) return;
-    const id = key + ':' + r, on = SF_OPEN === id;
-    tabs += '<div class="sf-tab' + (on ? ' on' : '') + '" data-sft="' + escapeHtml(id) + '"><i style="background:' + col + '"></i><svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><b>' + names.length + '</b></div>';
-    if(on) pop = sfPopHtml(tm, r);
-  });
-  return tabs ? pop + '<div class="sf-tabs">' + tabs + '</div>' : '';
+  const pr = sfPrefs();
+  const use = { p: pr.pa ? tm.p : {}, a: pr.ac ? tm.a : {}, d: tm.d, lr: tm.lr };
+  const total = Object.keys(use.p).length + Object.keys(use.a).length;   // dispatchers are listed but not counted (like the check-in agents' popover)
+  if(!total) return '';
+  const id = key + ':all', on = SF_OPEN === id;
+  const tab = '<div class="sf-tab' + (on ? ' on' : '') + '" data-sft="' + escapeHtml(id) + '"><svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><b>' + total + '</b></div>';
+  return (on ? sfPopHtml(use, 'p') : '') + '<div class="sf-tabs">' + tab + '</div>';
 }
 const SF_OPTS = [
   ['tabs', 'NO CARTÃO', [['porta','PORTA',1],['ckin','CKIN',1],['pa','Equipa PARTIDA',1],['ac','Equipa ACOLHIMENTO',1]]],
