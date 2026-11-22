@@ -14030,10 +14030,10 @@ function sfTap(key, label){
   const o = sfPerson(cur);
   showConfirmDialog('O voo <b>' + escapeHtml(label) + '</b> já é de <b>' + escapeHtml(o.first) + '</b>. Queres ficar com ele?', () => sfSetClaim(key, me), false, 'Ficar com ele');
 }
-let SF_OPEN = '', SF_TEAM_FOR = null, SF_TEAM = {};
+let SF_OPEN = '', SF_TEAM_FOR = null, SF_TEAM = {}, SF_X = {};   // SF_X: ACOLHIMENTO + dispatchers by departing flight number only (their times differ from the departure)
 function sfTeams(){
   if(SF_TEAM_FOR === MT_DOC) return SF_TEAM;
-  SF_TEAM_FOR = MT_DOC; SF_TEAM = {};
+  SF_TEAM_FOR = MT_DOC; SF_TEAM = {}; SF_X = {};
   try{
     Object.keys((MT_DOC && MT_DOC.a) || {}).forEach(id => {
       let rec = null; try{ rec = JSON.parse(MT_DOC.a[id]); }catch(e){}
@@ -14047,6 +14047,7 @@ function sfTeams(){
         const k = head + '@' + String(bits[1] || '').replace(/\D/g, '');
         const o = SF_TEAM[k] = SF_TEAM[k] || { p: {}, a: {}, d: {}, lr: {} };
         o[role][id] = NAME_FIXES[id] || rec.n || id;
+        if(role === 'a' && String(t[5]).split('@')[0].indexOf('/') >= 0){ const xo = SF_X[head] = SF_X[head] || { a: {}, d: {} }; xo.a[id] = NAME_FIXES[id] || rec.n || id; }
         if(/(^|\s)LR$/i.test(String(t[0] || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim())) o.lr[id] = 1;
       });
     });
@@ -14059,8 +14060,9 @@ function sfTeams(){
           const bits = String(t[5]).split('@'); let head = bits[0];
           if(head.indexOf('/') >= 0){ const q = head.split('/'); head = q[0].replace(/\d{1,4}[A-Z]?$/, '') + q[1]; }
           const k = head + '@' + String(bits[1] || '').replace(/\D/g, '');
-          const o = SF_TEAM[k]; if(!o) return;
-          o.d[id] = (typeof DISP_HIDE !== 'undefined' && DISP_HIDE && DISP_HIDE[id]) ? '???' : (rec.n || id);
+          const nm = (typeof DISP_HIDE !== 'undefined' && DISP_HIDE && DISP_HIDE[id]) ? '???' : (rec.n || id);
+          const o = SF_TEAM[k]; if(o) o.d[id] = nm;
+          const xo = SF_X[head] = SF_X[head] || { a: {}, d: {} }; xo.d[id] = nm;
         });
       });
     }
@@ -14087,8 +14089,9 @@ function sfPopHtml(tm, r){
   return '<div class="sf-pop mt-pop">' + secs.map((x, i) => '<div class="mt-h' + (i === 0 ? ' f' : '') + '" style="background:' + x[1] + (x[1] === '#dbffaa' ? ';color:#0b1220;text-shadow:none' : '') + '">' + x[0] + '</div>' + x[2]).join('') + '</div>';
 }
 function sfTabsHtml(key, std){
-  const tm = sfTeams()[key + '@' + String(flTime(std)).replace(/\D/g, '')];
-  if(!tm) return '';
+  const tm0 = sfTeams()[key + '@' + String(flTime(std)).replace(/\D/g, '')], xx = SF_X[key];
+  if(!tm0 && !xx) return '';
+  const tm = { p: (tm0 && tm0.p) || {}, a: Object.assign({}, (tm0 && tm0.a) || {}, xx ? xx.a : {}), d: Object.assign({}, (tm0 && tm0.d) || {}, xx ? xx.d : {}), lr: (tm0 && tm0.lr) || {} };
   let tabs = '', pop = '';
   [['p', 'PARTIDA', '#0066cc'], ['a', 'ACOLHIMENTO', '#9fe870']].forEach(([r, lab, col]) => {
     if(!sfPrefs()[r === 'p' ? 'pa' : 'ac']) return;
