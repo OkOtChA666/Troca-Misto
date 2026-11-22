@@ -1538,7 +1538,8 @@
   .sf-row .sf-who{ max-width:72px; font-size:10.5px; margin-top:4px; }
   .sfh{ padding-right:72px; }
   .sfh-t{ font:800 28px/1.05 var(--sans); color:#e6ebf7; letter-spacing:0; }
-  .sfh-t span{ font:600 14px var(--mono); color:#8a98b8; margin-left:8px; }
+  .sfh-t span{ font:700 14px var(--mono); color:#FFB300; margin-left:0; }
+  .sfh-t .sfh-n{ display:inline-block; width:140px; font:800 28px/1.05 var(--sans); color:#e6ebf7; margin:0; }
   .sfh-s{ font:500 15px var(--sans); color:#dfe6f5; margin-top:6px; }
   .sfh-s em{ font-style:normal; color:var(--amber); }
   .sf-row .flv{ margin:14px 0 0 0; gap:8px; }
@@ -14196,7 +14197,7 @@ function sfRows(mineOnly){
     const pillH = (pf.estado && status) ? sfPill(status) : '';
     const popOpen = !!tabsH && SF_OPEN.indexOf(key + ':') === 0;
     html += '<div class="fl-row sf-row' + (popOpen ? ' open' : '') + (who === me ? ' me' : '') + (past ? ' past' : '') + '" data-sfk="' + escapeHtml(key) + '" data-sfl="' + escapeHtml(label) + '">' +
-      '<div class="sfh"><div class="sfh-t">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '<i class="sf-chev">' + (open ? '▲' : '▼') + '</i></div>' +
+      '<div class="sfh"><div class="sfh-t"><span class="sfh-n">' + escapeHtml(label) + '</span>' + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '<i class="sf-chev">' + (open ? '▲' : '▼') + '</i></div>' +
       '<div class="sfh-s">' + escapeHtml(sched || '--:--') + (delayed && pf.est ? ' <em>· est. ' + escapeHtml(est) + '</em>' : '') + '</div>' + liveH + pillH + '</div>' + moreH + 
       (mineOnly ? '<div></div>' : '<div class="sf-pickbox">' + (p ? '<div class="sf-pick" style="background:' + p.col + '">' + escapeHtml(p.ini) + '</div><div class="sf-who">' + escapeHtml(p.first) + '</div>' : '<div class="sf-pick free">+</div>') + '</div>') +
       tabsH + (cor.length ? '<div class="sf-corner">' + cor.join('') + '</div>' : '') + '</div>';
