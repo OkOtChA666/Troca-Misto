@@ -729,6 +729,8 @@
   .dq-sec{ font:800 11px var(--mono); letter-spacing:.15em; color:#7fd0ff; margin:14px 0 8px 2px; }
   .dq-g{ display:grid; grid-template-columns:1fr 1fr; gap:8px; } .dq-k{ background:#151d2e; border-radius:10px; padding:11px 12px; } .dq-k span{ display:block; font:600 10px var(--mono); letter-spacing:.08em; color:#8a97b5; margin-bottom:5px; } .dq-k b{ font:800 20px var(--mono); }
   .dq-one{ display:flex; justify-content:space-between; align-items:center; background:#151d2e; border-left:4px solid #7fd0ff; border-radius:10px; padding:16px 14px; } .dq-one b{ font:800 18px var(--sans); } .dq-one b.nv{ color:#55627f; font-weight:600; font-style:italic; } .dq-one span{ color:var(--amber); font-size:17px; } .dq-one.adm{ cursor:pointer; }
+  .dq-g.dq-1{ grid-template-columns:1fr; }
+  .dq-tx{ background:#151d2e; border-radius:10px; padding:13px 14px; font:500 14px/1.55 var(--sans); color:#cfd8ec; position:relative; white-space:pre-wrap; word-break:break-word; } .dq-tx em{ position:absolute; top:10px; right:12px; color:var(--amber); font-style:normal; font-size:14px; } .dq-tx.adm{ cursor:pointer; padding-right:34px; } .dq-tx i.nv{ color:#55627f; font-style:normal; font-weight:600; }
   .dq-k em{ color:var(--amber); font-style:normal; font-size:14px; float:right; } .dq-k.adm{ cursor:pointer; } .dq-m .dq-k b{ font-size:16px; } .dq-k i.nv{ color:#55627f; font-weight:600; font-size:14px; }
   .dq-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:#151d2e; border-radius:10px; padding:13px 12px; margin-bottom:6px; font-size:14px; } .dq-row span{ color:#8fa0c4; } .dq-row b{ font-weight:700; text-align:right; }
   .dq-dots{ display:flex; justify-content:center; gap:9px; margin-top:16px; } .dq-dots i{ width:8px; height:8px; border-radius:50%; background:#2a3550; cursor:pointer; transition:width .15s; } .dq-dots i.on{ background:#7fd0ff; width:22px; border-radius:4px; }
@@ -10321,7 +10323,7 @@ const DOC_ICAO = {"HV": "TRA", "TO": "TVF", "BY": "TOM", "X3": "TUI", "TB": "JAF
 let DOC_TAB = null;   // null = the DOCUMENTOS menu
 const DOC_SYS = { GONOW:'#2fbf71', ALTEA:'#3b9bff', ERES:'#e0b074', IPORT:'#c9d2e6' };
 let DOC = null, DOC_EDIT = false, DOC_Q = -1, DOC_QN = 0;
-const DOC_QP = ['TEMPOS','BAGAGEM','NOTAS','EXTRA'];   // pages of a company's QUICK SUMMARY (pages 2-5 hold test text for now)
+const DOC_QP = ['TEMPOS','BAGAGEM','COBRANÇAS','EXTRA','NOTAS'];   // pages of a company's QUICK SUMMARY (pages 2 and 4 hold test text for now)
 const DOC_GIB = [['Lorem ipsum','dolor sit amet'],['Consectetur','adipiscing elit'],['Sed do eiusmod','tempor incididunt'],['Ut labore','et dolore magna']];
 function docDefaults(){
   const t = []; DOC_TEMPOS.forEach(g => g[2].forEach(r => t.push({ s:g[0], c:r[0], i:DOC_ICAO[r[0]] || '', n:r[1], o:r[2], cl:r[3], gr:r[4], gm:r[5] })));
@@ -10374,8 +10376,9 @@ function renderDocs(){
       const r = DOC.tempos[DOC_Q], col = DOC_SYS[r.s] || '#c9d2e6';
       const ad = isAdminSession ? '<em>✎</em>' : '';
       const tile = (lab, val, attr) => '<div class="dq-k' + (isAdminSession ? ' adm' : '') + '"' + (isAdminSession ? ' ' + attr : '') + '><span>' + lab + '</span><b>' + val + ad + '</b></div>';
+      const txt = key => { const v = (DOC.pec && DOC.pec[r.c] && DOC.pec[r.c][key]) || ''; return '<div class="dq-tx' + (isAdminSession ? ' adm' : '') + '"' + (isAdminSession ? ' data-pt="' + key + '"' : '') + '>' + ad + (v ? esc(v) : '<i class="nv">por definir</i>') + '</div>'; };
       const pv = key => { const v = (DOC.pec && DOC.pec[r.c] && DOC.pec[r.c][key]) || ''; return v ? esc(v) : '<i class="nv">por definir</i>'; };
-      const pages = DOC_QP.map((t, n) => n === 0 ? '<div class="dq-p"><div class="dq-sec">CHECK-IN</div><div class="dq-g">' + tile('ABRE', esc(r.o), 'data-tm="1"') + tile('FECHA', esc(r.cl), 'data-tm="1"') + '</div><div class="dq-sec">GATE</div><div class="dq-g">' + tile('FECHA REMOTO', esc(r.gr) + "'", 'data-tm="1"') + tile('FECHA MANGA', esc(r.gm) + "'", 'data-tm="1"') + '</div><div class="dq-sec">MATERIAL</div><div class="dq-g dq-m">' + tile('ROLO', pv('rolo'), 'data-pec="rolo"') + tile('CARTÃO DE EMBARQUE', pv('cartoes'), 'data-pec="cartoes"') + '</div></div>' : '<div class="dq-p"><div class="dq-sec">' + t + '</div>' + DOC_GIB.map(g => '<div class="dq-row"><span>' + g[0] + '</span><b>' + g[1] + '</b></div>').join('') + '</div>').join('');
+      const pages = DOC_QP.map((t, n) => n === 0 ? '<div class="dq-p"><div class="dq-sec">CHECK-IN</div><div class="dq-g">' + tile('ABRE', esc(r.o), 'data-tm="1"') + tile('FECHA', esc(r.cl), 'data-tm="1"') + '</div><div class="dq-sec">GATE</div><div class="dq-g">' + tile('FECHA REMOTO', esc(r.gr) + "'", 'data-tm="1"') + tile('FECHA MANGA', esc(r.gm) + "'", 'data-tm="1"') + '</div><div class="dq-sec">MATERIAL</div><div class="dq-g dq-m">' + tile('ROLO', pv('rolo'), 'data-pec="rolo"') + tile('CARTÃO DE EMBARQUE', pv('cartoes'), 'data-pec="cartoes"') + '</div></div>' : (t === 'COBRANÇAS' || t === 'NOTAS') ? '<div class="dq-p">' + (t === 'COBRANÇAS' ? '<div class="dq-sec">PAGAMENTOS</div><div class="dq-g dq-m dq-1">' + tile('COBRANÇAS', pv('cobr'), 'data-pec="cobr"') + '</div><div class="dq-sec">MÉTODO</div>' + txt('metodo') : '<div class="dq-sec">NOTAS</div>' + txt('notas')) + '</div>' : '<div class="dq-p"><div class="dq-sec">' + t + '</div>' + DOC_GIB.map(g => '<div class="dq-row"><span>' + g[0] + '</span><b>' + g[1] + '</b></div>').join('') + '</div>').join('');
       html += '<div class="dq-hero" style="border-left-color:' + col + '"><div class="c">' + esc(r.c) + '<small>' + esc(r.i || '') + '</small></div><div class="n">' + esc(r.n) + '</div><span class="dq-tag" style="color:' + col + '">' + esc(r.s) + '</span></div><div class="dq-pg" id="dq-pg">1/' + DOC_QP.length + ' · ' + DOC_QP[0] + '</div><div class="dq-sl" id="dq-sl">' + pages + '</div><div class="dq-dots" id="dq-dots">' + DOC_QP.map((t, n) => '<i data-dp="' + n + '"' + (n === 0 ? ' class="on"' : '') + '></i>').join('') + '</div>';
     } else {
       html += DOC.tempos.map((r, i) => ({ r, i })).filter(x => !q || (x.r.c + ' ' + x.r.n).toLowerCase().indexOf(q) >= 0).map(x => '<div class="dc-c q" data-q="' + x.i + '"><span><b>' + esc(x.r.c) + '</b>' + esc(x.r.n) + '</span></div>').join('');
@@ -10448,7 +10451,14 @@ document.getElementById('docs-list').addEventListener('click', e => {
   const tm = e.target.closest('[data-tm]'); if(tm && isAdminSession){ docsForm(DOC_Q, 'tempos', true); return; }
   const pc = e.target.closest('[data-pec]'); if(pc && isAdminSession && DOC.tempos[DOC_Q]){
     const code = DOC.tempos[DOC_Q].c, k = pc.dataset.pec; if(!DOC.pec) DOC.pec = {}; const o = DOC.pec[code] || (DOC.pec[code] = {});
-    o[k] = o[k] === 'Companhia' ? 'Portway' : 'Companhia'; renderDocs(); docsSave(); return;
+    o[k] = k === 'cobr' ? (o[k] === 'Sistema' ? 'Balcão' : 'Sistema') : (o[k] === 'Companhia' ? 'Portway' : 'Companhia'); renderDocs(); docsSave(); return;
+  }
+  const pt = e.target.closest('[data-pt]'); if(pt && isAdminSession && DOC.tempos[DOC_Q]){
+    const code = DOC.tempos[DOC_Q].c, k = pt.dataset.pt; const cur = (DOC.pec && DOC.pec[code] && DOC.pec[code][k]) || '';
+    showConfirmDialog('<div style="font:800 13px var(--mono);letter-spacing:.12em;color:#7fd0ff;margin-bottom:10px">' + (k === 'metodo' ? 'MÉTODO' : 'NOTAS') + ' · ' + escapeHtml(code) + '</div><textarea id="dq-ta" rows="7" style="width:100%;box-sizing:border-box;background:#0f1522;color:#e6ecfb;border:1px solid #2a3552;border-radius:10px;padding:10px;font:500 15px/1.5 var(--sans);resize:vertical">' + escapeHtml(cur) + '</textarea>', () => {
+      const v = (document.getElementById('dq-ta').value || '').trim(); if(!DOC.pec) DOC.pec = {}; const o = DOC.pec[code] || (DOC.pec[code] = {}); o[k] = v; renderDocs(); docsSave();
+    }, false, 'Guardar', false, null, 'Cancelar');
+    return;
   }
   if(e.target.closest('#dq-back')){ DOC_Q = -1; renderDocs(); return; }
   const dp = e.target.closest('[data-dp]'); if(dp){ const sl = document.getElementById('dq-sl'); sl.scrollTo({ left: sl.clientWidth * parseInt(dp.dataset.dp, 10), behavior: 'smooth' }); return; }
