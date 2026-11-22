@@ -1531,15 +1531,20 @@
   .sf-ta-c{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; border-bottom:1px dashed rgba(138,152,184,.25); padding:3px 0; }
   .sf-more .sf-ta-c b{ display:inline; margin:0; font-size:12px; }
   .sf-more .sf-ta-c b.e{ color:#4a5b75; font-weight:400; }
-  .sf-row{ padding-left:16px; padding-right:14px; }
-  .sf-row .sf-pickbox{ position:absolute; top:10px; right:12px; margin:0; padding:0; z-index:2; }
-  .sf-row .sf-pickbox .sf-pick{ width:34px; height:34px; }
-  .sf-row .sf-who{ max-width:60px; }
-  .sf-row .fl-tm small{ margin-top:4px; }
-  .sf-row .fl-fn{ margin-top:10px; }
-  .sf-row .flv{ margin-top:14px; }
-  .sf-row .flv-bar{ margin-top:9px; }
-  .sf-row .sf-more{ margin-top:6px; }
+  .sf-row{ padding:16px 16px 34px 16px; }
+  .sf-row .sf-pickbox{ position:absolute; top:14px; right:14px; margin:0; padding:0; z-index:2; }
+  .sf-row .sf-pickbox .sf-pick{ width:44px; height:44px; font-size:15px; }
+  .sf-row .sf-who{ max-width:72px; font-size:10.5px; margin-top:4px; }
+  .sfh{ padding-right:72px; }
+  .sfh-t{ font:800 28px/1.05 var(--sans); color:#e6ebf7; letter-spacing:0; }
+  .sfh-t span{ font:600 14px var(--mono); color:#8a98b8; margin-left:8px; }
+  .sfh-s{ font:500 15px var(--sans); color:#dfe6f5; margin-top:6px; }
+  .sfh-s em{ font-style:normal; color:var(--amber); }
+  .sf-row .flv{ margin:14px 0 0 0; gap:8px; }
+  .sf-row .flv-bar{ margin:9px 0 0 0; }
+  .sfh-p{ margin-top:14px; }
+  .sf-pill{ display:inline-block; font:700 10.5px var(--mono); letter-spacing:.1em; padding:5px 10px; border-radius:999px; }
+  .sf-row .sf-more{ margin-top:14px; }
   .sf-ta-g{ grid-template-columns:1fr 1fr 1fr; gap:8px; }
   .sf-ta-c{ display:block; border:0; background:rgba(138,152,184,.10); border-radius:9px; padding:8px 10px; }
   .sf-ta-c span{ display:block; font-size:10px; color:#8a98b8; margin-bottom:3px; }
@@ -14140,6 +14145,16 @@ function sfTurnaroundHtml(key){
     return '<div class="sf-ta-c"><span>' + escapeHtml(f.label) + '</span><b' + (v ? '' : ' class="e"') + '>' + (v ? escapeHtml(v) : '—') + '</b></div>';
   }).join('') + '</div></div>';
 }
+function sfPill(txt){
+  const t = String(txt).toUpperCase().trim();
+  let c = ['#aab4cc', 'rgba(170,180,204,.14)'];
+  if(/CANCEL|CLOSED|FECH/.test(t)) c = ['#ff6b6b', 'rgba(255,107,107,.14)'];
+  else if(/BOARD/.test(t)) c = ['#ff9f5a', 'rgba(255,159,90,.14)'];
+  else if(/FINAL|LAST|DELAY|ATRAS/.test(t)) c = ['#ffb400', 'rgba(255,179,0,.14)'];
+  else if(/DEPART|AIRBORNE|DESCOL/.test(t)) c = ['#3ddc97', 'rgba(61,220,151,.14)'];
+  else if(/OPEN|CHECK/.test(t)) c = ['#5fe0ff', 'rgba(95,224,255,.12)'];
+  return '<div class="sfh-p"><span class="sf-pill" style="color:' + c[0] + ';background:' + c[1] + '">' + escapeHtml(t) + '</span></div>';
+}
 function sfRows(mineOnly){
   flvListen();
   const pf = sfPrefs();
@@ -14169,18 +14184,17 @@ function sfRows(mineOnly){
     // opened card: extra information
     let status = r.rem || r.grem || ''; if(/^\s*gate\s*at\s*$/i.test(String(status))) status = '';
     const more = [];
-    if(pf.estado && status) more.push('<div>ESTADO<b class="st">' + escapeHtml(String(status).toUpperCase()) + '</b></div>');
-    if(pf.est && est) more.push('<div>HORA ESTIMADA<b>' + escapeHtml(est) + '</b></div>');
     if(pf.stand && r.pos) more.push('<div>STAND<b>' + escapeHtml(r.pos) + '</b></div>');
     if(pf.reg && r.reg) more.push('<div>MATRÍCULA<b>' + escapeHtml(r.reg) + '</b></div>');
     if(pf.ta) more.push(sfTurnaroundHtml(key));
     const moreH = open ? '<div class="sf-more">' + (more.length ? more.join('') : '<div style="grid-column:1/3">Sem informação</div>') + '</div>' : '';
     const tabsH = sfTabsHtml(key, r.std);
     const liveH = flvInfo(r.reg, 'dep');
+    const pillH = (pf.estado && status) ? sfPill(status) : '';
     const popOpen = !!tabsH && SF_OPEN.indexOf(key + ':') === 0;
     html += '<div class="fl-row sf-row' + (popOpen ? ' open' : '') + (who === me ? ' me' : '') + (past ? ' past' : '') + '" data-sfk="' + escapeHtml(key) + '" data-sfl="' + escapeHtml(label) + '">' +
-      '<div class="fl-tm">' + escapeHtml(sched || '--:--') + (delayed ? '<small>' + escapeHtml(est) + '</small>' : '') + '</div>' +
-      '<div><div class="fl-fn">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '<i class="sf-chev">' + (open ? '▲' : '▼') + '</i></div>' + liveH + moreH + '</div>' +
+      '<div class="sfh"><div class="sfh-t">' + escapeHtml(label) + (r.des ? '<span>' + escapeHtml(r.des) + '</span>' : '') + '<i class="sf-chev">' + (open ? '▲' : '▼') + '</i></div>' +
+      '<div class="sfh-s">' + escapeHtml(sched || '--:--') + (delayed && pf.est ? ' <em>· est. ' + escapeHtml(est) + '</em>' : '') + '</div>' + liveH + pillH + '</div>' + moreH + 
       (mineOnly ? '<div></div>' : '<div class="sf-pickbox">' + (p ? '<div class="sf-pick" style="background:' + p.col + '">' + escapeHtml(p.ini) + '</div><div class="sf-who">' + escapeHtml(p.first) + '</div>' : '<div class="sf-pick free">+</div>') + '</div>') +
       tabsH + (cor.length ? '<div class="sf-corner">' + cor.join('') + '</div>' : '') + '</div>';
   });
