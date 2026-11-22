@@ -13259,6 +13259,7 @@ function mtListen(){
         // DISPATCHER: the tasks come from their own copy (disptasks); the flight details (gate, stand, destination) from the shared day copy (tasks)
         let dd = null, fl = null; const merge = () => { if(dd === null) return; MT_DOC = dd ? Object.assign({}, dd, { flights: fl || '' }) : false; MT_ERR = false; mtUpdateBadge(); try{ qwRender(); }catch(e){} if(mtOpenOverlay()) renderMyTasks(); };
         _u2 = db.collection('data').doc('tasks').onSnapshot(snap => { fl = snap.exists ? (snap.data().flights || '') : ''; TT_DOC = snap.exists ? snap.data() : null; MT_TEAM_FOR = null; merge(); }, () => {});
+        db.collection('data').doc('flightlist').onSnapshot(snap => { DFL = snap.exists ? snap.data() : null; if(mtOpenOverlay()) renderMyTasks(); }, () => {});
         const _u1 = db.collection('data').doc('disptasks').onSnapshot(snap => { dd = snap.exists ? snap.data() : false; merge(); }, () => { MT_ERR = true; if(mtOpenOverlay()) renderMyTasks(); });
         MT_UNSUB = () => { try{ _u1(); }catch(e){} try{ _u2(); }catch(e){} };
         MT_LISTENING = false; return;
@@ -13623,7 +13624,28 @@ function mtTaPopup(rec, title){
 function mtFlightInfo(key){
   if(!key || !MT_DOC || !MT_DOC.flights) return null;
   if(MT_FL_AT !== MT_DOC.flights){ MT_FL_AT = MT_DOC.flights; try{ MT_FL = JSON.parse(MT_DOC.flights) || {}; } catch(e){ MT_FL = {}; } }
-  return MT_FL[key] || null;
+  return MT_FL[key] || mtListFallback(key) || null;
+}
+// DISPATCHER cards: a flight the sync did not save in its small task list (it only keeps flights the check-in agents work) is read from the complete flight list instead
+let DFL = null, DFL_AT = null, DFL_IDX = null;
+function mtListFallback(key){
+  try{
+    if(GROUP !== 'disp' || !DFL || !DFL.json) return null;
+    if(DFL_AT !== DFL.json){ DFL_AT = DFL.json; DFL_IDX = { dep: {}, arr: {} }; const d = JSON.parse(DFL.json) || {};
+      (d.dep || []).forEach(r => { const f = flSplit(r.n); if(f.code && flToday(r.std)) DFL_IDX.dep[f.code + f.num] = r; });
+      (d.arr || []).forEach(r => { const f = flSplit(r.n); if(f.code && flToday(r.sta)) DFL_IDX.arr[f.code + f.num] = r; }); }
+    const head = String(key || '').replace(/^NAME:/, '').split('@')[0], q = head.split('/');
+    const m = /^([A-Z0-9]{2})(\d{1,4}[A-Z]?)$/.exec(q[0]); if(!m) return null;
+    const al = m[1], nums = [m[2]].concat(q.slice(1));
+    let arr = null, dep = null;
+    nums.forEach(n => { arr = arr || DFL_IDX.arr[al + n] || null; dep = dep || DFL_IDX.dep[al + n] || null; });
+    if(!arr && !dep) return null;
+    const o = {};
+    if(dep){ if(dep.des) o.d = dep.des; if(dep.cki) o.c = dep.cki; if(dep.gt) o.g = dep.gt; const e = flTime(dep.etd); if(e && e !== flTime(dep.std)) o.e = e; if(dep.ctot) o.ct = flTime(dep.ctot) || dep.ctot; }
+    if(arr){ if(arr.org) o.o = arr.org; if(arr.gate) o.ga = arr.gate; }
+    const rg = (dep && dep.reg) || (arr && arr.reg); if(rg) o.r = rg;
+    return o;
+  }catch(e){ return null; }
 }
 // Flight key of a task. Normally it comes with the task (t[5]); when it is missing (e.g. a task with a remark like "U2 3164 LR")
 // the flight number in the task name is looked up among the known flights of the day instead.
