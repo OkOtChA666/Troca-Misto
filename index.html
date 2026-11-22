@@ -1771,6 +1771,9 @@
   .mt-name{ display:inline-block; min-width:104px; flex:none; white-space:nowrap; }
   .mt-ngrp{ display:inline-flex; align-items:center; min-width:104px; flex:none; white-space:nowrap; }
   .mt-pair{ display:inline-flex !important; flex-direction:column; gap:2px; line-height:1.25; }
+  .mt-cd{ margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #78c8ff; border-radius:9px; background:#0e1c30; color:#78c8ff; font-family:var(--mono); white-space:nowrap; }
+  .mt-cd i{ width:8px; height:8px; border-radius:50%; background:currentColor; } .mt-cd em{ font-style:normal; font-size:10px; color:#96a5c3; } .mt-cd b{ font-size:13px; font-weight:800; }
+  .mt-cd.a{ color:#ffb800; border-color:#ffb800; background:#2e2208; } .mt-cd.r{ color:#ff5f5f; border-color:#ff5f5f; background:#301014; }
   .mt-dest{ font-family:var(--mono); font-weight:700; font-size:13px; letter-spacing:0.06em; color:var(--amber); margin-left:10px; flex:none; align-self:baseline; font-size:14px; }
   .mt-row.has-tab{ padding-bottom:36px; }
   .mt-row.has-tab .mt-side{ align-self:flex-start; }
@@ -13247,6 +13250,7 @@ function mtOpenOverlay(){
 }
 function mtListen(){
   flvListen();
+  mtTemposLoad();
   mtTaListen();
   if(MT_UNSUB || MT_LISTENING) return;
   MT_LISTENING = true;
@@ -13694,6 +13698,30 @@ function mtKeyRaw(t){
     }
   }
   return own || ('NAME:' + m[1] + m[2]);   // flight not known to the day's list: at least match people on the same flight number
+}
+// CHECK-IN: countdown to the gate closing = departure (ETD when delayed, else STD) minus the company's GATE time from INFORMAÇÃO ÚTIL → TEMPOS:
+// MANGA for the 6 bridge gates (214/314 … 224/324), REMOTO (bus) for everything else
+let MT_TEMPOS = null, MT_TEMPOS_AT = 0;
+function mtTemposLoad(){
+  if(MT_TEMPOS_AT && Date.now() - MT_TEMPOS_AT < 600000) return;
+  MT_TEMPOS_AT = Date.now();
+  try{ dbGetShared('docsData', null).then(d => { if(d && Array.isArray(d.tempos)){ MT_TEMPOS = d.tempos; if(mtOpenOverlay()) renderMyTasks(); } }).catch(() => {}); }catch(e){}
+}
+function mtCountHtml(t, colr){
+  try{
+    if(GROUP !== '' || colr !== '#0066cc' || !MT_TEMPOS || !MT_DOC || MT_DOC.date !== sfToday()) return '';
+    const key = mtKey(t), f = mtFlightInfo(key); if(!f || f.x === 'C') return '';
+    const head = String(key).replace(/^NAME:/, ''), al = /^([A-Z0-9]{2})/.exec(head), at = head.indexOf('@');
+    if(!al || at < 0) return '';
+    const r = MT_TEMPOS.find(x => x && x.c === al[1]); if(!r) return '';
+    const bridge = /^[23](14|16|18|20|22|24)$/.test(String(f.g || '').replace(/\s/g, ''));
+    const mins = parseInt(bridge ? r.gm : r.gr, 10); if(isNaN(mins)) return '';
+    const dep = mtToMin(f.e || head.slice(at + 1)); if(dep === null) return '';
+    const now = new Date(), d = dep - mins - (now.getHours() * 60 + now.getMinutes());
+    if(d < 0 || d > 60) return '';   // only the last hour before the gate closes
+    const v = d >= 60 ? Math.floor(d / 60) + 'h ' + ('0' + (d % 60)).slice(-2) : d + ' min';
+    return '<span class="mt-cd' + (d <= 5 ? ' r' : d <= 10 ? ' a' : '') + '"><i></i><em>FECHA EM</em><b>' + v + '</b></span>';
+  }catch(e){ return ''; }
 }
 function mtDestHtml(f, colr){
   if(!f || typeof f !== 'object') return '';
@@ -14529,7 +14557,7 @@ function mtTasksBodyHtml(staffId, me, now, sameDay){
       const liveHtml = (_fi && _fi.r && (colr === '#0066cc' || colr === '#dbffaa')) ? flvInfo(_fi.r, colr === '#dbffaa' ? 'arr' : 'dep') : '';
       (stacked ? stackRows : liveRows).push('<div class="mt-row' + cls + (bdg ? ' has-nova' : '') + ((tabHtml || teamHtml) ? ' has-tab' : '') + (teamHtml && mtTeamOpen[rowKey] ? ' team-open' : '') + '"' + (colr ? ' style="border-left-color:' + vcol + ';--c:' + vcol + '"' : '') + '>' +
               '<div class="mt-main"><div class="mt-time">' + mtEsc(start || '?') + ' – ' + mtEsc(end || '?') + (mtIsDly(nk) ? '<span class="mt-dly">DLY</span>' : '') + (_fi && _fi.ct && ctotOn() ? '<span class="mt-ctot">CTOT <b>' + mtEsc(_fi.ct) + '</b></span>' : '') + '</div>' +
-              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + liveHtml + '</div>' +
+              '<div class="mt-label">' + kindHtml + mtNameHtml(nk) + (/^COMM?\b/i.test(nk) ? '' : mtDestHtml(mtFlightInfo(mtKey(t)), colr)) + mtCountHtml(t, colr) + '</div>' + mtInfoHtml(mtFlightInfo(mtKey(t)), colr) + liveHtml + '</div>' +
               chip + '<div class="mt-side"></div>' + bdg + tabHtml + teamHtml + '</div>');
     });
     if(stackRows.length) html += '<div class="mt-pstack' + (mtPastOpen ? ' open' : '') + '">' + stackRows.join('') + '</div>';
