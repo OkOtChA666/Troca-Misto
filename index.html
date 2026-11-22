@@ -1780,6 +1780,7 @@
   .ta-tab{ position:absolute; top:-1px; right:-1px; display:flex; align-items:center; gap:6px; padding:5px 11px; background:#0e1a2e; border:1px solid #2a3a5e; border-radius:0 12px 0 12px; color:#8fa0c4; font:700 11px var(--mono); letter-spacing:.06em; }
   .ta-other{ display:block; width:100%; margin-top:6px; padding:12px 14px; border:1px dashed #2a3a5e; border-radius:12px; background:none; color:#8fa0c4; font:700 12px var(--mono); letter-spacing:.1em; text-align:center; cursor:pointer; }
   #ta-other-box{ margin-top:14px; }
+  .ta-past{ display:flex; align-items:center; gap:10px; margin:6px 0 10px; padding:11px 14px; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,.03); color:var(--text-dim); font:700 12px var(--mono); letter-spacing:.1em; cursor:pointer; }
   .mt-cd{ margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #78c8ff; border-radius:9px; background:#0e1c30; color:#78c8ff; font-family:var(--mono); white-space:nowrap; }
   .mt-cd i{ width:8px; height:8px; border-radius:50%; background:currentColor; } .mt-cd em{ font-style:normal; font-size:10px; color:#96a5c3; } .mt-cd b{ font-size:13px; font-weight:800; }
   .mt-cd.a{ color:#ffb800; border-color:#ffb800; background:#2e2208; } .mt-cd.r{ color:#ff5f5f; border-color:#ff5f5f; background:#301014; }
@@ -9980,6 +9981,11 @@ function buildTurnaroundField(f, compact){
         _meta = { _day: todayDateString(), _createdAt: Date.now(), _by: _w ? _w.name : _sid };
         if(currentPair){ _meta._arr = currentPair.arr; _meta._dep = currentPair.dep; }
         TURNAROUNDS[currentFlight] = Object.assign({}, _meta);
+      } else if(TURNAROUNDS[currentFlight]._auto && !TURNAROUNDS[currentFlight]._by){
+        let _sid2 = ''; try{ _sid2 = localStorage.getItem('trocaMistoLoginStaffId') || ''; }catch(e){}
+        const _w2 = DATA.workers.find(w => w.id === _sid2);
+        _meta = { _by: _w2 ? _w2.name : _sid2 };   // the first person to register on a prepared turnaround is shown as its creator
+        Object.assign(TURNAROUNDS[currentFlight], _meta);
       } else if(currentPair && !TURNAROUNDS[currentFlight]._dep){
         _meta = { _arr: currentPair.arr, _dep: currentPair.dep };   // older record: link the two numbers now
         Object.assign(TURNAROUNDS[currentFlight], _meta);
@@ -10032,8 +10038,8 @@ function isReportWindowActive(){
   return now.getHours() === 23 && now.getMinutes() >= 50;
 }
 function generateDailyReport(){
-  const flights = Object.keys(TURNAROUNDS).filter(k => Object.keys(TURNAROUNDS[k]||{}).length > 0).sort();
   const fields = TURNAROUND_ROWS.flat();
+  const flights = Object.keys(TURNAROUNDS).filter(k => Object.keys(TURNAROUNDS[k]||{}).length > 0 && !(TURNAROUNDS[k]._auto && !fields.some(f => TURNAROUNDS[k][f.key]))).sort();
   const rowsHtml = flights.map(flight => {
     const rec = TURNAROUNDS[flight] || {};
     const cells = fields.map(f => {
@@ -10325,30 +10331,57 @@ const TA_ICON = {
   bot: '<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
   user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'
 };
+let TA_PAST = false;
 function renderTaPrep(){
   const wrap = document.getElementById('ta-prep-wrap'), box = document.getElementById('ta-prep');
   if(!wrap || !box) return;
   TA_SHOWN = new Set();
-  const pairs = taPairs();
-  wrap.classList.toggle('hidden', !pairs.length);
-  const q = TA_Q.replace(/\s+/g, '').toUpperCase();
-  const total = TURNAROUND_ROWS.flat().length;
-  box.innerHTML = '';
-  pairs.forEach(p => {
+  const nowD = new Date(), now = nowD.getHours() * 60 + nowD.getMinutes();
+  let fl = {}; try{ fl = (FL_DOC && FL_DOC.json) ? (JSON.parse(FL_DOC.json) || {}) : {}; }catch(e){}
+  const depRows = {}; (fl.dep || []).forEach(r => { depRows[sfKey(r.n)] = r; });
+  const items = [], seen = new Set();
+  // 1) turnarounds prepared and saved by the platform (they stay until midnight, like the ones typed by hand)
+  Object.keys(TURNAROUNDS).forEach(k => {
+    const rec = TURNAROUNDS[k] || {};
+    if(!rec._auto || !rec._arr || !rec._dep) return;
+    TA_SHOWN.add(k); seen.add(rec._arr); seen.add(rec._dep);
+    const dr = depRows[rec._dep], dm = dr ? flMin(flTime(dr.etd) || flTime(dr.std)) : (rec._dm || 0);
+    items.push({ k, rec, arr: rec._arr, dep: rec._dep, past: !dm || now > dm, ord: rec._createdAt || 0 });
+  });
+  // 2) not saved yet (the saving job has not run yet): the same pairs worked out here from the flight list
+  taPairs().forEach(p => {
+    if(seen.has(p.arr) || seen.has(p.dep)) return;
     const k = TURNAROUNDS[p.arr] ? p.arr : (TURNAROUNDS[p.dep] ? p.dep : taAlias(p.arr)), rec = TURNAROUNDS[k] || null;
     if(rec) TA_SHOWN.add(k);
-    if(q && (p.arr + p.dep).indexOf(q) < 0) return;
-    const filled = rec ? TURNAROUND_ROWS.flat().filter(f => rec[f.key]).length : 0;
+    items.push({ k, rec, arr: p.arr, dep: p.dep, past: false, ord: p.am });
+  });
+  wrap.classList.toggle('hidden', !items.length);
+  const q = TA_Q.replace(/\s+/g, '').toUpperCase();
+  const total = TURNAROUND_ROWS.flat().length;
+  const card = it => {
+    const rec = it.rec, filled = rec ? TURNAROUND_ROWS.flat().filter(f => rec[f.key]).length : 0;
     const st = filled === 0 ? ['POR PREENCHER', '#ffb800'] : filled < total ? ['EM CURSO', '#78c8ff'] : ['FEITO', '#3ddc84'];
     const by = rec && rec._by ? niceListName(rec._by) : '';
     const ic = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (by ? TA_ICON.user : TA_ICON.bot) + '</svg>';
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'ta-card'; b.style.setProperty('--c', st[1]);
     b.innerHTML = '<span class="ta-tab">' + ic + (by ? '<span>' + escapeHtml(by) + '</span>' : '') + '</span>' +
-      '<div class="ta-fl"><span>' + escapeHtml(taFmt(p.arr)) + '</span><i>→</i><span>' + escapeHtml(taFmt(p.dep)) + '</span><span class="ta-chip">' + st[0] + '</span></div>';
-    b.addEventListener('click', () => selectFlight(p.arr, { arr: p.arr, dep: p.dep }));
-    box.appendChild(b);
-  });
+      '<div class="ta-fl"><span>' + escapeHtml(taFmt(it.arr)) + '</span><i>→</i><span>' + escapeHtml(taFmt(it.dep)) + '</span><span class="ta-chip">' + st[0] + '</span></div>';
+    b.addEventListener('click', () => selectFlight(it.arr, { arr: it.arr, dep: it.dep }));
+    return b;
+  };
+  const vis = items.filter(it => !q || (it.arr + it.dep).indexOf(q) >= 0);
+  const cur = vis.filter(it => !it.past).sort((a, b) => a.ord - b.ord), old = vis.filter(it => it.past).sort((a, b) => b.ord - a.ord);
+  box.innerHTML = '';
+  cur.forEach(it => box.appendChild(card(it)));
+  if(old.length){
+    const bar = document.createElement('div');
+    bar.className = 'ta-past';
+    bar.innerHTML = '<span style="flex:1;">ANTERIORES</span><span style="font-weight:700;">' + old.length + '</span><span style="font-size:11px;">' + ((TA_PAST || q) ? '▼' : '▶') + '</span>';
+    bar.addEventListener('click', () => { TA_PAST = !TA_PAST; renderTaPrep(); });
+    box.appendChild(bar);
+    if(TA_PAST || q) old.forEach(it => box.appendChild(card(it)));
+  }
 }
 document.getElementById('ta-search').addEventListener('input', e => { TA_Q = e.target.value; renderTaPrep(); });
 document.getElementById('ta-other-btn').addEventListener('click', () => {
@@ -10367,8 +10400,8 @@ function openTurnaround(){
   if(turnaroundLiveRefreshTimer) clearInterval(turnaroundLiveRefreshTimer);
   turnaroundLiveRefreshTimer = setInterval(() => {
     if(currentFlight) renderTurnaroundFields();
-    else renderActiveFlights();
-  }, 30000);
+    else loadTurnarounds().then(() => { if(!currentFlight) renderActiveFlights(); }).catch(() => {});   // also picks up turnarounds the platform prepared meanwhile
+  }, 60000);
 }
 function closeTurnaround(){
   taStopListen();
