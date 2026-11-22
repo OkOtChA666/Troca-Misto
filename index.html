@@ -1771,6 +1771,15 @@
   .mt-name{ display:inline-block; min-width:104px; flex:none; white-space:nowrap; }
   .mt-ngrp{ display:inline-flex; align-items:center; min-width:104px; flex:none; white-space:nowrap; }
   .mt-pair{ display:inline-flex !important; flex-direction:column; gap:2px; line-height:1.25; }
+  .ta-sec{ font:700 11px var(--mono); letter-spacing:.14em; color:#8fa0c4; margin:0 0 10px; }
+  .ta-search{ display:flex; align-items:center; gap:10px; background:#0f1522; border:1px solid #2a3552; border-radius:12px; padding:0 14px; margin-bottom:14px; color:#6b7a99; }
+  .ta-search input{ flex:1; min-width:0; background:none; border:0; outline:0; color:#e6ecfb; font:500 14px var(--sans); padding:11px 0; }
+  .ta-card{ position:relative; display:block; width:100%; text-align:left; background:#151d2e; border:1px solid #2a3a5e; border-left:4px solid var(--c); border-radius:12px; padding:30px 14px 14px; margin-bottom:10px; cursor:pointer; color:inherit; font:inherit; }
+  .ta-fl{ display:flex; align-items:center; gap:7px; font:700 14px var(--mono); color:#e6ecfb; } .ta-fl i{ font-style:normal; color:#55627f; } .ta-fl span{ white-space:nowrap; }
+  .ta-chip{ margin-left:auto; white-space:nowrap; font:700 10px var(--mono); letter-spacing:.1em; color:var(--c); border:1px solid var(--c); border-radius:7px; padding:3px 7px; }
+  .ta-tab{ position:absolute; top:-1px; right:-1px; display:flex; align-items:center; gap:6px; padding:5px 11px; background:#0e1a2e; border:1px solid #2a3a5e; border-radius:0 12px 0 12px; color:#8fa0c4; font:700 11px var(--mono); letter-spacing:.06em; }
+  .ta-other{ display:block; width:100%; margin-top:6px; padding:12px 14px; border:1px dashed #2a3a5e; border-radius:12px; background:none; color:#8fa0c4; font:700 12px var(--mono); letter-spacing:.1em; text-align:center; cursor:pointer; }
+  #ta-other-box{ margin-top:14px; }
   .mt-cd{ margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #78c8ff; border-radius:9px; background:#0e1c30; color:#78c8ff; font-family:var(--mono); white-space:nowrap; }
   .mt-cd i{ width:8px; height:8px; border-radius:50%; background:currentColor; } .mt-cd em{ font-style:normal; font-size:10px; color:#96a5c3; } .mt-cd b{ font-size:13px; font-weight:800; }
   .mt-cd.a{ color:#ffb800; border-color:#ffb800; background:#2e2208; } .mt-cd.r{ color:#ff5f5f; border-color:#ff5f5f; background:#301014; }
@@ -2711,6 +2720,13 @@
     <div style="margin:-8px 0 14px;"><button type="button" class="flag-btn hidden" id="turnaround-switch-flight-btn" style="font-family:var(--mono); font-weight:700; font-size:11px; letter-spacing:0.1em;">TROCAR DE VOO</button></div>
 
     <div id="turnaround-flight-picker">
+      <div id="ta-prep-wrap" class="hidden">
+        <div class="ta-sec">TURNAROUNDS DE HOJE</div>
+        <div class="ta-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><input type="text" id="ta-search" placeholder="Procurar voo…" autocomplete="off"></div>
+        <div id="ta-prep"></div>
+      </div>
+      <button type="button" class="ta-other" id="ta-other-btn">OUTRO VOO · ESCREVER NÚMERO <span>▾</span></button>
+      <div id="ta-other-box" class="hidden">
       <div class="field combo" id="combo-turnaround-flight">
         <label for="turnaround-flight-input">VOO DE CHEGADA</label>
         <input type="text" id="turnaround-flight-input" placeholder="Ex: SK1937" autocomplete="off" maxlength="6" style="text-transform:uppercase;">
@@ -2721,6 +2737,7 @@
       </div>
       <div class="hint" id="turnaround-pair-hint" style="margin:8px 0 12px; min-height:18px; color:var(--cyan);">Preenche pelo menos um dos dois.</div>
       <button type="button" class="btn" id="turnaround-flight-open-btn" disabled>Abrir</button>
+      </div>
       <div class="recent-swaps-section" id="turnaround-active-section">
         <div id="turnaround-active-list"></div>
       </div>
@@ -10125,7 +10142,7 @@ function buildFlightRow(flight, i){
     ? '<br>criado às '+String(new Date(rec._createdAt).getHours()).padStart(2,'0')+':'+String(new Date(rec._createdAt).getMinutes()).padStart(2,'0')
     : '';
   // only the admin sees who opened the flight
-  const createdByHtml = (isAdminSession && rec._by) ? ' - <span style="color:var(--cyan);">'+escapeHtml(rec._by)+'</span>' : '';
+  const createdByHtml = rec._by ? ' - <span style="color:var(--cyan);">'+escapeHtml(rec._by)+'</span>' : '';
   const statusText = (isComplete
     ? '<span style="color:var(--go);">Finalizado</span>'
     : filled+' / '+total+' campos registados') + createdTimeHtml + createdByHtml;
@@ -10169,11 +10186,12 @@ function buildFlightRow(flight, i){
 function renderActiveFlights(){
   const list = document.getElementById('turnaround-active-list');
   if(!list) return;
+  renderTaPrep();
   const flights = Object.keys(TURNAROUNDS)
-    .filter(k => Object.keys(TURNAROUNDS[k]||{}).length > 0)
+    .filter(k => Object.keys(TURNAROUNDS[k]||{}).length > 0 && !TA_SHOWN.has(k))
     .sort((a, b) => (TURNAROUNDS[b]._createdAt || 0) - (TURNAROUNDS[a]._createdAt || 0));
   if(flights.length === 0){
-    list.innerHTML = '<div class="empty-state" style="padding:16px 10px;">Nenhum voo em curso</div>';
+    list.innerHTML = TA_SHOWN.size ? '' : '<div class="empty-state" style="padding:16px 10px;">Nenhum voo em curso</div>';
     return;
   }
   list.innerHTML = '';
@@ -10272,7 +10290,73 @@ function backToFlightPicker(){
   taPickerUpdate();
   renderActiveFlights();
 }
+// ---------- TURNAROUNDS DE HOJE: the day's arrival -> departure pairs, prepared from the flight list (1 h before the arrival until the departure has left) ----------
+let TA_FL_UNSUB = null, TA_Q = '', TA_SHOWN = new Set();
+function taListen(){
+  if(TA_FL_UNSUB) return;
+  TA_FL_UNSUB = true;
+  getDb().then(db => {
+    if(!db){ TA_FL_UNSUB = null; return; }
+    TA_FL_UNSUB = db.collection('data').doc('flightlist').onSnapshot(
+      snap => { FL_DOC = snap.exists ? snap.data() : false; if(!currentFlight) renderActiveFlights(); taPickerUpdate(); }, () => {});
+  }).catch(() => { TA_FL_UNSUB = null; });
+}
+function taStopListen(){ if(typeof TA_FL_UNSUB === 'function'){ try{ TA_FL_UNSUB(); }catch(e){} } TA_FL_UNSUB = null; }
+function taPairs(){
+  const out = [];
+  try{
+    if(!FL_DOC || !FL_DOC.json) return out;
+    const data = JSON.parse(FL_DOC.json) || {};
+    const keep = {}; String(flAirlines).split(/[\s,;]+/).forEach(c => { c = c.trim().toUpperCase(); if(c) keep[c] = 1; });
+    const nowD = new Date(), now = nowD.getHours() * 60 + nowD.getMinutes();
+    (data.arr || []).forEach(r => {
+      const f = flSplit(r.n); if(!f.code || !keep[f.code] || !flToday(r.sta)) return;
+      const am = flMin(flTime(r.eta) || flTime(r.sta)); if(am === null || now < am - 60) return;
+      const arr = sfKey(r.n), p = taPairLookup(arr, 'arr'); if(!p) return;
+      const dr = (data.dep || []).find(x => sfKey(x.n) === p.key), dm = dr ? flMin(flTime(dr.etd) || flTime(dr.std)) : null;
+      if(dm !== null && now > dm) return;
+      out.push({ arr, dep: p.key, am });
+    });
+    out.sort((a, b) => a.am - b.am);
+  }catch(e){}
+  return out;
+}
+const TA_ICON = {
+  bot: '<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'
+};
+function renderTaPrep(){
+  const wrap = document.getElementById('ta-prep-wrap'), box = document.getElementById('ta-prep');
+  if(!wrap || !box) return;
+  TA_SHOWN = new Set();
+  const pairs = taPairs();
+  wrap.classList.toggle('hidden', !pairs.length);
+  const q = TA_Q.replace(/\s+/g, '').toUpperCase();
+  const total = TURNAROUND_ROWS.flat().length;
+  box.innerHTML = '';
+  pairs.forEach(p => {
+    const k = TURNAROUNDS[p.arr] ? p.arr : (TURNAROUNDS[p.dep] ? p.dep : taAlias(p.arr)), rec = TURNAROUNDS[k] || null;
+    if(rec) TA_SHOWN.add(k);
+    if(q && (p.arr + p.dep).indexOf(q) < 0) return;
+    const filled = rec ? TURNAROUND_ROWS.flat().filter(f => rec[f.key]).length : 0;
+    const st = filled === 0 ? ['POR PREENCHER', '#ffb800'] : filled < total ? ['EM CURSO', '#78c8ff'] : ['FEITO', '#3ddc84'];
+    const by = rec && rec._by ? niceListName(rec._by) : '';
+    const ic = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (by ? TA_ICON.user : TA_ICON.bot) + '</svg>';
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ta-card'; b.style.setProperty('--c', st[1]);
+    b.innerHTML = '<span class="ta-tab">' + ic + (by ? '<span>' + escapeHtml(by) + '</span>' : '') + '</span>' +
+      '<div class="ta-fl"><span>' + escapeHtml(taFmt(p.arr)) + '</span><i>→</i><span>' + escapeHtml(taFmt(p.dep)) + '</span><span class="ta-chip">' + st[0] + '</span></div>';
+    b.addEventListener('click', () => selectFlight(p.arr, { arr: p.arr, dep: p.dep }));
+    box.appendChild(b);
+  });
+}
+document.getElementById('ta-search').addEventListener('input', e => { TA_Q = e.target.value; renderTaPrep(); });
+document.getElementById('ta-other-btn').addEventListener('click', () => {
+  const bx = document.getElementById('ta-other-box'), open = bx.classList.toggle('hidden') === false;
+  document.querySelector('#ta-other-btn span').textContent = open ? '▴' : '▾';
+});
 function openTurnaround(){
+  taListen();
   document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
   document.querySelector('.tabs').classList.add('hidden');
   document.getElementById('panel-turnaround').classList.remove('hidden');
@@ -10287,6 +10371,7 @@ function openTurnaround(){
   }, 30000);
 }
 function closeTurnaround(){
+  taStopListen();
   if(turnaroundLiveRefreshTimer){ clearInterval(turnaroundLiveRefreshTimer); turnaroundLiveRefreshTimer = null; }
   document.querySelector('.tabs').classList.remove('hidden');
   document.getElementById('panel-turnaround').classList.add('hidden');
@@ -10665,12 +10750,13 @@ function taCleanFlight(v){
   const cleaned = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   return cleaned.slice(0, 2) + cleaned.slice(2).replace(/[^0-9]/g, '').slice(0, 4);
 }
+function taFlightOk(v){ return /^[A-Z0-9]{2}\d{3,4}$/.test(String(v || '')); }   // airline code + 3 or 4 digits
 function taFmt(k){ return k.replace(/^([A-Z0-9]{2})/, '$1 '); }
 function taPickerUpdate(){
   const i1 = document.getElementById('turnaround-flight-input'), i2 = document.getElementById('turnaround-flight-input2');
   const hint = document.getElementById('turnaround-pair-hint'), btn = document.getElementById('turnaround-flight-open-btn');
   const a = i1.value.trim(), d = i2.value.trim();
-  const okA = a.length === 6, okD = d.length === 6;
+  const okA = taFlightOk(a), okD = taFlightOk(d);
   const bad = (a && !okA) || (d && !okD);
   btn.disabled = bad || (!okA && !okD);
   let h = 'Preenche pelo menos um dos dois.', sug = null;
@@ -10692,8 +10778,8 @@ function taPickerUpdate(){
 function taPickerOpen(){
   const a = document.getElementById('turnaround-flight-input').value.trim(), d = document.getElementById('turnaround-flight-input2').value.trim();
   if(document.getElementById('turnaround-flight-open-btn').disabled) return;
-  if(a.length === 6 && d.length === 6) selectFlight(normalizeFlightId(a), { arr: normalizeFlightId(a), dep: normalizeFlightId(d) });
-  else selectFlight(normalizeFlightId(a.length === 6 ? a : d));
+  if(taFlightOk(a) && taFlightOk(d)) selectFlight(normalizeFlightId(a), { arr: normalizeFlightId(a), dep: normalizeFlightId(d) });
+  else selectFlight(normalizeFlightId(taFlightOk(a) ? a : d));
 }
 ['turnaround-flight-input', 'turnaround-flight-input2'].forEach(id => {
   const el = document.getElementById(id);
