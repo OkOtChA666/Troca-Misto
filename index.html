@@ -14051,7 +14051,7 @@ function sfTeams(){
         if(/(^|\s)LR$/i.test(String(t[0] || '').replace(/^<\s*/, '').replace(/\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}\s*$/, '').trim())) o.lr[id] = 1;
       });
     });
-    if(GROUP === 'sup' && DISP_DOC && DISP_DOC.a && MT_DOC && DISP_DOC.date === MT_DOC.date){
+    if(GROUP === 'sup' && DISP_DOC && DISP_DOC.a && (DISP_DOC.date === sfToday() || (MT_DOC && DISP_DOC.date === MT_DOC.date))){
       Object.keys(DISP_DOC.a).forEach(id => {
         let rec = null; try{ rec = JSON.parse(DISP_DOC.a[id]); }catch(e){}
         if(!rec || !rec.t) return;
