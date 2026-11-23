@@ -1788,6 +1788,7 @@
   .mt-cd{ margin-left:auto; flex:none; display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border:1px solid #78c8ff; border-radius:9px; background:#0e1c30; color:#78c8ff; font-family:var(--mono); white-space:nowrap; }
   .mt-lc{ flex:none; width:32px; height:32px; margin-left:10px; align-self:center; display:inline-flex; align-items:center; justify-content:center; border:1px solid #ffb800; border-radius:9px; background:#2e2208; color:#ffb800; cursor:pointer; }
   .mt-lc.on{ border-color:#2fbf71; background:#0c2a1a; color:#2fbf71; }
+  .mt-lc.u{ border-color:#4fd1f0; background:#0f2236; color:#4fd1f0; }
   .mt-lc svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
   .lc-in{ width:100%; box-sizing:border-box; background:#070b14; border:1px solid #2b3a5e; border-radius:10px; padding:12px; font:700 22px var(--mono); color:#fff; text-align:center; }
   .lc-lab{ font:600 11px var(--mono); letter-spacing:.12em; color:#8fa0c4; margin:14px 0 6px; }
@@ -13880,7 +13881,7 @@ function mtCountHtml(t, colr){
 let LCI = null, LCI_UNSUB = null;
 function lcListen(){
   if(LCI_UNSUB || (GROUP !== '' && GROUP !== 'disp')) return;
-  (async () => { try{ const db = await getDb(); if(!db || LCI_UNSUB) return; LCI_UNSUB = db.collection('data').doc('loadinfo').onSnapshot(snap => { LCI = snap.exists ? snap.data() : null; if(mtOpenOverlay()) renderMyTasks(); }, () => {}); }catch(e){} })();
+  (async () => { try{ const db = await getDb(); if(!db || LCI_UNSUB) return; LCI_UNSUB = db.collection('data').doc('loadinfo').onSnapshot(snap => { LCI = snap.exists ? snap.data() : null; if(mtOpenOverlay()) renderMyTasks(); lcRefreshOpen(); }, () => {}); }catch(e){} })();
 }
 function lcKey(key){   // the DEPARTING flight of the card ("LH1160/1161@12:00" -> LH1161), the same for TTAE and dispatchers
   const head = String(key || '').replace(/^NAME:/, '').split('@')[0].toUpperCase(); if(!head) return '';
@@ -13893,45 +13894,62 @@ function lcBtn(key, colr, f){
   try{
     if(colr !== '#0066cc' || (GROUP !== '' && GROUP !== 'disp')) return '';
     const k = lcKey(key); if(!k) return '';
-    const v = lcGet(k), on = !!v;
+    const v = lcGet(k), st = !v ? '' : (v.s === 'u' ? ' u' : ' on');
     const title = k.slice(0, 2) + ' ' + k.slice(2) + (f && f.d ? ' · ' + String(f.d).slice(0, 4) : '');
-    return '<span class="mt-lc' + (on ? ' on' : '') + '" data-lc="' + mtEsc(k) + '" data-t="' + mtEsc(title) + '" aria-label="Peças e passageiros"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></span>';
+    return '<span class="mt-lc' + st + '" data-lc="' + mtEsc(k) + '" data-t="' + mtEsc(title) + '" aria-label="Peças e passageiros"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></span>';
   }catch(e){ return ''; }
 }
+let LC_OPEN = null;   // the read-only popup that is open (dispatcher): refreshed live when the agent updates the numbers
+function lcTime(at){ const d = new Date(at || 0); return isNaN(d) || !at ? '' : ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function lcChip(v){
+  if(!v) return '';
+  const fin = v.s !== 'u', c = fin ? '#2fbf71' : '#4fd1f0', tm = lcTime(v.at);
+  const txt = GROUP === 'disp' ? (fin ? 'FINAL' : 'A EMBARCAR · ATUALIZADO') + (tm ? ' ' + (fin ? '· ' : '') + tm : '') : (fin ? 'FINAL' : 'ÚLTIMA ATUALIZAÇÃO') + (tm ? (fin ? ' · ' : ' ') + tm : '');
+  return '<div style="text-align:center;margin:-2px 0 10px;"><span style="font:700 10px var(--mono);letter-spacing:.12em;padding:4px 9px;border-radius:6px;border:1px solid ' + c + ';color:' + c + ';">' + txt + '</span></div>';
+}
+function lcRoRows(k){
+  const v = lcGet(k) || {}, has = !!lcGet(k), num = x => (x === undefined || x === null || x === '') ? '0' : String(x);
+  const big = (lab, val) => '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #1d2a44;"><span style="font:600 12px var(--mono);letter-spacing:.08em;color:#8fa0c4;">' + lab + '</span><b style="font:700 20px var(--mono);color:' + (has ? '#fff' : '#4a5570') + ';">' + escapeHtml(val) + '</b></div>';
+  return lcChip(lcGet(k)) + big('BTG', has ? num(v.p) : '—') + big('PASSAGEIROS', has ? num(v.a) + ' + ' + num(v.i) : '—') + big('EXTRA SEAT', has ? num(v.x) : '—') + big('JUMP SEAT', has ? num(v.j) : '—');
+}
+function lcRefreshOpen(){ try{ if(LC_OPEN && document.body.contains(LC_OPEN.ov)) LC_OPEN.ov.querySelector('#lc-ro').innerHTML = lcRoRows(LC_OPEN.k); }catch(e){} }
 function lcPopup(k, title){
   const ro = GROUP === 'disp', v = lcGet(k) || {};
   const ov = document.createElement('div'); ov.className = 'modal-overlay'; ov.style.zIndex = '100001';
   const num = x => (x === undefined || x === null || x === '') ? '' : String(x);
-  const big = (lab, val, dim) => '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid #1d2a44;"><span style="font:600 12px var(--mono);letter-spacing:.08em;color:#8fa0c4;">' + lab + '</span><b style="font:700 20px var(--mono);color:' + (dim ? '#4a5570' : '#fff') + ';">' + escapeHtml(val) + '</b></div>';
-  const has = !!lcGet(k), z = x => (has ? (num(x) || '0') : '—');
   const inp = (id, val, ml) => '<input class="lc-in" id="' + id + '" type="text" inputmode="numeric" maxlength="' + ml + '" value="' + escapeHtml(num(val) || '0') + '">';
-  const body = ro
-    ? big('BTG', z(v.p), !has) + big('PASSAGEIROS', has ? (num(v.a) || '0') + ' + ' + (num(v.i) || '0') : '—', !has) + big('EXTRA SEAT', z(v.x), !has) + big('JUMP SEAT', z(v.j), !has)
-    : '<div class="lc-lab">BTG</div>' + inp('lc-p', v.p, 4) +
+  const btn = 'height:50px;display:flex;align-items:center;justify-content:center;text-align:center;font:700 13px var(--mono);letter-spacing:.12em;';
+  const head = '<div style="font:700 15px var(--mono);letter-spacing:.1em;color:var(--amber);text-align:center;margin-bottom:8px;">' + escapeHtml(title) + '</div>';
+  if(ro){
+    ov.innerHTML = '<div class="modal-box" style="width:340px;">' + head + '<div id="lc-ro">' + lcRoRows(k) + '</div><button type="button" class="confirm-btn" id="lc-close" style="width:100%;margin:18px 0 0;' + btn + '">FECHAR</button></div>';
+    LC_OPEN = { k, ov };
+  } else {
+    ov.innerHTML = '<div class="modal-box" style="width:340px;">' + head + lcChip(lcGet(k)) +
+      '<div class="lc-lab">BTG</div>' + inp('lc-p', v.p, 4) +
       '<div class="lc-lab">PASSAGEIROS</div><div style="display:flex;gap:10px;align-items:center;">' + inp('lc-a', v.a, 4) + '<span style="font:700 20px/1 var(--mono);color:#8fa0c4;display:flex;align-items:center;justify-content:center;width:18px;align-self:stretch;position:relative;top:-5px;">+</span>' + inp('lc-i', v.i, 3) + '</div>' +
-      '<div style="display:flex;gap:10px;"><div style="flex:1"><div class="lc-lab">EXTRA SEAT</div>' + inp('lc-x', v.x, 3) + '</div><div style="flex:1"><div class="lc-lab">JUMP SEAT</div>' + inp('lc-j', v.j, 3) + '</div></div>';
-  const btn = 'height:50px;display:flex;align-items:center;justify-content:center;text-align:center;font:700 14px var(--mono);letter-spacing:.14em;';
-  ov.innerHTML = '<div class="modal-box" style="width:340px;"><div style="font:700 15px var(--mono);letter-spacing:.1em;color:var(--amber);text-align:center;margin-bottom:8px;">' + escapeHtml(title) + '</div>' + body +
-    (ro ? '<button type="button" class="confirm-btn" id="lc-close" style="width:100%;margin:18px 0 0;' + btn + '">FECHAR</button>'
-        : '<div style="display:flex;gap:10px;margin-top:18px;"><button type="button" class="confirm-btn" id="lc-close" style="flex:1;' + btn + 'background:transparent;border:1px solid #2b3a5e;color:#8a96b0;">CANCELAR</button><button type="button" class="confirm-btn" id="lc-save" style="flex:1;' + btn + '">GUARDAR</button></div>') + '</div>';
+      '<div style="display:flex;gap:10px;"><div style="flex:1"><div class="lc-lab">EXTRA SEAT</div>' + inp('lc-x', v.x, 3) + '</div><div style="flex:1"><div class="lc-lab">JUMP SEAT</div>' + inp('lc-j', v.j, 3) + '</div></div>' +
+      '<div style="display:flex;gap:10px;margin-top:18px;"><button type="button" class="confirm-btn" id="lc-upd" style="flex:1;' + btn + 'background:#0f2236;border:1.5px solid #4fd1f0;color:#4fd1f0;">ATUALIZAR</button><button type="button" class="confirm-btn" id="lc-fin" style="flex:1;' + btn + '">FINAL</button></div>' +
+      '<div id="lc-close" style="text-align:center;margin-top:14px;padding:6px;font:700 11px var(--mono);letter-spacing:.14em;color:#8a96b0;cursor:pointer;">CANCELAR</div></div>';
+  }
   document.body.appendChild(ov);
-  const close = () => ov.remove();
+  const close = () => { if(LC_OPEN && LC_OPEN.ov === ov) LC_OPEN = null; ov.remove(); };
   ov.querySelector('#lc-close').addEventListener('click', close); ov.addEventListener('click', e => { if(e.target === ov) close(); });
   ['lc-p', 'lc-a', 'lc-i', 'lc-x', 'lc-j'].forEach(id => { const el = ov.querySelector('#' + id); if(!el) return;
     el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, ''); });
     el.addEventListener('focus', () => { try{ el.select(); }catch(e){} });
     el.addEventListener('blur', () => { if(el.value === '') el.value = '0'; }); });
-  const sv = ov.querySelector('#lc-save'); if(sv) sv.addEventListener('click', async () => {
+  const save = async st => {
     const g = id => String(parseInt(ov.querySelector('#' + id).value, 10) || 0);
-    const rec = { p: g('lc-p'), a: g('lc-a'), i: g('lc-i'), x: g('lc-x'), j: g('lc-j') };
+    const rec = { p: g('lc-p'), a: g('lc-a'), i: g('lc-i'), x: g('lc-x'), j: g('lc-j'), s: st, at: Date.now() };
     close();
     try{
       const db = await getDb(); if(!db) return;
       const ref = db.collection('data').doc('loadinfo'), t = sfToday();
-      rec.at = Date.now();
       if(LCI && LCI.date === t) await ref.set({ date: t, f: { [k]: rec } }, { merge: true }); else await ref.set({ date: t, f: { [k]: rec } });
     }catch(e){}
-  });
+  };
+  const u = ov.querySelector('#lc-upd'), f = ov.querySelector('#lc-fin');
+  if(u) u.addEventListener('click', () => save('u')); if(f) f.addEventListener('click', () => save('f'));
 }
 function mtDestHtml(f, colr){
   if(!f || typeof f !== 'object') return '';
