@@ -3,62 +3,68 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
 <style>
-/* Layout: tabs on top; Serviços and Tempos mínimos share the sticky search + one compact row per airline. */
+/* Layout: pick the airline first; then one page per airline: Serviços, Tempos mínimos, Cones e calços, Atraso (last). Blue accent. */
 :root {
   --bg: #f1f4f8; --surface: #ffffff; --ink: #0f1b2d; --muted: #566579; --line: #d6dde8;
+  --accent: #0b5cad; --accent-ink: #ffffff;
   --late: #b42318; --late-bg: #fdecec; --yes: #0a7a5f; --yes-bg: #e3f5ee; --no: #6a7688; --no-bg: #eef1f5;
-  --accent: #0b5cad; --accent-ink: #ffffff; --note-bg: #fff3d1; --note-ink: #6b4300;
+  --note-bg: #fff3d1; --note-ink: #6b4300;
   --font-text: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-head: 'Space Grotesk', 'Inter', system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0c1220; --surface: #141c30; --ink: #e8edf6; --muted: #93a3bd; --line: #27324d;
+    --accent: #6db2ff; --accent-ink: #06152b;
     --late: #ff9b94; --late-bg: #3a1517; --yes: #3fd0a8; --yes-bg: #103127; --no: #9aa8bf; --no-bg: #1a2338;
-    --accent: #6db2ff; --accent-ink: #06152b; --note-bg: #3a2c0c; --note-ink: #ffd28a; color-scheme: dark;
+    --note-bg: #3a2c0c; --note-ink: #ffd28a; color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-text); font-size: 15px; line-height: 1.4;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 40px; }
-.wrap { max-width: 920px; margin: 0 auto; }
-h1 { font-family: var(--font-head); font-size: 24px; margin: 0; letter-spacing: .02em; }
+.wrap { max-width: 720px; margin: 0 auto; }
+h1 { font-family: var(--font-head); font-size: 26px; margin: 0; letter-spacing: .02em; color: var(--accent); }
 .sub { margin: 2px 0 12px; color: var(--muted); font-size: 13px; }
-.rule { background: var(--note-bg); color: var(--note-ink); border-radius: 10px; padding: 8px 12px; font-weight: 600; margin-bottom: 12px; }
-.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 8px 0 10px; }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+/* picker */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 6px 0 10px; }
 .bar::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 10; }
-#q { width: 100%; font: inherit; font-size: 17px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
-#q:focus-visible, .f:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.f { font: inherit; font-size: 13.5px; font-weight: 600; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; min-height: 36px; }
-.f[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.count { color: var(--muted); font-size: 13px; margin: 6px 2px 8px; }
-.list { display: grid; gap: 8px; }
-.row { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
-.code { font-family: var(--font-head); font-size: 24px; font-weight: 700; line-height: 1; }
+.bar label { display: block; font-weight: 700; color: var(--accent); font-size: 14px; margin-bottom: 4px; }
+#q { width: 100%; font: inherit; font-size: 17px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--accent); background: var(--surface); color: var(--ink); }
+.count { color: var(--muted); font-size: 13px; margin: 2px 2px 8px; }
+.list { display: grid; gap: 6px; }
+.pick { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 2px 12px; align-items: center; text-align: left; width: 100%; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; min-height: 52px; }
+.code { font-family: var(--font-head); font-size: 22px; font-weight: 700; line-height: 1; color: var(--accent); }
 .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .name small { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; }
-.badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.b { font-size: 12.5px; font-weight: 700; padding: 4px 9px; border-radius: 8px; border: 2px solid currentColor; white-space: nowrap; }
+.empty { padding: 24px; text-align: center; color: var(--muted); }
+/* airline page */
+.air { display: flex; align-items: center; gap: 12px; background: var(--accent); color: var(--accent-ink); border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; }
+.air .code { color: inherit; font-size: 30px; }
+.air .name { flex: 1; font-size: 17px; } .air .name small { color: inherit; opacity: .85; }
+.chg { border: 2px solid currentColor; background: transparent; color: inherit; border-radius: 10px; padding: 8px 12px; font-weight: 700; cursor: pointer; min-height: 44px; }
+.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.sec h2 { font-family: var(--font-head); font-size: 17px; margin: 0 0 10px; color: var(--accent); letter-spacing: .03em; }
+.sec h2 span { color: var(--muted); font-family: var(--font-text); font-weight: 600; font-size: 13px; letter-spacing: 0; }
+.rule { background: var(--note-bg); color: var(--note-ink); border-radius: 10px; padding: 8px 12px; font-weight: 600; margin-bottom: 10px; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.b { font-size: 15px; font-weight: 700; padding: 8px 12px; border-radius: 10px; border: 2px solid currentColor; white-space: nowrap; }
 .b.yes { color: var(--yes); background: var(--yes-bg); }
 .b.no { color: var(--no); background: var(--no-bg); border-style: dashed; font-weight: 600; }
-.rot { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.rot span.l { font-size: 12px; color: var(--muted); margin-right: 2px; }
-.t { font-size: 13px; font-variant-numeric: tabular-nums; padding: 3px 8px; border-radius: 8px; background: var(--no-bg); border: 1px solid var(--line); }
+.rot { display: flex; flex-wrap: wrap; gap: 6px; }
+.t { font-size: 15px; font-variant-numeric: tabular-nums; padding: 6px 10px; border-radius: 10px; background: var(--no-bg); border: 1px solid var(--line); }
 .t b { font-weight: 700; }
-.empty { padding: 24px; text-align: center; color: var(--muted); }
+.muted { color: var(--muted); margin: 0; }
+.small { color: var(--muted); font-size: 12.5px; margin: 8px 0 0; }
 .foot { margin-top: 18px; color: var(--muted); font-size: 12.5px; display: grid; gap: 4px; }
-.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.tab { font: inherit; font-size: 14px; font-weight: 700; padding: 10px 14px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; white-space: nowrap; min-height: 44px; }
-.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.tab:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+/* atraso */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .fld { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 0; }
 .fld input, .fld select { font: inherit; font-size: 17px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; min-height: 46px; }
-.fld input:focus-visible, .fld select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .res { margin-top: 14px; border: 3px solid var(--no); border-radius: 14px; padding: 14px; background: var(--no-bg); color: var(--ink); }
-.res .big { font-family: var(--font-head); font-size: clamp(30px, 9vw, 48px); font-weight: 700; line-height: 1.1; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.res .big { font-family: var(--font-head); font-size: clamp(30px, 9vw, 46px); font-weight: 700; line-height: 1.1; margin: 4px 0; font-variant-numeric: tabular-nums; }
 .res .tag { font-weight: 800; letter-spacing: .03em; }
 .res.ok { border-color: var(--yes); background: var(--yes-bg); }
 .res.ok .tag, .res.ok .big { color: var(--yes); }
@@ -66,196 +72,194 @@ h1 { font-family: var(--font-head); font-size: 24px; margin: 0; letter-spacing: 
 .res.late .tag, .res.late .big { color: var(--late); }
 .res.warn { border-color: var(--note-ink); background: var(--note-bg); border-style: dashed; }
 .res.warn .tag { color: var(--note-ink); }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 10px 0 0; }
 .facts div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
 .facts dt { font-size: 12px; color: var(--muted); } .facts dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
-.hint { color: var(--muted); font-size: 12.5px; margin: 8px 0 0; }
-/* Cones & calços: deliberately dark, neon look (same in light and dark themes) */
-.gear { --g-bg: #050914; --g-ink: #dff6ff; --g-dim: #7fa3bd; --g-cy: #35e0ff; --g-org: #ff9a3c;
-  background: radial-gradient(120% 90% at 50% 0%, #0d2a4a 0%, var(--g-bg) 62%); color: var(--g-ink); border: 1px solid #1c4a73; border-radius: 16px; padding: 14px; }
-.gear .grid { margin-bottom: 10px; }
-.gear .fld { color: var(--g-dim); }
-.gear .fld select { background: #0a1730; color: var(--g-ink); border: 1px solid #2a6a9c; }
-.gear .fld select:focus-visible, .gear button:focus-visible { outline: 3px solid var(--g-cy); outline-offset: 2px; }
-.gear-model { margin: 4px 0 10px; padding: 10px 12px; border: 1px solid #2a6a9c; border-radius: 12px; background: rgba(53,224,255,.07); }
-.gear-model b { color: var(--g-cy); letter-spacing: .04em; }
+/* cones & calços: dark drawing panel (same in light and dark themes) */
+.gear { --g-ink: #dff6ff; --g-dim: #7fa3bd; --g-line: #2a6a9c; --g-hi: #35e0ff; --g-org: #ff9a3c;
+  background: radial-gradient(120% 90% at 50% 0%, #0d2a4a 0%, #050914 62%); color: var(--g-ink); border: 1px solid var(--g-line); }
+.gear h2 { color: var(--g-hi); }
+.pw { display: inline-block; margin: 0 0 10px; padding: 6px 12px; border-radius: 10px; border: 2px solid var(--g-hi); color: var(--g-hi); font-weight: 700; font-size: 15px; }
+.pw small { display: block; font-weight: 500; font-size: 12.5px; color: var(--g-dim); }
+.gear-note { font-size: 12.5px; color: var(--g-dim); margin: 0 0 8px; }
 .canvas-wrap { margin: 6px 0; border: 1px solid #1f6b9a; border-radius: 12px; overflow: hidden; background: radial-gradient(100% 80% at 50% 20%, #0d2a4a 0%, #050914 75%); }
 #g-cv { display: block; width: 100%; max-width: 560px; margin: 0 auto; aspect-ratio: 1 / 1.08; }
 .gear-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--g-dim); margin-top: 4px; }
 .gear-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
-.gear-card { border: 1px solid #2a6a9c; border-radius: 12px; padding: 10px 12px; background: rgba(53,224,255,.05); min-width: 0; margin-top: 10px; }
-.gear-card h3 { margin: 0 0 6px; font-family: var(--font-head); font-size: 14px; letter-spacing: .12em; color: var(--g-cy); }
+.gear-card { border: 1px solid var(--g-line); border-radius: 12px; padding: 10px 12px; background: rgba(53,224,255,.05); margin-top: 10px; }
+.gear-card h3 { margin: 0 0 6px; font-family: var(--font-head); font-size: 14px; letter-spacing: .1em; color: var(--g-hi); }
 .gear-card p { margin: 6px 0 0; font-size: 13.5px; }
-.gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 12px; border-radius: 10px; border: 1px solid #2a6a9c; background: #0a1730; color: var(--g-ink); cursor: pointer; min-height: 40px; width: 100%; text-align: left; margin: 4px 0; }
-.gbtn[aria-pressed="true"] { background: var(--g-cy); color: #03121f; border-color: var(--g-cy); }
-.g-sep { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #2a6a9c; }
+.gbtn { font-size: 13.5px; font-weight: 700; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--g-line); background: #0a1730; color: var(--g-ink); cursor: pointer; min-height: 40px; width: 100%; text-align: left; margin: 4px 0; }
+.gbtn[aria-pressed="true"] { background: var(--g-hi); color: #03121f; border-color: var(--g-hi); }
+.g-sep { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--g-line); }
 .gear ol { margin: 6px 0 0 18px; padding: 0; } .gear li { margin: 2px 0; }
-.gear-note { font-size: 12.5px; color: var(--g-dim); margin: 8px 0 0; }
-@media (max-width: 520px) { .row { grid-template-columns: 48px minmax(0, 1fr); } .badges { grid-column: 2; justify-content: flex-start; } .code { font-size: 21px; } }
+.gear .small { color: var(--g-dim); }
 </style>
 <div class="wrap">
   <h1>Turnaround Memo</h1>
   <p class="sub">Faro · consulta rápida ao lado do Avtura</p>
-  <div class="rule" id="rule">⚠ Efetuar sempre H2O (água) antes do WC (despejo)</div>
-  <div class="tabs" role="tablist" aria-label="Secções">
-    <button class="tab" role="tab" id="tab-svc" data-v="svc" aria-selected="true">Serviços</button>
-    <button class="tab" role="tab" id="tab-min" data-v="min" aria-selected="false">Tempos mínimos</button>
-    <button class="tab" role="tab" id="tab-delay" data-v="delay" aria-selected="false">Atraso</button>
-    <button class="tab" role="tab" id="tab-gear" data-v="gear" aria-selected="false">Cones e calços</button>
-  </div>
+
   <div class="bar" id="bar">
-    <input id="q" type="search" placeholder="Procurar: EW, EWG, Eurowings…" autocomplete="off" autocapitalize="characters" aria-label="Procurar companhia">
-    <div class="filters" id="filters" role="group" aria-label="Filtros">
-      <button class="f" data-f="all" aria-pressed="true">Todas</button>
-      <button class="f" data-f="water" aria-pressed="false">✔ Água</button>
-      <button class="f" data-f="wc" aria-pressed="false">✔ Despejo (WC)</button>
-      <button class="f" data-f="none" aria-pressed="false">✖ Nenhum</button>
-    </div>
+    <label for="q">Que companhia?</label>
+    <input id="q" type="search" placeholder="Código ou nome: EW, EWG, Eurowings…" autocomplete="off" autocapitalize="characters">
   </div>
-  <div class="count" id="count"></div>
-  <div class="list" id="list"></div>
+  <div id="picker">
+    <div class="count" id="count"></div>
+    <div class="list" id="list"></div>
+  </div>
 
-  <section class="panel" id="delay" hidden>
-    <div class="grid">
-      <label class="fld"><span>Companhia</span><select id="d-air"></select></label>
-      <label class="fld"><span>Tipo de avião</span><input id="d-type" type="text" list="d-types" placeholder="320" autocapitalize="characters" maxlength="5"></label>
-      <datalist id="d-types"></datalist>
-      <label class="fld"><span>Hora de entrada (chegada)</span><input id="d-in" type="time"></label>
-      <label class="fld"><span>Hora de saída (partida)</span><input id="d-out" type="time"></label>
-    </div>
-    <div class="res" id="d-res" role="status"><span class="tag">Preenche companhia, tipo de avião e as duas horas.</span></div>
-    <p class="hint">Atraso = tempo no solo menos o tempo mínimo de rotação da folha de 17/nov/23. Se a saída for depois da meia-noite, o cálculo passa para o dia seguinte. Só calcula com companhia e tipo que estejam na folha.</p>
-  </section>
+  <div id="detail" hidden>
+    <div class="air" id="air"></div>
 
-  <section class="gear" id="gear" hidden>
-    <div class="grid">
-      <label class="fld"><span>Companhia</span><select id="g-air"></select></label>
-    </div>
-    <div class="gear-model" id="g-model" role="status"></div>
-    <div class="canvas-wrap"><canvas id="g-cv" aria-label="Vista de topo do avião com os cones a laranja e os calços a preto."></canvas></div>
-    <div class="gear-legend"><span><i style="background:var(--g-org);border-radius:50%"></i>Cone</span><span><i style="background:#0b0b0e;border:1px solid #cfd8e3"></i>Calço</span><span><i style="background:#06101f;border:1px solid #35e0ff"></i>Roda</span><span>Lado esquerdo = lado dos passageiros</span></div>
-    <div class="gear-card"><h3>CONES E CALÇOS</h3><div id="g-cones"></div><div id="g-chocks" class="g-sep"></div></div>
-    <p class="gear-note">Vista de topo esquemática de apoio: não é uma aeronave concreta e não tem medidas; cones, calços e rodas estão ampliados. A grelha é só referência. As posições vêm das folhas "Colocação de cones" e "Aplicar o modelo Portway"; não substitui os procedimentos do aeroporto ou da companhia.</p>
-  </section>
+    <section class="sec">
+      <h2>Serviços</h2>
+      <div class="rule">⚠ Efetuar sempre H2O (água) antes do WC (despejo)</div>
+      <div class="badges" id="svc"></div>
+    </section>
 
-  <div class="foot" id="foot"></div>
+    <section class="sec">
+      <h2>Tempo mínimo de rotação</h2>
+      <div id="min"></div>
+    </section>
+
+    <section class="sec gear">
+      <h2>Cones e calços</h2>
+      <div id="g-model"></div>
+      <div id="g-body">
+        <div class="canvas-wrap"><canvas id="g-cv" aria-label="Vista de topo do avião com os cones a laranja e os calços a preto."></canvas></div>
+        <div class="gear-legend"><span><i style="background:var(--g-org);border-radius:50%"></i>Cone</span><span><i style="background:#0b0b0e;border:1px solid #cfd8e3"></i>Calço</span><span><i style="background:#06101f;border:1px solid #35e0ff"></i>Roda</span><span>Lado esquerdo = lado dos passageiros</span></div>
+        <div class="gear-card"><h3>CONES</h3><div id="g-cones"></div><div id="g-chocks" class="g-sep"></div></div>
+        <p class="small">Vista de topo esquemática: não é uma aeronave concreta e não tem medidas; cones, calços e rodas estão ampliados.</p>
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>Atraso <span>· face ao tempo mínimo</span></h2>
+      <div class="grid">
+        <label class="fld" id="d-type-f"><span>Tipo de avião</span><select id="d-type"></select></label>
+        <label class="fld"><span>Hora que calçou</span><input id="d-in" type="time"></label>
+        <label class="fld"><span>Hora que saiu</span><input id="d-out" type="time"></label>
+      </div>
+      <div class="res" id="d-res" role="status"></div>
+      <p class="small">Atraso = tempo no solo menos o tempo mínimo de rotação da folha. Se a saída for depois da meia-noite, conta como dia seguinte.</p>
+    </section>
+  </div>
+
+  <div class="foot">
+    <span>Fontes: "Serviços contratados – update 17 Fev 2026"; folha de tempos mínimos de 17/nov/23 (✎ = escrito à mão); "Colocação de cones" e "Aplicar o modelo Portway".</span>
+    <span>Transcrito de fotografias: confirmar com a folha original em caso de dúvida. Não substitui os procedimentos aprovados do aeroporto ou da companhia.</span>
+  </div>
 </div>
 <script>
-const DATA = [{"iata":"5K","icao":"HFY","name":"Hifly","wc":true,"water":true,"rot":[]},{"iata":"5O","icao":"FPO","name":"Europe Airpost","wc":true,"water":true,"rot":[]},{"iata":"6B","icao":"BLX","name":"TUIfly Nordic","wc":false,"water":false,"rot":[]},{"iata":"6O","icao":"OBS","name":"Orbest","wc":true,"water":true,"rot":[]},{"iata":"6V","icao":"AXY","name":"Axis Airways","wc":true,"water":false,"rot":[]},{"iata":"6Y","icao":"ART","name":"Smart Lynx","wc":true,"water":true,"rot":[]},{"iata":"AG","icao":"ABR","name":"Air Contractors","wc":false,"water":false,"rot":[]},{"iata":"AY","icao":"FIN","name":"Finnair","wc":true,"water":true,"rot":[]},{"iata":"BT","icao":"BTI","name":"Air Baltic","wc":false,"water":false,"rot":[]},{"iata":"BY","icao":"TOM","name":"Thomsonfly Limited","wc":false,"water":false,"rot":[]},{"iata":"CD","icao":"CND","name":"Corendon","wc":true,"water":false,"rot":[]},{"iata":"D8","icao":"IBK","name":"Norwegian Int.","wc":false,"water":false,"rot":[]},{"iata":"DS","icao":"EZS","name":"easyJet Switzerland","wc":false,"water":false,"rot":[]},{"iata":"DY","icao":"NOZ","name":"Norwegian Air Shuttle, S.A.","wc":false,"water":false,"rot":[{"type":"733","min":50,"hand":false},{"type":"734","min":45,"hand":false},{"type":"738","min":45,"hand":false},{"type":"73C","min":50,"hand":false},{"type":"73G","min":45,"hand":false},{"type":"73H","min":60,"hand":false}]},{"iata":"E4","icao":"ENT","name":"Enter Air","wc":true,"water":true,"rot":[{"type":"320","min":50,"hand":false},{"type":"734","min":45,"hand":false},{"type":"757","min":60,"hand":false},{"type":"73G","min":45,"hand":false}]},{"iata":"EW","icao":"EWG","name":"Eurowings","wc":false,"water":false,"rot":[{"type":"319","min":30,"hand":true},{"type":"320","min":35,"hand":false},{"type":"321","min":45,"hand":false},{"type":"738","min":35,"hand":true}]},{"iata":"FI","icao":"ICE","name":"Icelandair","wc":true,"water":true,"rot":[]},{"iata":"GW","icao":"GJT","name":"Get Jet","wc":true,"water":true,"rot":[]},{"iata":"HV","icao":"TRA","name":"Transavia","wc":false,"water":false,"rot":[]},{"iata":"JO","icao":"JTG","name":"Jet Time","wc":true,"water":false,"rot":[]},{"iata":"JP","icao":"ADR","name":"Adria Airways","wc":false,"water":false,"rot":[]},{"iata":"LG","icao":"LGL","name":"Luxair","wc":true,"water":true,"rot":[{"type":"73W","min":45,"hand":false},{"type":"73H","min":50,"hand":false}]},{"iata":"LH","icao":"DLH","name":"Lufthansa","wc":true,"water":true,"rot":[]},{"iata":"LS","icao":"EXS","name":"Jet2.com","wc":false,"water":false,"rot":[{"type":"321","min":50,"hand":false},{"type":"330","min":80,"hand":false},{"type":"733","min":40,"hand":false},{"type":"738","min":45,"hand":false},{"type":"752","min":50,"hand":false},{"type":"753","min":50,"hand":false},{"type":"73C","min":40,"hand":false},{"type":"73G","min":45,"hand":false},{"type":"73H","min":45,"hand":false},{"type":"75W","min":50,"hand":false}]},{"iata":"LX","icao":"SWR","name":"Swiss International Airlines","wc":true,"water":true,"rot":[]},{"iata":"OK","icao":"CSA","name":"Czech Airlines","wc":true,"water":true,"rot":[]},{"iata":"OR","icao":"TFL","name":"Arkefly (TUI Airlines Nederland B.V.)","wc":false,"water":false,"rot":[]},{"iata":"P6","icao":"PVG","name":"Priviledge Style","wc":true,"water":true,"rot":[]},{"iata":"PQ","icao":"SQP","name":"Sky Up","wc":true,"water":true,"rot":[]},{"iata":"SK","icao":"SAS","name":"SAS Scandinavian Airlines System","wc":true,"water":false,"rot":[{"type":"321","min":50,"hand":false},{"type":"734","min":50,"hand":false},{"type":"73G","min":50,"hand":false},{"type":"73H","min":50,"hand":false}]},{"iata":"SN","icao":"BEL","name":"SN Brussels Airlines","wc":false,"water":false,"rot":[{"type":"319","min":35,"hand":false},{"type":"320","min":40,"hand":false},{"type":"332","min":75,"hand":false},{"type":"333","min":75,"hand":false},{"type":"733","min":35,"hand":false},{"type":"734","min":30,"hand":false},{"type":"73C","min":30,"hand":false},{"type":"73D","min":30,"hand":false}]},{"iata":"TB","icao":"JAF","name":"Jetairfly / TUI Airline Belgium","wc":false,"water":false,"rot":[]},{"iata":"TO","icao":"TVF","name":"Transavia France","wc":false,"water":false,"rot":[]},{"iata":"TS","icao":"TSC","name":"Air Transat","wc":true,"water":true,"rot":[{"type":"313","min":75,"hand":false},{"type":"332","min":90,"hand":false}]},{"iata":"U2","icao":"EZY","name":"easyJet Airline Company, Lda","wc":false,"water":false,"rot":[]},{"iata":"V7","icao":"VOE","name":"Volotea","wc":false,"water":false,"rot":[]},{"iata":"W6","icao":"WIZZ","name":"Wizzair","wc":false,"water":false,"rot":[{"type":"320","min":30,"hand":false},{"type":"321","min":35,"hand":false}]},{"iata":"WK","icao":"EDW","name":"Edelweiss","wc":false,"water":false,"rot":[]},{"iata":"X3","icao":"HLX","name":"TUI","wc":false,"water":false,"rot":[]},{"iata":"XH","icao":"EVJ","name":"Everjets","wc":true,"water":true,"rot":[]},{"iata":"XL","icao":"GXL","name":"XL Airways Germany","wc":true,"water":true,"rot":[]},{"iata":"YW","icao":"ANE","name":"Air Nostrum","wc":true,"water":true,"rot":[]},{"iata":"ZQ","icao":"GER","name":"German Airways","wc":false,"water":false,"rot":[]}];
-const state = { q: '', f: 'all', v: 'svc' };
+const DATA = [{"iata":"5K","icao":"HFY","name":"Hifly","wc":true,"water":true,"rot":[]},{"iata":"5O","icao":"FPO","name":"Europe Airpost","wc":true,"water":true,"rot":[]},{"iata":"6B","icao":"BLX","name":"TUIfly Nordic","wc":false,"water":false,"rot":[]},{"iata":"6O","icao":"OBS","name":"Orbest","wc":true,"water":true,"rot":[]},{"iata":"6V","icao":"AXY","name":"Axis Airways","wc":true,"water":false,"rot":[]},{"iata":"6Y","icao":"ART","name":"Smart Lynx","wc":true,"water":true,"rot":[]},{"iata":"AG","icao":"ABR","name":"Air Contractors","wc":false,"water":false,"rot":[]},{"iata":"AY","icao":"FIN","name":"Finnair","wc":true,"water":true,"rot":[]},{"iata":"BT","icao":"BTI","name":"Air Baltic","wc":false,"water":false,"rot":[]},{"iata":"BY","icao":"TOM","name":"Thomsonfly Limited","wc":false,"water":false,"rot":[{"type":"738","min":50,"hand":false},{"type":"7M8","label":"7M8 (737 MAX 8)","min":50,"hand":false}]},{"iata":"CD","icao":"CND","name":"Corendon","wc":true,"water":false,"rot":[]},{"iata":"D8","icao":"IBK","name":"Norwegian Int.","wc":false,"water":false,"rot":[]},{"iata":"DS","icao":"EZS","name":"easyJet Switzerland","wc":false,"water":false,"rot":[]},{"iata":"DY","icao":"NOZ","name":"Norwegian Air Shuttle, S.A.","wc":false,"water":false,"rot":[{"type":"733","min":50,"hand":false},{"type":"734","min":45,"hand":false},{"type":"738","min":45,"hand":false},{"type":"73C","min":50,"hand":false},{"type":"73G","min":45,"hand":false},{"type":"73H","min":60,"hand":false}]},{"iata":"E4","icao":"ENT","name":"Enter Air","wc":true,"water":true,"rot":[{"type":"320","min":50,"hand":false},{"type":"734","min":45,"hand":false},{"type":"757","min":60,"hand":false},{"type":"73G","min":45,"hand":false}]},{"iata":"EW","icao":"EWG","name":"Eurowings","wc":false,"water":false,"rot":[{"type":"319","min":30,"hand":true},{"type":"320","min":35,"hand":false},{"type":"321","min":45,"hand":false},{"type":"738","min":35,"hand":true}]},{"iata":"FI","icao":"ICE","name":"Icelandair","wc":true,"water":true,"rot":[]},{"iata":"GW","icao":"GJT","name":"Get Jet","wc":true,"water":true,"rot":[]},{"iata":"HV","icao":"TRA","name":"Transavia","wc":false,"water":false,"rot":[]},{"iata":"JO","icao":"JTG","name":"Jet Time","wc":true,"water":false,"rot":[]},{"iata":"JP","icao":"ADR","name":"Adria Airways","wc":false,"water":false,"rot":[]},{"iata":"LG","icao":"LGL","name":"Luxair","wc":true,"water":true,"rot":[{"type":"73W","min":45,"hand":false},{"type":"73H","min":50,"hand":false}]},{"iata":"LH","icao":"DLH","name":"Lufthansa","wc":true,"water":true,"rot":[]},{"iata":"LS","icao":"EXS","name":"Jet2.com","wc":false,"water":false,"rot":[{"type":"321","min":50,"hand":false},{"type":"330","min":80,"hand":false},{"type":"733","min":40,"hand":false},{"type":"738","min":45,"hand":false},{"type":"752","min":50,"hand":false},{"type":"753","min":50,"hand":false},{"type":"73C","min":40,"hand":false},{"type":"73G","min":45,"hand":false},{"type":"73H","min":45,"hand":false},{"type":"75W","min":50,"hand":false}]},{"iata":"LX","icao":"SWR","name":"Swiss International Airlines","wc":true,"water":true,"rot":[]},{"iata":"OK","icao":"CSA","name":"Czech Airlines","wc":true,"water":true,"rot":[]},{"iata":"OR","icao":"TFL","name":"Arkefly (TUI Airlines Nederland B.V.)","wc":false,"water":false,"rot":[]},{"iata":"P6","icao":"PVG","name":"Priviledge Style","wc":true,"water":true,"rot":[]},{"iata":"PQ","icao":"SQP","name":"Sky Up","wc":true,"water":true,"rot":[]},{"iata":"SK","icao":"SAS","name":"SAS Scandinavian Airlines System","wc":true,"water":false,"rot":[{"type":"321","min":50,"hand":false},{"type":"734","min":50,"hand":false},{"type":"73G","min":50,"hand":false},{"type":"73H","min":50,"hand":false}]},{"iata":"SN","icao":"BEL","name":"SN Brussels Airlines","wc":false,"water":false,"rot":[{"type":"319","min":35,"hand":false},{"type":"320","min":40,"hand":false},{"type":"332","min":75,"hand":false},{"type":"333","min":75,"hand":false},{"type":"733","min":35,"hand":false},{"type":"734","min":30,"hand":false},{"type":"73C","min":30,"hand":false},{"type":"73D","min":30,"hand":false}]},{"iata":"TB","icao":"JAF","name":"Jetairfly / TUI Airline Belgium","wc":false,"water":false,"rot":[]},{"iata":"TO","icao":"TVF","name":"Transavia France","wc":false,"water":false,"rot":[]},{"iata":"TS","icao":"TSC","name":"Air Transat","wc":true,"water":true,"rot":[{"type":"313","min":75,"hand":false},{"type":"332","min":90,"hand":false}]},{"iata":"U2","icao":"EZY","name":"easyJet Airline Company, Lda","wc":false,"water":false,"rot":[]},{"iata":"V7","icao":"VOE","name":"Volotea","wc":false,"water":false,"rot":[]},{"iata":"W6","icao":"WIZZ","name":"Wizzair","wc":false,"water":false,"rot":[{"type":"320","min":30,"hand":false},{"type":"321","min":35,"hand":false}]},{"iata":"WK","icao":"EDW","name":"Edelweiss","wc":false,"water":false,"rot":[]},{"iata":"X3","icao":"HLX","name":"TUI","wc":false,"water":false,"rot":[]},{"iata":"XH","icao":"EVJ","name":"Everjets","wc":true,"water":true,"rot":[]},{"iata":"XL","icao":"GXL","name":"XL Airways Germany","wc":true,"water":true,"rot":[]},{"iata":"YW","icao":"ANE","name":"Air Nostrum","wc":true,"water":true,"rot":[]},{"iata":"ZQ","icao":"GER","name":"German Airways","wc":false,"water":false,"rot":[]}];
+const MIN_NOTES = {
+  TS: 'Não incluídos por a letra não ser legível: TS 333 e TS 321.',
+  W6: 'Não incluída a 3.ª coluna da folha (letra não legível).',
+  '6B': 'A tabela da TUI na folha ainda não foi importada: por rever.', BY: '738 e 737 MAX 8 acrescentados à parte (50 min). O resto da tabela da TUI ainda está por rever.',
+  OR: 'A tabela da TUI na folha ainda não foi importada: por rever.', TB: 'A tabela da TUI na folha ainda não foi importada: por rever.',
+  X3: 'A tabela da TUI na folha ainda não foi importada: por rever.',
+};
+const state = { q: '', sel: '' };
 const norm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
 const $ = (id) => document.getElementById(id);
+const airline = () => DATA.find((a) => a.iata === state.sel) || null;
 function matchQ(a) {
   if (!state.q) return true;
   const q = norm(state.q);
   return norm(a.iata).startsWith(q) || norm(a.icao).startsWith(q) || norm(a.name).includes(q);
 }
-function matchSvc(a) {
-  if (state.f === 'wc' && !a.wc) return false;
-  if (state.f === 'water' && !a.water) return false;
-  if (state.f === 'none' && (a.wc || a.water)) return false;
-  return matchQ(a);
-}
-function badge(label, on) { return el('span', 'b ' + (on ? 'yes' : 'no'), (on ? '✔ ' : '✖ ') + label + (on ? ' sim' : ' não')); }
-function head(r, a) {
-  r.appendChild(el('div', 'code', a.iata));
-  const n = el('div', 'name', a.name); n.appendChild(el('small', null, a.icao));
-  r.appendChild(n);
-}
-const FOOT = {
-  svc: ['<b>Água</b> e <b>Despejo (WC)</b>: ✔ = contratado, ✖ = não contratado. Ordem de execução: primeiro a água, depois o WC. Fonte: folha "Serviços contratados – update 17 Fev 2026".'],
-  min: ['<b>Tempo mínimo de rotação</b> em minutos, por tipo de avião. Fonte: folha de 17/nov/23. ✎ = valor escrito à mão na folha.', 'Não incluído por a letra não ser legível: TS 333, TS 321 e W6 (3.ª coluna). Tempos da TUI por rever. Companhias que não estão na folha não têm tempo mínimo aqui.'],
-  delay: [],
-  gear: ['Fonte: folhas "Colocação de cones" e "Aplicar o modelo Portway", lidas de fotografia.'],
-};
-function render() {
-  const list = $('list');
-  list.textContent = '';
-  const v = state.v;
-  ['bar', 'count', 'list'].forEach((id) => { $(id).hidden = v === 'delay' || v === 'gear'; });
-  $('gear').hidden = v !== 'gear';
-  $('filters').hidden = v !== 'svc';
-  $('rule').hidden = v !== 'svc';
-  $('delay').hidden = v !== 'delay';
-  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', String(t.dataset.v === v)));
-  const foot = $('foot'); foot.textContent = '';
-  FOOT[v].concat(['Transcrito de fotografias: confirmar com a folha original em caso de dúvida. Não substitui os procedimentos aprovados.']).forEach((h) => { const s = el('span'); s.innerHTML = h; foot.appendChild(s); });
-  if (v === 'delay' || v === 'gear') return;
-  const items = DATA.filter((a) => (v === 'min' ? a.rot.length > 0 && matchQ(a) : matchSvc(a)));
-  const total = v === 'min' ? DATA.filter((a) => a.rot.length).length : DATA.length;
-  $('count').textContent = items.length + ' de ' + total + ' companhias';
+function nameBlock(a) { const n = el('div', 'name', a.name); n.appendChild(el('small', null, a.icao)); return n; }
+
+// ---- picker
+function renderPicker() {
+  const showList = !state.sel;
+  $('picker').hidden = !showList;
+  $('bar').hidden = !showList;
+  $('detail').hidden = !!showList;
+  if (!showList) return;
+  const list = $('list'); list.textContent = '';
+  const items = DATA.filter(matchQ);
+  $('count').textContent = items.length + ' de ' + DATA.length + ' companhias · toca para abrir';
   if (!items.length) list.appendChild(el('div', 'empty', 'Nenhuma companhia encontrada.'));
   items.forEach((a) => {
-    const r = el('div', 'row');
-    head(r, a);
-    if (v === 'svc') {
-      const b = el('div', 'badges'); b.appendChild(badge('Água', a.water)); b.appendChild(badge('Despejo (WC)', a.wc));
-      r.appendChild(b);
-    } else {
-      const t = el('div', 'rot'); t.appendChild(el('span', 'l', 'Mín. rotação'));
-      a.rot.forEach((x) => { const c = el('span', 't'); c.appendChild(document.createTextNode(x.type + ' · ')); c.appendChild(el('b', null, x.min + ' min')); if (x.hand) c.appendChild(document.createTextNode(' ✎')); t.appendChild(c); });
-      r.appendChild(t);
-    }
-    list.appendChild(r);
+    const b = el('button', 'pick'); b.type = 'button';
+    b.appendChild(el('span', 'code', a.iata)); b.appendChild(nameBlock(a));
+    b.addEventListener('click', () => choose(a.iata));
+    list.appendChild(b);
   });
+}
+function choose(iata) {
+  state.sel = iata; state.q = ''; $('q').value = ''; $('q').blur();
+  const gg = gearFor(iata);
+  G.air = iata; G.all = false; G.wing = false; G.step = gg ? Math.max(0, CHOCK_MODELS[gg[2]].steps.length - 1) : 0;
+  renderDetail(); renderPicker(); window.scrollTo(0, 0);
+}
+
+// ---- airline page
+function renderDetail() {
+  const a = airline(); if (!a) return;
+  const air = $('air'); air.textContent = '';
+  air.appendChild(el('span', 'code', a.iata)); air.appendChild(nameBlock(a));
+  const chg = el('button', 'chg', 'Mudar'); chg.type = 'button';
+  chg.addEventListener('click', () => { state.sel = ''; renderPicker(); $('q').focus(); });
+  air.appendChild(chg);
+
+  const svc = $('svc'); svc.textContent = '';
+  [['Água', a.water], ['Despejo (WC)', a.wc]].forEach(([label, on]) => svc.appendChild(el('span', 'b ' + (on ? 'yes' : 'no'), (on ? '✔ ' : '✖ ') + label + (on ? ' contratado' : ' não contratado'))));
+
+  const mn = $('min'); mn.textContent = '';
+  if (a.rot.length) {
+    const t = el('div', 'rot');
+    a.rot.forEach((x) => { const c = el('span', 't'); c.appendChild(document.createTextNode((x.label || x.type) + ' · ')); c.appendChild(el('b', null, x.min + ' min')); if (x.hand) c.appendChild(document.createTextNode(' ✎')); t.appendChild(c); });
+    mn.appendChild(t);
+  } else mn.appendChild(el('p', 'muted', 'Sem tempo mínimo na folha para esta companhia.'));
+  if (MIN_NOTES[a.iata]) mn.appendChild(el('p', 'small', MIN_NOTES[a.iata]));
+
+  const ty = $('d-type'); ty.textContent = '';
+  $('d-type-f').hidden = !a.rot.length;
+  if (a.rot.length > 1) { const o = el('option', null, 'Escolher…'); o.value = ''; ty.appendChild(o); }
+  a.rot.forEach((x) => { const o = el('option', null, (x.label || x.type) + ' (' + x.min + ' min)'); o.value = x.type; ty.appendChild(o); });
+
+  gearView(); delayView();
 }
 
 // ---- Atraso
 function parseHM(s) { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '')); return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : null; }
 function groundMinutes(inHM, outHM) { const a = parseHM(inHM), b = parseHM(outHM); if (a === null || b === null) return null; return b > a ? b - a : b + 1440 - a; }
 const fmt = (m) => (m >= 60 ? Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min' : m + ' min');
-function minFor(iata, type) { const a = DATA.find((x) => x.iata === iata); const t = (a ? a.rot : []).find((x) => x.type === String(type || '').trim().toUpperCase()); return t || null; }
 function delayView() {
-  const iata = $('d-air').value, type = $('d-type').value;
-  const dl = $('d-types'); dl.textContent = '';
-  (DATA.find((x) => x.iata === iata) || { rot: [] }).rot.forEach((x) => { const o = document.createElement('option'); o.value = x.type; dl.appendChild(o); });
+  const a = airline(); if (!a) return;
+  const type = $('d-type').value;
   const g = groundMinutes($('d-in').value, $('d-out').value);
   const r = $('d-res'); r.textContent = '';
   const tag = (txt) => r.appendChild(el('div', 'tag', txt));
-  if (g === null) { r.className = 'res'; tag('Preenche a hora de entrada e a hora de saída.'); return; }
-  const m = iata && type ? minFor(iata, type) : null;
+  if (g === null) { r.className = 'res'; tag(a.rot.length ? 'Escolhe o tipo de avião e preenche a hora que calçou e a que saiu.' : 'Preenche a hora que calçou e a hora que saiu.'); return; }
+  const m = a.rot.find((x) => x.type === type) || null;
   const facts = el('dl', 'facts');
   const fact = (k, v) => { const d = el('div'); d.appendChild(el('dt', null, k)); d.appendChild(el('dd', null, v)); facts.appendChild(d); };
   fact('Tempo no solo', fmt(g));
   if (!m) {
     r.className = 'res warn';
-    tag('? SEM TEMPO MÍNIMO NA FOLHA');
+    tag(a.rot.length ? '? ESCOLHE O TIPO DE AVIÃO' : '? SEM TEMPO MÍNIMO NA FOLHA');
     r.appendChild(el('div', 'big', fmt(g)));
-    r.appendChild(el('div', null, !iata ? 'Escolhe a companhia e o tipo de avião para comparar.' : 'Não há tempo mínimo na folha para ' + iata + (type ? ' ' + type.toUpperCase() : '') + ': Por confirmar.'));
+    r.appendChild(el('div', null, a.rot.length ? 'Sem o tipo de avião não há com que comparar.' : 'Não há tempo mínimo na folha para ' + a.iata + ': por confirmar.'));
     r.appendChild(facts); return;
   }
   const diff = g - m.min;
-  fact('Mínimo ' + iata + ' ' + m.type, m.min + ' min' + (m.hand ? ' ✎' : ''));
+  fact('Mínimo ' + a.iata + ' ' + m.type, m.min + ' min' + (m.hand ? ' ✎' : ''));
   if (diff > 0) {
-    r.className = 'res late';
-    tag('✖ ATRASO FACE AO MÍNIMO');
-    r.appendChild(el('div', 'big', '+' + fmt(diff)));
+    r.className = 'res late'; tag('✖ ATRASO FACE AO MÍNIMO'); r.appendChild(el('div', 'big', '+' + fmt(diff)));
   } else if (diff === 0) {
-    r.className = 'res ok';
-    tag('✔ SEM ATRASO — IGUAL AO MÍNIMO');
-    r.appendChild(el('div', 'big', '0 min'));
+    r.className = 'res ok'; tag('✔ SEM ATRASO — IGUAL AO MÍNIMO'); r.appendChild(el('div', 'big', '0 min'));
   } else {
-    r.className = 'res warn';
-    tag('⚠ ABAIXO DO MÍNIMO DA FOLHA');
-    r.appendChild(el('div', 'big', '−' + fmt(-diff)));
+    r.className = 'res warn'; tag('⚠ ABAIXO DO MÍNIMO DA FOLHA'); r.appendChild(el('div', 'big', '−' + fmt(-diff)));
     r.appendChild(el('div', null, 'Saída antes de cumprir o tempo mínimo de rotação: confirma as horas.'));
   }
   fact(diff > 0 ? 'Excesso' : diff < 0 ? 'Falta' : 'Diferença', (diff > 0 ? '+' : diff < 0 ? '−' : '') + Math.abs(diff) + ' min');
-  if (g > 720) { fact('Atenção', 'Mais de 12 h no solo'); }
+  if (g > 720) fact('Atenção', 'Mais de 12 h no solo');
   r.appendChild(facts);
 }
-const sel = $('d-air');
-const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Selecionar companhia…'; sel.appendChild(o0);
-DATA.filter((a) => a.rot.length).forEach((a) => { const o = document.createElement('option'); o.value = a.iata; o.textContent = a.iata + ' — ' + a.name; sel.appendChild(o); });
-['d-air', 'd-type', 'd-in', 'd-out'].forEach((id) => { $(id).addEventListener('input', delayView); $(id).addEventListener('change', delayView); });
-$('q').addEventListener('input', (e) => { state.q = e.target.value.trim(); render(); });
-document.querySelectorAll('.f').forEach((b) => b.addEventListener('click', () => {
-  state.f = b.dataset.f;
-  document.querySelectorAll('.f').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-  render();
-}));
-document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => { state.v = t.dataset.v; render(); }));
 
 // ---- Cones e calços: fixed top view drawn on a 2D canvas (painter's algorithm, no libraries)
 // Frame: X = aircraft RIGHT, Y = forward (nose), Z = up. Units ~ metres but SCHEMATIC (no measurements are claimed).
@@ -395,7 +399,7 @@ function chockMesh(x, y, r) {
 
 // ----- cones + chocks for the chosen airline, as configured from the sheets
 function items() {
-  const g = GEAR.find((x) => x[0] === G.air);
+  const g = gearFor(G.air);
   const out = [];
   if (!g) return out;
   const scheme = CONE_SCHEMES[g[3]];
@@ -493,23 +497,38 @@ function draw() {
   });
 }
 
+// Portway model each airline is listed under on the sheet "Aplicar o modelo Portway" (EW was M1, LH and FI M2)
+const PORTWAY = Object.fromEntries(GEAR.map((x) => [x[0], x[2] === 'M1' ? '1' : x[2] === 'M2' ? '2' : null]));
+PORTWAY.EW = '1'; PORTWAY.LH = '2';
+// airlines that are not on the cone/chock sheets: Portway model 1 and the normal cones (as easyJet)
+const pwOf = (g) => (g[0] in PORTWAY ? PORTWAY[g[0]] : g[2] === 'M1' ? '1' : null);
+function gearFor(iata) {
+  const g = GEAR.find((x) => x[0] === iata);
+  if (g || !iata) return g || null;
+  const a = DATA.find((x) => x.iata === iata);
+  return [iata, a ? a.name : iata, 'M1', 'GEN', 'Não está nas folhas de cones e calços: aplicar o modelo Portway 1 e os cones normais.'];
+}
 // ----- panel
 function gearView() {
-  const g = GEAR.find((x) => x[0] === G.air);
-  const model = g ? CHOCK_MODELS[g[2]] : null;
+  const g = gearFor(G.air);
   const box = $('g-model'); box.textContent = '';
-  if (!g) box.appendChild(el('span', null, 'Escolhe a companhia: os cones e calços aparecem nas posições da folha. Fora das folhas: Por confirmar.'));
-  else { box.appendChild(el('b', null, g[1])); if (g[4]) box.appendChild(el('div', 'gear-note', g[4])); }
+  $('g-body').hidden = !g;
+  if (!g) { box.appendChild(el('p', null, 'Esta companhia não está nas folhas "Colocação de cones" e "Aplicar o modelo Portway": por confirmar.')); return; }
+  const pw = el('div', 'pw', pwOf(g) ? (g[2] === 'SIX' ? 'Na folha: modelo Portway ' : 'Aplicar o modelo Portway ') + pwOf(g) : 'Modelo Portway: esquema próprio');
+  if (g[2] === 'SIX') pw.appendChild(el('small', null, 'Calços: 6, igual ao vento forte (ver abaixo).'));
+  else if (!pwOf(g)) pw.appendChild(el('small', null, g[0] === 'TS' ? 'Não usa o Modelo 1 nem o 2 (ver calços abaixo).' : 'Não usa o Modelo 1 nem o 2: seguir a folha.'));
+  box.appendChild(pw);
+  if (g[4]) box.appendChild(el('p', 'gear-note', g[4]));
+  const model = CHOCK_MODELS[g[2]];
 
   const cn = $('g-cones'); cn.textContent = '';
-  const wb = el('button', 'gbtn', 'Avião com winglet'); wb.setAttribute('aria-pressed', String(G.wing));
-  wb.addEventListener('click', () => { G.wing = !G.wing; gearView(); }); cn.appendChild(wb);
-  if (g && g[3] === 'NONE') cn.appendChild(el('p', null, 'Cones desta companhia: esquema próprio na folha, ainda não configurado.'));
-  else if (!g) cn.appendChild(el('p', null, 'Escolhe a companhia.'));
+  if (g[3] === 'NONE') cn.appendChild(el('p', null, 'Esquema de cones próprio na folha, ainda não configurado: seguir a folha.'));
   else {
+    const wb = el('button', 'gbtn', 'Avião com winglet'); wb.type = 'button'; wb.setAttribute('aria-pressed', String(G.wing));
+    wb.addEventListener('click', () => { G.wing = !G.wing; gearView(); }); cn.appendChild(wb);
     const cones = items().filter((i) => i.type === 'cone');
     const groups = []; cones.forEach((c) => { if (!groups.includes(c.group)) groups.push(c.group); });
-    cn.appendChild(el('p', null, groups.length + ' posições · ' + cones.length + ' cones (folha).' + (G.wing ? ' Winglet: SEMPRE 3 cones em cada ponta de asa.' : '')));
+    cn.appendChild(el('p', null, groups.length + ' posições · ' + cones.length + ' cones.' + (G.wing ? ' Winglet: SEMPRE 3 cones em cada ponta de asa.' : '')));
     const ol = el('ol');
     groups.forEach((k) => ol.appendChild(el('li', null, CONE_POS[k].name + (G.wing && CONE_POS[k].wing ? ' — 3 cones' : ''))));
     cn.appendChild(ol);
@@ -517,26 +536,22 @@ function gearView() {
   cn.appendChild(el('p', null, '⚠ Retirar os cones com ventos de 46 a 72 km/h.'));
 
   const ck = $('g-chocks'); ck.textContent = '';
-  if (model && model.steps.length) {
-    ck.appendChild(el('p', null, 'Calços — ' + model.title + (model.src || ', passos da folha') + ':'));
-    model.steps.forEach((s, i) => { const b = el('button', 'gbtn', (i + 1) + '. ' + s.t); b.setAttribute('aria-pressed', String(i === Math.min(G.step, model.steps.length - 1) && !G.all)); b.addEventListener('click', () => { G.step = i; G.all = false; gearView(); }); ck.appendChild(b); });
-  } else if (g) ck.appendChild(el('p', null, 'Calços: esquema próprio na folha, seguir a folha.'));
-  else ck.appendChild(el('p', null, 'Escolhe a companhia.'));
-  const ab = el('button', 'gbtn', '💨 Vento forte / night stop: trem da frente + rodas de fora'); ab.setAttribute('aria-pressed', String(G.all));
+  ck.appendChild(el('h3', null, 'CALÇOS'));
+  if (model.steps.length) {
+    ck.appendChild(el('p', null, model.title + (model.src || ', passos da folha') + ':'));
+    model.steps.forEach((s, i) => { const b = el('button', 'gbtn', (i + 1) + '. ' + s.t); b.type = 'button'; b.setAttribute('aria-pressed', String(i === Math.min(G.step, model.steps.length - 1) && !G.all)); b.addEventListener('click', () => { G.step = i; G.all = false; gearView(); }); ck.appendChild(b); });
+  } else ck.appendChild(el('p', null, 'Esquema de calços próprio na folha: seguir a folha.'));
+  const ab = el('button', 'gbtn', '💨 Vento forte / night stop: trem da frente + rodas de fora'); ab.type = 'button'; ab.setAttribute('aria-pressed', String(G.all));
   ab.addEventListener('click', () => { G.all = !G.all; gearView(); }); ck.appendChild(ab);
   if (G.all) ck.appendChild(el('p', null, 'Calçar o trem da frente e as rodas de fora do trem principal (esquerda e direita). Wide-body: sempre calços grandes.'));
   draw();
 }
-(function initGear() {
-  const gs = $('g-air');
-  const o = document.createElement('option'); o.value = ''; o.textContent = 'Selecionar companhia…'; gs.appendChild(o);
-  GEAR.forEach((x) => { const op = document.createElement('option'); op.value = x[0]; op.textContent = x[1] + ' (' + x[0] + ')'; gs.appendChild(op); });
-  gs.addEventListener('change', () => { G.air = gs.value; G.all = false; const gg = GEAR.find((x) => x[0] === G.air); G.step = gg ? Math.max(0, CHOCK_MODELS[gg[2]].steps.length - 1) : 0; gearView(); });
-  if (window.ResizeObserver) new ResizeObserver(() => draw()).observe(cv); else window.addEventListener('resize', draw);
-  gearView();
-})();
 
-render(); delayView();
+$('q').addEventListener('input', (e) => { state.q = e.target.value.trim(); renderPicker(); });
+$('q').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const m = DATA.filter(matchQ); if (m.length === 1) choose(m[0].iata); } });
+['d-type', 'd-in', 'd-out'].forEach((id) => { $(id).addEventListener('input', delayView); $(id).addEventListener('change', delayView); });
+if (window.ResizeObserver) new ResizeObserver(() => draw()).observe(cv); else window.addEventListener('resize', draw);
+renderPicker();
 </script>
 
 </body></html>
