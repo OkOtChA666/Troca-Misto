@@ -1473,13 +1473,17 @@
   div.area-card{ padding:0 18px 0 0; gap:14px; align-items:stretch; }
   div.area-card > .ac-ic{ width:50px; height:auto; border-radius:0; border:0; }
   div.area-card > div:not(.ac-ic){ padding:16px 0; align-self:center; }
+  /* OUTRAS (dispatchers only): tools made outside the TM, each runs inside its own iframe */
+  #tool-card-outras{ display:none; border-color:#ff4d5e !important; } html.grp-disp #tool-card-outras{ display:flex; }
+  #panel-tools #tool-card-outras > .tool-ic{ background:rgba(255,77,94,.12); color:#ff4d5e; }
+  #outras-frame{ width:100%; height:calc(100vh - 130px); min-height:480px; border:0; border-radius:12px; background:#fff; display:block; }
   /* FERRAMENTAS cards: same look as the ÁREA PESSOAL cards (icon block on the left edge, no arrow) */
-  #panel-tools .tool-card, #so-menu .tool-card, #docs-menu .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
-  #panel-tools .tool-card > .tool-arrow, #so-menu .tool-card > .tool-arrow, #docs-menu .tool-card > .tool-arrow{ display:none; }
-  #panel-tools .tool-card > .tool-ic, #so-menu .tool-card > .tool-ic, #docs-menu .tool-card > .tool-ic{ width:50px; height:auto; border-radius:0; border:0; background:#0f2236; color:#4fd1f0; }
-  html.themed #panel-tools .tool-card, html.themed #so-menu .tool-card, html.themed #docs-menu .tool-card{ border-radius:var(--r); }
-  html.themed #panel-tools .tool-card > .tool-ic, html.themed #so-menu .tool-card > .tool-ic, html.themed #docs-menu .tool-card > .tool-ic{ background:var(--panel-2); color:var(--text); }
-  #panel-tools .tool-card > div:not(.tool-ic), #so-menu .tool-card > div:not(.tool-ic), #docs-menu .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
+  #panel-tools .tool-card, #so-menu .tool-card, #docs-menu .tool-card, #panel-outras .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
+  #panel-tools .tool-card > .tool-arrow, #so-menu .tool-card > .tool-arrow, #docs-menu .tool-card > .tool-arrow, #panel-outras .tool-card > .tool-arrow{ display:none; }
+  #panel-tools .tool-card > .tool-ic, #so-menu .tool-card > .tool-ic, #docs-menu .tool-card > .tool-ic, #panel-outras .tool-card > .tool-ic{ width:50px; height:auto; border-radius:0; border:0; background:#0f2236; color:#4fd1f0; }
+  html.themed #panel-tools .tool-card, html.themed #so-menu .tool-card, html.themed #docs-menu .tool-card, html.themed #panel-outras .tool-card{ border-radius:var(--r); }
+  html.themed #panel-tools .tool-card > .tool-ic, html.themed #so-menu .tool-card > .tool-ic, html.themed #docs-menu .tool-card > .tool-ic, html.themed #panel-outras .tool-card > .tool-ic{ background:var(--panel-2); color:var(--text); }
+  #panel-tools .tool-card > div:not(.tool-ic), #so-menu .tool-card > div:not(.tool-ic), #docs-menu .tool-card > div:not(.tool-ic), #panel-outras .tool-card > div:not(.tool-ic){ padding:16px 0; align-self:center; }
   #panel-tools .tool-name, #so-menu .tool-name{ font-size:15px; letter-spacing:.12em; }
   #panel-tools .tool-desc, #so-menu .tool-desc{ font-size:13px; margin-top:4px; }
   #so-agentes-menu .tool-card, #so-horarios-menu .tool-card, #so-app-menu .tool-card, #so-depts .tool-card{ position:relative; overflow:hidden; align-items:stretch; gap:14px; padding:0 18px 0 0; border:1px solid var(--border); border-radius:16px; }
@@ -2662,6 +2666,17 @@
       <div><div class="tool-name">PREVISÃO</div><div class="tool-desc">Pessoas necessárias por hora</div></div>
       <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
+    <div class="tool-card" id="tool-card-outras"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></div><div><div class="tool-name">OUTRAS</div><div class="tool-desc">Ferramentas externas ao TM</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+  </div>
+  <div class="panel hidden" id="panel-outras">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;"><div id="outras-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">OUTRAS</div><button type="button" id="outras-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button></div>
+    <div class="tool-card" data-out="loadngo"><div class="tool-ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 9v11"/></svg></div><div><div class="tool-name">LOAD'N GO</div><div class="tool-desc">Loading &amp; LDM</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+    <div class="tool-card" data-out="transavia-dispatch"><div class="tool-ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 9v11"/></svg></div><div><div class="tool-name">TRANSAVIA DISPATCH</div><div class="tool-desc">Loading &amp; LDM</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+    <div class="tool-card" data-out="turnaround-memo"><div class="tool-ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 9v11"/></svg></div><div><div class="tool-name">TURNAROUND MEMO</div><div class="tool-desc">Memo do turnaround</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
+  </div>
+  <div class="panel hidden" id="panel-outras-app">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;"><div id="outras-app-title" style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);"></div><button type="button" id="outras-app-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button></div>
+    <iframe id="outras-frame" title="Ferramenta externa"></iframe>
   </div>
   <div class="panel hidden" id="panel-forecast"></div>
 
@@ -12328,6 +12343,19 @@ async function openForecastTool(){
   renderAiStaff();
 }
 document.getElementById('tool-card-forecast').addEventListener('click', openForecastTool);
+// ---------- OUTRAS (dispatchers): external tools, each in its own iframe ----------
+const OUTRAS = { 'loadngo':['LOAD\'N GO','externo/loadngo.html'], 'transavia-dispatch':['TRANSAVIA DISPATCH','externo/transavia-dispatch.html'], 'turnaround-memo':['TURNAROUND MEMO','externo/turnaround-memo.html'] };
+function outrasShow(id){ document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden')); document.querySelector('.tabs').classList.add('hidden'); document.getElementById(id).classList.remove('hidden'); window.scrollTo({ top: 0 }); }
+function openOutras(){ document.getElementById('outras-frame').src = 'about:blank'; outrasShow('panel-outras'); }
+document.getElementById('tool-card-outras').addEventListener('click', openOutras);
+document.getElementById('outras-back-btn').addEventListener('click', openTools);
+document.getElementById('outras-app-back-btn').addEventListener('click', openOutras);
+document.querySelectorAll('#panel-outras [data-out]').forEach(c => c.addEventListener('click', () => {
+  const o = OUTRAS[c.getAttribute('data-out')]; if(!o) return;
+  document.getElementById('outras-app-title').textContent = o[0];
+  document.getElementById('outras-frame').src = o[1]; outrasShow('panel-outras-app');
+}));
+
 document.getElementById('ai-back-btn').addEventListener('click', () => { if(AI_TOOL) closeForecastTool(); else soShowMenu(); });
 document.getElementById('ai-rh').addEventListener('click', () => document.getElementById('ai-rl2').classList.toggle('open'));
 // ---------- TROCAS FEITAS (read-only log of every swap) + ACESSO SUPORTE ----------
