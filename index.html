@@ -14179,7 +14179,7 @@ function mtNameHtml(nk){
 }
 function mtCornerHtml(f, colr, taRec, taKey, taTitle){
   let t = mtTabInfo(f, colr);
-  if(taRec){ MT_TA_ROWS[taKey] = { rec: taRec, title: taTitle }; t = '<span class="mt-clk" data-k="' + mtEsc(taKey) + '" aria-label="Turnaround" style="padding:0 9px;cursor:pointer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0b1220" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>' + t; }
+  if(taRec && (colr === '#0066cc' || GROUP === 'disp')){ MT_TA_ROWS[taKey] = { rec: taRec, title: taTitle }; t = '<span class="mt-clk" data-k="' + mtEsc(taKey) + '" aria-label="Turnaround" style="padding:0 9px;cursor:pointer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0b1220" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>' + t; }
   return t ? '<div class="mt-corner">' + t + '</div>' : '';
 }
 function mtInfoHtml(f, colr){
