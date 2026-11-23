@@ -1,0 +1,3628 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Load'n Go — Loading &amp; LDM</title>
+<style>
+/* Everything is scoped under .tvd so the tool can be embedded in another app without style clashes. */
+body { margin: 0; }
+
+.tvd {
+  --bg: #f4f6f9; --card: #ffffff; --ink: #0f172a; --muted: #5b6b82; --line: #dde3ec;
+  --accent: #0b7d63; --accent-ink: #ffffff; --field: #ffffff;
+  --err: #b42318; --err-bg: #fdecec;
+  --pen: #8a5300; --pen-bg: #fff4e0;
+  --note: #41536b; --note-bg: #eef2f7;
+  --ok: #0b7d63; --ok-bg: #e6f6f1;
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink); background: var(--bg); min-height: 100vh;
+}
+@media (prefers-color-scheme: dark) {
+  .tvd {
+    --bg: #0b1020; --card: #131a2e; --ink: #e8edf6; --muted: #93a3bd; --line: #26314d;
+    --accent: #2fbf9b; --accent-ink: #04201a; --field: #0e1426;
+    --err: #ff9b94; --err-bg: #3a1517;
+    --pen: #ffc46b; --pen-bg: #3a2a0b;
+    --note: #a9b8d1; --note-bg: #18213a;
+    --ok: #2fbf9b; --ok-bg: #0f2a26;
+  }
+}
+.tvd *, .tvd *::before, .tvd *::after { box-sizing: border-box; }
+
+.tvd .tvd-top { padding: 20px 16px 8px; max-width: 820px; margin: 0 auto; }
+.tvd .tvd-top h1 { margin: 0; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; }
+.tvd .tvd-top p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+.tvd .tvd-main { max-width: 820px; margin: 0 auto; padding: 8px 16px 48px; }
+
+.tvd .tvd-notice { background: var(--note-bg); color: var(--note); border-radius: 10px; padding: 10px 12px; font-size: 13px; margin: 8px 0 16px; }
+
+.tvd .tvd-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+.tvd .tvd-card h2 { margin: 0 0 12px; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+.tvd .tvd-card h2 span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 12px; }
+
+.tvd .tvd-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.tvd .tvd-grid-4 { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.tvd .tvd-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.tvd .tvd-field > span { font-size: 12px; color: var(--muted); }
+.tvd .tvd-sub { margin: 16px 0 6px; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.tvd #tvd-lmc-out { margin-top: 12px; }
+.tvd #tvd-lmc-out .tvd-table { margin-bottom: 12px; }
+.tvd input[type="text"], .tvd input[type="number"], .tvd input[type="date"], .tvd select {
+  width: 100%; height: 42px; padding: 0 10px; font: inherit; color: var(--ink);
+  background: var(--field); border: 1px solid var(--line); border-radius: 9px;
+}
+.tvd input:focus, .tvd select:focus, .tvd button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tvd input[type="text"] { text-transform: uppercase; }
+.tvd input[inputmode="numeric"] { text-transform: none; }
+.tvd select:disabled { opacity: .7; }
+
+.tvd .tvd-fieldnote { color: var(--muted); font-size: 12px; line-height: 1.3; }
+.tvd .tvd-info { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tvd .tvd-chip { background: var(--note-bg); color: var(--note); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+.tvd .tvd-chip.ok { background: var(--ok-bg); color: var(--ok); }
+.tvd .tvd-chip.pen { background: var(--pen-bg); color: var(--pen); }
+
+.tvd .tvd-total { margin: 12px 0 0; }
+.tvd .tvd-total small, .tvd .tvd-hint { color: var(--muted); font-size: 12px; }
+.tvd .tvd-hint { margin: 10px 0 0; }
+
+.tvd .tvd-seg { border: 0; padding: 0; margin: 0 0 8px; }
+.tvd .tvd-seg legend { padding: 0; margin-bottom: 8px; font-size: 15px; }
+.tvd .tvd-seg label { display: inline-block; margin-right: 8px; }
+.tvd .tvd-seg input { position: absolute; opacity: 0; pointer-events: none; }
+.tvd .tvd-seg span { display: inline-block; min-width: 84px; text-align: center; padding: 9px 18px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; background: var(--field); }
+.tvd .tvd-seg input:checked + span { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tvd .tvd-seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.tvd .tvd-row { border: 1px solid var(--line); border-radius: 11px; padding: 12px; margin: 10px 0; }
+.tvd .tvd-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: 600; font-size: 14px; }
+.tvd .tvd-row-head small { color: var(--muted); font-weight: 400; margin-left: 8px; }
+.tvd .tvd-row .tvd-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.tvd .tvd-add { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+.tvd .tvd-btn { font: inherit; height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--line); cursor: pointer; }
+.tvd .tvd-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.tvd .tvd-ghost { background: transparent; color: var(--ink); }
+.tvd .tvd-btn.small { height: 32px; padding: 0 10px; font-size: 13px; }
+.tvd .tvd-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 16px; }
+.tvd .tvd-card .tvd-actions { margin: 12px 0 0; }
+
+.tvd #tvd-alerts { margin-bottom: 14px; }
+.tvd .tvd-alert { display: flex; gap: 10px; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; }
+.tvd .tvd-alert b { flex: none; font-size: 11px; letter-spacing: .06em; padding-top: 2px; min-width: 62px; }
+.tvd .tvd-alert.error { background: var(--err-bg); color: var(--err); }
+.tvd .tvd-alert.pending, .tvd .tvd-alert.warning { background: var(--pen-bg); color: var(--pen); }
+.tvd .tvd-alert.info { background: var(--note-bg); color: var(--note); }
+
+.tvd .tvd-status { display: inline-block; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; letter-spacing: .05em; margin-bottom: 12px; }
+.tvd .tvd-status.draft { background: var(--pen-bg); color: var(--pen); }
+.tvd .tvd-status.calc { background: var(--ok-bg); color: var(--ok); }
+
+.tvd .tvd-tablewrap { overflow-x: auto; }
+.tvd .tvd-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.tvd .tvd-table th, .tvd .tvd-table td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); }
+.tvd .tvd-table th { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .05em; }
+.tvd .tvd-table td.num, .tvd .tvd-table th.num { text-align: right; }
+.tvd .tvd-table tr.total td { font-weight: 700; border-bottom: 0; }
+.tvd .tvd-table small { color: var(--muted); }
+
+.tvd .tvd-stepper { display: inline-flex; align-items: center; gap: 6px; }
+.tvd .tvd-stepval { min-width: 2.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.tvd .tvd-step { width: 40px; height: 40px; padding: 0; font: inherit; font-size: 20px; line-height: 1; border-radius: 9px; border: 1px solid var(--line); background: var(--field); color: var(--ink); cursor: pointer; }
+.tvd .tvd-signed { display: flex; gap: 6px; }
+.tvd .tvd-signed input { min-width: 0; }
+.tvd .tvd-signed .tvd-step { flex: none; height: 42px; width: 44px; font-weight: 700; }
+.tvd .tvd-step.pos { color: var(--ok); }
+.tvd .tvd-step.neg { color: var(--err); border-color: var(--err); }
+.tvd .tvd-step:disabled { opacity: .35; cursor: default; }
+.tvd .tvd-step:not(:disabled):hover { border-color: var(--accent); }
+.tvd .tvd-adjbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+.tvd .tvd-adjbar .tvd-hint { margin: 0; flex: 1 1 220px; }
+
+.tvd .tvd-avg { font-size: 32px; font-weight: 700; margin: 0; font-variant-numeric: tabular-nums; }
+.tvd .tvd-avg small { font-size: 14px; font-weight: 400; color: var(--muted); margin-left: 8px; }
+
+.tvd .tvd-ldm { margin: 0; padding: 14px; background: var(--field); border: 1px solid var(--line); border-radius: 10px; font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-x: auto; white-space: pre; }
+
+.tvd .tvd-table td.num, .tvd .tvd-table th.num { white-space: nowrap; }
+
+@media (max-width: 480px) {
+  .tvd .tvd-btn.tvd-primary { width: 100%; }
+  .tvd .tvd-table th, .tvd .tvd-table td { padding: 9px 5px; }
+  .tvd .tvd-table .tvd-step { width: 32px; height: 34px; font-size: 18px; }
+  .tvd .tvd-table .tvd-stepper { gap: 2px; }
+  .tvd .tvd-table .tvd-stepval { min-width: 1.7em; }
+}
+@media (max-width: 400px) {
+  .tvd .tvd-table { font-size: 15px; }
+  .tvd .tvd-table th, .tvd .tvd-table td { padding: 9px 3px; }
+  .tvd .tvd-table .tvd-step { width: 28px; height: 32px; font-size: 17px; }
+  .tvd .tvd-table .tvd-stepval { min-width: 1.5em; }
+}
+
+.tvd .tvd-inop { display: flex; flex-wrap: wrap; gap: 8px; }
+.tvd .tvd-inop button { font: inherit; min-width: 64px; height: 40px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--field); color: var(--ink); cursor: pointer; }
+.tvd .tvd-inop button[aria-pressed="true"] { background: var(--err-bg); color: var(--err); border-color: var(--err); font-weight: 700; }
+.tvd .tvd-capwarn { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--err-bg); color: var(--err); font-size: 14px; font-weight: 600; }
+.tvd .tvd-capwarn[hidden] { display: none; }
+.tvd .tvd-table tr.inop td, .tvd .tvd-table tr.unassigned td { color: var(--err); font-weight: 600; }
+.tvd .tvd-table tr.unassigned td { background: var(--err-bg); }
+.tvd .tvd-inopbtn { height: 26px; padding: 0 8px; font-size: 12px; margin-left: 4px; }
+
+.tvd .tvd-holdtag { display: inline-grid; place-items: center; min-width: 34px; height: 28px; padding: 0 6px; border-radius: 8px; background: var(--note-bg); color: var(--ink); font-weight: 700; font-size: 14px; }
+.tvd .tvd-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: .03em; }
+.tvd .tvd-pill.nil { background: var(--note-bg); color: var(--muted); }
+.tvd .tvd-pill.bag { background: var(--ok-bg); color: var(--ok); }
+.tvd .tvd-pill.sp { background: var(--pen-bg); color: var(--pen); }
+.tvd .tvd-pill.inop { background: var(--err-bg); color: var(--err); }
+.tvd .tvd-inopbtn { color: var(--muted); border-style: dashed; }
+.tvd #tvd-table td { vertical-align: middle; }
+.tvd .tvd-table tr.inop td { font-weight: 400; }
+@media (max-width: 400px) { .tvd .tvd-pill { padding: 2px 6px; font-size: 11px; } .tvd .tvd-inopbtn { padding: 0 5px; margin-left: 2px; } }
+.tvd .tvd-totbox { display: inline-block; min-width: 3em; padding: 3px 10px; border: 2px solid var(--accent); border-radius: 8px; text-align: center; }
+.tvd .tvd-table select.tvd-movesel { display: block; width: auto; max-width: 100%; height: 30px; margin-top: 4px; padding: 0 6px; font-size: 13px; }
+.tvd .tvd-inopbtn { font-size: 14px; }
+.tvd .tvd-table select.tvd-movesel { width: 84px; max-width: 84px; padding: 0 2px; font-size: 12px; }
+.tvd .tvd-table select.tvd-movesel { width: 66px; max-width: 66px; }
+
+.tvd .tvd-tabs { display: flex; gap: 8px; max-width: 820px; margin: 4px auto 0; padding: 0 16px; }
+.tvd .tvd-tab { flex: 1; font: inherit; font-weight: 700; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--field); color: var(--muted); cursor: pointer; }
+.tvd .tvd-tab.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tvd .tvd-clc { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--pen-bg); color: var(--pen); border: 2px solid var(--pen); }
+.tvd .tvd-clc p { margin: 6px 0 0; font-size: 14px; }
+.tvd .tvd-clc[hidden], .tvd #ew-panel[hidden], .tvd [hidden] { display: none !important; }
+.tvd .tvd-confirm { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--pen-bg); color: var(--pen); font-size: 14px; }
+.tvd .tvd-confirm input { margin-top: 3px; }
+.tvd .tvd-table tr.over td { background: var(--err-bg); color: var(--err); }
+.tvd .tvd-table input.ew-kg { width: 76px; height: 36px; padding: 0 6px; text-align: right; }
+.tvd .tvd-table input.ew-pcs { width: 52px; height: 36px; padding: 0 4px; text-align: center; }
+.tvd .tvd-table small.lim { display: block; color: var(--muted); font-size: 11px; line-height: 1.2; margin-top: 2px; }
+.tvd .tvd-chip.bad { background: var(--err-bg); color: var(--err); font-weight: 600; }
+.tvd .tvd-modebtns { display: flex; gap: 8px; margin: 0 0 10px; flex-wrap: wrap; }
+.tvd .tvd-modebtns button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tvd .tvd-table small.spadd { display: block; margin-top: 3px; font-size: 12px; font-weight: 700; color: var(--pen); white-space: nowrap; }
+.tvd #ew-ldm { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.55; }
+@media (max-width: 480px) { .tvd #ew-ldm { font-size: 13px; padding: 12px; } }
+.tvd .tvd-vsum { padding: 10px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+.tvd .tvd-vsum.blocked { background: var(--err-bg); color: var(--err); border: 2px solid var(--err); }
+.tvd .tvd-vsum.ready { background: var(--ok-bg); color: var(--ok); border: 2px solid var(--ok); }
+.tvd .tvd-vsum.idle { background: var(--note-bg); color: var(--note); font-weight: 400; }
+.tvd .tvd-alert.ok { background: var(--ok-bg); color: var(--ok); }
+.tvd .tvd-alert-body { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; min-width: 0; }
+.tvd .tvd-where { font: inherit; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; opacity: .9; }
+.tvd .tvd-btn:disabled { opacity: .45; cursor: not-allowed; }
+.tvd .tvd-blockedhint { margin: 6px 0 0; font-size: 13px; color: var(--err); }
+
+/* hold overview */
+.tvd .tvd-hvstrip { display: flex; gap: 4px; padding: 6px; border: 2px solid var(--line); border-radius: 999px 14px 14px 999px; background: var(--note-bg); overflow-x: auto; }
+.tvd .tvd-hvbox { word-break: break-word; flex: 1 1 0; min-width: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border: 2px solid currentColor; border-radius: 8px; font-size: 12px; text-align: center; }
+.tvd .tvd-hvbox b { font-size: 14px; }
+.tvd .tvd-hvbox .amt { font-variant-numeric: tabular-nums; min-height: 1em; }
+.tvd .tvd-hvbox .sp { font-size: 11px; font-weight: 700; }
+.tvd .tvd-hvbar { display: block; width: 100%; height: 5px; border: 1px solid currentColor; border-radius: 3px; overflow: hidden; }
+.tvd .tvd-hvbar i { display: block; height: 100%; background: currentColor; }
+.tvd .tvd-hvstate { font-size: 11px; font-weight: 700; white-space: nowrap; }
+.tvd .s-OK { color: var(--ok); } .tvd .s-NIL { color: var(--note); } .tvd .s-NA { color: var(--note); } .tvd .tvd-hvbox.s-NA, .tvd .tvd-hvcard.s-NA { border-style: dashed; opacity: .75; }
+.tvd .s-INOP { color: var(--err); } .tvd .tvd-hvbox.s-INOP, .tvd .tvd-hvcard.s-INOP { border-style: dotted; } .tvd .s-WARN { color: var(--pen); } .tvd .s-ERROR { color: var(--err); } .tvd .tvd-hvbox.s-ERROR, .tvd .tvd-hvcard.s-ERROR { border-width: 3px; }
+.tvd .tvd-hvswitch { display: flex; gap: 6px; margin: 8px 0; }
+.tvd .tvd-hvswitch .on { font-weight: 700; outline: 2px solid currentColor; }
+.tvd .tvd-hvcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; margin-bottom: 8px; }
+.tvd .tvd-hvcard { border: 2px solid currentColor; border-radius: 10px; padding: 8px 10px; font-size: 13px; display: flex; flex-direction: column; gap: 3px; }
+.tvd .tvd-hvcard .top { display: flex; justify-content: space-between; align-items: center; }
+.tvd .tvd-hvcard .top b { font-size: 16px; }
+.tvd .tvd-hvcard .amt { font-weight: 700; color: var(--ink); }
+.tvd .tvd-hvcard .lim, .tvd .tvd-hvcard .sp { color: var(--ink); opacity: .85; }
+.tvd .tvd-hvcard .why { font-size: 12px; }
+@media (max-width: 899px) { .tvd .tvd-hv-hide { display: none; } .tvd .tvd-hvstrip { border-radius: 14px; } }
+@media (min-width: 900px) { .tvd .tvd-hvswitch { display: none; } .tvd .tvd-hv-narrowhide { display: grid !important; } .tvd .tvd-hv-hide { display: revert; } .tvd .tvd-hvcards.tvd-hv-hide { display: grid; } }
+
+@media (max-width: 480px) { .tvd .tvd-hvbox { font-size: 11px; padding: 5px 2px; } .tvd .tvd-hvbox .tvd-hvstate { font-size: 10px; } .tvd .tvd-hvstrip { border-radius: 10px; } }
+
+</style>
+</head>
+<body>
+<div class="tvd" id="tvd-app">
+
+  <header class="tvd-top">
+    <h1>Load'n Go</h1>
+    <p>Loading &amp; LDM Generator · FAO</p>
+  </header>
+
+  <nav class="tvd-tabs" role="tablist" aria-label="Airline">
+    <button type="button" class="tvd-tab on" id="tvd-tab-hv" role="tab" aria-selected="true">HV — Transavia</button>
+    <button type="button" class="tvd-tab" id="tvd-tab-ew" role="tab" aria-selected="false">EW — Eurowings</button>
+  </nav>
+
+  <main class="tvd-main">
+    <p class="tvd-notice">Support tool for dispatchers. Not an approved operational document: hold weight and capacity limits are not configured. Always check against official documentation.</p>
+
+    <div id="tvd-hv-panel">
+    <form id="tvd-form" novalidate autocomplete="off">
+
+      <!-- 1 -->
+      <section class="tvd-card">
+        <h2><span>1</span>Flight information</h2>
+        <div class="tvd-grid">
+          <label class="tvd-field"><span>Airline</span>
+            <select id="tvd-airline" disabled><option>Transavia</option></select></label>
+          <label class="tvd-field"><span>Flight number</span>
+            <input id="tvd-number" type="text" placeholder="HV6608" autocapitalize="characters" maxlength="8"></label>
+          <label class="tvd-field"><span>Date</span>
+            <input id="tvd-date" type="date"></label>
+          <label class="tvd-field"><span>Aircraft type</span>
+            <select id="tvd-aircraft"></select></label>
+          <label class="tvd-field"><span>Registration</span>
+            <input id="tvd-reg" type="text" placeholder="PH-HTV" autocapitalize="characters" maxlength="8"></label>
+          <label class="tvd-field"><span>Crew</span>
+            <select id="tvd-crew" disabled><option value="">—</option></select></label>
+          <label class="tvd-field"><span>Destination</span>
+            <input id="tvd-dest" type="text" placeholder="AMS" autocapitalize="characters" maxlength="3"></label>
+        </div>
+        <div class="tvd-info" id="tvd-acinfo" hidden></div>
+      </section>
+
+      <!-- 2 -->
+      <section class="tvd-card">
+        <h2><span>2</span>Passenger information</h2>
+        <div class="tvd-grid tvd-grid-4">
+          <label class="tvd-field"><span>Male (M)</span>
+            <input id="tvd-m" type="text" inputmode="numeric" placeholder="0"></label>
+          <label class="tvd-field"><span>Female (F)</span>
+            <input id="tvd-f" type="text" inputmode="numeric" placeholder="0"></label>
+          <label class="tvd-field"><span>Children (C)</span>
+            <input id="tvd-c" type="text" inputmode="numeric" placeholder="0"></label>
+          <label class="tvd-field"><span>Infants (I)</span>
+            <input id="tvd-i" type="text" inputmode="numeric" placeholder="0"></label>
+        </div>
+        <p class="tvd-total">Total PAX (M+F+C): <strong id="tvd-pax">—</strong> <small>Infants are not counted in PAX</small></p>
+        <p class="tvd-capwarn" id="tvd-capwarn" role="alert" hidden></p>
+      </section>
+
+      <!-- 3 -->
+      <section class="tvd-card">
+        <h2><span>3</span>Baggage information</h2>
+        <div class="tvd-grid">
+          <label class="tvd-field"><span>Total baggage pieces</span>
+            <input id="tvd-pieces" type="text" inputmode="numeric" placeholder="0"></label>
+          <label class="tvd-field"><span>Total baggage weight (kg)</span>
+            <input id="tvd-weight" type="text" inputmode="numeric" placeholder="0"></label>
+        </div>
+        <p class="tvd-hint">Totals include any AVIH and wheelchairs you add below.</p>
+      </section>
+
+      <!-- 4 -->
+      <section class="tvd-card">
+        <h2><span>4</span>Special loads (AVIH / Wheelchairs)</h2>
+        <fieldset class="tvd-seg">
+          <legend>Does this flight have AVIH or Wheelchairs?</legend>
+          <label><input type="radio" name="tvd-sp" id="tvd-sp-no" value="NO"><span>No</span></label>
+          <label><input type="radio" name="tvd-sp" id="tvd-sp-yes" value="YES"><span>Yes</span></label>
+        </fieldset>
+        <div id="tvd-sp-box" hidden>
+          <div id="tvd-sp-list"></div>
+          <div class="tvd-add">
+            <button type="button" class="tvd-btn tvd-ghost" id="tvd-add-avih">+ Add AVIH</button>
+            <button type="button" class="tvd-btn tvd-ghost" id="tvd-add-wc">+ Add wheelchair</button>
+          </div>
+          <p class="tvd-hint">Each item = 1 piece with its full weight, alone in its hold. ✓ = hold defined by the rules for this load; ★ = standard hold (suggested first).</p>
+        </div>
+      </section>
+
+      <div class="tvd-actions">
+        <button type="button" class="tvd-btn tvd-primary" id="tvd-generate" disabled>Generate LDM</button>
+        <button type="button" class="tvd-btn tvd-ghost" id="tvd-reset">Reset</button>
+      </div>
+    </form>
+
+    <p class="tvd-blockedhint" id="tvd-blockedhint" hidden></p>
+    <section id="tvd-alerts" aria-live="polite"></section>
+
+    <div id="tvd-result" hidden>
+      <!-- 5 -->
+      <section class="tvd-card">
+        <h2><span>5</span>Loading result</h2>
+        <div class="tvd-status" id="tvd-status"></div>
+        <div id="tvd-holdview"></div>
+        <div class="tvd-tablewrap" id="tvd-tablewrap"><table class="tvd-table" id="tvd-table"></table></div>
+        <div class="tvd-adjbar" id="tvd-adjbar" hidden></div>
+      </section>
+
+      <!-- 6 -->
+      <section class="tvd-card">
+        <h2><span>6</span>Average baggage weight</h2>
+        <p class="tvd-avg" id="tvd-avg"></p>
+        <p class="tvd-hint" id="tvd-avg-note"></p>
+      </section>
+
+      <!-- 7 -->
+      <section class="tvd-card" id="tvd-lmc">
+        <h2><span>7</span>Last minute change</h2>
+        <fieldset class="tvd-seg">
+          <legend>Is there a last minute change?</legend>
+          <label><input type="radio" name="tvd-lmc-ans" id="tvd-lmc-no" value="NO"><span>No</span></label>
+          <label><input type="radio" name="tvd-lmc-ans" id="tvd-lmc-yes" value="YES"><span>Yes</span></label>
+        </fieldset>
+        <div id="tvd-lmc-box" hidden>
+          <h3 class="tvd-sub">Holds</h3>
+          <div id="tvd-lmc-holds"></div>
+          <div class="tvd-add"><button type="button" class="tvd-btn tvd-ghost" id="tvd-lmc-add">+ Add hold change</button></div>
+          <h3 class="tvd-sub">People</h3>
+          <div class="tvd-grid" id="tvd-lmc-pax"></div>
+          <p class="tvd-hint">Enter only what changed. Tap the + / − button to switch between adding and removing (e.g. + 2 pieces, − 15 kg). Leave blank for no change.</p>
+          <div id="tvd-lmc-out" aria-live="polite"></div>
+          <p class="tvd-hint">This only recalculates the figures. The LDM below is the original one and is not changed.</p>
+        </div>
+      </section>
+
+      <!-- 8 -->
+      <section class="tvd-card">
+        <h2><span>8</span>Generated LDM</h2>
+        <pre class="tvd-ldm" id="tvd-ldm"></pre>
+        <div class="tvd-actions">
+          <button type="button" class="tvd-btn tvd-primary" id="tvd-copy">Copy LDM</button>
+        </div>
+      </section>
+    </div>
+
+    </div><!-- /tvd-hv-panel -->
+
+    <div id="tvd-ew-panel" hidden>
+      <section class="tvd-card">
+        <h2><span>1</span>Flight information</h2>
+        <div class="tvd-grid">
+          <label class="tvd-field"><span>Airline</span><select disabled><option>Eurowings</option></select></label>
+          <label class="tvd-field"><span>Aircraft type</span>
+            <select id="ew-aircraft"><option value="">Select aircraft…</option><option>A319</option><option>A320</option><option>A321</option></select></label>
+          <label class="tvd-field"><span>Flight number</span>
+            <input id="ew-number" type="text" placeholder="EW9643" autocapitalize="characters" maxlength="8"></label>
+          <label class="tvd-field"><span>Destination</span>
+            <input id="ew-dest" type="text" placeholder="DUS" autocapitalize="characters" maxlength="3"></label>
+        </div>
+        <div class="tvd-info" id="ew-acinfo" hidden></div>
+        <div class="tvd-clc" id="ew-clc" role="alert" hidden>
+          <strong>ATENÇÃO — A321 COM CLC</strong>
+          <p>Consultar o email dos dispatchers aproximadamente 50 minutos antes da partida. É nesse email que estará disponível a LIR.</p>
+          <p>Esta aplicação permite gerar a LDM, mas não efetua o cálculo do carregamento.</p>
+        </div>
+      </section>
+
+      <section class="tvd-card">
+        <h2><span>2</span>Passenger information</h2>
+        <div class="tvd-grid tvd-grid-4">
+          <label class="tvd-field"><span>Male (M)</span><input id="ew-m" type="text" inputmode="numeric" placeholder="0"></label>
+          <label class="tvd-field"><span>Female (F)</span><input id="ew-f" type="text" inputmode="numeric" placeholder="0"></label>
+          <label class="tvd-field"><span>Children (C)</span><input id="ew-c" type="text" inputmode="numeric" placeholder="0"></label>
+          <label class="tvd-field"><span>Infants (I)</span><input id="ew-i" type="text" inputmode="numeric" placeholder="0"></label>
+        </div>
+        <p class="tvd-total">TOB (M+F+C+I): <strong id="ew-tob">—</strong> <small>Infants are shown after the +</small></p>
+        <p class="tvd-capwarn" id="ew-capwarn" role="alert" hidden></p>
+      </section>
+
+      <section class="tvd-card">
+        <h2><span>3</span>Baggage information</h2>
+        <div class="tvd-grid">
+          <label class="tvd-field"><span>Total baggage pieces</span><input id="ew-pieces" type="text" inputmode="numeric" placeholder="0"></label>
+          <label class="tvd-field"><span>Total baggage weight (kg)</span><input id="ew-weight" type="text" inputmode="numeric" placeholder="0"></label>
+        </div>
+        <p class="tvd-hint">Totals include any AVIH and wheelchairs you add below.</p>
+      </section>
+
+      <section class="tvd-card">
+        <h2><span>4</span>Special loads (AVIH / Wheelchairs)</h2>
+        <fieldset class="tvd-seg">
+          <legend>Does this flight have AVIH or Wheelchairs?</legend>
+          <label><input type="radio" name="ew-sp" id="ew-sp-no" value="NO"><span>No</span></label>
+          <label><input type="radio" name="ew-sp" id="ew-sp-yes" value="YES"><span>Yes</span></label>
+        </fieldset>
+        <div id="ew-sp-box" hidden>
+          <div id="ew-sp-list"></div>
+          <div class="tvd-add">
+            <button type="button" class="tvd-btn tvd-ghost" id="ew-add-avih">+ Add AVIH</button>
+            <button type="button" class="tvd-btn tvd-ghost" id="ew-add-wc">+ Add wheelchair (WCLB)</button>
+          </div>
+          <label class="tvd-confirm" id="ew-confirm-box" hidden><input type="checkbox" id="ew-confirm"> <span id="ew-confirm-text"></span></label>
+          <p class="tvd-hint">Each item = 1 piece with its full weight, excluded from the average.</p>
+        </div>
+      </section>
+
+      <section id="ew-alerts" aria-live="polite"></section>
+
+      <section class="tvd-card" id="ew-load-card" hidden>
+        <h2><span>5</span>Loading</h2>
+        <div class="tvd-info" id="ew-summary"></div>
+        <div id="ew-modebox" hidden></div>
+        <div id="ew-holdview"></div>
+        <div class="tvd-tablewrap" id="ew-tablewrap"><table class="tvd-table" id="ew-table"></table></div>
+        <div class="tvd-adjbar" id="ew-bar"></div>
+      </section>
+
+      <section class="tvd-card" id="ew-avg-card" hidden>
+        <h2><span>6</span>Average baggage weight</h2>
+        <p class="tvd-avg" id="ew-avg"></p>
+        <p class="tvd-hint" id="ew-avg-note"></p>
+      </section>
+
+      <section class="tvd-card">
+        <h2><span>7</span>Transfer bags (BT)</h2>
+        <fieldset class="tvd-seg">
+          <legend>Tens Transfer Bags (BT)?</legend>
+          <label><input type="radio" name="ew-bt" id="ew-bt-no" value="NO"><span>No</span></label>
+          <label><input type="radio" name="ew-bt" id="ew-bt-yes" value="YES"><span>Yes</span></label>
+        </fieldset>
+        <div id="ew-bt-box" hidden>
+          <div id="ew-bt-list"></div>
+          <div class="tvd-add"><button type="button" class="tvd-btn tvd-ghost" id="ew-bt-add">+ Add destination</button></div>
+        </div>
+      </section>
+
+      <section class="tvd-card">
+        <h2><span>8</span>Generated LDM</h2>
+        <pre class="tvd-ldm" id="ew-ldm">Complete the data above to get the LDM.</pre>
+        <p class="tvd-blockedhint" id="ew-blockedhint" hidden></p>
+        <div class="tvd-actions">
+          <button type="button" class="tvd-btn tvd-primary" id="ew-generate" disabled>Generate LDM</button>
+          <button type="button" class="tvd-btn tvd-primary" id="ew-copy" disabled>Copy LDM</button>
+          <button type="button" class="tvd-btn tvd-ghost" id="ew-reset">Reset</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+</div>
+
+<script>
+/**
+ * Integer-safe helpers shared by every airline module.
+ * No DOM, no airline-specific rules.
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+
+  /**
+   * Round num/den to the nearest integer; exact halves round UP.
+   * Works on non-negative integers only (no floating-point drift).
+   * Example: roundDiv(50 * 123, 100) -> 62   (61.5 -> 62)
+   */
+  function roundDiv(num, den) {
+    if (den === 0) return 0;
+    return Math.floor((2 * num + den) / (2 * den));
+  }
+
+  /** Same as roundDiv, but exact halves round DOWN (41.5 -> 41). */
+  function roundDivHalfDown(num, den) {
+    if (den === 0) return 0;
+    return Math.floor((2 * num + den - 1) / (2 * den));
+  }
+
+  /**
+   * Truncate num/den to 2 decimals (NO rounding) and return it as a string.
+   * Example: truncate2(2358, 142) -> "16.60"   (16.606... is NOT shown as 16.61)
+   * Returns null when den is 0.
+   */
+  function truncate2(num, den) {
+    if (den === 0) return null;
+    const scaled = num * 100;
+    const hundredths = (scaled - (scaled % den)) / den;
+    const whole = Math.floor(hundredths / 100);
+    const frac = hundredths % 100;
+    return whole + '.' + String(frac).padStart(2, '0');
+  }
+
+  /**
+   * Parse a signed whole number typed in a form ("+2", "-30", "−30", "5"). Blank counts as 0.
+   * Returns { value } or { invalid: true }.
+   */
+  function parseSignedWhole(value) {
+    const s = String(value == null ? '' : value).trim().replace(/−/g, '-');
+    if (s === '') return { value: 0 };
+    if (!/^[+-]?\d+$/.test(s)) return { invalid: true };
+    return { value: Number(s) };
+  }
+
+  /** Parse a form value as a non-negative whole number. */
+  function parseWholeNumber(value) {
+    const s = String(value == null ? '' : value).trim();
+    if (s === '') return { blank: true };
+    if (!/^\d+$/.test(s)) return { invalid: true };
+    return { value: Number(s) };
+  }
+
+  /**
+   * Round num/den to 2 decimals (conventional rounding, exact half up) and return it as a string.
+   * Integer arithmetic only. Example: round2(1936, 84) -> "23.05"   (23.0476...)
+   * Returns null when den is 0.
+   */
+  function round2(num, den) {
+    if (den === 0) return null;
+    const hundredths = roundDiv(num * 100, den);
+    return Math.floor(hundredths / 100) + '.' + String(hundredths % 100).padStart(2, '0');
+  }
+
+  const api = { roundDiv, roundDivHalfDown, round2, truncate2, parseWholeNumber, parseSignedWhole };
+  NS.math = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Loading calculation engine (airline-agnostic).
+ *
+ * The engine never contains airline rules. It receives an aircraft profile
+ * (distribution rule + holds) from src/airlines/<airline>/ and applies it.
+ *
+ * DETERMINISTIC ROUNDING RULE (documented, reproduces the 4 reference scenarios):
+ *  1. Special loads (AVIH / wheelchairs) are removed first: 1 piece + full weight each.
+ *  2. Pieces of the remaining "normal" baggage are split by the aircraft's rule:
+ *       - every hold except the BALANCING hold: round-half-up(share * N)
+ *       - the BALANCING hold takes the remainder, so total pieces are always preserved
+ *     BALANCING hold = the hold with the largest share (ties: the last hold in sequence).
+ *  3. Weight follows the pieces (never the percentages independently):
+ *       - every hold except the balancing hold: round-half-up(pieces * W / N)
+ *       - the balancing hold takes the remainder, so total weight is always preserved
+ *  4. Average = normal weight / normal pieces, rounded to 2 decimals.
+ *  5. INOP holds receive nothing; the dispatcher can move pieces between holds (arrows, see computeLoading).
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+  const math = typeof require === 'function' ? require('./math.js') : NS.math;
+
+  const holdNumber = (h) => parseInt(String(h).slice(1), 10);
+
+  /** Split N normal pieces over the aircraft's distribution holds. */
+  function splitPieces(distribution, n) {
+    const parts = distribution.holds.map((h) => ({ hold: h.hold, pieces: 0, weight: 0 }));
+    const notes = [];
+    let balancing;
+
+    if (distribution.type === 'PERCENT') {
+      balancing = 0;
+      distribution.holds.forEach((h, i) => {
+        if (h.share >= distribution.holds[balancing].share) balancing = i; // ties -> last
+      });
+      // halfRounding: what happens to an exact half piece in the non-balancing holds.
+      // 'UP' (default) reproduces B737-800 scenario 2; 'DOWN' reproduces A320 scenario 2.
+      const round = distribution.halfRounding === 'DOWN' ? math.roundDivHalfDown : math.roundDiv;
+      let used = 0;
+      distribution.holds.forEach((h, i) => {
+        if (i === balancing) return;
+        parts[i].pieces = round(h.share * n, 100);
+        used += parts[i].pieces;
+      });
+      parts[balancing].pieces = n - used;
+    } else if (distribution.type === 'FIXED_THEN_REMAINDER') {
+      balancing = distribution.holds.findIndex((h) => h.remainder);
+      let left = n;
+      distribution.holds.forEach((h, i) => {
+        if (i === balancing) return;
+        parts[i].pieces = Math.min(h.pieces, left);
+        if (parts[i].pieces < h.pieces) {
+          notes.push({ code: 'FIXED_HOLD_NOT_FILLED', hold: h.hold, wanted: h.pieces, got: parts[i].pieces });
+        }
+        left -= parts[i].pieces;
+      });
+      parts[balancing].pieces = left;
+    } else {
+      throw new Error('Unknown distribution type: ' + distribution.type);
+    }
+    return { parts, balancing, notes };
+  }
+
+  const byNo = (a, b) => holdNumber(a) - holdNumber(b);
+
+  /**
+   * @param aircraft  aircraft profile (see src/airlines/transavia/aircraft.js)
+   * @param data      normalized input: { baggage:{pieces,weight}, specials:[{kind,code,weight,hold,...}],
+   *                  inop:['H1',...], adjust:{pieces:{H3:55,...}}|null }
+   *
+   * Normal baggage can only go in an ELIGIBLE hold: a hold of the aircraft that is not INOP and does not
+   * carry a special load (a special load occupies its hold alone).
+   *  - Standard: the aircraft rule over its distribution holds. Pieces the rule gives to an INOP hold
+   *    stay UNASSIGNED (the dispatcher allocates them with the arrows; no LDM until 0 are left).
+   *  - Manual (arrows): `adjust.pieces` is the full piece map of the eligible holds; the rest is unassigned.
+   * Weights always follow the pieces.
+   */
+  function computeLoading(aircraft, data) {
+    const issues = [];
+    const specials = data.specials || [];
+    const inop = (data.inop || []).slice().sort(byNo);
+    const specialPieces = specials.length; // 1 piece each
+    const specialWeight = specials.reduce((sum, s) => sum + s.weight, 0);
+    const nPieces = data.baggage.pieces - specialPieces;
+    const nWeight = data.baggage.weight - specialWeight;
+
+    if (nPieces < 0 || nWeight < 0) {
+      issues.push({ level: 'error', code: 'SPECIAL_EXCEEDS_TOTAL', message: 'Special loads exceed the total baggage pieces or weight.' });
+      return { ok: false, issues };
+    }
+
+    const spHolds = specials.map((s) => s.hold);
+    const eligible = aircraft.holds.filter((h) => !inop.includes(h) && !spHolds.includes(h)).sort(byNo);
+
+    // ---- standard split (the aircraft rule; INOP holds are applied afterwards)
+    const standard = splitPieces(aircraft.distribution, nPieces);
+    if (standard.parts.some((p) => p.pieces < 0)) {
+      issues.push({ level: 'error', code: 'PIECES_ROUNDING_CONFLICT', message: 'Cannot split the baggage pieces for this aircraft rule.' });
+      return { ok: false, issues };
+    }
+    const stdVec = {};
+    eligible.forEach((h) => { stdVec[h] = 0; });
+    standard.parts.forEach((p) => { if (eligible.includes(p.hold)) stdVec[p.hold] = p.pieces; });
+    const stdBalName = aircraft.distribution.holds[standard.balancing].hold;
+
+    // ---- manual map (arrows)
+    const manual = data.adjust && data.adjust.pieces ? data.adjust.pieces : null;
+    let vec = stdVec;
+    if (manual) {
+      vec = {};
+      eligible.forEach((h) => { vec[h] = 0; });
+      let bad = false;
+      Object.keys(manual).forEach((h) => {
+        if (!eligible.includes(h) && manual[h] !== 0) bad = true;
+        if (eligible.includes(h)) vec[h] = manual[h];
+      });
+      const sum = Object.keys(vec).reduce((a, h) => a + vec[h], 0);
+      if (bad || Object.keys(vec).some((h) => !Number.isInteger(vec[h]) || vec[h] < 0) || sum > nPieces) {
+        issues.push({ level: 'error', code: 'ADJUST_INVALID', message: 'Manual distribution must use whole numbers of pieces in holds that can take baggage, and cannot exceed ' + nPieces + ' pieces in total.' });
+        return { ok: false, issues };
+      }
+    }
+
+    const assignedPieces = Object.keys(vec).reduce((a, h) => a + vec[h], 0);
+    const unassignedPieces = nPieces - assignedPieces;
+
+    // ---- weights: follow the pieces; one balancing hold takes the remainder so totals are exact
+    const roundW = aircraft.distribution.halfRounding === 'DOWN' ? math.roundDivHalfDown : math.roundDiv;
+    let balName = null;
+    if (!manual && eligible.includes(stdBalName)) balName = stdBalName;
+    else {
+      eligible.forEach((h) => { if (balName === null || vec[h] >= vec[balName]) balName = h; }); // most pieces, ties -> last
+    }
+    const assignedWeight = unassignedPieces === 0 ? nWeight : (nPieces === 0 ? 0 : roundW(assignedPieces * nWeight, nPieces));
+    const weights = {};
+    let used = 0;
+    eligible.forEach((h) => {
+      if (h === balName) return;
+      weights[h] = nPieces === 0 ? 0 : roundW(vec[h] * nWeight, nPieces);
+      used += weights[h];
+    });
+    if (balName !== null) weights[balName] = assignedWeight - used;
+    if (balName !== null && weights[balName] < 0) {
+      issues.push({ level: 'error', code: 'WEIGHT_ROUNDING_CONFLICT', message: 'Cannot split the baggage weight for this aircraft rule.' });
+      return { ok: false, issues };
+    }
+    if (nPieces === 0 && nWeight !== 0) {
+      issues.push({ level: 'error', code: 'WEIGHT_WITHOUT_PIECES', message: 'Normal baggage has weight but no pieces.' });
+      return { ok: false, issues };
+    }
+
+    // ---- roles for the arrows: POOL gives/takes the pieces; OTHER is where the pool's own arrows send them
+    const dist = aircraft.distribution.holds.map((h) => h.hold).filter((h) => eligible.includes(h));
+    const pool = dist.includes(stdBalName) ? stdBalName : (dist[dist.length - 1] || eligible[eligible.length - 1] || null);
+    const other = dist.find((h) => h !== pool) || eligible.find((h) => h !== pool) || null;
+    const active = !!manual && eligible.some((h) => vec[h] !== stdVec[h]);
+
+    const holds = [];
+    const distNames = aircraft.distribution.holds.map((h) => h.hold);
+    eligible.forEach((h) => {
+      if (distNames.includes(h) || vec[h] > 0) holds.push({ hold: h, kind: 'NORMAL', code: 'BAG', pieces: vec[h], weight: weights[h] });
+    });
+    specials.forEach((s) => holds.push({ hold: s.hold, kind: s.kind, code: s.code, pieces: 1, weight: s.weight }));
+    holds.sort((a, b) => byNo(a.hold, b.hold));
+
+    return {
+      ok: true,
+      issues,
+      notes: standard.notes,
+      normal: { pieces: nPieces, weight: nWeight, average: math.round2(nWeight, nPieces) },
+      inop,
+      unassigned: { pieces: unassignedPieces, weight: nWeight - assignedWeight },
+      adjustment: { eligible, pool, other, max: nPieces, standard: stdVec, active },
+      holds,
+      totals: {
+        pieces: holds.reduce((a, h) => a + h.pieces, 0),
+        weight: holds.reduce((a, h) => a + h.weight, 0),
+      },
+    };
+  }
+
+  const api = { computeLoading, splitPieces, holdNumber };
+  NS.engine = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Validation (airline-agnostic).
+ *
+ * Alert levels
+ *  - error   : blocks the LDM (inconsistent or impossible data)
+ *  - pending : the data is consistent but a rule is not confirmed -> result is a DRAFT
+ *  - warning : something worth checking, does not block
+ *
+ * The tool never marks a result as operationally approved.
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+  const math = typeof require === 'function' ? require('./math.js') : NS.math;
+
+  const holdNo = (h) => parseInt(String(h).slice(1), 10);
+
+  /** Checks the raw form input and returns normalized data. */
+  function validateInput(airline, raw) {
+    const errors = [];
+    const warnings = [];
+    const pending = [];
+    const err = (code, message) => errors.push({ level: 'error', code, message });
+    const warn = (code, message) => warnings.push({ level: 'warning', code, message });
+    const pend = (code, message) => pending.push({ level: 'pending', code, message });
+
+    const whole = (label, value) => {
+      const r = math.parseWholeNumber(value);
+      if (r.blank) { err('REQUIRED', label + ' is required.'); return null; }
+      if (r.invalid) { err('NOT_WHOLE', label + ' must be a whole number.'); return null; }
+      return r.value;
+    };
+
+    // ---- Flight information
+    const f = raw.flight || {};
+    const flight = {
+      number: String(f.number || '').toUpperCase().replace(/\s+/g, ''),
+      date: String(f.date || ''),
+      aircraft: String(f.aircraft || ''),
+      registration: String(f.registration || '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+      destination: String(f.destination || '').toUpperCase().trim(),
+      crew: String(f.crew || '').trim(),
+    };
+
+    if (!flight.number) err('FLIGHT_REQUIRED', 'Flight number is required.');
+    else if (!/^[A-Z0-9]{2}\d{1,4}[A-Z]?$/.test(flight.number)) err('FLIGHT_FORMAT', 'Flight number format is invalid (e.g. HV6608).');
+    else if (airline.flightPrefixes && !airline.flightPrefixes.includes(flight.number.slice(0, 2))) {
+      warn('FLIGHT_PREFIX', 'Flight number does not start with ' + airline.flightPrefixes.join(' / ') + '. Check the flight number.');
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(flight.date)) err('DATE_REQUIRED', 'Date is required.');
+    else {
+      const [y, m, d] = flight.date.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) err('DATE_INVALID', 'Date is not a valid calendar date.');
+    }
+
+    const aircraft = airline.aircraft[flight.aircraft];
+    if (!flight.aircraft) err('AIRCRAFT_REQUIRED', 'Aircraft type is required.');
+    else if (!aircraft) err('AIRCRAFT_UNKNOWN', 'Aircraft type is not available for ' + airline.name + '.');
+
+    // Crew: blank = aircraft standard; otherwise one of the airline's options (extra captain / cabin crew).
+    if (aircraft) {
+      const allowedCrew = [aircraft.crew].concat(airline.crewOptions || []);
+      if (!flight.crew) flight.crew = aircraft.crew;
+      else if (!allowedCrew.includes(flight.crew)) err('CREW_INVALID', 'Crew must be one of ' + allowedCrew.filter((c, i) => allowedCrew.indexOf(c) === i).join(', ') + '.');
+    }
+
+    // INOP holds (inoperative): nothing can be loaded there
+    const inop = [];
+    (raw.inop || []).forEach((h) => {
+      if (!aircraft) return;
+      if (!aircraft.holds.includes(h)) err('INOP_UNKNOWN', h + ' is not a hold of the ' + aircraft.type + '.');
+      else if (!inop.includes(h)) inop.push(h);
+    });
+
+    if (!flight.registration) err('REG_REQUIRED', 'Registration is required.');
+    else if (!/^[A-Z0-9]{3,7}$/.test(flight.registration)) err('REG_FORMAT', 'Registration format is invalid (e.g. PH-HTV).');
+
+    if (!flight.destination) err('DEST_REQUIRED', 'Destination is required.');
+    else if (!/^[A-Z]{3}$/.test(flight.destination)) err('DEST_FORMAT', 'Destination must be a 3-letter IATA code (e.g. AMS).');
+
+    // ---- Passengers
+    const p = raw.pax || {};
+    const pax = {
+      m: whole('Male (M)', p.m),
+      f: whole('Female (F)', p.f),
+      c: whole('Children (C)', p.c),
+      i: whole('Infants (I)', p.i),
+    };
+    if ([pax.m, pax.f, pax.c].every((v) => v !== null) && aircraft && pax.m + pax.f + pax.c > aircraft.seats) {
+      err('PAX_OVER_CONFIG', 'Passenger capacity exceeded: ' + (pax.m + pax.f + pax.c) + ' PAX, ' + aircraft.config + ' capacity is ' + aircraft.seats + '. Infants are not counted.');
+    }
+
+    // ---- Baggage
+    const b = raw.baggage || {};
+    const baggage = { pieces: whole('Total baggage pieces', b.pieces), weight: whole('Total baggage weight (kg)', b.weight) };
+
+    // ---- Special loads
+    const specials = [];
+    if (raw.specialsAnswer !== 'NO' && raw.specialsAnswer !== 'YES') {
+      err('SPECIAL_ANSWER', 'Answer: does this flight have AVIH or Wheelchairs?');
+    } else if (raw.specialsAnswer === 'YES') {
+      const items = raw.specials || [];
+      if (items.length === 0) err('SPECIAL_NONE', 'You answered Yes: add at least one AVIH or wheelchair, or answer No.');
+      const counters = { AVIH: 0, WHEELCHAIR: 0 };
+      const defs = airline.specialLoads.definitions;
+
+      items.forEach((s) => {
+        const kind = s.kind === 'AVIH' ? 'AVIH' : 'WHEELCHAIR';
+        counters[kind] += 1;
+        const name = (kind === 'AVIH' ? 'AVIH ' : 'Wheelchair ') + String(counters[kind]).padStart(2, '0');
+        const item = { kind, name, code: kind === 'AVIH' ? 'AVIH' : String(s.code || ''), weight: null, hold: String(s.hold || '') };
+
+        if (kind === 'AVIH') {
+          if (!defs.AVIH.animals.includes(s.animal)) err('AVIH_TYPE', name + ': select animal type (CAT / DOG).');
+          if (!defs.AVIH.sexes.includes(s.sex)) err('AVIH_SEX', name + ': select sex (M / F).');
+          item.animal = s.animal;
+          item.sex = s.sex;
+        } else if (!defs.WHEELCHAIR.codes[item.code]) {
+          err('WC_CODE', name + ': select wheelchair code (WCLB / WCDB).');
+        }
+
+        item.weight = whole(name + ' weight (kg)', s.weight);
+        if (item.weight === 0) err('SPECIAL_WEIGHT', name + ': weight must be greater than 0.');
+
+        if (aircraft && aircraft.special[kind].forbidden) {
+          err('SPECIAL_NOT_ALLOWED', aircraft.type + ': ' + (kind === 'AVIH' ? 'AVIH' : 'wheelchairs') + ' are blocked because no rule is defined for them.');
+        } else if (!item.hold) err('SPECIAL_HOLD', name + ': select the hold.');
+        else if (aircraft) {
+          const rule = aircraft.special[kind];
+          if (!aircraft.holds.includes(item.hold)) {
+            err('HOLD_UNAVAILABLE', name + ': ' + item.hold + ' is not available on the ' + aircraft.type + '.');
+          } else if (inop.includes(item.hold)) {
+            err('SPECIAL_IN_INOP', name + ': ' + item.hold + ' is INOP. Nothing can be loaded in it.');
+          } else if (aircraft.distribution.holds.some((h) => h.hold === item.hold)) {
+            err('SPECIAL_IN_NORMAL_HOLD', name + ': ' + item.hold + ' is a normal baggage hold on the ' + aircraft.type + '. A special load occupies its hold alone.');
+          } else if (rule.allowed === null) {
+            pend('SPECIAL_HOLD_UNDEFINED', aircraft.type + ': the rules do not define a hold for ' + (kind === 'AVIH' ? 'AVIH' : 'wheelchairs') + ' — ' + name + ' in ' + item.hold + ' is not validated.');
+          } else if (!rule.allowed.includes(item.hold)) {
+            pend('HOLD_NOT_DEFINED', name + ': ' + item.hold + ' is not a defined hold for this load on the ' + aircraft.type + ' (defined: ' + rule.allowed.join(', ') + ').');
+          }
+          if (!aircraft.validated[kind]) {
+            pend('SPECIAL_UNVALIDATED', aircraft.type + ': ' + (kind === 'AVIH' ? 'AVIH' : 'wheelchair') + ' loading has no reference scenario yet.');
+          }
+        }
+        specials.push(item);
+      });
+
+      // one special load per hold
+      const seen = {};
+      specials.forEach((s) => {
+        if (!s.hold) return;
+        if (seen[s.hold]) err('HOLD_SHARED', 'Hold ' + s.hold + ' has more than one special load. A special load occupies its hold alone.');
+        seen[s.hold] = true;
+      });
+    }
+
+    // dedupe repeated alerts (several items can trigger the same one)
+    const uniq = (list) => list.filter((a, i) => list.findIndex((b) => b.code === a.code && b.message === a.message) === i);
+
+    // ---- Totals vs special loads
+    if (baggage.pieces !== null && baggage.weight !== null) {
+      const spW = specials.reduce((a, s) => a + (s.weight || 0), 0);
+      if (specials.length > baggage.pieces) err('SPECIAL_PIECES', 'Special loads (' + specials.length + ') exceed the total baggage pieces (' + baggage.pieces + ').');
+      if (spW > baggage.weight) err('SPECIAL_WEIGHT_TOTAL', 'Special loads (' + spW + ' kg) exceed the total baggage weight (' + baggage.weight + ' kg).');
+      const nP = baggage.pieces - specials.length;
+      const nW = baggage.weight - spW;
+      if (nP >= 0 && nW >= 0) {
+        if (nP === 0 && nW > 0) err('WEIGHT_WITHOUT_PIECES', 'Normal baggage has ' + nW + ' kg but 0 pieces. Check pieces and weight.');
+        if (nP > 0 && nW === 0) warn('PIECES_WITHOUT_WEIGHT', 'Normal baggage has ' + nP + ' pieces but 0 kg. Check the weight.');
+        if (aircraft && aircraft.distribution.type === 'FIXED_THEN_REMAINDER') {
+          const fixed = aircraft.distribution.holds.filter((h) => !h.remainder).reduce((a, h) => a + h.pieces, 0);
+          if (nP < fixed) {
+            err('BELOW_FIXED_HOLD', aircraft.type + ' rule: ' + aircraft.distribution.holds[0].hold + ' = ' + fixed + ' pieces. With ' + nP + ' normal pieces the rule is not defined, so the loading is blocked.');
+          }
+        }
+      }
+    }
+
+    if (aircraft && !aircraft.validated.base) {
+      pend('AIRCRAFT_UNVALIDATED', aircraft.type + ': distribution rule has no reference scenario yet.');
+    }
+
+    // ---- Manual distribution (arrows): pieces per hold, e.g. { H2: 45, H3: 55 }
+    let adjust = null;
+    if (raw.adjust != null && aircraft) {
+      const m = raw.adjust;
+      const keys = typeof m === 'object' ? Object.keys(m) : [];
+      if (!keys.length || keys.some((h) => !aircraft.holds.includes(h) || !Number.isInteger(m[h]) || m[h] < 0)) {
+        err('ADJUST_INVALID', 'Manual distribution must be whole numbers of pieces in the holds of the ' + aircraft.type + '.');
+      } else {
+        adjust = { pieces: Object.assign({}, m) };
+      }
+    }
+
+    return {
+      errors: uniq(errors),
+      warnings: uniq(warnings),
+      pending: uniq(pending),
+      data: { flight, pax, baggage, specials, adjust, inop },
+    };
+  }
+
+  /**
+   * Cross-checks the finished loading and LDM against the input.
+   * Returns a list of errors (empty = consistent).
+   */
+  function verifyResult(airline, aircraft, data, loading, ldmText) {
+    const errors = [];
+    const err = (code, message) => errors.push({ level: 'error', code, message });
+
+    if (loading.totals.pieces !== data.baggage.pieces) err('CHECK_PIECES', 'Hold pieces (' + loading.totals.pieces + ') do not match total pieces (' + data.baggage.pieces + ').');
+    if (loading.totals.weight !== data.baggage.weight) err('CHECK_WEIGHT', 'Hold weights (' + loading.totals.weight + ') do not match total weight (' + data.baggage.weight + ').');
+
+    data.specials.forEach((s) => {
+      const h = loading.holds.find((x) => x.hold === s.hold && x.kind === s.kind);
+      if (!h || h.pieces !== 1 || h.weight !== s.weight) err('CHECK_SPECIAL', s.name + ' is not correctly placed in ' + s.hold + '.');
+    });
+
+    const spW = data.specials.reduce((a, s) => a + s.weight, 0);
+    const avg = math.round2(data.baggage.weight - spW, data.baggage.pieces - data.specials.length);
+    if (avg !== loading.normal.average) err('CHECK_AVERAGE', 'Average baggage weight does not match the normal baggage.');
+
+    const parsed = airline.ldm.parse(ldmText);
+    if (!parsed) {
+      err('CHECK_LDM_FORMAT', 'The generated LDM could not be read back. Do not use it.');
+      return errors;
+    }
+    const f = data.flight;
+    const expHolds = loading.holds.filter((h) => h.weight > 0).map((h) => [holdNo(h.hold), h.weight]);
+    const expInc = data.specials.slice().sort((a, b) => holdNo(a.hold) - holdNo(b.hold)).map((s) => s.code + '/' + s.hold);
+    const gotInc = parsed.inc.map((i) => i.code + '/' + i.hold);
+    const ok =
+      parsed.flight === f.number &&
+      parsed.registration === f.registration &&
+      parsed.config === aircraft.config &&
+      parsed.crew === (f.crew || aircraft.crew) &&
+      parsed.destination === f.destination &&
+      parsed.pax.m === data.pax.m && parsed.pax.f === data.pax.f && parsed.pax.c === data.pax.c && parsed.pax.i === data.pax.i &&
+      parsed.paxTotal === data.pax.m + data.pax.f + data.pax.c &&
+      parsed.totalWeight === data.baggage.weight &&
+      parsed.si.pieces === data.baggage.pieces && parsed.si.weight === data.baggage.weight &&
+      JSON.stringify(parsed.holds) === JSON.stringify(expHolds) &&
+      JSON.stringify(gotInc) === JSON.stringify(expInc) &&
+      JSON.stringify(parsed.inop) === JSON.stringify((data.inop || []).slice().sort((a, b) => holdNo(a) - holdNo(b)));
+    if (!ok) err('CHECK_LDM', 'The generated LDM does not match the entered data. Do not use it.');
+    return errors;
+  }
+
+  const api = { validateInput, verifyResult };
+  NS.validation = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Pipeline: input -> validation -> loading engine -> LDM -> cross-check.
+ * One entry point used by the UI and by the tests.
+ *
+ * Result status
+ *  - ERROR       : inconsistent data, nothing is generated
+ *  - INCOMPLETE  : baggage pieces still unassigned (INOP hold): table shown, no LDM
+ *  - DRAFT       : calculated, but a rule is not confirmed (pending validation)
+ *  - CALCULATED  : calculated with confirmed rules; hold limits still NOT validated
+ * There is deliberately no "approved" status.
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+  const engine = typeof require === 'function' ? require('./engine.js') : NS.engine;
+  const validation = typeof require === 'function' ? require('./validation.js') : NS.validation;
+
+  const LIMITS_NOTE = {
+    level: 'info',
+    code: 'LIMITS_NOT_CONFIGURED',
+    message: 'Hold weight and capacity limits are not configured (official documentation pending). This result is not operationally approved.',
+  };
+
+  function generate(airline, raw) {
+    const v = validation.validateInput(airline, raw);
+    if (v.errors.length) {
+      return { status: 'ERROR', alerts: [].concat(v.errors, v.pending, v.warnings), ldm: null, loading: null, data: v.data };
+    }
+
+    const aircraft = airline.aircraft[v.data.flight.aircraft];
+    const loading = engine.computeLoading(aircraft, v.data);
+    if (!loading.ok) {
+      return { status: 'ERROR', alerts: [].concat(loading.issues, v.pending, v.warnings), ldm: null, loading: null, data: v.data };
+    }
+
+    const pending = v.pending.slice();
+    (loading.notes || []).forEach((n) => {
+      pending.push({ level: 'pending', code: n.code, message: n.hold + ' could not be filled to ' + n.wanted + ' pieces (got ' + n.got + ').' });
+    });
+
+    // Pieces the rule gave to an INOP hold (or that the arrows left over) must be allocated first.
+    if (loading.unassigned.pieces > 0) {
+      const u = loading.unassigned;
+      const alerts = [].concat(pending, v.warnings, [{
+        level: 'error',
+        code: 'UNASSIGNED_BAGGAGE',
+        message: u.pieces + ' piece' + (u.pieces === 1 ? '' : 's') + ' (' + u.weight + ' kg) not assigned to any hold' +
+          (loading.inop.length ? ' (INOP: ' + loading.inop.join(', ') + ')' : '') +
+          '. Use the + / − arrows to assign them. The LDM is generated when 0 are left.',
+      }]);
+      return { status: 'INCOMPLETE', alerts, ldm: null, loading, data: v.data, aircraft };
+    }
+
+    const ldm = airline.ldm.build(aircraft, v.data, loading);
+    const checkErrors = validation.verifyResult(airline, aircraft, v.data, loading, ldm);
+    if (checkErrors.length) {
+      return { status: 'ERROR', alerts: checkErrors, ldm: null, loading, data: v.data };
+    }
+
+    const alerts = [].concat(pending, v.warnings);
+    const adj = loading.adjustment;
+    if (adj.active) {
+      const list = (pick) => adj.eligible
+        .filter((h) => adj.standard[h] > 0 || loading.holds.some((x) => x.hold === h && x.kind === 'NORMAL' && x.pieces > 0))
+        .map((h) => h + ' ' + pick(h)).join(' / ');
+      alerts.push({
+        level: 'info',
+        code: 'MANUAL_DISTRIBUTION',
+        message: 'Manual distribution: ' + list((h) => loading.holds.find((x) => x.hold === h && x.kind === 'NORMAL').pieces) +
+          ' pieces (standard: ' + list((h) => adj.standard[h]) + '). Weights follow the pieces.',
+      });
+    }
+    loading.inop.forEach((h) => {
+      alerts.push({ level: 'info', code: 'INOP_HOLD', message: h + ' is INOP: nothing is loaded in it (shown as ' + h + '/INOP in the LDM).' });
+    });
+    alerts.push(LIMITS_NOTE);
+
+    return {
+      status: pending.length ? 'DRAFT' : 'CALCULATED',
+      alerts,
+      ldm,
+      loading,
+      data: v.data,
+      aircraft,
+    };
+  }
+
+  const api = { generate };
+  NS.pipeline = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Last Minute Change (LMC) — airline-agnostic.
+ *
+ * Only RECALCULATES figures: it takes the finished loading and the passenger figures and applies
+ * signed changes entered by the dispatcher (+/-). It does NOT generate an LMC message and it does
+ * NOT touch the LDM, because the LMC message format was not supplied (nothing is invented).
+ *
+ * changes = {
+ *   holds: [{ hold:'H3', pieces:'+2', weight:'+30' }, ...]   // raw form strings; blank = 0; several rows may use one hold
+ *   pax:   { m:'+1', f:'', c:'', i:'-1' }
+ * }
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+  const math = typeof require === 'function' ? require('./math.js') : NS.math;
+
+  const holdNo = (h) => parseInt(String(h).slice(1), 10);
+
+  function computeLmc(aircraft, data, loading, changes) {
+    const issues = [];
+    const err = (code, message) => issues.push({ level: 'error', code, message });
+    const warn = (code, message) => issues.push({ level: 'warning', code, message });
+
+    // ---- hold changes (summed per hold)
+    const delta = {};
+    let anyHoldChange = false;
+    (changes.holds || []).forEach((row, i) => {
+      const label = 'Hold change ' + String(i + 1).padStart(2, '0');
+      const p = math.parseSignedWhole(row.pieces);
+      const w = math.parseSignedWhole(row.weight);
+      if (p.invalid) err('LMC_NOT_WHOLE', label + ': pieces must be a whole number (e.g. +2 or -1).');
+      if (w.invalid) err('LMC_NOT_WHOLE', label + ': weight must be a whole number of kg (e.g. +30 or -15).');
+      if (p.invalid || w.invalid) return;
+      if (p.value === 0 && w.value === 0 && !row.hold) return; // empty row
+      if (!row.hold) { err('LMC_HOLD', label + ': select the hold.'); return; }
+      if (!aircraft.holds.includes(row.hold)) { err('LMC_HOLD', label + ': ' + row.hold + ' is not a hold of the ' + aircraft.type + '.'); return; }
+      const d = delta[row.hold] || (delta[row.hold] = { pieces: 0, weight: 0 });
+      d.pieces += p.value;
+      d.weight += w.value;
+      if (p.value !== 0 || w.value !== 0) anyHoldChange = true;
+    });
+
+    // ---- people changes
+    const before = { m: data.pax.m, f: data.pax.f, c: data.pax.c, i: data.pax.i };
+    const pd = {};
+    const names = { m: 'Male (M)', f: 'Female (F)', c: 'Children (C)', i: 'Infants (I)' };
+    let anyPaxChange = false;
+    ['m', 'f', 'c', 'i'].forEach((k) => {
+      const r = math.parseSignedWhole((changes.pax || {})[k]);
+      if (r.invalid) { err('LMC_NOT_WHOLE', names[k] + ': the change must be a whole number (e.g. +1 or -1).'); pd[k] = 0; return; }
+      pd[k] = r.value;
+      if (r.value !== 0) anyPaxChange = true;
+    });
+    const after = { m: before.m + pd.m, f: before.f + pd.f, c: before.c + pd.c, i: before.i + pd.i };
+    ['m', 'f', 'c', 'i'].forEach((k) => {
+      if (after[k] < 0) err('LMC_NEGATIVE_PAX', names[k] + ' would go below 0 (' + before[k] + ' ' + (pd[k] >= 0 ? '+' : '-') + ' ' + Math.abs(pd[k]) + ').');
+    });
+    const paxBefore = before.m + before.f + before.c;
+    const paxAfter = after.m + after.f + after.c;
+    if (paxAfter > aircraft.seats) err('LMC_PAX_OVER_CONFIG', 'Passenger capacity exceeded after the change: ' + paxAfter + ' PAX, ' + aircraft.config + ' capacity is ' + aircraft.seats + '. Infants are not counted.');
+
+    // ---- holds before / after (every hold of the aircraft)
+    const base = {};
+    loading.holds.forEach((h) => { base[h.hold] = h; });
+    const rows = aircraft.holds.slice().sort((a, b) => holdNo(a) - holdNo(b)).map((name) => {
+      const b = base[name] || { pieces: 0, weight: 0, kind: 'NORMAL', code: 'BAG' };
+      const d = delta[name] || { pieces: 0, weight: 0 };
+      const a = { pieces: b.pieces + d.pieces, weight: b.weight + d.weight };
+      if (a.pieces < 0 || a.weight < 0) {
+        err('LMC_NEGATIVE_HOLD', name + ' would go below 0 (' + b.pieces + ' pcs / ' + b.weight + ' kg ' +
+          (d.pieces >= 0 ? '+' : '-') + ' ' + Math.abs(d.pieces) + ' pcs / ' + (d.weight >= 0 ? '+' : '-') + ' ' + Math.abs(d.weight) + ' kg).');
+      } else if ((a.pieces === 0) !== (a.weight === 0)) {
+        warn('LMC_PIECES_WEIGHT', name + ' would have ' + a.pieces + ' pieces and ' + a.weight + ' kg. Check the figures.');
+      }
+      if ((data.inop || []).includes(name) && (d.pieces > 0 || d.weight > 0)) {
+        err('LMC_INOP_HOLD', name + ' is INOP. Nothing can be loaded in it.');
+      }
+      if (b.kind !== 'NORMAL' && (d.pieces !== 0 || d.weight !== 0)) {
+        warn('LMC_SPECIAL_HOLD', name + ' holds a special load (' + b.code + ') that occupies the hold alone. Check this change.');
+      }
+      return { hold: name, inop: (data.inop || []).includes(name), kind: b.kind, code: b.code, before: { pieces: b.pieces, weight: b.weight }, delta: d, after: a };
+    });
+
+    if (issues.some((x) => x.level === 'error')) return { ok: false, issues };
+
+    const sum = (list, f) => list.reduce((s, x) => s + f(x), 0);
+    return {
+      ok: true,
+      issues,
+      changed: anyHoldChange || anyPaxChange,
+      holds: rows,
+      totals: {
+        before: { pieces: sum(rows, (r) => r.before.pieces), weight: sum(rows, (r) => r.before.weight) },
+        after: { pieces: sum(rows, (r) => r.after.pieces), weight: sum(rows, (r) => r.after.weight) },
+      },
+      pax: { before, delta: pd, after, totalBefore: paxBefore, totalAfter: paxAfter },
+    };
+  }
+
+  const api = { computeLmc };
+  NS.lmc = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Transavia aircraft configurations and loading rules.
+ *
+ * SOURCE: rules and reference scenarios supplied by the dispatcher.
+ * NOTHING here was invented. Where the rules are silent the value is `null`
+ * and the tool flags the result as PENDING VALIDATION instead of guessing.
+ *
+ * Fields
+ *  - config / seats / crew : passenger configuration and crew (e.g. Y189, 2/4)
+ *  - holds                 : holds of this type (confirmed by the dispatcher)
+ *  - distribution          : how NORMAL baggage is split (see core/engine.js)
+ *      halfRounding        : 'UP' (default) or 'DOWN' for an exact half piece
+ *  - special[kind]         : { default, allowed, hint }
+ *      default  hold preselected in the form (null = the dispatcher must choose)
+ *      allowed  holds defined by the rules (null = not defined, [] + forbidden = blocked)
+ *      hint     short note shown next to the hold selector
+ *  - validated             : which scenarios are proven by a reference example
+ *
+ * Hold weight / capacity limits are NOT configured: official documentation pending.
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+
+  const AIRCRAFT = {
+    'B737-300': {
+      type: 'B737-300',
+      hidden: true, // not offered in the UI (the aircraft no longer operates); remove this line to show it
+      config: 'Y149',
+      seats: 149,
+      crew: '2/3',
+      holds: ['H1', 'H2', 'H3'],
+      distribution: {
+        type: 'FIXED_THEN_REMAINDER',
+        holds: [{ hold: 'H2', pieces: 40 }, { hold: 'H3', remainder: true }],
+      },
+      special: {
+        AVIH: { default: 'H1', allowed: ['H1'], hint: '' },
+        // Rules do not define wheelchairs for this type: blocked by decision of the dispatcher.
+        WHEELCHAIR: { default: null, allowed: [], forbidden: true, hint: '' },
+      },
+      validated: { base: false, AVIH: false, WHEELCHAIR: false },
+      notes: 'H1: AVIH · H2: 40 pieces · H3: remaining baggage. Blocked below 40 normal pieces. No wheelchairs.',
+    },
+
+    'B737-800': {
+      type: 'B737-800',
+      config: 'Y189',
+      seats: 189,
+      crew: '2/4',
+      holds: ['H1', 'H2', 'H3', 'H4'],
+      distribution: {
+        type: 'PERCENT',
+        // Captains prefer more weight at the back: an odd piece always goes to H3 (101 pcs -> H2 50 / H3 51).
+        // Changed on 2026-11-23 at the dispatcher's request; this replaces the old "odd piece to H2"
+        // behaviour that reproduced reference scenario 2 (now H2 61 / H3 62 for 123 pieces).
+        halfRounding: 'DOWN',
+        holds: [{ hold: 'H2', share: 50 }, { hold: 'H3', share: 50 }],
+      },
+      special: {
+        AVIH: {
+          default: 'H1',
+          allowed: ['H1', 'H4'],
+          hint: 'Usually H1. With two very large animals, one goes in H1 and the other in H4 — confirm with the captain.',
+        },
+        WHEELCHAIR: { default: 'H1', allowed: ['H1', 'H4'], hint: 'H1 or H4.' },
+      },
+      validated: { base: true, AVIH: true, WHEELCHAIR: true },
+      notes: 'H2 50% · H3 50% · AVIH H1 (or H4) · wheelchairs H1 or H4. Reference scenarios 1-3.',
+    },
+
+    A320: {
+      type: 'A320',
+      config: 'Y186',
+      seats: 186,
+      crew: '2/4',
+      holds: ['H1', 'H3', 'H4', 'H5'],
+      distribution: {
+        type: 'PERCENT',
+        // Scenario 2 (83 normal pieces) gives H1 = 41 / H3 = 42: exact half rounds DOWN here.
+        // This differs from the B737-800 (123 -> H2 62 / H3 61): see README, open points.
+        halfRounding: 'DOWN',
+        holds: [{ hold: 'H1', share: 50 }, { hold: 'H3', share: 50 }],
+      },
+      special: {
+        AVIH: { default: null, allowed: ['H4', 'H5'], hint: 'Usually H5. Confirm with the captain.' },
+        WHEELCHAIR: { default: null, allowed: ['H4', 'H5'], hint: 'Usually H5. Confirm with the captain.' },
+      },
+      validated: { base: true, AVIH: true, WHEELCHAIR: true },
+      notes: 'H1 50% · H3 50% · AVIH and wheelchairs H4 or H5 (usually H5). Not the same as the B737. Reference scenarios A320-1 and A320-2.',
+    },
+
+    A321: {
+      type: 'A321',
+      config: 'Y232',
+      seats: 232,
+      crew: '2/5',
+      holds: ['H2', 'H3', 'H4', 'H5'],
+      distribution: {
+        type: 'PERCENT',
+        holds: [
+          { hold: 'H2', share: 30 },
+          { hold: 'H3', share: 40 },
+          { hold: 'H4', share: 30 },
+        ],
+      },
+      special: {
+        AVIH: { default: null, allowed: ['H5'], hint: 'Usually H5. Confirm with the captain.' },
+        WHEELCHAIR: { default: null, allowed: ['H5'], hint: 'Usually H5. Confirm with the captain.' },
+      },
+      validated: { base: true, AVIH: false, WHEELCHAIR: false },
+      notes: 'H2 30% · H3 40% · H4 30% · H5 AVIH / wheelchairs (usually). Reference scenario 4 (no special loads).',
+    },
+  };
+
+  NS.transaviaAircraft = AIRCRAFT;
+  if (typeof module !== 'undefined' && module.exports) module.exports = AIRCRAFT;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Transavia special loads (this version): AVIH and wheelchairs only.
+ *
+ * Every item counts as 1 piece with its full weight and occupies its hold alone.
+ * Wheelchair codes used in Faro: WCLB (lithium battery) and WCDB (dry battery).
+ * No other wheelchair codes are included in this version.
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+
+  const SPECIAL_LOADS = {
+    AVIH: {
+      label: 'AVIH',
+      animals: ['CAT', 'DOG'],
+      sexes: ['M', 'F'],
+    },
+    WHEELCHAIR: {
+      label: 'Wheelchair',
+      codes: {
+        WCLB: 'WCLB – wheelchair, lithium battery',
+        WCDB: 'WCDB – wheelchair, dry battery',
+      },
+    },
+  };
+
+  /** Code printed in the LDM INC line. */
+  function incCode(item) {
+    return item.kind === 'AVIH' ? 'AVIH' : item.code;
+  }
+
+  /** One INC line per item: count + code + hold, never the weight. e.g. "INC 01AVIH/H1". */
+  function incLine(item) {
+    return 'INC 01' + incCode(item) + '/' + item.hold;
+  }
+
+  const api = { definitions: SPECIAL_LOADS, incCode, incLine };
+  NS.transaviaSpecialLoads = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Transavia LDM builder + parser.
+ *
+ * Format (taken ONLY from the supplied reference examples, nothing added):
+ *
+ *   FLIGHT/DD.REGISTRATION.YCONFIG.CREW
+ *   -DEST.M/F/C/I.TTOTALWEIGHT.HOLD/WEIGHT[.HOLD/WEIGHT...].PAX/TOTAL
+ *   SI B/PIECES/WEIGHT
+ *   INC 01CODE/HOLD            (first special load; the next ones omit "INC ")
+ *   01CODE/HOLD
+ *   H1/INOP                    (one line per inoperative hold, after the special loads)
+ *
+ * - PAX excludes infants; the infant count only appears in M/F/C/I.
+ * - T and SI B include special loads (AVIH / wheelchairs).
+ * - Holds are listed in ascending order; a hold with 0 kg is omitted.
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+  const special = typeof require === 'function' ? require('./special-loads.js') : NS.transaviaSpecialLoads;
+
+  const holdNo = (h) => parseInt(String(h).slice(1), 10);
+
+  function build(aircraft, data, loading) {
+    const f = data.flight;
+    const p = data.pax;
+    const pax = p.m + p.f + p.c; // infants excluded
+
+    const holds = loading.holds
+      .filter((h) => h.weight > 0)
+      .map((h) => holdNo(h.hold) + '/' + h.weight);
+
+    const crew = f.crew || aircraft.crew;
+    const line1 = f.number + '/' + f.date.slice(8, 10) + '.' + f.registration + '.' + aircraft.config + '.' + crew;
+    const line2 =
+      '-' + f.destination + '.' + p.m + '/' + p.f + '/' + p.c + '/' + p.i +
+      '.T' + data.baggage.weight +
+      (holds.length ? '.' + holds.join('.') : '') +
+      '.PAX/' + pax;
+    const line3 = 'SI B/' + data.baggage.pieces + '/' + data.baggage.weight;
+
+    const inc = data.specials
+      .slice()
+      .sort((a, b) => holdNo(a.hold) - holdNo(b.hold))
+      .map((s, i) => (i === 0 ? special.incLine(s) : special.incLine(s).replace(/^INC /, '')));
+
+    // Only the FIRST line after SI carries "INC "; INOP holds follow as "H1/INOP".
+    const inop = (data.inop || [])
+      .slice()
+      .sort((a, b) => holdNo(a) - holdNo(b))
+      .map((h) => h + '/INOP');
+
+    return [line1, line2, line3].concat(inc, inop).join('\n');
+  }
+
+  /** Reads an LDM back into numbers so the validation can compare it with the data. */
+  function parse(text) {
+    const lines = String(text).split('\n');
+    const m1 = /^([A-Z0-9]+)\/(\d{2})\.([A-Z0-9]+)\.(Y\d+)\.(\d+\/\d+)$/.exec(lines[0] || '');
+    const m3 = /^SI B\/(\d+)\/(\d+)$/.exec(lines[2] || '');
+    if (!m1 || !m3 || !/^-/.test(lines[1] || '')) return null;
+
+    const seg = lines[1].slice(1).split('.');
+    const pax = /^(\d+)\/(\d+)\/(\d+)\/(\d+)$/.exec(seg[1] || '');
+    const total = /^T(\d+)$/.exec(seg[2] || '');
+    const paxTotal = /^PAX\/(\d+)$/.exec(seg[seg.length - 1] || '');
+    if (!/^[A-Z]{3}$/.test(seg[0]) || !pax || !total || !paxTotal) return null;
+
+    const holds = [];
+    for (let i = 3; i < seg.length - 1; i++) {
+      const h = /^(\d+)\/(\d+)$/.exec(seg[i]);
+      if (!h) return null;
+      holds.push([Number(h[1]), Number(h[2])]);
+    }
+    const inc = [];
+    const inop = [];
+    for (let i = 3; i < lines.length; i++) {
+      const o = /^(H\d+)\/INOP$/.exec(lines[i]);
+      if (o) { inop.push(o[1]); continue; }
+      if (inop.length) return null; // INOP lines come last
+      // the first INC line has the prefix, the following ones must not
+      const m = (i === 3 ? /^INC (\d{2})([A-Z]+)\/(H\d+)$/ : /^(\d{2})([A-Z]+)\/(H\d+)$/).exec(lines[i]);
+      if (!m) return null;
+      inc.push({ count: Number(m[1]), code: m[2], hold: m[3] });
+    }
+    return {
+      flight: m1[1], day: m1[2], registration: m1[3], config: m1[4], crew: m1[5],
+      destination: seg[0],
+      pax: { m: Number(pax[1]), f: Number(pax[2]), c: Number(pax[3]), i: Number(pax[4]) },
+      totalWeight: Number(total[1]),
+      holds,
+      paxTotal: Number(paxTotal[1]),
+      si: { pieces: Number(m3[1]), weight: Number(m3[2]) },
+      inc,
+      inop,
+    };
+  }
+
+  const api = { build, parse };
+  NS.transaviaLdm = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Transavia airline module.
+ * Everything specific to Transavia lives in this folder. The core never imports it.
+ * To add Eurowings later: create src/airlines/eurowings/ with the same shape and
+ * register it in src/airlines/registry.js. Rules are never shared between airlines.
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+  const aircraft = typeof require === 'function' ? require('./aircraft.js') : NS.transaviaAircraft;
+  const specialLoads = typeof require === 'function' ? require('./special-loads.js') : NS.transaviaSpecialLoads;
+  const ldm = typeof require === 'function' ? require('./ldm.js') : NS.transaviaLdm;
+
+  const transavia = {
+    id: 'TRANSAVIA',
+    name: 'Transavia',
+    flightPrefixes: ['HV', 'TO'], // seen in the reference examples
+    // Crew choices offered in the form (the aircraft default is preselected). Extra captain / cabin crew.
+    crewOptions: ['2/4', '2/5', '3/4', '3/5'],
+    aircraft,
+    specialLoads,
+    ldm, // { build, parse }
+  };
+
+  NS.transavia = transavia;
+  if (typeof module !== 'undefined' && module.exports) module.exports = transavia;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Eurowings (EW) aircraft at Faro. Rules and limits come ONLY from the dispatcher's brief
+ * (not from official documentation yet): see README "Eurowings — open points".
+ *
+ *  mode     : 'CALC' (loading is calculated) | 'LDM_ONLY' (A321 has CLC: only the LDM is generated)
+ *  na       : holds that do not exist on this aircraft (LDM prints N/A)
+ *  order    : calculation phases (first -> last)
+ *  sink     : hold that normally takes the rest (the dispatcher can still change every hold)
+ *  limits   : { hold: { kg, pieces? } } — hard limits, never exceeded
+ *  specialHold : hold where AVIH / wheelchairs go (A319 H1 position 1.2, A320 H4)
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+
+  const AIRCRAFT = {
+    A319: {
+      type: 'A319', config: 'Y150', seats: 150, mode: 'CALC',
+      holds: ['H1', 'H2', 'H3', 'H4', 'H5'],
+      na: ['H2', 'H3'],
+      order: ['H4', 'H5', 'H1'],
+      sink: 'H1',
+      limits: { H4: { kg: 1350, pieces: 85 }, H5: { kg: 400 } },
+      specialHold: 'H1',
+      notes: 'H4 max 1350 kg / 85 pcs · H5 max 400 kg · H1 manual (pos 1.1 baggage, pos 1.2 AVIH / wheelchair).',
+    },
+    A320: {
+      type: 'A320', config: 'Y180', seats: 180, mode: 'CALC',
+      holds: ['H1', 'H2', 'H3', 'H4', 'H5'],
+      na: ['H2'],
+      order: ['H1', 'H3', 'H4', 'H5'],
+      sink: 'H5',
+      limits: { H1: { kg: 1500 }, H3: { kg: 1000 }, H4: { kg: 1000 } },
+      specialHold: 'H4',
+      notes: 'H1 max 1500 kg · H3 max 1000 kg · H4 max 1000 kg (baggage or AVIH / wheelchairs) · H5 the rest.',
+    },
+    A321: {
+      type: 'A321', config: 'Y226', seats: 226, mode: 'LDM_ONLY',
+      holds: ['H1', 'H2', 'H3', 'H4', 'H5'],
+      na: [],
+      order: ['H1', 'H2', 'H3', 'H4', 'H5'],
+      sink: null,
+      limits: {},
+      specialHold: null,
+      notes: 'CLC aircraft: the loading is NOT calculated here, only the LDM.',
+    },
+  };
+
+  NS.eurowingsAircraft = AIRCRAFT;
+  if (typeof module !== 'undefined' && module.exports) module.exports = AIRCRAFT;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Eurowings LDM builder + parser. Own format, NOT shared with Transavia:
+ *
+ *   LDM
+ *   EW9643/DUS
+ *   M-40 / F-41 / C-12 / I-1
+ *   TOTAL ON BOARD TOB-93+1
+ *
+ *   H1-5/79 · H2-N/A · H3-N/A · H4-85/1343 · H5-25/395      (NIL = empty, N/A = hold does not exist, INOP = inoperative hold)
+ *
+ *   TOTAL BAGS/WEIGHT-115/1817
+ *
+ *   INC 01AVIH/H1                                            (one INC line per special load)
+ *
+ *   TRANSFER BAGS BT-NIL   |   TRANSFER BAGS BT / 2PCS/BER / 3PCS/CGN
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+
+  /** r = { flight, destination, pax:{m,f,c,i}, holds:{H1:{pieces,weight}|null(N/A)...}, totals:{pieces,weight}, specials:[{code,hold}], bt:[{dest,pieces}] } */
+  function build(r) {
+    const p = r.pax;
+    const lines = ['LDM', r.flight + '/' + r.destination, 'M-' + p.m, 'F-' + p.f, 'C-' + p.c, 'I-' + p.i,
+      'TOTAL ON BOARD TOB-' + (p.m + p.f + p.c) + '+' + p.i, ''];
+    ['H1', 'H2', 'H3', 'H4', 'H5'].forEach((h) => {
+      const v = r.holds[h];
+      lines.push(h + '-' + (v === null ? 'N/A' : v === 'INOP' ? 'INOP' : v.pieces === 0 && v.weight === 0 ? 'NIL' : v.pieces + '/' + v.weight));
+    });
+    lines.push('', 'TOTAL BAGS/WEIGHT-' + r.totals.pieces + '/' + r.totals.weight, '');
+    if (r.specials.length) {
+      r.specials.slice().sort((a, b) => parseInt(a.hold.slice(1), 10) - parseInt(b.hold.slice(1), 10))
+        .forEach((s) => lines.push('INC 01' + s.code + '/' + s.hold));
+      lines.push('');
+    }
+    if (r.bt.length) {
+      lines.push('TRANSFER BAGS BT');
+      r.bt.forEach((b) => lines.push(b.pieces + 'PCS/' + b.dest));
+    } else lines.push('TRANSFER BAGS BT-NIL');
+    return lines.join('\n');
+  }
+
+  /** Reads an EW LDM back (used to cross-check what was generated). */
+  function parse(text) {
+    const L = String(text).split('\n');
+    if (L[0] !== 'LDM') return null;
+    const m1 = /^([A-Z0-9]+)\/([A-Z]{3})$/.exec(L[1] || '');
+    const num = (prefix, line) => { const m = new RegExp('^' + prefix + '-(\\d+)$').exec(line || ''); return m ? Number(m[1]) : null; };
+    const tob = /^TOTAL ON BOARD TOB-(\d+)\+(\d+)$/.exec(L[6] || '');
+    const pax = { m: num('M', L[2]), f: num('F', L[3]), c: num('C', L[4]), i: num('I', L[5]) };
+    if (!m1 || !tob || Object.values(pax).some((v) => v === null) || L[7] !== '') return null;
+    const holds = {};
+    for (let i = 0; i < 5; i++) {
+      const m = /^(H[1-5])-(N\/A|NIL|INOP|(\d+)\/(\d+))$/.exec(L[8 + i] || '');
+      if (!m) return null;
+      holds[m[1]] = m[2] === 'N/A' ? null : m[2] === 'INOP' ? { pieces: 0, weight: 0, inop: true } : m[2] === 'NIL' ? { pieces: 0, weight: 0 } : { pieces: Number(m[3]), weight: Number(m[4]) };
+    }
+    const tb = /^TOTAL BAGS\/WEIGHT-(\d+)\/(\d+)$/.exec(L[14] || '');
+    if (!tb || L[13] !== '' || L[15] !== '') return null;
+    let i = 16;
+    const inc = [];
+    for (; i < L.length && /^INC /.test(L[i]); i++) {
+      const m = /^INC (\d{2})([A-Z]+)\/(H[1-5])$/.exec(L[i]);
+      if (!m) return null;
+      inc.push(m[2] + '/' + m[3]);
+    }
+    if (inc.length) { if (L[i] !== '') return null; i++; }
+    const bt = [];
+    if (L[i] === 'TRANSFER BAGS BT-NIL') i++;
+    else if (L[i] === 'TRANSFER BAGS BT') {
+      for (i++; i < L.length; i++) {
+        const m = /^(\d+)PCS\/([A-Z]{3})$/.exec(L[i]);
+        if (!m) return null;
+        bt.push(m[1] + '/' + m[2]);
+      }
+    } else return null;
+    if (i !== L.length && !(bt.length && i === L.length)) return null;
+    return { flight: m1[1], destination: m1[2], pax, tob: [Number(tob[1]), Number(tob[2])], holds, totals: { pieces: Number(tb[1]), weight: Number(tb[2]) }, inc, bt };
+  }
+
+  const api = { build, parse };
+  NS.eurowingsLdm = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Eurowings module: validation + loading calculation + LDM, all EW-specific (nothing shared with Transavia rules).
+ *
+ * WEIGHT RULE (reproduces 3 of the 4 EW examples exactly; A320-1 changes by 1 kg with the rounded average, accepted):
+ *   average = normal weight / normal pieces, ROUNDED to 2 decimals (decided by the dispatcher, same as Transavia);
+ *   hold weight = pieces x average, cut down to whole kg; the LAST used hold (in phase order) takes the rest,
+ *   so the totals always match.
+ *   Suggested pieces for a limited hold = floor(limit kg / average) (and the piece limit, if any).
+ * Special loads (AVIH / wheelchair WCLB) = 1 piece + full weight each, excluded from the average.
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+  const req = (p, g) => (typeof require === 'function' ? require(p) : NS[g]);
+  const aircraftMap = req('./aircraft.js', 'eurowingsAircraft');
+  const ldm = req('./ldm.js', 'eurowingsLdm');
+
+  const HOLDS = ['H1', 'H2', 'H3', 'H4', 'H5'];
+  const SP_CODES = { AVIH: 'AVIH', WHEELCHAIR: 'WCLB' }; // only WCLB is confirmed for EW
+
+  const whole = (v) => {
+    const s = String(v == null ? '' : v).trim();
+    if (s === '') return { blank: true };
+    return /^\d+$/.test(s) ? { value: Number(s) } : { invalid: true };
+  };
+  /** pieces that fit in `kg` at average `c` (cents): floor(kg / avg) */
+  const maxByKg = (kg, c, cap) => (kg <= 0 ? 0 : c === 0 ? cap : Math.floor((kg * 100) / c));
+
+  function generate(raw) {
+    const alerts = [];
+    const err = (code, message) => alerts.push({ level: 'error', code, message });
+    const pend = (code, message) => alerts.push({ level: 'pending', code, message });
+    const note = (code, message) => alerts.push({ level: 'info', code, message });
+    const num = (label, v) => {
+      const r = whole(v);
+      if (r.blank) { err('REQUIRED', label + ' is required.'); return null; }
+      if (r.invalid) { err('NOT_WHOLE', label + ' must be a whole number.'); return null; }
+      return r.value;
+    };
+
+    // ---- flight (entered once, reused everywhere; never altered)
+    const f = raw.flight || {};
+    const flight = String(f.number || '').toUpperCase().replace(/\s+/g, '');
+    const destination = String(f.destination || '').toUpperCase().trim();
+    const ac = aircraftMap[f.aircraft];
+    if (!ac) err('AIRCRAFT_REQUIRED', 'Select the aircraft type.');
+    if (!flight) err('FLIGHT_REQUIRED', 'Flight number is required.');
+    else if (!/^EW\d{1,4}[A-Z]?$/.test(flight)) err('FLIGHT_FORMAT', 'Eurowings flight number format is EW + digits (e.g. EW9643).');
+    if (!destination) err('DEST_REQUIRED', 'Destination is required.');
+    else if (!/^[A-Z]{3}$/.test(destination)) err('DEST_FORMAT', 'Destination must be a 3-letter IATA code (e.g. DUS).');
+
+    // ---- INOP holds (inoperative): nothing is loaded there; LDM prints H4-INOP
+    const inop = [];
+    (raw.inop || []).forEach((h) => {
+      if (!ac) return;
+      if (!HOLDS.includes(h) || ac.na.includes(h)) err('INOP_UNKNOWN', h + ' is not a hold of the ' + ac.type + '.');
+      else if (!inop.includes(h)) inop.push(h);
+    });
+
+    // ---- passengers
+    const p = raw.pax || {};
+    const pax = { m: num('Male (M)', p.m), f: num('Female (F)', p.f), c: num('Children (C)', p.c), i: num('Infants (I)', p.i) };
+    if (ac && [pax.m, pax.f, pax.c].every((v) => v !== null) && pax.m + pax.f + pax.c > ac.seats) {
+      err('PAX_OVER_CONFIG', 'Passenger capacity exceeded: ' + (pax.m + pax.f + pax.c) + ' PAX, ' + ac.config + ' capacity is ' + ac.seats + '. Infants are not counted.');
+    }
+
+    // ---- baggage + special loads
+    const b = raw.baggage || {};
+    const P = num('Total baggage pieces', b.pieces);
+    const W = num('Total baggage weight (kg)', b.weight);
+
+    const specials = [];
+    if (raw.specialsAnswer !== 'YES' && raw.specialsAnswer !== 'NO') err('SPECIAL_ANSWER', 'Answer: does this flight have AVIH or wheelchairs?');
+    else if (raw.specialsAnswer === 'YES') {
+      const items = raw.specials || [];
+      if (!items.length) err('SPECIAL_NONE', 'You answered Yes: add at least one AVIH or wheelchair, or answer No.');
+      const count = { AVIH: 0, WHEELCHAIR: 0 };
+      items.forEach((s) => {
+        const kind = s.kind === 'AVIH' ? 'AVIH' : 'WHEELCHAIR';
+        count[kind] += 1;
+        const name = (kind === 'AVIH' ? 'AVIH ' : 'Wheelchair ') + String(count[kind]).padStart(2, '0');
+        if (kind === 'AVIH') {
+          if (!['CAT', 'DOG'].includes(s.animal)) err('AVIH_TYPE', name + ': select animal type (CAT / DOG).');
+          if (!['M', 'F'].includes(s.sex)) err('AVIH_SEX', name + ': select sex (M / F).');
+        }
+        const weight = num(name + ' weight (kg)', s.weight);
+        if (weight === 0) err('SPECIAL_WEIGHT', name + ': weight must be greater than 0.');
+        // The dispatcher chooses the hold; the standard one (A319 H1, A320 H4) is suggested / used when left blank.
+        let hold = String(s.hold || '') || (ac && ac.specialHold) || '';
+        if (ac && !HOLDS.includes(hold)) err('SPECIAL_HOLD', name + ': select the hold.');
+        else if (ac && ac.na.includes(hold)) err('SPECIAL_HOLD', name + ': ' + hold + ' does not exist on the ' + ac.type + '.');
+        else if (ac && ac.specialHold && hold !== ac.specialHold) {
+          pend('SPECIAL_HOLD_NOT_STANDARD', name + ': ' + hold + ' is not the standard hold for special loads on the ' + ac.type + ' (' + ac.specialHold + '). Confirm operationally.');
+        }
+        if (inop.includes(hold)) err('SPECIAL_IN_INOP', name + ': ' + hold + ' is INOP. Nothing can be loaded in it.');
+        specials.push({ kind, name, code: SP_CODES[kind], weight, hold, animal: s.animal, sex: s.sex });
+      });
+      if (ac && ac.mode === 'CALC' && specials.length > 1 && !raw.confirmSpecials) {
+        err('CONFIRM_SPECIALS', 'More than one special load: confirm where they are loaded (' + specials.map((x) => x.hold).join(', ') + ') before the LDM is generated.');
+      }
+      if (ac && ac.type === 'A319' && specials.filter((x) => (x.hold || ac.specialHold) === 'H1').length > 2) {
+        pend('A319_SPECIAL_POSITIONS', 'A319: H1 has only positions 1.1 and 1.2. More than two special loads are not defined by the rules — confirm operationally.');
+      }
+    }
+    if (P !== null && W !== null) {
+      const spW = specials.reduce((a, s) => a + (s.weight || 0), 0);
+      if (specials.length > P) err('SPECIAL_PIECES', 'Special loads (' + specials.length + ') exceed the total baggage pieces (' + P + ').');
+      if (spW > W) err('SPECIAL_WEIGHT_TOTAL', 'Special loads (' + spW + ' kg) exceed the total baggage weight (' + W + ' kg).');
+    }
+
+    // ---- transfer bags (last question)
+    const bt = [];
+    const btA = raw.bt && raw.bt.answer;
+    if (btA === 'YES') {
+      const rows = raw.bt.rows || [];
+      if (!rows.length) err('BT_NONE', 'You answered Yes to transfer bags: add at least one destination, or answer No.');
+      rows.forEach((r, i) => {
+        const d = String(r.dest || '').toUpperCase().trim();
+        const n = whole(r.pieces);
+        if (!/^[A-Z]{3}$/.test(d)) err('BT_DEST', 'Transfer bags ' + (i + 1) + ': destination must be a 3-letter code (e.g. BER).');
+        else if (n.blank || n.invalid || n.value < 1) err('BT_PIECES', 'Transfer bags ' + d + ': pieces must be a whole number above 0.');
+        else bt.push({ dest: d, pieces: n.value });
+      });
+    }
+
+    // Only errors in the baggage / special-load / aircraft data stop the loading table; the rest (flight, pax,
+    // destination, hold of an A321 special load...) keep the table visible but block the LDM.
+    const FATAL = ['AIRCRAFT_REQUIRED', 'SPECIAL_ANSWER', 'SPECIAL_NONE', 'AVIH_TYPE', 'AVIH_SEX', 'SPECIAL_WEIGHT', 'SPECIAL_PIECES', 'SPECIAL_WEIGHT_TOTAL'];
+    if (!ac || P === null || W === null || alerts.some((x) => x.level === 'error' && (FATAL.includes(x.code) || /weight \(kg\)/.test(x.message)))) {
+      return { status: 'ERROR', alerts, ldm: null, loading: null, aircraft: ac || null };
+    }
+
+    // ---- loading (all data is valid from here)
+    const spPieces = specials.length;
+    const spWeight = specials.reduce((a, s) => a + s.weight, 0);
+    const N = P - spPieces;
+    const WN = W - spWeight;
+    const c = N > 0 ? Math.floor((2 * WN * 100 + N) / (2 * N)) : 0; // average in cents, rounded (half up)
+    const avg = N > 0 ? (c / 100).toFixed(2) : null;
+    const spByHold = {};
+    specials.filter((s) => HOLDS.includes(s.hold)).forEach((s) => {
+      const h = spByHold[s.hold] || (spByHold[s.hold] = { pieces: 0, weight: 0, items: [] });
+      h.pieces += 1; h.weight += s.weight; h.items.push(s);
+    });
+
+    const hold = {}; // per hold: baggage pieces/weight (normal only)
+    HOLDS.forEach((h) => { hold[h] = { na: ac.na.includes(h), pieces: 0, weight: 0 }; });
+    let suggestion = null;
+    let sink = null;
+    let manualFlags = {};
+
+    if (ac.mode === 'CALC') {
+      // suggested pieces
+      suggestion = {};
+      HOLDS.forEach((h) => { suggestion[h] = 0; });
+      let left = N;
+      // the hold that takes the rest; if it is INOP the last working hold of the sequence takes it
+      sink = ac.order.includes(ac.sink) && !inop.includes(ac.sink) ? ac.sink : ac.order.filter((h) => !inop.includes(h)).pop() || null;
+      ac.order.forEach((h) => {
+        if (inop.includes(h)) { suggestion[h] = 0; return; }
+        if (h === sink) { suggestion[h] = left; left = 0; return; }
+        const lim = ac.limits[h];
+        let take = left;
+        if (lim) {
+          take = Math.min(take, maxByKg(lim.kg - ((spByHold[h] || {}).weight || 0), c, left));
+          if (lim.pieces) take = Math.min(take, lim.pieces);
+        }
+        suggestion[h] = take;
+        left -= take;
+      });
+      const man = raw.manual && raw.manual.pieces;
+      const pcs = {};
+      HOLDS.forEach((h) => { pcs[h] = man && Number.isInteger(man[h]) && man[h] >= 0 ? man[h] : suggestion[h]; });
+      const mw = (raw.manual && raw.manual.weights) || {};
+      const used = ac.order.filter((h) => pcs[h] > 0);
+      const assigned = ac.order.reduce((a, h) => a + pcs[h], 0);
+      const w = {};
+      ac.order.forEach((h) => {
+        const m = Number.isInteger(mw[h]) && mw[h] >= 0 ? mw[h] : null;
+        manualFlags[h] = m !== null;
+        w[h] = m !== null ? m : Math.floor((pcs[h] * c) / 100);
+      });
+      if (assigned === N && N > 0) {
+        const restH = used.filter((h) => !manualFlags[h]).pop();
+        if (restH) {
+          const others = ac.order.filter((h) => h !== restH).reduce((a, h) => a + w[h], 0);
+          w[restH] = WN - others; // last used hold takes the rest
+        }
+      }
+      ac.order.forEach((h) => { hold[h].pieces = pcs[h]; hold[h].weight = w[h]; });
+    } else {
+      // A321: pieces per hold; the weight is filled with the (rounded) average and can be overridden by typing a weight
+      const rows = (raw.a321 || {}).holds || {};
+      const used = [];
+      const typed = {};
+      HOLDS.forEach((h) => {
+        const pr = whole((rows[h] || {}).pieces);
+        const wr = whole((rows[h] || {}).weight);
+        if (pr.invalid) err('A321_PIECES', h + ': pieces must be a whole number.');
+        if (wr.invalid) err('A321_WEIGHT', h + ': weight must be a whole number.');
+        hold[h].pieces = pr.value || 0;
+        typed[h] = wr.value !== undefined;
+        hold[h].weight = typed[h] ? wr.value : Math.floor((hold[h].pieces * c) / 100);
+        if (hold[h].pieces > 0) used.push(h);
+        if (typed[h] && hold[h].pieces === 0 && hold[h].weight > 0) err('A321_WEIGHT', h + ' has weight but no pieces.');
+      });
+      manualFlags = typed;
+      if (used.length && used.reduce((sum, h) => sum + hold[h].pieces, 0) === N) {
+        const restH = used.filter((h) => !typed[h]).pop(); // last hold on the average takes the rest
+        if (restH) hold[restH].weight = WN - HOLDS.filter((h) => h !== restH).reduce((sum, h) => sum + hold[h].weight, 0);
+      }
+    }
+
+    // ---- totals per hold (baggage + special loads, as the LDM counts them)
+    const totalHold = {};
+    HOLDS.forEach((h) => {
+      const sp = spByHold[h] || { pieces: 0, weight: 0, items: [] };
+      totalHold[h] = { pieces: hold[h].pieces + sp.pieces, weight: hold[h].weight + sp.weight };
+    });
+    const sumP = HOLDS.reduce((a, h) => a + hold[h].pieces, 0);
+    const sumW = HOLDS.reduce((a, h) => a + hold[h].weight, 0);
+    const undistributed = { pieces: N - sumP, weight: WN - sumW };
+
+    const loading = {
+      mode: ac.mode, average: avg, sink, inop, normal: { pieces: N, weight: WN },
+      specials: { pieces: spPieces, weight: spWeight },
+      hold, specialsByHold: spByHold, totalHold, suggestion, manual: manualFlags, undistributed,
+      totals: { pieces: HOLDS.reduce((a, h) => a + totalHold[h].pieces, 0), weight: HOLDS.reduce((a, h) => a + totalHold[h].weight, 0) },
+      limits: [],
+    };
+
+    // ---- limits (hard: never exceeded)
+    HOLDS.forEach((h) => {
+      if (inop.includes(h) && (hold[h].pieces > 0 || hold[h].weight > 0 || totalHold[h].pieces > 0)) err('HOLD_INOP', h + ' is INOP: nothing can be loaded in it (remove the pieces / weight).');
+      if (hold[h].na && (hold[h].pieces > 0 || hold[h].weight > 0)) err('HOLD_NA', h + ' does not exist on the ' + ac.type + '.');
+      const lim = ac.limits[h];
+      if (!lim) return;
+      loading.limits.push({ hold: h, kg: lim.kg, pieces: lim.pieces || null });
+      if (totalHold[h].weight > lim.kg) err('LIMIT_KG', h + ' limit exceeded: ' + totalHold[h].weight + ' kg, maximum ' + lim.kg + ' kg.');
+      if (lim.pieces && totalHold[h].pieces > lim.pieces) err('LIMIT_PIECES', h + ' limit exceeded: ' + totalHold[h].pieces + ' pieces, maximum ' + lim.pieces + '.');
+    });
+    if (undistributed.pieces !== 0 || undistributed.weight !== 0) {
+      err('NOT_DISTRIBUTED', 'Not distributed: ' + undistributed.pieces + ' pcs / ' + undistributed.weight + ' kg (original ' + P + ' pcs / ' + W +
+        ' kg). The LDM is generated only when the distributed totals match the original totals.');
+    }
+    if (ac.type === 'A319' && (spByHold.H1 || { pieces: 0 }).pieces === 2 && hold.H1.pieces > 0) {
+      alerts.push({ level: 'pending', code: 'A319_H1_POSITIONS', message: 'A319: two special loads occupy H1 positions 1.1 and 1.2, so baggage in H1 (' + hold.H1.pieces + ' pcs) is not defined by the rules. Confirm operationally.' });
+    }
+    if (!btA) err('BT_ANSWER', 'Last question: do you have Transfer Bags (BT)?');
+    inop.forEach((h) => note('INOP_HOLD', h + ' is INOP: nothing is loaded in it (LDM line ' + h + '-INOP).'));
+    if (ac.mode === 'LDM_ONLY') note('CLC', 'A321 with CLC: the loading is not calculated here. Values come from what you entered.');
+    note('LIMITS_SOURCE', 'Hold limits and rules come from the dispatcher\'s brief, not from official documentation. Not operationally approved.');
+
+    if (alerts.some((a) => a.level === 'error')) return { status: 'INCOMPLETE', alerts, ldm: null, loading, aircraft: ac };
+
+    const holdsOut = {};
+    HOLDS.forEach((h) => { holdsOut[h] = hold[h].na ? null : inop.includes(h) ? 'INOP' : totalHold[h]; });
+    const text = ldm.build({ flight, destination, pax, holds: holdsOut, totals: { pieces: P, weight: W }, specials, bt });
+
+    // cross-check: the LDM must read back to the entered data
+    const back = ldm.parse(text);
+    const exp = JSON.stringify([flight, destination, pax, [pax.m + pax.f + pax.c, pax.i], { pieces: P, weight: W },
+      specials.slice().sort((a, b) => +a.hold.slice(1) - +b.hold.slice(1)).map((s) => s.code + '/' + s.hold), bt.map((x) => x.pieces + '/' + x.dest)]);
+    const got = back && JSON.stringify([back.flight, back.destination, back.pax, back.tob, back.totals, back.inc, back.bt]);
+    const sumLdm = back && HOLDS.reduce((a, h) => a + (back.holds[h] ? back.holds[h].pieces : 0), 0) === P &&
+      HOLDS.reduce((a, h) => a + (back.holds[h] ? back.holds[h].weight : 0), 0) === W;
+    if (!back || got !== exp || !sumLdm) {
+      return { status: 'ERROR', alerts: [{ level: 'error', code: 'CHECK_LDM', message: 'The generated LDM does not match the entered data. Do not use it.' }], ldm: null, loading, aircraft: ac };
+    }
+    return { status: 'CALCULATED', alerts, ldm: text, loading, aircraft: ac };
+  }
+
+  const eurowings = { id: 'EUROWINGS', name: 'Eurowings', flightPrefixes: ['EW'], aircraft: aircraftMap, ldm, generate, HOLDS };
+  NS.eurowings = eurowings;
+  if (typeof module !== 'undefined' && module.exports) module.exports = eurowings;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Airline registry. Add new airlines here. Each airline keeps its own rules and LDM format (nothing is shared).
+ */
+(function (root) {
+  'use strict';
+  const NS = (root.TVD = root.TVD || {});
+  const transavia = typeof require === 'function' ? require('./transavia/index.js') : NS.transavia;
+
+  const eurowings = typeof require === 'function' ? require('./eurowings/index.js') : NS.eurowings;
+
+  const api = { TRANSAVIA: transavia, EUROWINGS: eurowings };
+  NS.airlines = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/**
+ * Destination helper (shared by both airline tabs): only 3-letter IATA codes are accepted.
+ * Typing "cg" suggests CGN, etc. The list below is a convenience for suggestions (airports served from
+ * Portugal / Europe); a well-formed 3-letter code that is not in the list is allowed but flagged "check the code".
+ */
+(function () {
+  'use strict';
+  const NS = (window.TVD = window.TVD || {});
+  const RAW = `
+CGN Cologne/Bonn|DUS Duesseldorf|HAM Hamburg|BER Berlin|MUC Munich|FRA Frankfurt|STR Stuttgart|NUE Nuremberg|HAJ Hannover|BRE Bremen|LEJ Leipzig|DTM Dortmund|PAD Paderborn|FMO Muenster/Osnabrueck|DRS Dresden|FMM Memmingen|NRN Weeze|HHN Hahn|KSF Kassel|SCN Saarbruecken|FKB Karlsruhe/Baden-Baden|ERF Erfurt|RLG Rostock|FDH Friedrichshafen|
+AMS Amsterdam|RTM Rotterdam|EIN Eindhoven|GRQ Groningen|MST Maastricht|
+BRU Brussels|CRL Charleroi|ANR Antwerp|LGG Liege|OST Ostend|
+CDG Paris Charles de Gaulle|ORY Paris Orly|BVA Paris Beauvais|LYS Lyon|NCE Nice|MRS Marseille|TLS Toulouse|BOD Bordeaux|NTE Nantes|LIL Lille|SXB Strasbourg|MLH Basel-Mulhouse|BSL Basel-Mulhouse|MPL Montpellier|BIQ Biarritz|RNS Rennes|BES Brest|LRH La Rochelle|CFE Clermont-Ferrand|GNB Grenoble|PUF Pau|LDE Lourdes/Tarbes|PIS Poitiers|LIG Limoges|EGC Bergerac|
+ZRH Zurich|GVA Geneva|BRN Bern|VIE Vienna|SZG Salzburg|INN Innsbruck|GRZ Graz|LNZ Linz|
+LHR London Heathrow|LGW London Gatwick|STN London Stansted|LTN London Luton|LCY London City|SEN London Southend|MAN Manchester|BHX Birmingham|EDI Edinburgh|GLA Glasgow|BRS Bristol|LPL Liverpool|NCL Newcastle|LBA Leeds Bradford|EMA East Midlands|CWL Cardiff|ABZ Aberdeen|BFS Belfast Intl|BHD Belfast City|SOU Southampton|EXT Exeter|DUB Dublin|ORK Cork|SNN Shannon|
+LIS Lisbon|OPO Porto|FAO Faro|FNC Funchal|PXO Porto Santo|PDL Ponta Delgada|TER Terceira|HOR Horta|FLW Flores|SJZ Sao Jorge|BYJ Beja|
+MAD Madrid|BCN Barcelona|AGP Malaga|ALC Alicante|VLC Valencia|PMI Palma de Mallorca|IBZ Ibiza|MAH Menorca|SVQ Seville|BIO Bilbao|TFS Tenerife South|TFN Tenerife North|LPA Gran Canaria|ACE Lanzarote|FUE Fuerteventura|SCQ Santiago de Compostela|GRX Granada|XRY Jerez|REU Reus|GRO Girona|SDR Santander|OVD Asturias|VGO Vigo|LCG A Coruna|MJV Murcia|VLL Valladolid|ZAZ Zaragoza|VDE El Hierro|SPC La Palma|RMU Murcia Corvera|LEI Almeria|PNA Pamplona|VIT Vitoria|SLM Salamanca|
+FCO Rome Fiumicino|CIA Rome Ciampino|MXP Milan Malpensa|LIN Milan Linate|BGY Bergamo|VCE Venice|TSF Treviso|BLQ Bologna|NAP Naples|PSA Pisa|FLR Florence|CTA Catania|PMO Palermo|CAG Cagliari|OLB Olbia|BRI Bari|TRN Turin|VRN Verona|GOA Genoa|BDS Brindisi|SUF Lamezia Terme|PEG Perugia|AHO Alghero|TPS Trapani|PNL Pantelleria|REG Reggio Calabria|
+ATH Athens|SKG Thessaloniki|HER Heraklion|RHO Rhodes|CFU Corfu|JMK Mykonos|JTR Santorini|CHQ Chania|KGS Kos|ZTH Zakynthos|EFL Kefalonia|KVA Kavala|PVK Preveza|SMI Samos|
+CPH Copenhagen|BLL Billund|AAL Aalborg|ARN Stockholm Arlanda|GOT Gothenburg|OSL Oslo|BGO Bergen|TRD Trondheim|SVG Stavanger|HEL Helsinki|KEF Reykjavik|WAW Warsaw|KRK Krakow|GDN Gdansk|WRO Wroclaw|POZ Poznan|KTW Katowice|WMI Warsaw Modlin|PRG Prague|BRQ Brno|BUD Budapest|OTP Bucharest|CLJ Cluj|SOF Sofia|VAR Varna|BOJ Burgas|BEG Belgrade|ZAG Zagreb|SPU Split|DBV Dubrovnik|ZAD Zadar|PUY Pula|LJU Ljubljana|TIA Tirana|TGD Podgorica|SKP Skopje|SJJ Sarajevo|BTS Bratislava|RIX Riga|VNO Vilnius|TLL Tallinn|LUX Luxembourg|MLA Malta|LCA Larnaca|PFO Paphos|IST Istanbul|SAW Istanbul Sabiha Gokcen|AYT Antalya|DLM Dalaman|BJV Bodrum|ADB Izmir|KIV Chisinau|TBS Tbilisi|EVN Yerevan|
+CMN Casablanca|RAK Marrakech|AGA Agadir|FEZ Fes|TNG Tangier|RBA Rabat|NDR Nador|OUD Oujda|TUN Tunis|DJE Djerba|MIR Monastir|NBE Enfidha|HRG Hurghada|SSH Sharm el-Sheikh|CAI Cairo|ALG Algiers|ORN Oran|RAI Praia|SID Sal|BVC Boa Vista|VXE Sao Vicente|LAD Luanda|MPM Maputo|DSS Dakar|ACC Accra|LOS Lagos|NBO Nairobi|JNB Johannesburg|CPT Cape Town|
+JFK New York JFK|EWR Newark|BOS Boston|MIA Miami|IAD Washington Dulles|ORD Chicago|YYZ Toronto|YUL Montreal|GRU Sao Paulo|GIG Rio de Janeiro|REC Recife|FOR Fortaleza|DXB Dubai|DOH Doha|AUH Abu Dhabi|TLV Tel Aviv|AMM Amman`;
+  const LIST = {};
+  RAW.split('|').forEach((p) => {
+    const t = p.replace(/\n/g, '').trim();
+    if (/^[A-Z]{3} /.test(t)) LIST[t.slice(0, 3)] = t.slice(4);
+  });
+
+  let dl = null;
+  function datalist() {
+    if (dl) return dl;
+    dl = document.createElement('datalist');
+    dl.id = 'tvd-iata-list';
+    Object.keys(LIST).sort().forEach((c) => {
+      const o = document.createElement('option');
+      o.value = c;
+      o.label = LIST[c];
+      o.textContent = LIST[c];
+      dl.appendChild(o);
+    });
+    document.body.appendChild(dl);
+    return dl;
+  }
+
+  /** Makes an input accept only A-Z (max 3), suggests codes while typing and shows the airport name. */
+  function attach(input) {
+    datalist();
+    input.setAttribute('list', 'tvd-iata-list');
+    input.setAttribute('maxlength', '3');
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocapitalize', 'characters');
+    input.setAttribute('spellcheck', 'false');
+    const hint = document.createElement('small');
+    hint.className = 'tvd-fieldnote';
+    input.insertAdjacentElement('afterend', hint);
+    const show = () => {
+      const v = input.value;
+      hint.textContent = v.length === 3 ? (LIST[v] ? LIST[v] : 'Not in the list — check the 3-letter IATA code.') : '';
+    };
+    input.addEventListener('input', () => {
+      const clean = input.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+      if (clean !== input.value) input.value = clean;
+      show();
+    });
+    show();
+    return input;
+  }
+
+  NS.iata = { LIST, attach };
+  ['tvd-dest', 'ew-dest'].forEach((id) => { const e = document.getElementById(id); if (e) attach(e); });
+})();
+
+</script>
+<script>
+/**
+ * Validation panel shared by both airline tabs (no airline rules here).
+ *  - ERROR   : critical, blocks the LDM
+ *  - WARNING : allows continuing, stays visible
+ *  - OK      : check completed
+ *  - NOTE    : information / changes the app made because of a dispatcher action (never silent)
+ * Each item says what is wrong and WHERE (section + field; click to go there).
+ */
+(function () {
+  'use strict';
+  const NS = (window.TVD = window.TVD || {});
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  /** rules: [{ code: RegExp|null, msg: RegExp|null, key, label, id }] — first match wins. */
+  function classify(alert, rules) {
+    for (const r of rules) {
+      if ((r.code && r.code.test(alert.code || '')) || (r.msg && r.msg.test(alert.message || ''))) return r;
+    }
+    return { key: 'other', label: 'Form', id: null };
+  }
+  const labelOf = (c, a) => (typeof c.label === 'function' ? c.label(a) : c.label);
+
+  /**
+   * alerts : [{level,code,message}]  (level error | pending | warning | info)
+   * groups : [{ key, ok: () => string|null }]  — OK message when the group has no error / warning
+   * notices: [{message, dismiss}]  — changes made by the app after a dispatcher action
+   */
+  function build(alerts, rules, groups, notices) {
+    const items = [];
+    const bad = {};
+    alerts.forEach((a) => {
+      const c = classify(a, rules);
+      const status = a.level === 'error' ? 'error' : a.level === 'info' ? 'note' : 'warn';
+      if (status !== 'note') bad[c.key] = true;
+      items.push({ status, label: labelOf(c, a), id: c.id, message: a.message, key: c.key });
+    });
+    (notices || []).forEach((n) => items.push({ status: 'warn', label: 'Automatic change', id: null, message: n.message, dismiss: n.dismiss, key: 'notice' }));
+    const rank = { error: 0, warn: 1, note: 2 };
+    items.sort((x, y) => rank[x.status] - rank[y.status]);
+    (groups || []).forEach((g) => {
+      if (bad[g.key]) return;
+      const m = g.ok();
+      if (m) items.push({ status: 'ok', label: g.label || '', id: null, message: m, key: g.key });
+    });
+    return { items, errors: items.filter((i) => i.status === 'error').length, warnings: items.filter((i) => i.status === 'warn').length };
+  }
+
+  function render(box, built, started) {
+    box.textContent = '';
+    const sum = el('div', 'tvd-vsum ' + (!started ? 'idle' : built.errors ? 'blocked' : 'ready'));
+    sum.textContent = !started
+      ? 'Validation runs automatically as you fill in the form.'
+      : built.errors
+        ? 'LDM BLOCKED — ' + built.errors + ' critical error' + (built.errors === 1 ? '' : 's') + ' to fix' + (built.warnings ? ' · ' + built.warnings + ' warning' + (built.warnings === 1 ? '' : 's') : '')
+        : 'No critical errors — the LDM can be generated' + (built.warnings ? ' · ' + built.warnings + ' warning' + (built.warnings === 1 ? '' : 's') + ' to review' : '');
+    box.appendChild(sum);
+    if (!started) return;
+    const LABEL = { error: 'ERROR', warn: 'WARNING', ok: 'OK', note: 'NOTE' };
+    const CLS = { error: 'error', warn: 'pending', ok: 'ok', note: 'info' };
+    built.items.forEach((it) => {
+      const d = el('div', 'tvd-alert ' + CLS[it.status]);
+      d.appendChild(el('b', null, LABEL[it.status]));
+      const body = el('span', 'tvd-alert-body');
+      body.appendChild(el('span', null, it.message));
+      if (it.label && it.status !== 'ok') {
+        const w = el('button', 'tvd-where', 'Where: ' + it.label);
+        w.type = 'button';
+        w.addEventListener('click', () => {
+          const t = it.id && document.getElementById(it.id);
+          if (!t) return;
+          t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (t.focus) t.focus({ preventScroll: true });
+        });
+        body.appendChild(w);
+      }
+      if (it.dismiss) {
+        const x = el('button', 'tvd-where', 'Dismiss');
+        x.type = 'button';
+        x.addEventListener('click', it.dismiss);
+        body.appendChild(x);
+      }
+      d.appendChild(body);
+      box.appendChild(d);
+    });
+  }
+
+  NS.report = { build, render, classify };
+})();
+
+</script>
+<script>
+/**
+ * Hold overview: schematic strip + one card per hold. Used by both airline tabs.
+ * It only DRAWS a model built from the same loading result as the table and the LDM
+ * (no values of its own, no rules, no invented limits). Percentages exist only for holds
+ * that have a configured kg limit.
+ *
+ * model: [{ hold, state?, pieces, weight, limitKg?, limitPcs?, specials:[code], na?, inop? }]
+ * alerts: validation alerts; those about one hold (whitelisted codes) mark that hold WARN / ERROR.
+ */
+(function () {
+  'use strict';
+  const NS = (window.TVD = window.TVD || {});
+
+  const STATE = {
+    ERROR: { icon: '✖', text: 'ERROR' },
+    INOP: { icon: '🚫', text: 'INOP' },
+    WARN: { icon: '⚠', text: 'CHECK' },
+    NA: { icon: '–', text: 'N/A' },
+    NIL: { icon: '○', text: 'NIL' },
+    OK: { icon: '✓', text: 'OK' },
+  };
+  const ORDER = ['ERROR', 'INOP', 'WARN', 'NA', 'NIL', 'OK'];
+  const HOLD_ALERT = /^(LIMIT_|HOLD_|SPECIAL_(HOLD|IN_|UNDEFINED|NOT)|AVIH|A319_|FIXED_HOLD|A321_)/;
+  const view = {}; // chosen view per container id (table | cards); only matters on narrow screens
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  /** Final state of each hold: base state (NA / INOP / NIL / OK) raised by the alerts about that hold. */
+  function resolve(model, alerts) {
+    const byHold = {};
+    (alerts || []).forEach((a) => {
+      if (a.level === 'info' || !HOLD_ALERT.test(a.code || '')) return;
+      const m = /\b(H[1-5])\b/.exec(a.message || '');
+      if (!m) return;
+      (byHold[m[1]] = byHold[m[1]] || []).push(a);
+    });
+    return model.map((h) => {
+      const reasons = (byHold[h.hold] || []).map((a) => ({ level: a.level, message: a.message }));
+      const states = [h.na ? 'NA' : h.inop ? 'INOP' : h.pieces === 0 && h.weight === 0 && !(h.specials || []).length ? 'NIL' : 'OK'];
+      reasons.forEach((r) => states.push(r.level === 'error' ? 'ERROR' : 'WARN'));
+      const state = ORDER.find((s) => states.includes(s));
+      const pct = h.limitKg ? Math.round((h.weight / h.limitKg) * 100) : null;
+      return Object.assign({}, h, { state, reasons, pct });
+    });
+  }
+
+  function badge(state) {
+    return el('span', 'tvd-hvstate s-' + state, STATE[state].icon + ' ' + STATE[state].text);
+  }
+
+  function amount(h) {
+    if (h.state === 'NA') return 'Does not exist';
+    if (h.state === 'INOP') return 'Nothing loaded';
+    return h.pieces + ' PCS · ' + h.weight + ' kg';
+  }
+
+  function strip(items) {
+    const wrap = el('div', 'tvd-hvstrip');
+    wrap.setAttribute('role', 'list');
+    items.forEach((h) => {
+      const b = el('div', 'tvd-hvbox s-' + h.state);
+      b.setAttribute('role', 'listitem');
+      b.appendChild(el('b', null, h.hold));
+      b.appendChild(badge(h.state));
+      b.appendChild(el('span', 'amt', h.state === 'NA' || h.state === 'INOP' ? '' : h.pieces + ' pcs'));
+      b.appendChild(el('span', 'amt', h.state === 'NA' || h.state === 'INOP' ? '' : h.weight + ' kg'));
+      if (h.specials && h.specials.length) b.appendChild(el('span', 'sp', h.specials.join(' + ')));
+      if (h.pct !== null && h.state !== 'NA' && h.state !== 'INOP') {
+        const bar = el('i', 'tvd-hvbar');
+        const fill = el('i', null);
+        fill.style.width = Math.min(100, h.pct) + '%';
+        bar.appendChild(fill);
+        b.appendChild(bar);
+      }
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+
+  function cards(items) {
+    const wrap = el('div', 'tvd-hvcards');
+    items.forEach((h) => {
+      const c = el('div', 'tvd-hvcard s-' + h.state);
+      const top = el('div', 'top');
+      top.appendChild(el('b', null, h.hold));
+      top.appendChild(badge(h.state));
+      c.appendChild(top);
+      c.appendChild(el('div', 'amt', amount(h)));
+      if (h.specials && h.specials.length) c.appendChild(el('div', 'sp', 'Special load: ' + h.specials.join(' + ')));
+      if (h.limitKg && h.state !== 'NA' && h.state !== 'INOP') {
+        c.appendChild(el('div', 'lim', 'Limit ' + h.limitKg + ' kg' + (h.limitPcs ? ' · ' + h.limitPcs + ' pcs' : '') +
+          ' → ' + h.pct + '% of the weight limit' + (h.pct > 100 ? ' (EXCEEDED)' : '')));
+      } else if (h.state !== 'NA' && h.state !== 'INOP') {
+        c.appendChild(el('div', 'lim', 'No limit configured'));
+      }
+      h.reasons.forEach((r) => c.appendChild(el('div', 'why ' + r.level, (r.level === 'error' ? 'ERROR: ' : 'CHECK: ') + r.message)));
+      wrap.appendChild(c);
+    });
+    return wrap;
+  }
+
+  /**
+   * box: container element (id used to remember the chosen view); tableWrap: the existing table wrapper
+   * (hidden on narrow screens while "Cards" is selected).
+   */
+  function render(box, tableWrap, model, alerts) {
+    const items = resolve(model, alerts);
+    const id = box.id;
+    const v = view[id] || 'table';
+    box.textContent = '';
+    box.appendChild(strip(items));
+    box.appendChild(el('p', 'tvd-hint', 'Schematic: holds in numerical order, not physical positions. Percentages only where a weight limit is configured.'));
+
+    const sw = el('div', 'tvd-hvswitch');
+    [['table', 'Table'], ['cards', 'Cards']].forEach(([k, label]) => {
+      const b = el('button', 'tvd-btn tvd-ghost small' + (v === k ? ' on' : ''), label);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(v === k));
+      b.addEventListener('click', () => { view[id] = k; apply(); box.querySelectorAll('.tvd-hvswitch button').forEach((x) => { const on = x === b; x.className = 'tvd-btn tvd-ghost small' + (on ? ' on' : ''); x.setAttribute('aria-pressed', String(on)); }); });
+      sw.appendChild(b);
+    });
+    box.appendChild(sw);
+    const cardsEl = cards(items);
+    box.appendChild(cardsEl);
+
+    function apply() {
+      const cur = view[id] || 'table';
+      cardsEl.classList.toggle('tvd-hv-hide', cur !== 'cards');
+      tableWrap.classList.toggle('tvd-hv-hide', cur === 'cards');
+    }
+    cardsEl.classList.add('tvd-hv-narrowhide');
+    apply();
+    return items;
+  }
+
+  NS.holdview = { render, resolve };
+})();
+
+</script>
+<script>
+/**
+ * UI layer: one screen, no navigation. Only reads the form, calls the pipeline
+ * and draws the result. It contains NO loading rules and NO airline logic.
+ * All text shown to the user is technical aviation English.
+ */
+(function () {
+  'use strict';
+  const NS = window.TVD;
+  const airline = NS.airlines.TRANSAVIA;
+  const $ = (id) => document.getElementById(id);
+
+  // adjust: manual pieces per hold (set with the arrows), e.g. { H2: 45, H3: 55 }. `key` describes the situation
+  // it was made for (aircraft, INOP holds, special loads, normal pieces); if that changes, the manual values are
+  // dropped (back to the standard rule). inop: holds marked inoperative.
+  const state = { touched: false, notices: [], lmcIssues: [], aircraftPrev: '', answer: null, specials: [], generated: false, last: null, adjust: null, refocus: null, inop: [],
+    lmc: { answer: null, holds: [], aircraft: null, pax: null } };
+  let timer = null;
+
+  // ------------------------------------------------------------------ small DOM helpers
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function option(value, label) {
+    const o = document.createElement('option');
+    o.value = value;
+    o.textContent = label;
+    return o;
+  }
+  const pad2 = (n) => String(n).padStart(2, '0');
+  function todayLocal() {
+    const d = new Date();
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  const currentAircraft = () => airline.aircraft[$('tvd-aircraft').value] || null;
+
+  /** Validation re-runs automatically after EVERY edit (form, arrows, INOP, special loads, LMC). */
+  function schedule() {
+    state.touched = true;
+    clearTimeout(timer);
+    timer = setTimeout(() => run(false), 250);
+  }
+
+  // ------------------------------------------------------------------ flight section
+  function renderAircraftInfo() {
+    const a = currentAircraft();
+    const box = $('tvd-acinfo');
+    box.textContent = '';
+    box.hidden = !a;
+    if (!a) return;
+
+    const rule = a.distribution.type === 'PERCENT'
+      ? a.distribution.holds.map((h) => h.hold + ' ' + h.share + '%').join(' · ')
+      : a.distribution.holds.map((h) => h.hold + ' ' + (h.remainder ? 'remainder' : h.pieces + ' pcs')).join(' · ');
+    const sp = (k) => {
+      const r = a.special[k];
+      if (r.forbidden) return 'not allowed';
+      return r.allowed ? r.allowed.join('/') : 'not defined';
+    };
+
+    box.appendChild(el('span', 'tvd-chip', a.config));
+    box.appendChild(el('span', 'tvd-chip', 'Standard crew ' + a.crew));
+    box.appendChild(el('span', 'tvd-chip', 'Holds ' + a.holds.join(' ')));
+    box.appendChild(el('span', 'tvd-chip', 'Baggage ' + rule));
+    box.appendChild(el('span', 'tvd-chip', 'AVIH ' + sp('AVIH')));
+    box.appendChild(el('span', 'tvd-chip', 'WC ' + sp('WHEELCHAIR')));
+    box.appendChild(el('span', a.validated.base ? 'tvd-chip ok' : 'tvd-chip pen',
+      a.validated.base ? 'Rule confirmed by reference scenario' : 'Rule pending validation'));
+  }
+
+  /** Crew dropdown: preselects the aircraft standard; the other options cover an extra captain / cabin crew. */
+  function renderCrew() {
+    const a = currentAircraft();
+    const c = $('tvd-crew');
+    c.textContent = '';
+    c.disabled = !a;
+    if (!a) { c.appendChild(option('', '—')); return; }
+    const list = (airline.crewOptions || []).slice();
+    if (!list.includes(a.crew)) list.unshift(a.crew);
+    list.forEach((v) => c.appendChild(option(v, v)));
+    c.value = a.crew;
+  }
+
+  /** Anything the app changes by itself is announced (never silent). */
+  function notify(message) {
+    if (state.notices.some((n) => n.message === message)) return;
+    const n = { message, dismiss: () => { state.notices = state.notices.filter((x) => x !== n); refreshPanel(); } };
+    state.notices.push(n);
+  }
+
+  function toggleInop(h) {
+    state.inop = state.inop.includes(h) ? state.inop.filter((x) => x !== h) : state.inop.concat(h);
+    // a special load cannot stay in an INOP hold: the dispatcher must choose another one
+    state.specials.forEach((sp, i) => {
+      if (state.inop.includes(sp.hold)) {
+        notify((sp.kind === 'AVIH' ? 'AVIH' : 'Wheelchair') + ' ' + (i + 1) + ' was in ' + sp.hold + ', which is now INOP: its hold was cleared. Choose another hold in Special loads.');
+        sp.hold = '';
+      }
+    });
+    renderSpecials();
+    schedule();
+  }
+
+  // ------------------------------------------------------------------ passengers
+  function updatePax() {
+    const n = ['m', 'f', 'c'].map((k) => /^\d+$/.test($('tvd-' + k).value.trim()) ? Number($('tvd-' + k).value.trim()) : null);
+    const total = n.every((v) => v !== null) ? n[0] + n[1] + n[2] : null;
+    $('tvd-pax').textContent = total === null ? '—' : String(total);
+    // live capacity warning (Y189 = 189 passengers; infants are not counted)
+    const a = currentAircraft();
+    const w = $('tvd-capwarn');
+    if (a && total !== null && total > a.seats) {
+      w.textContent = 'Passenger capacity exceeded: ' + total + ' PAX, ' + a.config + ' capacity is ' + a.seats + '. Infants are not counted.';
+      w.hidden = false;
+    } else {
+      w.hidden = true;
+      w.textContent = '';
+    }
+  }
+
+  // ------------------------------------------------------------------ special loads
+  /** Holds a special load may use: every hold of the aircraft except the normal baggage holds. */
+  function specialHolds(kind) {
+    const a = currentAircraft();
+    if (!a) return [];
+    const rule = a.special[kind];
+    return a.holds
+      .filter((h) => !a.distribution.holds.some((d) => d.hold === h) && !state.inop.includes(h))
+      .map((h) => ({ v: h, l: rule.allowed && rule.allowed.includes(h) ? h + ' ✓' : h }));
+  }
+  /** Preselected hold, unless another special load already uses it (then the dispatcher must choose). */
+  function defaultHold(kind, taken) {
+    const a = currentAircraft();
+    const d = a && a.special[kind].default ? a.special[kind].default : '';
+    return d && !(taken || []).includes(d) && !state.inop.includes(d) ? d : '';
+  }
+  function holdHint(kind) {
+    const a = currentAircraft();
+    return a ? a.special[kind].hint || '' : '';
+  }
+
+  function select(options, value, onChange) {
+    const s = document.createElement('select');
+    s.appendChild(option('', '—'));
+    options.forEach((o) => s.appendChild(option(o.v, o.l)));
+    s.value = value || '';
+    s.addEventListener('change', () => { onChange(s.value); schedule(); });
+    return s;
+  }
+  function field(label, control, note) {
+    const l = el('label', 'tvd-field');
+    l.appendChild(el('span', null, label));
+    l.appendChild(control);
+    if (note) l.appendChild(el('small', 'tvd-fieldnote', note));
+    return l;
+  }
+
+  function renderSpecials() {
+    const list = $('tvd-sp-list');
+    list.textContent = '';
+    const defs = airline.specialLoads.definitions;
+    const counters = { AVIH: 0, WHEELCHAIR: 0 };
+
+    state.specials.forEach((item, idx) => {
+      counters[item.kind] += 1;
+      const row = el('div', 'tvd-row');
+      const head = el('div', 'tvd-row-head');
+      const title = el('span', null, (item.kind === 'AVIH' ? 'AVIH ' : 'Wheelchair ') + pad2(counters[item.kind]));
+      title.appendChild(el('small', null, '1 piece'));
+      head.appendChild(title);
+      const rm = el('button', 'tvd-btn tvd-ghost small', 'Remove');
+      rm.type = 'button';
+      rm.addEventListener('click', () => { state.specials.splice(idx, 1); renderSpecials(); schedule(); });
+      head.appendChild(rm);
+      row.appendChild(head);
+
+      const grid = el('div', 'tvd-grid');
+      if (item.kind === 'AVIH') {
+        grid.appendChild(field('Animal type', select(defs.AVIH.animals.map((v) => ({ v, l: v })), item.animal, (v) => { item.animal = v; })));
+        grid.appendChild(field('Sex', select(defs.AVIH.sexes.map((v) => ({ v, l: v })), item.sex, (v) => { item.sex = v; })));
+      } else {
+        grid.appendChild(field('Wheelchair code', select(
+          Object.keys(defs.WHEELCHAIR.codes).map((v) => ({ v, l: defs.WHEELCHAIR.codes[v] })), item.code, (v) => { item.code = v; })));
+      }
+      const w = document.createElement('input');
+      w.type = 'text';
+      w.inputMode = 'numeric';
+      w.placeholder = '0';
+      w.value = item.weight;
+      w.addEventListener('input', () => { item.weight = w.value; });
+      grid.appendChild(field('Weight (kg)', w));
+      grid.appendChild(field('Assigned hold', select(specialHolds(item.kind), item.hold, (v) => { item.hold = v; }), holdHint(item.kind)));
+      row.appendChild(grid);
+      list.appendChild(row);
+    });
+  }
+
+  function addSpecial(kind) {
+    state.specials.push({ kind, animal: '', sex: '', code: '', weight: '', hold: defaultHold(kind, state.specials.map((s) => s.hold)) });
+    renderSpecials();
+    schedule();
+  }
+
+  function onAnswer(value) {
+    state.answer = value;
+    $('tvd-sp-box').hidden = value !== 'YES';
+    if (value === 'NO') { state.specials = []; renderSpecials(); }
+    if (value === 'YES' && state.specials.length === 0) renderSpecials();
+    schedule();
+  }
+
+  function onAircraftChange() {
+    const prev = airline.aircraft[state.aircraftPrev];
+    const prevCrew = $('tvd-crew').value;
+    if (state.adjust) notify('Aircraft changed: the manual hold distribution (arrows) was reset to standard.');
+    if (state.inop.length) notify('Aircraft changed: INOP holds (' + state.inop.join(', ') + ') were cleared.');
+    if (prev && prevCrew && prevCrew !== prev.crew && currentAircraft() && prevCrew !== currentAircraft().crew) {
+      notify('Aircraft changed: crew ' + prevCrew + ' was reset to the standard ' + currentAircraft().crew + '. Change it again if needed.');
+    }
+    state.aircraftPrev = $('tvd-aircraft').value;
+    state.adjust = null;
+    state.inop = [];
+    renderAircraftInfo();
+    renderCrew();
+    updatePax();
+    state.specials.forEach((s, i) => {
+      if (!specialHolds(s.kind).some((o) => o.v === s.hold)) {
+        const old = s.hold;
+        s.hold = defaultHold(s.kind, state.specials.slice(0, i).map((x) => x.hold));
+        notify((s.kind === 'AVIH' ? 'AVIH' : 'Wheelchair') + ' ' + (i + 1) + ': ' + (old || 'hold') + ' is not valid on this aircraft, it was set to ' + (s.hold || 'no hold (choose one)') + '.');
+      }
+    });
+    renderSpecials();
+    schedule();
+  }
+
+  // ------------------------------------------------------------------ read the form
+  function normalPiecesNow() {
+    const v = $('tvd-pieces').value.trim();
+    return /^\d+$/.test(v) ? Number(v) - state.specials.length : null;
+  }
+
+  /** Situation the manual (arrow) distribution was made for. */
+  function adjustKey() {
+    return [$('tvd-aircraft').value, state.inop.join(','), state.specials.map((s) => s.hold).join(','), normalPiecesNow()].join('|');
+  }
+
+  function collect() {
+    if (state.adjust && state.adjust.key !== adjustKey()) {
+      state.adjust = null;
+      notify('The manual hold distribution (arrows) was reset to standard because the baggage, INOP holds or special loads changed.');
+    }
+    return {
+      adjust: state.adjust ? state.adjust.pieces : null,
+      inop: state.inop.slice(),
+      flight: {
+        crew: $('tvd-crew').value,
+        number: $('tvd-number').value,
+        date: $('tvd-date').value,
+        aircraft: $('tvd-aircraft').value,
+        registration: $('tvd-reg').value,
+        destination: $('tvd-dest').value,
+      },
+      pax: { m: $('tvd-m').value, f: $('tvd-f').value, c: $('tvd-c').value, i: $('tvd-i').value },
+      baggage: { pieces: $('tvd-pieces').value, weight: $('tvd-weight').value },
+      specialsAnswer: state.answer,
+      specials: state.specials.map((s) => Object.assign({}, s)),
+    };
+  }
+
+  // ------------------------------------------------------------------ output
+  const LEVEL_LABEL = { error: 'ERROR', pending: 'PENDING', warning: 'CHECK', info: 'NOTE' };
+
+  const FLIGHT = 'Flight information › ';
+  const RULES = [
+    { code: /^FLIGHT/, key: 'flight', label: FLIGHT + 'Flight number', id: 'tvd-number' },
+    { code: /^DATE/, key: 'flight', label: FLIGHT + 'Date', id: 'tvd-date' },
+    { code: /^AIRCRAFT_(REQUIRED|UNKNOWN)$/, key: 'flight', label: FLIGHT + 'Aircraft type', id: 'tvd-aircraft' },
+    { code: /^AIRCRAFT_UNVALIDATED$/, key: 'rules', label: FLIGHT + 'Aircraft type', id: 'tvd-aircraft' },
+    { code: /^CREW/, key: 'flight', label: FLIGHT + 'Crew', id: 'tvd-crew' },
+    { code: /^REG/, key: 'flight', label: FLIGHT + 'Registration', id: 'tvd-reg' },
+    { code: /^DEST/, key: 'flight', label: FLIGHT + 'Destination', id: 'tvd-dest' },
+    { code: /^PAX_/, key: 'pax', label: 'Passengers › M/F/C', id: 'tvd-m' },
+    { msg: /^Male/, key: 'pax', label: 'Passengers › Male (M)', id: 'tvd-m' },
+    { msg: /^Female/, key: 'pax', label: 'Passengers › Female (F)', id: 'tvd-f' },
+    { msg: /^Children/, key: 'pax', label: 'Passengers › Children (C)', id: 'tvd-c' },
+    { msg: /^Infants/, key: 'pax', label: 'Passengers › Infants (I)', id: 'tvd-i' },
+    { msg: /^Total baggage pieces/, key: 'baggage', label: 'Baggage › Total pieces', id: 'tvd-pieces' },
+    { msg: /^Total baggage weight/, key: 'baggage', label: 'Baggage › Total weight', id: 'tvd-weight' },
+    { code: /^(WEIGHT_WITHOUT_PIECES|PIECES_WITHOUT_WEIGHT|BELOW_FIXED_HOLD|PIECES_ROUNDING_CONFLICT|WEIGHT_ROUNDING_CONFLICT)$/, key: 'baggage', label: 'Baggage › Total pieces / weight', id: 'tvd-pieces' },
+    { code: /^(SPECIAL_EXCEEDS_TOTAL|SPECIAL_PIECES|SPECIAL_WEIGHT_TOTAL)$/, key: 'special', label: 'Special loads vs baggage totals', id: 'tvd-sp-box' },
+    { code: /^(SPECIAL|AVIH|WC_|HOLD_)/, key: 'special', label: 'Special loads', id: 'tvd-sp-box' },
+    { code: /^(UNASSIGNED_BAGGAGE|ADJUST_INVALID|MANUAL_DISTRIBUTION|INOP_|FIXED_HOLD_NOT_FILLED)/, key: 'loading', label: 'Loading result › holds', id: 'tvd-table' },
+    { code: /^CHECK_/, key: 'check', label: 'Result cross-check', id: 'tvd-ldm' },
+    { code: /^LMC_/, key: 'lmc', label: 'Last minute change', id: 'tvd-lmc-box' },
+    { code: /^LIMITS_/, key: 'limits', label: '', id: null },
+  ];
+
+  /** Critical errors block the LDM; warnings stay visible; checks that passed are marked OK. */
+  function buildReport() {
+    const res = state.last;
+    const alerts = (res ? res.alerts : []).concat(state.lmcIssues);
+    const groups = [
+      { key: 'flight', ok: () => 'Flight information is valid.' },
+      { key: 'pax', ok: () => 'Passengers are valid (' + $('tvd-pax').textContent + ' PAX within capacity).' },
+      { key: 'baggage', ok: () => 'Baggage totals are valid.' },
+      { key: 'special', ok: () => (state.answer === 'YES' ? 'Special loads are valid (' + state.specials.length + ').' : state.answer === 'NO' ? 'No special loads.' : null) },
+      { key: 'loading', ok: () => (res && res.loading ? 'Loading distribution is complete: all pieces are in a hold.' : null) },
+      { key: 'check', ok: () => (res && res.ldm ? 'LDM cross-check passed: the LDM matches the entered data.' : null) },
+      { key: 'lmc', ok: () => (state.lmc.answer === 'YES' && res && res.ldm ? 'Last minute change is valid.' : null) },
+    ];
+    return NS.report.build(alerts, RULES, groups, state.notices);
+  }
+
+  /** Redraws the panel and enables / disables Generate and Copy. */
+  function refreshPanel() {
+    const res = state.last;
+    const built = buildReport();
+    state.blocked = !res || res.status === 'ERROR' || res.status === 'INCOMPLETE' || built.errors > 0;
+    NS.report.render($('tvd-alerts'), built, state.touched);
+    $('tvd-generate').disabled = state.blocked;
+    const hint = $('tvd-blockedhint');
+    hint.hidden = !state.blocked || !state.touched;
+    hint.textContent = 'LDM blocked: ' + built.errors + ' critical error' + (built.errors === 1 ? '' : 's') + ' to fix (see Validation below).';
+    if (state.blocked) state.generated = false;
+    const ldmSec = $('tvd-ldm').closest('section');
+    if (ldmSec) ldmSec.hidden = state.blocked || !state.generated;
+    $('tvd-copy').disabled = state.blocked || !res || !res.ldm;
+    return built;
+  }
+
+  function cell(tag, text, cls) {
+    const c = el(tag, cls || null, text);
+    return c;
+  }
+
+  /**
+   * − [pieces] + control for a hold. + takes a piece from the unassigned ones (if any), otherwise from the
+   * POOL hold (the hold that takes the rest, e.g. H3); − gives it back to the pool. On the pool hold itself
+   * the pieces go to / come from OTHER (the first standard hold, e.g. H2).
+   */
+  function arrowPlan(adj, cur, unassigned, hold) {
+    const dest = hold !== adj.pool ? adj.pool : adj.other;
+    const src = unassigned > 0 ? 'U' : dest;
+    return {
+      dest,
+      src,
+      canPlus: !!src && (src === 'U' || (cur[src] || 0) > 0),
+      canMinus: (cur[hold] || 0) > 0 && !!dest,
+    };
+  }
+
+  function stepper(hold, value, plan) {
+    const box = el('span', 'tvd-stepper');
+    const mk = (id, label, text, dir, disabled) => {
+      const b = el('button', 'tvd-step', text);
+      b.type = 'button';
+      b.id = id;
+      b.setAttribute('aria-label', label + ' ' + hold);
+      b.disabled = disabled;
+      b.addEventListener('click', () => changeAdjust(hold, dir, id));
+      return b;
+    };
+    box.appendChild(mk('tvd-adj-minus-' + hold, 'One piece less in', '−', -1, !plan.canMinus));
+    box.appendChild(el('strong', 'tvd-stepval', String(value)));
+    box.appendChild(mk('tvd-adj-plus-' + hold, 'One piece more in', '+', 1, !plan.canPlus));
+    return box;
+  }
+
+  function changeAdjust(hold, dir, focusId) {
+    const res = state.last;
+    if (!res || !res.loading) return;
+    const adj = res.loading.adjustment;
+    const cur = {};
+    adj.eligible.forEach((h) => {
+      const x = res.loading.holds.find((y) => y.hold === h && y.kind === 'NORMAL');
+      cur[h] = x ? x.pieces : 0;
+    });
+    const plan = arrowPlan(adj, cur, res.loading.unassigned.pieces, hold);
+    if (dir > 0) {
+      if (!plan.canPlus) return;
+      if (plan.src !== 'U') cur[plan.src] -= 1;
+      cur[hold] += 1;
+    } else {
+      if (!plan.canMinus) return;
+      cur[hold] -= 1;
+      cur[plan.dest] += 1;
+    }
+    state.adjust = { pieces: cur, key: adjustKey() };
+    state.refocus = focusId;
+    run(false);
+  }
+
+  function resetAdjust() {
+    state.adjust = null;
+    state.refocus = 'tvd-adj-reset';
+    run(false);
+  }
+
+  function inopBtn(hold, label) {
+    // 🚫 = mark the hold inoperative (INOP); Undo puts it back in use
+    const b = el('button', 'tvd-btn tvd-ghost small tvd-inopbtn', label === 'INOP' ? '🚫' : label);
+    b.type = 'button';
+    b.id = 'tvd-rowinop-' + hold;
+    b.title = label === 'INOP' ? 'Mark ' + hold + ' as INOP (inoperative)' : 'Remove INOP from ' + hold;
+    b.setAttribute('aria-label', label === 'INOP' ? 'Mark ' + hold + ' as INOP' : 'Remove INOP from ' + hold);
+    b.addEventListener('click', () => { toggleInop(hold); clearTimeout(timer); run(false); });
+    return b;
+  }
+
+  /** Lets the dispatcher move an AVIH / wheelchair to another hold; the standard hold is suggested first. */
+  function moveSelect(res, h) {
+    const idx = res.data.specials.findIndex((x) => x.hold === h.hold && x.kind === h.kind);
+    const kind = h.kind;
+    const a = res.aircraft;
+    const std = a.special[kind].default;
+    const taken = res.data.specials.filter((_, i) => i !== idx).map((x) => x.hold);
+    const sel = document.createElement('select');
+    sel.className = 'tvd-movesel';
+    sel.setAttribute('aria-label', 'Move ' + h.code + ' to another hold');
+    specialHolds(kind).filter((o) => o.v === h.hold || !taken.includes(o.v)).forEach((o) => {
+      sel.appendChild(option(o.v, o.v === std ? o.v + ' ★' : o.l));
+    });
+    sel.value = h.hold;
+    sel.addEventListener('change', () => {
+      if (!state.specials[idx]) return;
+      state.specials[idx].hold = sel.value;
+      renderSpecials();
+      clearTimeout(timer);
+      run(false);
+    });
+    return sel;
+  }
+
+  function renderResult(res) {
+    const status = $('tvd-status');
+    const incomplete = res.status === 'INCOMPLETE';
+    status.className = 'tvd-status ' + (res.status === 'CALCULATED' ? 'calc' : 'draft');
+    status.textContent = incomplete
+      ? 'INCOMPLETE — ASSIGN ALL PIECES TO GET THE LDM'
+      : res.status === 'DRAFT'
+        ? 'DRAFT — PENDING VALIDATION'
+        : 'CALCULATED — NOT OPERATIONALLY APPROVED';
+
+    // loading table
+    const table = $('tvd-table');
+    table.textContent = '';
+    const head = el('tr');
+    head.appendChild(cell('th', 'HOLD'));
+    head.appendChild(cell('th', 'LOAD'));
+    head.appendChild(cell('th', 'PIECES', 'num'));
+    head.appendChild(cell('th', 'WEIGHT', 'num'));
+    table.appendChild(head);
+
+    // Every hold of the aircraft is listed here (empty ones as NIL, INOP ones as INOP); only the LDM omits empty holds.
+    // Holds that can take baggage get arrows. A hold with a special load occupies it alone (no arrows).
+    const holdNo = (h) => parseInt(h.slice(1), 10);
+    const adj = res.loading.adjustment;
+    const inop = res.loading.inop;
+    const cur = {};
+    adj.eligible.forEach((h) => {
+      const x = res.loading.holds.find((y) => y.hold === h && y.kind === 'NORMAL');
+      cur[h] = x ? x.pieces : 0;
+    });
+    res.aircraft.holds.slice().sort((a, b) => holdNo(a) - holdNo(b)).forEach((name) => {
+      const h = res.loading.holds.find((x) => x.hold === name);
+      const tr = el('tr', inop.includes(name) ? 'inop' : null);
+      const hc = el('td');
+      hc.appendChild(el('span', 'tvd-holdtag', name));
+      tr.appendChild(hc);
+      if (inop.includes(name)) {
+        const ld = el('td');
+        ld.appendChild(el('span', 'tvd-pill inop', 'INOP'));
+        ld.appendChild(inopBtn(name, 'Undo'));
+        tr.appendChild(ld);
+        tr.appendChild(cell('td', '—', 'num'));
+        tr.appendChild(cell('td', '—', 'num'));
+        table.appendChild(tr);
+        return;
+      }
+      if (adj.eligible.includes(name)) {
+        const empty = cur[name] === 0;
+        const ld = el('td');
+        ld.appendChild(el('span', 'tvd-pill ' + (empty ? 'nil' : 'bag'), empty ? 'NIL' : 'Baggage'));
+        ld.appendChild(inopBtn(name, 'INOP')); // pieces already in the hold stay unassigned until moved
+        tr.appendChild(ld);
+        const pc = el('td', 'num');
+        pc.appendChild(stepper(name, cur[name], arrowPlan(adj, cur, res.loading.unassigned.pieces, name)));
+        tr.appendChild(pc);
+        tr.appendChild(cell('td', empty || !h ? '—' : h.weight + ' kg', 'num'));
+        table.appendChild(tr);
+        return;
+      }
+      const load = el('td');
+      load.appendChild(el('span', 'tvd-pill ' + (h ? 'sp' : 'nil'), h ? h.code : 'NIL'));
+      if (h && h.kind !== 'NORMAL') load.appendChild(moveSelect(res, h));
+      if (h && h.kind === 'AVIH') {
+        const sp = res.data.specials.find((s) => s.hold === h.hold && s.kind === 'AVIH');
+        if (sp) load.appendChild(el('small', null, ' · ' + sp.animal + ' ' + sp.sex));
+      }
+      tr.appendChild(load);
+      tr.appendChild(cell('td', h ? String(h.pieces) : '—', 'num'));
+      tr.appendChild(cell('td', h ? h.weight + ' kg' : '—', 'num'));
+      table.appendChild(tr);
+    });
+    if (res.loading.unassigned.pieces > 0) {
+      const un = el('tr', 'unassigned');
+      un.appendChild(cell('td', 'LEFT'));
+      un.appendChild(cell('td', 'Unassigned'));
+      un.appendChild(cell('td', String(res.loading.unassigned.pieces), 'num'));
+      un.appendChild(cell('td', res.loading.unassigned.weight + ' kg', 'num'));
+      table.appendChild(un);
+    }
+    const total = el('tr', 'total');
+    total.appendChild(cell('td', 'TOTAL'));
+    total.appendChild(cell('td', ''));
+    const tp = el('td', 'num');
+    tp.appendChild(el('span', 'tvd-totbox', String(res.loading.totals.pieces)));
+    total.appendChild(tp);
+    total.appendChild(cell('td', res.loading.totals.weight + ' kg', 'num'));
+    table.appendChild(total);
+
+    // hint + reset for the arrows
+    const bar = $('tvd-adjbar');
+    bar.textContent = '';
+    bar.hidden = false;
+    bar.appendChild(el('span', 'tvd-hint', 'Standard distribution first. Use − / + on any hold: a piece comes from ' +
+      (adj.pool || '—') + ' (' + (adj.other || '—') + ' on ' + (adj.pool || '—') + ' itself) and weights follow the pieces. AVIH / wheelchair holds and INOP holds have no arrows.'));
+    if (adj.active) {
+      const r = el('button', 'tvd-btn tvd-ghost small', 'Reset to standard');
+      r.type = 'button';
+      r.id = 'tvd-adj-reset';
+      r.addEventListener('click', resetAdjust);
+      bar.appendChild(r);
+    }
+
+    // hold overview (strip + cards) built from the SAME loading result as the table and the LDM
+    NS.holdview.render($('tvd-holdview'), $('tvd-tablewrap'), res.aircraft.holds.map((h) => {
+      const inopHold = res.loading.inop.includes(h);
+      const rows = res.loading.holds.filter((x) => x.hold === h);
+      return {
+        hold: h,
+        inop: inopHold,
+        pieces: rows.reduce((t, x) => t + x.pieces, 0),
+        weight: rows.reduce((t, x) => t + x.weight, 0),
+        specials: rows.filter((x) => x.kind !== 'NORMAL').map((x) => x.code),
+      };
+    }), res.alerts);
+
+    // average (always separate from the loading result)
+    const n = res.loading.normal;
+    const avg = $('tvd-avg');
+    avg.textContent = '';
+    avg.appendChild(document.createTextNode(n.average === null ? '—' : n.average + ' kg'));
+    avg.appendChild(el('small', null, n.weight + ' kg ÷ ' + n.pieces + ' pcs'));
+    $('tvd-avg-note').textContent = res.data.specials.length
+      ? 'Normal baggage only: AVIH and wheelchairs are excluded. Rounded to 2 decimals.'
+      : 'Rounded to 2 decimals.';
+
+    // LDM
+    $('tvd-ldm').textContent = res.ldm || 'LDM not generated: ' + res.loading.unassigned.pieces + ' piece(s) still unassigned. Use the + / − arrows in the loading result.';
+    copyArmed = false;
+    $('tvd-copy').textContent = res.status === 'DRAFT' ? 'Copy draft LDM' : 'Copy LDM';
+  }
+
+  // ------------------------------------------------------------------ last minute change (recalculation only)
+  /**
+   * "+/−" button + digits field. The sign comes from the button (phone keyboards often have no minus key);
+   * a sign typed in the field itself ("-3") also works and wins over the button.
+   */
+  function signedField(label, obj, key) {
+    const negKey = key + 'Neg';
+    const box = el('div', 'tvd-field');
+    box.appendChild(el('span', null, label));
+    const wrap = el('div', 'tvd-signed');
+    const btn = el('button', 'tvd-step');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Switch between add (+) and remove (−)');
+    const paint = () => {
+      btn.textContent = obj[negKey] ? '−' : '+';
+      btn.className = 'tvd-step ' + (obj[negKey] ? 'neg' : 'pos');
+    };
+    paint();
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.inputMode = 'numeric';
+    inp.placeholder = '0';
+    inp.value = obj[key];
+    btn.addEventListener('click', () => { obj[negKey] = !obj[negKey]; paint(); renderLmcResult(); });
+    inp.addEventListener('input', () => { obj[key] = inp.value; renderLmcResult(); });
+    wrap.appendChild(btn);
+    wrap.appendChild(inp);
+    box.appendChild(wrap);
+    return box;
+  }
+
+  /** Value handed to the calculation: explicit sign typed > button sign. Blank stays blank. */
+  function signedValue(obj, key) {
+    const v = String(obj[key] == null ? '' : obj[key]).trim();
+    if (v === '') return '';
+    if (/^[+\-−]/.test(v)) return v;
+    return (obj[key + 'Neg'] ? '-' : '+') + v;
+  }
+
+  function newLmcRow() { return { hold: '', pieces: '', weight: '', piecesNeg: false, weightNeg: false }; }
+  function newLmcPax() { return { m: '', f: '', c: '', i: '', mNeg: false, fNeg: false, cNeg: false, iNeg: false }; }
+
+  function renderLmcPax() {
+    const g = $('tvd-lmc-pax');
+    g.textContent = '';
+    [['m', 'Male (M)'], ['f', 'Female (F)'], ['c', 'Children (C)'], ['i', 'Infants (I)']].forEach(([k, label]) => {
+      g.appendChild(signedField(label, state.lmc.pax, k));
+    });
+  }
+
+  function renderLmcRows() {
+    const list = $('tvd-lmc-holds');
+    list.textContent = '';
+    const a = currentAircraft();
+    const holds = a ? a.holds.slice().sort((x, y) => parseInt(x.slice(1), 10) - parseInt(y.slice(1), 10)) : [];
+    state.lmc.holds.forEach((row, idx) => {
+      const box = el('div', 'tvd-row');
+      const head = el('div', 'tvd-row-head');
+      head.appendChild(el('span', null, 'Hold change ' + pad2(idx + 1)));
+      const rm = el('button', 'tvd-btn tvd-ghost small', 'Remove');
+      rm.type = 'button';
+      rm.addEventListener('click', () => { state.lmc.holds.splice(idx, 1); renderLmcRows(); renderLmcResult(); });
+      head.appendChild(rm);
+      box.appendChild(head);
+
+      const grid = el('div', 'tvd-grid');
+      const sel = document.createElement('select');
+      sel.appendChild(option('', '—'));
+      holds.filter((h) => !state.inop.includes(h)).forEach((h) => sel.appendChild(option(h, h)));
+      sel.value = row.hold;
+      sel.addEventListener('change', () => { row.hold = sel.value; renderLmcResult(); });
+      grid.appendChild(field('Hold', sel));
+      grid.appendChild(signedField('Pieces', row, 'pieces'));
+      grid.appendChild(signedField('Weight (kg)', row, 'weight'));
+      box.appendChild(grid);
+      list.appendChild(box);
+    });
+  }
+
+  const signed = (n, unit) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n) + (unit ? ' ' + unit : '');
+  const holdText = (v) => (v.pieces === 0 && v.weight === 0 ? 'NIL' : v.pieces + ' pcs / ' + v.weight + ' kg');
+
+  function renderLmcResult() {
+    const out = $('tvd-lmc-out');
+    out.textContent = '';
+    state.lmcIssues = [];
+    const res = state.last;
+    if (state.lmc.answer !== 'YES' || !res || !res.loading || !res.aircraft) { state.touched && refreshPanel(); return; }
+
+    const changes = {
+      holds: state.lmc.holds.map((r) => ({ hold: r.hold, pieces: signedValue(r, 'pieces'), weight: signedValue(r, 'weight') })),
+      pax: { m: signedValue(state.lmc.pax, 'm'), f: signedValue(state.lmc.pax, 'f'), c: signedValue(state.lmc.pax, 'c'), i: signedValue(state.lmc.pax, 'i') },
+    };
+    const r = NS.lmc.computeLmc(res.aircraft, res.data, res.loading, changes);
+
+    // LMC problems are shown in the Validation panel (and block the LDM) instead of here
+    state.lmcIssues = r.issues;
+    state.touched = true;
+    refreshPanel();
+    if (!r.ok) return;
+    if (!r.changed) { out.appendChild(el('p', 'tvd-hint', 'No change entered yet.')); return; }
+
+    // holds: before / change / after
+    const wrap = el('div', 'tvd-tablewrap');
+    const t = el('table', 'tvd-table');
+    const head = el('tr');
+    ['HOLD', 'BEFORE', 'CHANGE', 'AFTER'].forEach((h) => head.appendChild(cell('th', h)));
+    t.appendChild(head);
+    r.holds.forEach((h) => {
+      const tr = el('tr');
+      tr.appendChild(cell('td', h.hold));
+      tr.appendChild(cell('td', holdText(h.before)));
+      const changed = h.delta.pieces !== 0 || h.delta.weight !== 0;
+      tr.appendChild(cell('td', changed ? signed(h.delta.pieces, 'pcs') + ' / ' + signed(h.delta.weight, 'kg') : '—'));
+      tr.appendChild(cell('td', holdText(h.after)));
+      t.appendChild(tr);
+    });
+    const tot = el('tr', 'total');
+    tot.appendChild(cell('td', 'TOTAL'));
+    tot.appendChild(cell('td', r.totals.before.pieces + ' pcs / ' + r.totals.before.weight + ' kg'));
+    tot.appendChild(cell('td', signed(r.totals.after.pieces - r.totals.before.pieces, 'pcs') + ' / ' + signed(r.totals.after.weight - r.totals.before.weight, 'kg')));
+    tot.appendChild(cell('td', r.totals.after.pieces + ' pcs / ' + r.totals.after.weight + ' kg'));
+    t.appendChild(tot);
+    wrap.appendChild(t);
+    out.appendChild(wrap);
+
+    // people: before / change / after
+    const wrap2 = el('div', 'tvd-tablewrap');
+    const p = el('table', 'tvd-table');
+    const ph = el('tr');
+    ['PASSENGERS', 'BEFORE', 'CHANGE', 'AFTER'].forEach((h) => ph.appendChild(cell('th', h)));
+    p.appendChild(ph);
+    [['m', 'Male (M)'], ['f', 'Female (F)'], ['c', 'Children (C)'], ['i', 'Infants (I)']].forEach(([k, label]) => {
+      const tr = el('tr');
+      tr.appendChild(cell('td', label));
+      tr.appendChild(cell('td', String(r.pax.before[k])));
+      tr.appendChild(cell('td', r.pax.delta[k] ? signed(r.pax.delta[k]) : '—'));
+      tr.appendChild(cell('td', String(r.pax.after[k])));
+      p.appendChild(tr);
+    });
+    const pt = el('tr', 'total');
+    pt.appendChild(cell('td', 'PAX (M+F+C)'));
+    pt.appendChild(cell('td', String(r.pax.totalBefore)));
+    pt.appendChild(cell('td', r.pax.totalAfter === r.pax.totalBefore ? '—' : signed(r.pax.totalAfter - r.pax.totalBefore)));
+    pt.appendChild(cell('td', String(r.pax.totalAfter)));
+    p.appendChild(pt);
+    wrap2.appendChild(p);
+    out.appendChild(wrap2);
+    out.appendChild(el('p', 'tvd-hint', 'Passenger breakdown M/F/C/I: ' +
+      ['m', 'f', 'c', 'i'].map((k) => r.pax.before[k]).join('/') + ' → ' + ['m', 'f', 'c', 'i'].map((k) => r.pax.after[k]).join('/') +
+      '. Infants are not counted in PAX.'));
+  }
+
+  /** Keeps the LMC section in step with the latest result (hold list depends on the aircraft). */
+  function syncLmc(res) {
+    if (state.lmc.aircraft !== res.aircraft.type) {
+      state.lmc.aircraft = res.aircraft.type;
+      state.lmc.holds = [];
+      renderLmcRows();
+    }
+    renderLmcResult();
+  }
+
+  function onLmcAnswer(value) {
+    state.lmc.answer = value;
+    $('tvd-lmc-box').hidden = value !== 'YES';
+    if (value === 'YES' && state.lmc.holds.length === 0) {
+      state.lmc.holds.push(newLmcRow());
+      renderLmcRows();
+    }
+    renderLmcResult();
+  }
+
+  function run(scroll) {
+    const res = NS.pipeline.generate(airline, collect());
+    state.last = res;
+    state.lmcIssues = [];
+    if (res.status === 'ERROR') {
+      $('tvd-result').hidden = true;
+      refreshPanel();
+      return;
+    }
+    renderResult(res);
+    $('tvd-lmc').hidden = !res.ldm; // last minute change only makes sense once the loading is complete
+    if (res.ldm) syncLmc(res);
+    refreshPanel();
+    $('tvd-result').hidden = false;
+    if (state.refocus) {
+      // the table is redrawn on every change: give the focus back to the control that was used
+      const f = $(state.refocus);
+      if (f && !f.disabled && f.focus) f.focus({ preventScroll: true });
+      state.refocus = null;
+    }
+    if (scroll && !state.blocked) $('tvd-ldm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // ------------------------------------------------------------------ copy
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise((resolve) => {
+      const t = document.createElement('textarea');
+      t.value = text;
+      t.style.position = 'fixed';
+      t.style.opacity = '0';
+      document.body.appendChild(t);
+      t.select();
+      try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+      t.remove();
+      resolve();
+    });
+  }
+
+  let copyArmed = false;
+  let copyArmTimer = null;
+
+  function onCopy() {
+    const res = state.last;
+    if (!res || !res.ldm) return;
+    const btn = $('tvd-copy');
+    const label = res.status === 'DRAFT' ? 'Copy draft LDM' : 'Copy LDM';
+
+    // A draft needs a second click to confirm (no window.confirm: it is blocked in sandboxed viewers).
+    if (res.status === 'DRAFT' && !copyArmed) {
+      copyArmed = true;
+      btn.textContent = 'PENDING VALIDATION — click again to copy';
+      clearTimeout(copyArmTimer);
+      copyArmTimer = setTimeout(() => { copyArmed = false; btn.textContent = label; }, 4000);
+      return;
+    }
+    copyArmed = false;
+    clearTimeout(copyArmTimer);
+    copyText(res.ldm).then(() => {
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => { btn.textContent = label; }, 1500);
+    }, () => {
+      btn.textContent = 'Copy failed — select the LDM text and copy it';
+    });
+  }
+
+  // ------------------------------------------------------------------ init
+  function reset() {
+    $('tvd-form').reset();
+    state.answer = null;
+    state.specials = [];
+    state.generated = false;
+    state.touched = false;
+    state.notices = [];
+    state.lmcIssues = [];
+    state.aircraftPrev = '';
+    state.adjust = null;
+    state.inop = [];
+    state.last = null;
+    state.lmc = { answer: null, holds: [], aircraft: null, pax: newLmcPax() };
+    ['tvd-lmc-no', 'tvd-lmc-yes'].forEach((id) => { $(id).checked = false; });
+    renderLmcPax();
+    $('tvd-lmc-box').hidden = true;
+    $('tvd-lmc-out').textContent = '';
+    $('tvd-lmc-holds').textContent = '';
+    $('tvd-date').value = todayLocal();
+    $('tvd-sp-box').hidden = true;
+    $('tvd-result').hidden = true;
+    renderAircraftInfo();
+    renderCrew();
+    renderSpecials();
+    updatePax();
+    run(false);
+  }
+
+  function init() {
+    const sel = $('tvd-aircraft');
+    sel.appendChild(option('', 'Select aircraft…'));
+    Object.keys(airline.aircraft)
+      .filter((k) => !airline.aircraft[k].hidden)
+      .forEach((k) => sel.appendChild(option(k, k)));
+    $('tvd-date').value = todayLocal();
+
+    sel.addEventListener('change', onAircraftChange);
+    $('tvd-sp-no').addEventListener('change', () => onAnswer('NO'));
+    $('tvd-sp-yes').addEventListener('change', () => onAnswer('YES'));
+    $('tvd-add-avih').addEventListener('click', () => addSpecial('AVIH'));
+    $('tvd-add-wc').addEventListener('click', () => addSpecial('WHEELCHAIR'));
+    $('tvd-form').addEventListener('input', () => { updatePax(); schedule(); });
+    $('tvd-form').addEventListener('change', schedule);
+    // Plain click handlers (no <form> submit): form submission is blocked in sandboxed
+    // viewers (previews, embedded panels), which would leave the button dead.
+    const generate = () => {
+      state.touched = true;
+      clearTimeout(timer);
+      run(false);
+      if (state.blocked) { $('tvd-alerts').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      state.generated = true;
+      run(true);
+    };
+    $('tvd-generate').addEventListener('click', generate);
+    $('tvd-form').addEventListener('submit', (e) => e.preventDefault());
+    $('tvd-form').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'radio') {
+        e.preventDefault();
+        generate();
+      }
+    });
+    $('tvd-reset').addEventListener('click', reset);
+    $('tvd-copy').addEventListener('click', onCopy);
+    $('tvd-lmc-no').addEventListener('change', () => onLmcAnswer('NO'));
+    $('tvd-lmc-yes').addEventListener('change', () => onLmcAnswer('YES'));
+    $('tvd-lmc-add').addEventListener('click', () => {
+      state.lmc.holds.push(newLmcRow());
+      renderLmcRows();
+      renderLmcResult();
+    });
+    state.lmc.pax = newLmcPax();
+    renderLmcPax();
+    updatePax();
+    run(false); // silent first validation: Generate stays disabled until the form is valid
+  }
+
+  init();
+})();
+
+</script>
+<script>
+/**
+ * Eurowings tab. Only reads the form, calls NS.eurowings.generate and draws the result.
+ * No loading rules here (they live in src/airlines/eurowings/). Independent from the Transavia tab.
+ */
+(function () {
+  'use strict';
+  const NS = window.TVD;
+  const EW = NS.eurowings;
+  const $ = (id) => document.getElementById(id);
+  const HOLDS = EW.HOLDS;
+
+  const S = { answer: null, specials: [], confirm: false, man: null, mw: {}, mode: 'MANUAL',
+    a321: {}, bt: { answer: null, rows: [] }, generated: false, last: null, inop: [], touched: false, blocked: true, notices: [] };
+  HOLDS.forEach((h) => { S.a321[h] = { pieces: '', weight: '' }; });
+
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function option(v, l) { const o = document.createElement('option'); o.value = v; o.textContent = l; return o; }
+  const ac = () => EW.aircraft[$('ew-aircraft').value] || null;
+  const pieceKey = () => [$('ew-aircraft').value, $('ew-pieces').value.trim(), $('ew-weight').value.trim(),
+    S.specials.map((s) => s.kind + s.weight).join(','), S.inop.join(',')].join('|');
+
+  // ------------------------------------------------------------ tabs
+  function showTab(which) {
+    const ew = which === 'EW';
+    $('tvd-hv-panel').hidden = ew;
+    $('tvd-ew-panel').hidden = !ew;
+    $('tvd-tab-hv').className = 'tvd-tab' + (ew ? '' : ' on');
+    $('tvd-tab-ew').className = 'tvd-tab' + (ew ? ' on' : '');
+    $('tvd-tab-hv').setAttribute('aria-selected', String(!ew));
+    $('tvd-tab-ew').setAttribute('aria-selected', String(ew));
+  }
+
+  /** Anything the app changes by itself is announced in the validation panel (never silent). */
+  function notify(message) {
+    if (S.notices.some((n) => n.message === message)) return;
+    const n = { message, dismiss: () => { S.notices = S.notices.filter((x) => x !== n); panel(); } };
+    S.notices.push(n);
+  }
+
+  // ------------------------------------------------------------ collect
+  function collect() {
+    const a = ac();
+    if (S.man && S.man.key !== pieceKey()) {
+      S.man = null; S.mw = {};
+      notify('The manual hold distribution was reset to the suggested one because the baggage, special loads or INOP holds changed.');
+    }
+    return {
+      flight: { number: $('ew-number').value, destination: $('ew-dest').value, aircraft: $('ew-aircraft').value },
+      pax: { m: $('ew-m').value, f: $('ew-f').value, c: $('ew-c').value, i: $('ew-i').value },
+      baggage: { pieces: $('ew-pieces').value, weight: $('ew-weight').value },
+      specialsAnswer: S.answer,
+      specials: S.specials.map((s) => Object.assign({}, s)),
+      confirmSpecials: S.confirm,
+      inop: S.inop.slice(),
+      manual: a && a.mode === 'CALC' ? { pieces: S.man ? S.man.pieces : null, weights: S.mw } : null,
+      a321: a && a.mode === 'LDM_ONLY' ? { mode: S.mode, holds: S.a321 } : null,
+      bt: { answer: S.bt.answer, rows: S.bt.rows.map((r) => Object.assign({}, r)) },
+    };
+  }
+
+  // ------------------------------------------------------------ flight / pax
+  function renderAircraft() {
+    const a = ac();
+    const box = $('ew-acinfo');
+    box.textContent = '';
+    box.hidden = !a;
+    $('ew-clc').hidden = !(a && a.type === 'A321');
+    if (!a) return;
+    box.appendChild(el('span', 'tvd-chip', a.config));
+    box.appendChild(el('span', 'tvd-chip', a.mode === 'CALC' ? 'Loading + LDM' : 'LDM only (CLC)'));
+    box.appendChild(el('span', 'tvd-chip', a.notes));
+    if (a.na.length) box.appendChild(el('span', 'tvd-chip', a.na.join(' ') + ' = N/A'));
+  }
+
+  function updatePax() {
+    const n = ['m', 'f', 'c', 'i'].map((k) => /^\d+$/.test($('ew-' + k).value.trim()) ? Number($('ew-' + k).value.trim()) : null);
+    const main = n[0] !== null && n[1] !== null && n[2] !== null ? n[0] + n[1] + n[2] : null;
+    $('ew-tob').textContent = main === null ? '—' : main + (n[3] !== null ? '+' + n[3] : '');
+    const a = ac();
+    const w = $('ew-capwarn');
+    if (a && main !== null && main > a.seats) {
+      w.textContent = 'Passenger capacity exceeded: ' + main + ' PAX, ' + a.config + ' capacity is ' + a.seats + '. Infants are not counted.';
+      w.hidden = false;
+    } else { w.hidden = true; w.textContent = ''; }
+  }
+
+  // ------------------------------------------------------------ special loads
+  function renderSpecials() {
+    const list = $('ew-sp-list');
+    list.textContent = '';
+    const a = ac();
+    const cnt = { AVIH: 0, WHEELCHAIR: 0 };
+    S.specials.forEach((s, idx) => {
+      cnt[s.kind] += 1;
+      const row = el('div', 'tvd-row');
+      const head = el('div', 'tvd-row-head');
+      const t = el('span', null, (s.kind === 'AVIH' ? 'AVIH ' : 'Wheelchair (WCLB) ') + String(cnt[s.kind]).padStart(2, '0'));
+      t.appendChild(el('small', null, '1 piece'));
+      head.appendChild(t);
+      const rm = el('button', 'tvd-btn tvd-ghost small', 'Remove');
+      rm.type = 'button';
+      rm.addEventListener('click', () => { S.specials.splice(idx, 1); renderSpecials(); update(); });
+      head.appendChild(rm);
+      row.appendChild(head);
+      const grid = el('div', 'tvd-grid');
+      const fld = (label, ctl) => { const l = el('label', 'tvd-field'); l.appendChild(el('span', null, label)); l.appendChild(ctl); return l; };
+      const sel = (opts, val, set) => {
+        const x = document.createElement('select');
+        x.appendChild(option('', '—'));
+        opts.forEach((o) => x.appendChild(option(o, o)));
+        x.value = val || '';
+        x.addEventListener('change', () => { set(x.value); update(); });
+        return x;
+      };
+      if (s.kind === 'AVIH') {
+        grid.appendChild(fld('Animal type', sel(['CAT', 'DOG'], s.animal, (v) => { s.animal = v; })));
+        grid.appendChild(fld('Sex', sel(['M', 'F'], s.sex, (v) => { s.sex = v; })));
+      }
+      const w = document.createElement('input');
+      w.type = 'text'; w.inputMode = 'numeric'; w.placeholder = '0'; w.value = s.weight;
+      w.addEventListener('input', () => { s.weight = w.value; update(); });
+      grid.appendChild(fld('Weight (kg)', w));
+      // where to load it: the standard hold is suggested (★) and preselected, the dispatcher can choose another
+      const opts = HOLDS.filter((h) => a && !a.na.includes(h) && !S.inop.includes(h));
+      const hs = document.createElement('select');
+      hs.appendChild(option('', '—'));
+      opts.forEach((h) => hs.appendChild(option(h, a && h === a.specialHold ? h + ' ★ standard' : h)));
+      if (!s.hold && a && a.specialHold && opts.includes(a.specialHold)) s.hold = a.specialHold;
+      hs.value = s.hold || '';
+      hs.addEventListener('change', () => { s.hold = hs.value; update(); });
+      const hf = fld('Where to load', hs);
+      if (a && a.specialHold) hf.appendChild(el('small', 'tvd-fieldnote', 'Suggested: ' + a.specialHold + (a.type === 'A319' ? ' (position 1.2)' : '') + '. Choose another hold if needed.'));
+      grid.appendChild(hf);
+      row.appendChild(grid);
+      list.appendChild(row);
+    });
+    const multi = a && a.mode === 'CALC' && S.specials.length > 1;
+    $('ew-confirm-box').hidden = !multi;
+    if (multi) $('ew-confirm-text').textContent = 'Confirm where the ' + S.specials.length + ' special loads are loaded: ' +
+      S.specials.map((x) => x.hold || a.specialHold).join(', ') + '.';
+    else S.confirm = false;
+    $('ew-confirm').checked = S.confirm;
+  }
+
+  // ------------------------------------------------------------ transfer bags
+  function renderBt() {
+    const list = $('ew-bt-list');
+    list.textContent = '';
+    S.bt.rows.forEach((r, idx) => {
+      const row = el('div', 'tvd-row');
+      const head = el('div', 'tvd-row-head');
+      head.appendChild(el('span', null, 'Destination ' + (idx + 1)));
+      const rm = el('button', 'tvd-btn tvd-ghost small', 'Remove');
+      rm.type = 'button';
+      rm.addEventListener('click', () => { S.bt.rows.splice(idx, 1); renderBt(); update(); });
+      head.appendChild(rm);
+      row.appendChild(head);
+      const grid = el('div', 'tvd-grid');
+      const mk = (label, key, ph, max) => {
+        const l = el('label', 'tvd-field');
+        l.appendChild(el('span', null, label));
+        const i = document.createElement('input');
+        i.type = 'text'; i.placeholder = ph; i.value = r[key]; if (max) i.maxLength = max;
+        if (key === 'pieces') i.inputMode = 'numeric';
+        i.addEventListener('input', () => { r[key] = i.value; update(); });
+        l.appendChild(i);
+        return l;
+      };
+      const dl = mk('Destination (3 letters)', 'dest', 'BER', 3);
+      NS.iata.attach(dl.querySelector('input'));
+      grid.appendChild(dl);
+      grid.appendChild(mk('Pieces (editable)', 'pieces', '0'));
+      row.appendChild(grid);
+      list.appendChild(row);
+    });
+  }
+
+  // ------------------------------------------------------------ loading table
+  const FL = 'Flight information › ';
+  const holdIn = (a) => { const m = /\b(H[1-5])\b/.exec(a.message); return m ? m[1] : ''; };
+  const RULES = [
+    { code: /^AIRCRAFT_/, key: 'flight', label: FL + 'Aircraft type', id: 'ew-aircraft' },
+    { code: /^FLIGHT/, key: 'flight', label: FL + 'Flight number', id: 'ew-number' },
+    { code: /^DEST/, key: 'flight', label: FL + 'Destination', id: 'ew-dest' },
+    { code: /^PAX_/, key: 'pax', label: 'Passengers › M/F/C', id: 'ew-m' },
+    { msg: /^Male/, key: 'pax', label: 'Passengers › Male (M)', id: 'ew-m' },
+    { msg: /^Female/, key: 'pax', label: 'Passengers › Female (F)', id: 'ew-f' },
+    { msg: /^Children/, key: 'pax', label: 'Passengers › Children (C)', id: 'ew-c' },
+    { msg: /^Infants/, key: 'pax', label: 'Passengers › Infants (I)', id: 'ew-i' },
+    { msg: /^Total baggage pieces/, key: 'baggage', label: 'Baggage › Total pieces', id: 'ew-pieces' },
+    { msg: /^Total baggage weight/, key: 'baggage', label: 'Baggage › Total weight', id: 'ew-weight' },
+    { code: /^(SPECIAL_PIECES|SPECIAL_WEIGHT_TOTAL)$/, key: 'special', label: 'Special loads vs baggage totals', id: 'ew-sp-list' },
+    { code: /^CONFIRM_SPECIALS$/, key: 'special', label: 'Special loads › confirmation', id: 'ew-confirm' },
+    { code: /^(SPECIAL|AVIH|A319_SPECIAL)/, key: 'special', label: 'Special loads', id: 'ew-sp-list' },
+    { code: /^BT_ANSWER$/, key: 'bt', label: 'Transfer bags (BT) › question', id: 'ew-bt-no' },
+    { code: /^BT_/, key: 'bt', label: 'Transfer bags (BT)', id: 'ew-bt-list' },
+    { code: /^(A321_|LIMIT_|HOLD_|INOP_|NOT_DISTRIBUTED|A319_H1|INOP_HOLD|CLC)/, key: 'loading', label: (a) => 'Loading › ' + (holdIn(a) || 'holds'), id: 'ew-table' },
+    { code: /^CHECK_/, key: 'check', label: 'Result cross-check', id: 'ew-ldm' },
+    { code: /^LIMITS_/, key: 'limits', label: '', id: null },
+  ];
+
+  function panel() {
+    const res = S.last;
+    const alerts = res ? res.alerts : [];
+    const groups = [
+      { key: 'flight', ok: () => 'Flight information is valid.' },
+      { key: 'pax', ok: () => 'Passengers are valid (TOB ' + $('ew-tob').textContent + ', within capacity).' },
+      { key: 'baggage', ok: () => 'Baggage totals are valid.' },
+      { key: 'special', ok: () => (S.answer === 'YES' ? 'Special loads are valid (' + S.specials.length + ').' : S.answer === 'NO' ? 'No special loads.' : null) },
+      { key: 'loading', ok: () => (res && res.loading && res.status !== 'ERROR' ? 'Loading is complete and within the hold limits.' : null) },
+      { key: 'bt', ok: () => (S.bt.answer === 'YES' ? 'Transfer bags are valid.' : S.bt.answer === 'NO' ? 'No transfer bags.' : null) },
+      { key: 'check', ok: () => (res && res.ldm ? 'LDM cross-check passed: the LDM matches the entered data.' : null) },
+    ];
+    const built = NS.report.build(alerts, RULES, groups, S.notices);
+    S.blocked = !res || !res.ldm || built.errors > 0;
+    NS.report.render($('ew-alerts'), built, S.touched);
+    $('ew-generate').disabled = S.blocked;
+    const hint = $('ew-blockedhint');
+    hint.hidden = !S.blocked || !S.touched;
+    hint.textContent = 'LDM blocked: ' + built.errors + ' critical error' + (built.errors === 1 ? '' : 's') + ' to fix (see Validation above).';
+    if (S.blocked) S.generated = false;
+    const show = S.generated && !S.blocked;
+    $('ew-ldm').textContent = show ? res.ldm
+      : S.blocked ? 'LDM blocked until the critical errors are fixed.' : 'No critical errors. Press "Generate LDM".';
+    $('ew-copy').disabled = !show;
+    $('ew-copy').textContent = 'Copy LDM';
+  }
+
+  function currentPieces(res) {
+    const cur = {};
+    HOLDS.forEach((h) => { cur[h] = res.loading.hold[h].pieces; });
+    return cur;
+  }
+
+  /** Change the pieces of hold h. The sink hold (A319 H1 / A320 H5) gives / takes the difference; changing the sink itself leaves pieces undistributed. */
+  function setPieces(h, value) {
+    const res = S.last;
+    if (!res || !res.loading) return;
+    const a = res.aircraft;
+    const cur = currentPieces(res);
+    const next = Math.max(0, value);
+    const delta = next - cur[h];
+    if (delta === 0) return;
+    const sk = res.loading.sink;
+    if (res.loading.inop.includes(h)) return;
+    if (sk && h !== sk) {
+      if (cur[sk] - delta < 0) return; // nothing left in the sink hold
+      cur[sk] -= delta;
+    }
+    cur[h] = next;
+    S.man = { pieces: cur, key: pieceKey() };
+    update();
+  }
+
+  function setWeight(h, text) {
+    const t = String(text).trim();
+    if (t === '') delete S.mw[h];
+    else if (/^\d+$/.test(t)) S.mw[h] = Number(t);
+    update();
+  }
+
+  function renderLoading(res) {
+    const card = $('ew-load-card');
+    const L = res.loading;
+    card.hidden = !L;
+    $('ew-avg-card').hidden = !L;
+    if (!L) return;
+    // average: normal baggage only (AVIH and wheelchairs excluded), like the Transavia tab
+    const avg = $('ew-avg');
+    avg.textContent = '';
+    avg.appendChild(document.createTextNode(L.average === null ? '—' : L.average + ' kg'));
+    avg.appendChild(el('small', null, L.normal.weight + ' kg ÷ ' + L.normal.pieces + ' pcs'));
+    $('ew-avg-note').textContent = L.specials.pieces
+      ? 'Normal baggage only: AVIH and wheelchairs are excluded. Rounded to 2 decimals.'
+      : 'Rounded to 2 decimals.';
+    const a = res.aircraft;
+
+    // totals: original, normal baggage, special loads, average, not distributed
+    const sum = $('ew-summary');
+    sum.textContent = '';
+    const orig = L.totals;
+    sum.appendChild(el('span', 'tvd-chip', 'Original ' + (L.normal.pieces + L.specials.pieces) + ' pcs / ' + (L.normal.weight + L.specials.weight) + ' kg'));
+    sum.appendChild(el('span', 'tvd-chip', 'Normal ' + L.normal.pieces + ' pcs / ' + L.normal.weight + ' kg'));
+    sum.appendChild(el('span', 'tvd-chip', 'Special ' + L.specials.pieces + ' pcs / ' + L.specials.weight + ' kg'));
+    const u = L.undistributed;
+    sum.appendChild(el('span', u.pieces === 0 && u.weight === 0 ? 'tvd-chip ok' : 'tvd-chip bad',
+      'Not distributed ' + u.pieces + ' pcs / ' + u.weight + ' kg'));
+    void orig;
+
+    $('ew-modebox').hidden = true;
+
+    // hold overview (strip + cards) built from the SAME loading result as the table and the LDM
+    NS.holdview.render($('ew-holdview'), $('ew-tablewrap'), HOLDS.map((h) => {
+      const lim = L.limits.find((x) => x.hold === h);
+      const sp = (L.specialsByHold[h] || { items: [] }).items;
+      return {
+        hold: h,
+        na: L.hold[h].na,
+        inop: S.inop.includes(h),
+        pieces: L.totalHold[h].pieces,
+        weight: L.totalHold[h].weight,
+        limitKg: lim ? lim.kg : null,
+        limitPcs: lim ? lim.pieces : null,
+        specials: sp.map((x) => x.code),
+      };
+    }), res.alerts);
+
+    const t = $('ew-table');
+    t.textContent = '';
+    const head = el('tr');
+    ['HOLD', 'PIECES', 'WEIGHT'].forEach((x, i) => head.appendChild(el('th', i ? 'num' : null, x)));
+    t.appendChild(head);
+
+    // rows follow the loading order (1st, 2nd...) ; holds outside the sequence (N/A) go last
+    const seq = a.mode === 'CALC' ? a.order : HOLDS;
+    const rowsOrder = seq.concat(HOLDS.filter((x) => !seq.includes(x)));
+    const ORD = ['1st', '2nd', '3rd', '4th', '5th'];
+    rowsOrder.forEach((h) => {
+      const hh = L.hold[h];
+      const tot = L.totalHold[h];
+      const sp = L.specialsByHold[h];
+      const lim = a.limits[h];
+      const over = lim && (tot.weight > lim.kg || (lim.pieces && tot.pieces > lim.pieces));
+      const isInop = L.inop.includes(h);
+      const tr = el('tr', over ? 'over' : null);
+      const c1 = el('td');
+      c1.appendChild(el('span', 'tvd-holdtag', h));
+      if (a.mode === 'CALC' && seq.includes(h)) c1.appendChild(el('small', 'lim', ORD[seq.indexOf(h)] + ' step'));
+      if (!hh.na) {
+        const ib = el('button', 'tvd-btn tvd-ghost small tvd-inopbtn', isInop ? 'Undo' : '🚫');
+        ib.type = 'button';
+        ib.id = 'ew-inop-' + h;
+        ib.title = isInop ? 'Remove INOP from ' + h : 'Mark ' + h + ' as INOP (inoperative)';
+        ib.setAttribute('aria-label', ib.title);
+        ib.addEventListener('click', () => {
+          S.inop = isInop ? S.inop.filter((x) => x !== h) : S.inop.concat(h);
+          if (S.man) notify('Manual hold distribution reset to the suggested one because ' + h + (isInop ? ' is no longer INOP.' : ' is now INOP.'));
+          S.man = null; S.mw = {};
+          if (!isInop) {
+            if (S.a321[h].pieces !== '' || S.a321[h].weight !== '') notify(h + ' is now INOP: the pieces / weight you had entered for ' + h + ' were cleared.');
+            S.a321[h] = { pieces: '', weight: '' };
+            S.specials.forEach((x, i) => { if (x.hold === h) { notify((x.kind === 'AVIH' ? 'AVIH' : 'Wheelchair') + ' ' + (i + 1) + ' was in ' + h + ', which is now INOP: its hold was cleared. Choose another hold.'); x.hold = ''; } });
+          }
+          renderSpecials();
+          update();
+        });
+        c1.appendChild(ib);
+        if (a.mode === 'LDM_ONLY' && !isInop) {
+          const nb = el('button', 'tvd-btn tvd-ghost small tvd-inopbtn', 'NIL');
+          nb.type = 'button';
+          nb.title = 'Empty hold (NIL)';
+          nb.setAttribute('aria-label', h + ' empty (NIL)');
+          nb.addEventListener('click', () => { S.a321[h] = { pieces: '', weight: '' }; update(); });
+          c1.appendChild(nb);
+        }
+      }
+      if (lim) c1.appendChild(el('small', 'lim', 'max ' + lim.kg + ' kg' + (lim.pieces ? ' · ' + lim.pieces + ' pcs' : '')));
+      tr.appendChild(c1);
+      if (hh.na || isInop) {
+        const c = el('td'); c.colSpan = 2; c.appendChild(el('span', 'tvd-pill ' + (isInop ? 'inop' : 'nil'), isInop ? 'INOP' : 'N/A'));
+        if (isInop && sp) c.appendChild(el('small', 'lim', 'special load assigned here: change the loading'));
+        tr.appendChild(c); t.appendChild(tr); return;
+      }
+      const c2 = el('td', 'num');
+      const c3 = el('td', 'num');
+      if (a.mode === 'CALC') {
+        const st = el('span', 'tvd-stepper');
+        const mk = (txt, d, dis) => { const b = el('button', 'tvd-step', txt); b.type = 'button'; b.disabled = dis; b.setAttribute('aria-label', (d > 0 ? 'More' : 'Less') + ' pieces in ' + h); b.addEventListener('click', () => setPieces(h, hh.pieces + d)); return b; };
+        st.appendChild(mk('−', -1, hh.pieces <= 0));
+        const inp = el('input', 'ew-pcs'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.value = hh.pieces; inp.setAttribute('aria-label', 'Pieces in ' + h);
+        inp.addEventListener('change', () => { if (/^\d+$/.test(inp.value.trim())) setPieces(h, Number(inp.value.trim())); else update(); });
+        st.appendChild(inp);
+        st.appendChild(mk('+', 1, false));
+        c2.appendChild(st);
+        const kg = el('input', 'ew-kg'); kg.type = 'text'; kg.inputMode = 'numeric'; kg.value = hh.weight; kg.setAttribute('aria-label', 'Weight in ' + h);
+        kg.addEventListener('change', () => setWeight(h, kg.value === String(hh.weight) ? '' : kg.value));
+        c3.appendChild(kg);
+        c3.appendChild(document.createTextNode(' kg'));
+        if (L.manual[h]) c3.appendChild(el('small', 'lim', 'manual'));
+      } else {
+        const inp = el('input', 'ew-pcs'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.value = S.a321[h].pieces; inp.placeholder = 'NIL';
+        inp.setAttribute('aria-label', 'Pieces in ' + h + ' (blank or 0 = NIL)');
+        inp.addEventListener('change', () => { S.a321[h].pieces = inp.value; update(); });
+        c2.appendChild(inp);
+        // weight is filled from the rounded average; type a weight to override it
+        const kg = el('input', 'ew-kg'); kg.type = 'text'; kg.inputMode = 'numeric'; kg.placeholder = 'NIL';
+        kg.value = hh.pieces > 0 || S.a321[h].weight !== '' ? hh.weight : '';
+        kg.addEventListener('change', () => { S.a321[h].weight = kg.value.trim() === String(hh.weight) && !L.manual[h] ? '' : kg.value; update(); });
+        c3.appendChild(kg); c3.appendChild(document.createTextNode(' kg'));
+        if (L.manual[h]) c3.appendChild(el('small', 'lim', 'manual'));
+      }
+      // AVIH / wheelchairs are part of the hold: "+ 1 AVIH = 10" pieces, "+ 13 = 157 kg" (what the LDM counts)
+      if (sp) {
+        const codes = sp.items.map((x) => x.code).join(' + ');
+        c2.appendChild(el('small', 'spadd', '+ ' + sp.pieces + ' ' + codes + ' = ' + tot.pieces));
+        c3.appendChild(el('small', 'spadd', '+ ' + sp.weight + ' = ' + tot.weight + ' kg'));
+      }
+      tr.appendChild(c2); tr.appendChild(c3);
+      t.appendChild(tr);
+      // (special loads are added inside the hold's own figures, see above)
+    });
+    const total = el('tr', 'total');
+    total.appendChild(el('td', null, 'LDM'));
+    const tp = el('td', 'num'); tp.appendChild(el('span', 'tvd-totbox', String(L.totals.pieces))); total.appendChild(tp);
+    total.appendChild(el('td', 'num', L.totals.weight + ' kg'));
+    t.appendChild(total);
+
+    const bar = $('ew-bar');
+    bar.textContent = '';
+    if (a.mode === 'CALC') {
+      bar.appendChild(el('span', 'tvd-hint', 'Suggested distribution first (pieces: ' +
+        a.order.map((h, i) => ORD[i] + ' ' + h + ' ' + L.suggestion[h]).join(' · ') + '). Change pieces with − / + or by typing; ' + (L.sink || '—') +
+        ' takes the difference. Weights follow the pieces; type a weight to override it. Hold weights include special loads.'));
+      if (S.man || Object.keys(S.mw).length) {
+        const r = el('button', 'tvd-btn tvd-ghost small', 'Reset to suggestion');
+        r.type = 'button';
+        r.addEventListener('click', () => { S.man = null; S.mw = {}; update(); });
+        bar.appendChild(r);
+      }
+      // A319 H1 positions (info only)
+      const h1 = L.specialsByHold.H1;
+      if (a.type === 'A319') {
+        const n = h1 ? h1.pieces : 0;
+        bar.appendChild(el('span', 'tvd-hint', n === 0
+          ? 'A319 H1: position 1.1 baggage · position 1.2 AVIH or wheelchair.'
+          : n === 1 ? 'A319 H1: baggage in position 1.1, the special load in position 1.2.'
+            : 'A319 H1: two special loads — one in position 1.1 and the other in position 1.2.'));
+      }
+    } else {
+      bar.appendChild(el('span', 'tvd-hint', 'Enter the pieces of each hold: the kg are filled with the average (rounded; AVIH and wheelchairs excluded) and the last hold takes the rest. Type a weight to override it. Special loads are added to the hold you chose in section 4.'));
+    }
+  }
+
+  // ------------------------------------------------------------ main update
+  function update(silent) {
+    if (silent !== true) S.touched = true;
+    updatePax();
+    const res = EW.generate(collect());
+    S.last = res;
+    renderLoading(res);
+    panel();
+  }
+
+  function copy() {
+    const res = S.last;
+    if (!res || !res.ldm || S.blocked || !S.generated) return;
+    const done = () => { $('ew-copy').textContent = 'Copied ✓'; setTimeout(() => { $('ew-copy').textContent = 'Copy LDM'; }, 1500); };
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(res.ldm).then(done, () => { $('ew-copy').textContent = 'Copy failed — select the LDM text and copy it'; }); return; }
+    const ta = document.createElement('textarea');
+    ta.value = res.ldm; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+    ta.remove(); done();
+  }
+
+  function reset() {
+    ['ew-aircraft', 'ew-number', 'ew-dest', 'ew-m', 'ew-f', 'ew-c', 'ew-i', 'ew-pieces', 'ew-weight'].forEach((id) => { $(id).value = ''; });
+    ['ew-sp-no', 'ew-sp-yes', 'ew-bt-no', 'ew-bt-yes'].forEach((id) => { $(id).checked = false; });
+    S.inop = []; S.answer = null; S.specials = []; S.confirm = false; S.man = null; S.mw = {}; S.mode = 'MANUAL';
+    HOLDS.forEach((h) => { S.a321[h] = { pieces: '', weight: '' }; });
+    S.bt = { answer: null, rows: [] }; S.generated = false; S.touched = false; S.notices = [];
+    $('ew-sp-box').hidden = true; $('ew-bt-box').hidden = true;
+    renderAircraft(); renderSpecials(); renderBt(); update(true);
+  }
+
+  function init() {
+    $('tvd-tab-hv').addEventListener('click', () => showTab('HV'));
+    $('tvd-tab-ew').addEventListener('click', () => showTab('EW'));
+    $('ew-aircraft').addEventListener('change', () => {
+      if (S.inop.length) notify('Aircraft changed: INOP holds (' + S.inop.join(', ') + ') were cleared.');
+      if (S.man) notify('Aircraft changed: the manual hold distribution was reset.');
+      S.specials.forEach((s, i) => { if (s.hold) notify((s.kind === 'AVIH' ? 'AVIH' : 'Wheelchair') + ' ' + (i + 1) + ': hold ' + s.hold + ' was cleared because the aircraft changed. Choose the hold again.'); });
+      S.inop = []; S.man = null; S.mw = {}; S.specials.forEach((s) => { s.hold = ''; }); renderAircraft(); renderSpecials(); update(); });
+    ['ew-number', 'ew-dest', 'ew-m', 'ew-f', 'ew-c', 'ew-i', 'ew-pieces', 'ew-weight'].forEach((id) => $(id).addEventListener('input', update));
+    const ans = (v) => { S.answer = v; $('ew-sp-box').hidden = v !== 'YES'; if (v === 'NO') { S.specials = []; renderSpecials(); } update(); };
+    $('ew-sp-no').addEventListener('change', () => ans('NO'));
+    $('ew-sp-yes').addEventListener('change', () => ans('YES'));
+    const add = (kind) => { S.specials.push({ kind, animal: '', sex: '', weight: '', hold: '' }); renderSpecials(); update(); };
+    $('ew-add-avih').addEventListener('click', () => add('AVIH'));
+    $('ew-add-wc').addEventListener('click', () => add('WHEELCHAIR'));
+    $('ew-confirm').addEventListener('change', () => { S.confirm = $('ew-confirm').checked; update(); });
+    const btAns = (v) => { S.bt.answer = v; $('ew-bt-box').hidden = v !== 'YES'; if (v === 'NO') { S.bt.rows = []; renderBt(); } else if (!S.bt.rows.length) { S.bt.rows.push({ dest: '', pieces: '' }); renderBt(); } update(); };
+    $('ew-bt-no').addEventListener('change', () => btAns('NO'));
+    $('ew-bt-yes').addEventListener('change', () => btAns('YES'));
+    $('ew-bt-add').addEventListener('click', () => { S.bt.rows.push({ dest: '', pieces: '' }); renderBt(); update(); });
+    $('ew-generate').addEventListener('click', () => {
+      S.touched = true; update();
+      if (S.blocked) { $('ew-alerts').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+      S.generated = true; panel();
+      $('ew-ldm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    $('ew-copy').addEventListener('click', copy);
+    $('ew-reset').addEventListener('click', reset);
+    update(true);
+  }
+
+  init();
+})();
+
+</script>
+</body>
+</html>
