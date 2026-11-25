@@ -12731,7 +12731,12 @@ function parseSchedulePages(pages){
     const xData = hdr[0].x - 8;
     const nameHdr = items.filter(i => i.s === 'Last' && Math.abs(i.y - hdrY) < 4)[0];
     const xName = nameHdr ? nameHdr.x - 12 : 90;
-    const body = items.filter(i => i.y < hdrY - 12);
+    // Tight layout (the dispatchers' PDF: rows only ~8pt tall, the first row's times sit right under the header): read closer to the header
+    // and be stricter about moving lines between rows. The TTAE layout (rows 20pt+) is left exactly as it was.
+    const preIds = items.filter(i => i.y < hdrY - 3 && i.x < xName && /^\d{3,8}$/.test(i.s)).sort((a, b) => b.y - a.y);
+    const preGaps = preIds.slice(1).map((a, k) => preIds[k].y - a.y).sort((u, v) => u - v);
+    const compact = preGaps.length > 3 && preGaps[0] < 14;
+    const body = items.filter(i => i.y < hdrY - (compact ? 3 : 12));
     const ids = body.filter(i => i.x < xName && /^\d{3,8}$/.test(i.s)).sort((a, b) => b.y - a.y);
     if(!ids.length){ problems.push('Página ' + (pi+1) + ': não encontrei nenhum número de agente.'); return; }
     const names = body.filter(i => i.x >= xName && i.x < xData);
@@ -12792,6 +12797,7 @@ function parseSchedulePages(pages){
         if(i._r < 0) return;
         const same = sorted.some(u => u !== i && u._c === i._c && u._r === i._r && Math.abs(u.y - i.y) <= 10);
         if(same) return;
+        if(compact){ const bd = bands[i._r]; if(bd && Math.min(Math.abs(i.y - bd[0]), Math.abs(i.y - bd[1])) > 2.5) return; }   // tight layout: only a line that really sits on a row edge may move
         const nb = sorted.filter(u => u !== i && u._c === i._c && u._r >= 0 && u._r !== i._r && Math.abs(u.y - i.y) <= 10).sort((u, v) => Math.abs(u.y - i.y) - Math.abs(v.y - i.y))[0];
         if(nb) i._r2 = nb._r;
       });
