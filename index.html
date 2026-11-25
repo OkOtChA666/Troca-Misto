@@ -9645,7 +9645,7 @@ function mtKindFor(c){
     const nm = String(c.name || '').replace(/^<\s*/, '').trim();
     for(const t of tasks){
       const lab = String(t[0] || '').replace(/^<\s*/, '').trim();
-      if(lab === nm && (t[1] + '–' + t[2]) === c.nw){ const colr = mtColor(t[3]); const k = colr ? MT_KINDS[colr] : null; if(k) return { label:(GROUP === 'disp' && colr === '#0066cc') ? 'DISPATCHER' : k[0], bg:(GROUP === 'disp' && colr === '#0066cc') ? '#249200' : colr, fg:k[1] }; }
+      if(lab === nm && (t[1] + '–' + t[2]) === c.nw){ const colr = mtColor(t[3]); const k = colr ? MT_KINDS[colr] : null; if(k) return { label:(GROUP === 'disp' && colr === '#0066cc' && String(t[3]) === '919') ? 'DISPATCHER' : k[0], bg:(GROUP === 'disp' && colr === '#0066cc' && String(t[3]) === '919') ? '#249200' : colr, fg:k[1] }; }
     }
   }catch(e){}
   return null;
@@ -14767,7 +14767,7 @@ function mtTasksBodyHtml(staffId, me, now, sameDay){
       }
       const colr = mtColor(t[3]);
       const kind = MT_KINDS[colr] || null;
-      const vcol = (GROUP === 'disp' && colr === '#0066cc') ? '#249200' : colr;   // dispatchers' flights are green, like on the platform
+      const vcol = (GROUP === 'disp' && colr === '#0066cc' && String(t[3]) === '919') ? '#249200' : colr;   // dispatchers' flights are green, like on the platform
       const kindHtml = kind ? '<span class="mt-kind" style="background:' + vcol + ';color:' + kind[1] + '">' + (vcol !== colr ? 'DISPATCHER' : kind[0]) + '</span>' : '<span class="mt-kind mt-kind-empty"></span>';
       const nk = label.replace(/^<\s*/, '').trim();
       const bdg = badges[nk] ? '<div class="mt-nova"><span>NOVA</span></div>' : '';
