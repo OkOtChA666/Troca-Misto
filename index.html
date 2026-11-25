@@ -10452,14 +10452,14 @@ document.getElementById('flights-back-btn').addEventListener('click', openTools)
 // ---------- DOCUMENTOS · TEMPOS (check-in and gate times per airline, from the board at the desk) ----------
 // [code, name, check-in opens (before departure), check-in closes, gate closes remote stand, gate closes jet bridge (minutes)]
 const DOC_TEMPOS = [
-  ['GONOW', '#2fbf71', [['HV','Transavia','2h10','0h40',20,15],['TO','Transavia France','2h10','0h40',20,15],['BY','TUI Airways','2h30','0h45',15,10],['X3','TUI fly Deutschland','2h30','0h45',15,10],['TB','TUI fly Belgium','2h30','0h45',15,10],['OR','TUI fly Netherlands','2h30','0h45',15,10],['6B','TUI fly Nordic','2h30','0h45',15,10],['EW','Eurowings','2h00','0h40',15,15],['V7','Volotea','2h00','0h40',20,20],['W6','Wizz Air','2h00','0h40',20,15]]],
+  ['GONOW', '#2fbf71', [['HV','Transavia','2h10','0h40',20,15],['TO','Transavia France','2h10','0h40',20,15],['BY','TUI Airways','2h30','0h45',15,10],['X3','TUI fly Deutschland','2h30','0h45',15,10],['TB','TUI fly Belgium','2h30','0h45',15,10],['OR','TUI fly Netherlands','2h30','0h45',15,10],['6B','TUI fly Nordic','2h30','0h45',15,10],['EW','Eurowings','2h00','0h40',15,15],['V7','Volotea','2h00','0h40',20,20],['W6','Wizz Air','2h00','0h40',20,15],['W4','Wizz Air Malta','2h00','0h40',20,15],['W9','Wizz Air UK','2h00','0h40',20,15]]],
   ['ALTEA', '#3b9bff', [['BT','airBaltic','2h00','0h40',15,10],['TS','Air Transat','4h00','1h00',15,10],['D8','Norwegian Int.','2h00','0h45',15,15],['DY','Norwegian Shuttle','2h00','0h45',15,15],['SK','SAS','2h30','0h45',15,10],['LG','Luxair','2h00','0h45',10,10],['SN','Brussels Airlines','2h00','0h40',15,10],['AY','Finnair','2h30','0h45',10,10],['OK','Czech Airlines','2h00','0h30',20,15]]],
   ['ERES', '#e0b074', [['EC','easyJet Europe','2h40','1h00',25,20],['U2','easyJet UK','2h40','1h00',25,20]]],
   ['IPORT', '#c9d2e6', [['FI','Icelandair','2h30','0h30',15,15],['E4','Enter Air','2h00','0h45',20,20],['5O','Air Europe Postal','2h00','0h30',15,15]]]
 ];
 const DOC_WIWO = [['easyJet','U2 · EC · DS'],['Eurowings','EW'],['Norwegian','DY · D8'],['Transavia','HV · TO'],['Volotea','V7'],['Wizz Air','W6'],['Icelandair','FI'],['SAS','SK'],['Finnair','AY'],['Air Transat','TS']];
 const DOC_CONTACTOS = [['Supervisão · Coord.','62405'],['Supervisão · Super.','61496'],['Balcão','62406 / 62885'],['Sala Descanso','61498'],['Tapete Partidas','61424 / 61952'],['Portas 101-129','638 + (01 a 29)'],['Porta 322','61303 / 63855'],['Check-In','636 + nº balcão'],['Lost & Found','62407'],['Lounge','61069'],['Fardamento','61958'],['OPS / Suporte','62428 / 61622'],['RH','62462 / 62410'],['My Way','63373 / 61742'],['Incidências','62002'],['Cruz Vermelha','61020'],['Polícia PSP','62688'],];
-const DOC_ICAO = {"HV": "TRA", "TO": "TVF", "BY": "TOM", "X3": "TUI", "TB": "JAF", "OR": "TFL", "6B": "BLX", "EW": "EWG", "V7": "VOE", "W6": "WZZ", "BT": "BTI", "TS": "TSC", "D8": "NAX", "DY": "IBK", "SK": "SAS", "LG": "LGL", "SN": "BRU", "AY": "FIN", "OK": "CSA", "EC": "EJU", "U2": "EZY", "FI": "ICE", "E4": "ENT", "5O": "FPO"};
+const DOC_ICAO = {"HV": "TRA", "TO": "TVF", "BY": "TOM", "X3": "TUI", "TB": "JAF", "OR": "TFL", "6B": "BLX", "EW": "EWG", "V7": "VOE", "W6": "WZZ", "W4": "WMT", "W9": "WUK", "BT": "BTI", "TS": "TSC", "D8": "NAX", "DY": "IBK", "SK": "SAS", "LG": "LGL", "SN": "BRU", "AY": "FIN", "OK": "CSA", "EC": "EJU", "U2": "EZY", "FI": "ICE", "E4": "ENT", "5O": "FPO"};
 let DOC_TAB = null;   // null = the DOCUMENTOS menu
 const DOC_SYS = { GONOW:'#2fbf71', ALTEA:'#3b9bff', ERES:'#e0b074', IPORT:'#c9d2e6' };
 let DOC = null, DOC_EDIT = false, DOC_Q = -1, DOC_QN = 0;
@@ -10474,6 +10474,8 @@ async function docsLoad(){
   try{
     const d = await dbGetShared('docsData', null);
     if(d){ ['tempos','wiwo','contactos'].forEach(k => { if(Array.isArray(d[k])) DOC[k] = d[k]; }); if(d.pec && typeof d.pec === 'object') DOC.pec = d.pec; }
+    // airlines added to the built-in list after the list was first saved: show them too (matched by code)
+    docDefaults().tempos.forEach(r => { if(['W4','W9'].indexOf(r.c) >= 0 && !DOC.tempos.some(x => x.c === r.c)) DOC.tempos.push(r); });
   }catch(e){}
   renderDocs();
 }
