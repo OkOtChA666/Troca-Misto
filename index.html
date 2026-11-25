@@ -726,7 +726,8 @@
   .fv-k{ display:flex; background:#0c1426; border:1px solid #1e2c48; border-radius:12px; overflow:hidden; min-height:62px; }
   .fv-k .ic{ width:34px; flex:none; background:#10253f; display:flex; align-items:center; justify-content:center; color:#4cc4ee; font-size:15px; }
   .fv-k .bd{ padding:9px 10px; min-width:0; } .fv-k .nm{ font:800 11.5px var(--mono); letter-spacing:.03em; color:#dfe7fa; line-height:1.2; text-transform:uppercase; overflow-wrap:anywhere; }
-  .fv-k .tl{ font:700 14px var(--mono); color:#7cc7ff; margin-top:4px; }
+  .fv-k .tl.big{ font-size:19px; }
+  .fv-k .tl{ font:700 clamp(11px, 3.5vw, 19px)/1.1 var(--mono); letter-spacing:-.03em; color:#7cc7ff; margin-top:4px; white-space:nowrap; }
   .fv-k .ic{ cursor:pointer; } .fv-k .ic svg{ display:block; }
   .fvp-t{ font:700 10px var(--mono); letter-spacing:.1em; color:#8da0c4; margin:0 0 8px; }
   .fvp-g{ display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:12px; }
@@ -10477,6 +10478,7 @@ const DOC_WIWO = [['easyJet','U2 · EC · DS'],['Eurowings','EW'],['Norwegian','
 const DOC_CONTACTOS = [['Coordenação','62405'],['Supervisão','61496'],['Balcão','62406 / 62885'],['Sala Descanso','61498'],['Tapete Partidas','61424 / 61952'],['Portas 101-129','638 + (01 a 29)'],['Porta 322','61303 / 63855'],['Check-In','636 + nº balcão'],['Lost & Found','62407'],['Lounge','61069'],['Fardamento','61958'],['OPS / Suporte','62428 / 61622'],['RH','62462 / 62410'],['My Way','63373 / 61742'],['Incidências','62002'],['Cruz Vermelha','61020'],['Polícia PSP','62688'],];
 const DOC_ICAO = {"HV": "TRA", "TO": "TVF", "BY": "TOM", "X3": "TUI", "TB": "JAF", "OR": "TFL", "6B": "BLX", "EW": "EWG", "V7": "VOE", "W6": "WZZ", "W4": "WMT", "W9": "WUK", "BT": "BTI", "TS": "TSC", "D8": "NAX", "DY": "IBK", "SK": "SAS", "LG": "LGL", "SN": "BRU", "AY": "FIN", "OK": "CSA", "EC": "EJU", "U2": "EZY", "FI": "ICE", "E4": "ENT", "5O": "FPO"};
 const CONTACT_RENAMES = { 'Supervisão · Coord.': 'Coordenação', 'Supervisão · Super.': 'Supervisão' };
+function favNum(t){ return String(t || '').split('/')[0].trim(); }   // favourite tile shows only the first number
 function favGet(){ try{ const a = JSON.parse(localStorage.getItem('trocaMistoFavContacts') || '[]'); return Array.isArray(a) ? a.map(n => CONTACT_RENAMES[n] || n) : []; }catch(e){ return []; } }
 function favSet(a){ try{ localStorage.setItem('trocaMistoFavContacts', JSON.stringify(a)); }catch(e){} }
 const FAV_ICONS = {"phone": "<path d=\"M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z\"/>", "sup": "<circle cx=\"12\" cy=\"8\" r=\"3.5\"/><path d=\"M5 20c0-4 3-6 7-6s7 2 7 6\"/><path d=\"M10.5 14.5 12 17l1.5-2.5\"/>", "access": "<circle cx=\"12\" cy=\"4.5\" r=\"1.8\"/><path d=\"M12 8v5h4l2 5M12 11H7.5\"/><path d=\"M8 13.5a4.5 4.5 0 1 0 7 4.5\"/>", "police": "<path d=\"M7 20v-6a5 5 0 0 1 10 0v6\"/><path d=\"M5 20h14M12 3v2M4.5 6.5 6 8M19.5 6.5 18 8M3 12h2M19 12h2\"/>", "medic": "<rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"3\"/><path d=\"M12 8v8M8 12h8\"/>", "bag": "<rect x=\"4\" y=\"8\" width=\"16\" height=\"12\" rx=\"2\"/><path d=\"M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M4 13h16\"/>", "tool": "<path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z\"/>", "pass": "<rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"2\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/><path d=\"M8.5 17h7\"/>", "plane": "<path d=\"M21 15v-2L13 9V4a1 1 0 0 0-2 0v5l-8 4v2l8-2v4l-2 1.5V21l3-1 3 1v-1.5L13 17v-4z\"/>", "key": "<circle cx=\"8\" cy=\"14\" r=\"4\"/><path d=\"M11 11 20 4M16 8l2 2M14 10l2 2\"/>", "alert": "<path d=\"M12 4 3 20h18z\"/><path d=\"M12 10v4M12 17h.01\"/>", "home": "<path d=\"M4 11 12 4l8 7v9H4z\"/><path d=\"M10 20v-6h4v6\"/>"};
@@ -10524,6 +10526,7 @@ function renderDocs(){
   const q = (inp.value || '').trim().toLowerCase();
   const inMenu = !DOC_TAB;
   document.getElementById('docs-menu').classList.toggle('hidden', !inMenu);
+  document.getElementById('docs-fav').classList.toggle('hidden', inMenu || DOC_TAB !== 'contactos');   // favourite tiles belong to CONTACTOS only
   document.getElementById('docs-title').textContent = inMenu ? 'INFORMAÇÃO ÚTIL' : ({ tempos:'TEMPOS', wiwo:'WIWO', contactos:'CONTACTOS', quick:'QUICK SUMMARY' })[DOC_TAB];
   document.getElementById('docs-list').classList.toggle('hidden', inMenu);
   if(inMenu){ document.getElementById('dq-top').classList.add('hidden'); document.getElementById('docs-sb').classList.add('hidden'); document.getElementById('docs-foot').textContent = ''; document.getElementById('docs-edit-btn').classList.add('hidden'); return; }
@@ -10564,7 +10567,7 @@ function renderDocs(){
     html += DOC.wiwo.map((r, i) => ({ r, i })).filter(x => !q || (x.r.n + ' ' + x.r.c).toLowerCase().indexOf(q) >= 0).map(x => '<div class="dc-c ed"><span>' + esc(x.r.n) + '</span><b>' + esc(x.r.c) + '</b>' + pen(x.i) + '</div>').join('');
   } else {
     const favs = favGet(), favRows = favs.map(nm => DOC.contactos.find(c => c.n === nm)).filter(Boolean);
-    if(favRows.length) favBox = '<div class="fv-g">' + favRows.map(r => '<div class="fv-k"><div class="ic" data-fvs="' + esc(r.n) + '" style="background:' + favSt(r.n).c + '2e;color:' + favSt(r.n).c + '">' + favIcon(favSt(r.n).i, 18) + '</div><div class="bd"><div class="nm">' + esc(r.n) + '</div><div class="tl">' + esc(r.t) + '</div></div></div>').join('') + '</div>';
+    if(favRows.length) favBox = '<div class="fv-g">' + favRows.map(r => '<div class="fv-k"><div class="ic" data-fvs="' + esc(r.n) + '" style="background:' + favSt(r.n).c + '2e;color:' + favSt(r.n).c + '">' + favIcon(favSt(r.n).i, 18) + '</div><div class="bd"><div class="nm">' + esc(r.n) + '</div><div class="tl' + (favNum(r.t).length <= 9 ? ' big' : '') + '">' + esc(favNum(r.t)) + '</div></div></div>').join('') + '</div>';
     html += DOC.contactos.map((r, i) => ({ r, i })).filter(x => !q || (x.r.n + ' ' + x.r.t).toLowerCase().indexOf(q) >= 0).map(x => '<div class="dc-c ed"><span>' + esc(x.r.n) + '</span><b>' + esc(x.r.t) + '</b><span class="fv' + (favs.indexOf(x.r.n) >= 0 ? ' on' : '') + '" data-fv="' + x.i + '">' + (favs.indexOf(x.r.n) >= 0 ? '♥' : '♡') + '</span>' + pen(x.i) + '</div>').join('');
   }
   document.getElementById('docs-fav').innerHTML = favBox;
