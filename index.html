@@ -7235,7 +7235,7 @@ function setupCustomDateSelect(selectId, triggerId, listId, allowToday, extraBlo
   // in that case the selection moves to the first day that is still listed
   function isHiddenOff(w, i){
     if(!(w && HIDE_OFF_DAYS)) return false;
-    try{ const he = getEffectiveEntry(w, i); return !!(he && he.status === 'off'); }catch(e){ return false; }
+    try{ if(doubleCoveredFor(w.id, i)) return true; const he = getEffectiveEntry(w, i); return !!(he && he.status === 'off'); }catch(e){ return false; }   // TURNO DUPLO: someone covers my shift = off, same as the calendar
   }
   function moveOffSelection(w){
     if(!(w && HIDE_OFF_DAYS)) return;
