@@ -1,7 +1,7 @@
 // Reads the Flights4Staff Departures and Arrivals pages (shared login) and returns the flights.
 import { chromium } from 'playwright';
 
-const BASE = 'https://secured.ana.pt/Flights4Staff/';   // the address the old one now sends you to
+const BASE = 'https://apps.ana.pt/Flights4Staff/';
 const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 const flightKey = (s) => norm(s).toUpperCase().replace(/[^A-Z0-9]/g, '');   // also drops hidden characters, not only spaces
 
