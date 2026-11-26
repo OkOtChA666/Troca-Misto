@@ -13849,8 +13849,11 @@ function mtTaFor(t){
   try{
     if(!MT_TA || !t) return null;
     const keys = {}, add = k => { k = sfKey(k); if(k) keys[k] = 1; };
-    const head = String(t[5] || '').replace(/^NAME:/, '').split('@')[0];
-    if(head){ add(mtKeyId(t[5])); add(head.split('/')[0]); }
+    // DISPATCHER has no flight list of its own to repair a stale key; borrow the CHECK-IN page's list (TT_DOC.flights),
+    // same as the team popover, so a dispatcher's own stale key still finds its turnaround record
+    const rawKey = (GROUP === 'disp' && typeof TT_DOC !== 'undefined' && TT_DOC && TT_DOC.flights) ? mtKeyRaw(t, TT_DOC.flights) : t[5];
+    const head = String(rawKey || '').replace(/^NAME:/, '').split('@')[0];
+    if(head){ add(mtKeyId(rawKey)); add(head.split('/')[0]); }
     const pr = /^([A-Z0-9]{2,3}?)\s?(\d{1,4}[A-Z]?)_(\d{1,4}[A-Z]?)$/.exec(String(t[0] || '').replace(/^<\s*/, '').trim());
     if(pr){ add(pr[1] + pr[2]); add(pr[1] + pr[3]); }
     let best = null; const today = sfToday();
@@ -13979,7 +13982,10 @@ function lcKey(key){   // the DEPARTING flight of the card ("LH1160/1161@12:00" 
   const head = String(key || '').replace(/^NAME:/, '').split('@')[0].toUpperCase(); if(!head) return '';
   const parts = head.split('/'), first = /^([A-Z0-9]{2})/.exec(parts[0]); if(!first) return '';
   const last = parts[parts.length - 1];
-  return /^[A-Z0-9]{2}\d/.test(last) ? last : first[1] + last;
+  // the second number in a pair ("TO7678/7679") is usually bare, with no airline code of its own; the old test here
+  // ("does it start with 2 letters-or-DIGITS then a digit") wrongly matched a bare number like "7679" too, since
+  // digits count as [A-Z0-9] — so it was returned unprefixed and never matched the check-in side's "TO7679"
+  return last.indexOf(first[1]) === 0 ? last : first[1] + last;
 }
 function lcGet(k){ return (LCI && LCI.date === sfToday() && LCI.f && LCI.f[k]) || null; }
 function lcBtn(key, colr, f){
