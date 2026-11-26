@@ -43,7 +43,13 @@ export async function fetchFlights({ user, pass }) {
     await page.waitForTimeout(1200);
     const userBox = page.locator('input[type=text]:visible, input[type=email]:visible, input:not([type]):visible').first();
     const passBox = page.locator('input[type=password]:visible').first();
-    await userBox.fill(user); await passBox.fill(pass);
+    try { await userBox.fill(user, { timeout: 15000 }); await passBox.fill(pass, { timeout: 15000 }); }
+    catch (e) {   // diagnostic: say what the page really shows, so we can see why the login box is not there
+      let d = '';
+      try { const t = await page.title(); const b = (await page.locator('body').innerText({ timeout: 5000 })).replace(/\s+/g, ' ').slice(0, 300); const n = await page.locator('input').count(); d = 'url=' + page.url() + ' | title=' + t + ' | inputs=' + n + ' | text=' + b; } catch (e2) { d = 'could not read the page'; }
+      console.log('F4S LOGIN PAGE: ' + d);
+      throw e;
+    }
     await Promise.all([page.waitForLoadState('domcontentloaded', { timeout: 30000 }).catch(() => {}), passBox.press('Enter')]);
     await page.waitForTimeout(3500);
     // after the login the site first shows a management page; going back to the address fixes it
