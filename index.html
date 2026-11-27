@@ -9620,8 +9620,20 @@ function renderPrefs(){
       '<div style="flex:1; min-width:0;">' + head('TEMAS') + desc('Escolhe o aspeto da app') + '</div>' +
       '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>';
   } }catch(e){}
+  if(goStaffOn()){   // GoStaff: SUPORTE no longer has its own card in the hub, so it lives here instead
+    html += '<div id="pref-support-row" role="button" tabindex="0" style="border:1px solid var(--border); background:var(--panel-2); border-radius:14px; padding:14px 16px; margin-bottom:12px; display:flex; align-items:center; gap:14px; cursor:pointer;">' +
+      '<div style="flex:1; min-width:0;">' + head('SUPORTE') + desc('Problema ou sugestão? Escreve-nos') + '</div>' +
+      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>';
+  }
+  if(goStaffOn() && staffEditSchedEnabled){   // GoStaff: same for ALTERAÇÃO DE HORÁRIO, for now
+    html += '<div id="pref-msched-row" role="button" tabindex="0" style="border:1px solid var(--border); background:var(--panel-2); border-radius:14px; padding:14px 16px; margin-bottom:12px; display:flex; align-items:center; gap:14px; cursor:pointer;">' +
+      '<div style="flex:1; min-width:0;">' + head('ALTERAÇÃO DE HORÁRIO') + desc('O Suporte alterou o horário? Muda aqui!') + '</div>' +
+      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>';
+  }
   body.innerHTML = html;
   const tr = document.getElementById('pref-themes-row'); if(tr){ tr.addEventListener('click', () => showAreaTab('themes')); tr.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); showAreaTab('themes'); } }); }
+  const sr = document.getElementById('pref-support-row'); if(sr){ sr.addEventListener('click', () => showAreaTab('support')); sr.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); showAreaTab('support'); } }); }
+  const mr = document.getElementById('pref-msched-row'); if(mr){ mr.addEventListener('click', () => openMySched()); mr.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openMySched(); } }); }
   const flip = (id, fn) => { const e = document.getElementById(id); if(e) e.addEventListener('click', () => { fn(); renderPrefs(); try{ renderNotificationsBadge(); renderAreaHubOrder(); }catch(err){} }); };
   flip('pref-ped-toggle', () => { try{ localStorage.setItem('trocaMistoPedAlerts:' + (window.MY_ASK_ID || ''), pedAlertsOn() ? 'off' : 'on'); }catch(e){} });
   flip('pref-help-toggle', () => prefSet('pedHelp', !prefGet('pedHelp', false)));
@@ -13908,7 +13920,7 @@ function renderAreaHubOrder(){
   const list = AREA_CARDS.filter(([k]) => !((k === 'extra' || k === 'double' || k === 'reqs') && GROUP === 'sup') && !((k === 'extra' || k === 'double' || k === 'reqs') && GROUP === 'disp') && !(k === 'double' && (!doubleShiftEnabled || !hasShortShiftDays() || prefGet('hideDbl', false))) && k !== 'themes' && !(k === 'msched' && !staffEditSchedEnabled));
   const fav = list.filter(([k]) => favs.indexOf(k) >= 0), rest = list.filter(([k]) => favs.indexOf(k) < 0);
   try{ const dc = document.getElementById('area-card-double'); if(dc) dc.style.display = (GROUP === '' && doubleShiftEnabled && hasShortShiftDays() && !prefGet('hideDbl', false)) ? '' : 'none'; }catch(e){}
-  try{ const mc = document.getElementById('area-card-msched'); if(mc) mc.style.display = staffEditSchedEnabled ? '' : 'none'; }catch(e){}
+  try{ const mc = document.getElementById('area-card-msched'); if(mc) mc.style.display = (staffEditSchedEnabled && !goStaffOn()) ? '' : 'none'; }catch(e){}
   try{ const tc = document.getElementById('area-card-themes'); if(tc) tc.style.display = 'none'; }catch(e){}
   try{ const trc = document.getElementById('area-card-trocar'); if(trc) trc.style.display = goStaffOn() ? '' : 'none'; }catch(e){}
   try{ const frm = document.getElementById('area-card-ferramentas'); if(frm) frm.style.display = goStaffOn() ? '' : 'none'; }catch(e){}
@@ -13917,7 +13929,7 @@ function renderAreaHubOrder(){
   fav.forEach(([k, id]) => { hub.appendChild(document.getElementById(id)); });
   if(fav.length && rest.length){ const sep = document.createElement('div'); sep.id = 'area-hub-sep'; hub.appendChild(sep); }
   rest.forEach(([k, id]) => hub.appendChild(document.getElementById(id)));
-  try{ const sc = document.getElementById('area-card-support'); if(sc) hub.appendChild(sc); }catch(e){}   // SUPORTE card: always last
+  try{ const sc = document.getElementById('area-card-support'); if(sc){ hub.appendChild(sc); sc.style.display = goStaffOn() ? 'none' : ''; } }catch(e){}   // SUPORTE card: always last (GoStaff: lives in DEFINIÇÕES instead)
   AREA_CARDS.forEach(([k, id]) => { const c = document.getElementById(id), on = favs.indexOf(k) >= 0; c.classList.toggle('fav', on); const b = c.querySelector('.ac-fav'); if(b){ b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.title = on ? 'Remover dos favoritos' : 'Marcar como favorito'; } });
 }
 AREA_CARDS.forEach(([k, id]) => {
