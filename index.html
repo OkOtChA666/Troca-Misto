@@ -2680,11 +2680,6 @@
       <div><div class="tool-name">VOOS</div><div class="tool-desc">Partidas e chegadas do dia</div></div>
       <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
-    <div class="tool-card" id="tool-card-f4s">
-      <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l4-1 4 1v-1.2L13 19v-5.5z"/></svg></div>
-      <div><div class="tool-name">FLIGHT4STAFF</div><div class="tool-desc">Atualizar voos manualmente</div></div>
-      <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
-    </div>
     <div class="tool-card" id="tool-card-docs">
       <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></div>
       <div><div class="tool-name">INFORMAÇÃO ÚTIL</div><div class="tool-desc">Tempos de check-in e gate</div></div>
@@ -2719,6 +2714,11 @@
   </div>
 
   <div class="panel hidden" id="panel-flights">
+    <div class="tool-card" id="tool-card-f4s" style="margin:0 0 16px;">
+      <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l4-1 4 1v-1.2L13 19v-5.5z"/></svg></div>
+      <div><div class="tool-name">FLIGHT4STAFF</div><div class="tool-desc">Atualizar voos manualmente</div></div>
+      <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+    </div>
     <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 14px;">
       <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">VOOS</div>
       <button type="button" id="flights-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
@@ -10516,7 +10516,7 @@ function openF4s(){
   document.getElementById('panel-f4s').classList.remove('hidden');
 }
 document.getElementById('tool-card-f4s').addEventListener('click', openF4s);
-document.getElementById('f4s-back-btn').addEventListener('click', openTools);
+document.getElementById('f4s-back-btn').addEventListener('click', openFlights);
 document.getElementById('f4s-install-row').addEventListener('click', () => { document.getElementById('f4s-install-detail').classList.toggle('hidden'); });
 // ---------- DOCUMENTOS · TEMPOS (check-in and gate times per airline, from the board at the desk) ----------
 // [code, name, check-in opens (before departure), check-in closes, gate closes remote stand, gate closes jet bridge (minutes)]
