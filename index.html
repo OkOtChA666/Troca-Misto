@@ -1539,9 +1539,9 @@
   /* GoStaff · BENTO layout: TROCAR as a large glowing hero tile, AS MINHAS TAREFAS tall, SUPORTE a slim bar */
   @property --bentoAngle{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
   html.gostaff-bento #panel-my-swaps{ padding-left:8px; padding-right:8px; }
-  html.gostaff-bento #area-hub{ grid-auto-rows:84px; grid-auto-flow:dense; gap:8px; }
-  html.gostaff-bento #area-hub .area-card{ aspect-ratio:auto; border-radius:12px; padding:13px; }
-  html.gostaff-bento #area-hub .area-card .ac-ic{ width:34px; height:34px; border-radius:8px; }
+  html.gostaff-bento #area-hub{ grid-auto-rows:92px; grid-auto-flow:dense; gap:10px; }
+  html.gostaff-bento #area-hub .area-card{ aspect-ratio:auto; border-radius:13px; padding:15px; gap:10px; }
+  html.gostaff-bento #area-hub .area-card .ac-ic{ width:38px; height:38px; border-radius:10px; }
   html.gostaff-bento #area-hub .area-card .ac-t{ font:700 14px var(--sans); letter-spacing:-.01em; color:#aab6d4; }
   html.gostaff-bento #area-hub #area-card-trocar{ grid-column:span 2; grid-row:span 2; align-items:flex-start; justify-content:flex-end; text-align:left; border-radius:14px; border-color:var(--amber); background:linear-gradient(160deg,#1b1507,#0c0905 60%); box-shadow:0 0 0 1px rgba(255,179,0,.35), 0 0 26px rgba(255,179,0,.22); padding:18px; overflow:visible; position:relative; }
   html.gostaff-bento #area-hub #area-card-trocar::before{ content:''; position:absolute; inset:-1.5px; z-index:-1; border-radius:15px; background:conic-gradient(from var(--bentoAngle), #ffb300, #7a5200, #ffb300 60%, #7a5200 90%, #ffb300); animation:bentoSpin 7s linear infinite; }
