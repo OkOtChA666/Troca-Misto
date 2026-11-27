@@ -5923,6 +5923,7 @@ function npRefresh(){
   const title = document.getElementById('np-title'), text = document.getElementById('np-text'), btn = document.getElementById('np-btn');
   const show = (t, x, withBtn) => { title.textContent = t; text.innerHTML = x; btn.classList.toggle('hidden', !withBtn); card.classList.remove('hidden'); };
   card.classList.add('hidden');
+  if(goStaffOn() && AREA_VIEW === 'hub') return;   // GoStaff home screen: already covered in DEFINIÇÕES, no need to repeat it here
   try{
     const staffId = localStorage.getItem('trocaMistoLoginStaffId');
     if(!staffId || !notificationsEnabled) return;
