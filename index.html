@@ -14736,7 +14736,7 @@ function renderSupPicker(){
   const r = sfRows(false);
   box.innerHTML = '<div class="sf-hint">Toca no <b style="color:#FF6A00">círculo</b> para escolher o voo. Toca no cartão para ver mais informação.</div>' + sfDateLine('') +
     '<div class="dc-sb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><input type="text" id="sf-q" placeholder="Procurar voo ou destino…" autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + escapeHtml(SF_Q) + '"><button type="button" id="sf-qx" aria-label="Limpar"' + (SF_Q ? '' : ' style="display:none"') + '>×</button></div>' +
-    '<div id="sf-rows">' + (r.n ? r.html : '<div class="mt-empty">Sem voos para mostrar.</div>') + '</div>';
+    '<div id="sf-rows">' + (r.n ? r.html : '<div class="mt-empty">Sem voos para mostrar.</div>') + '</div>' + flvCredit();
   if(hadFocus){ const i = document.getElementById('sf-q'); if(i){ i.focus(); try{ i.setSelectionRange(caret, caret); }catch(e){} } }
 }
 function renderSupAll(){ renderSupTasks(); renderSupPicker(); }
@@ -14795,6 +14795,7 @@ function openSupFlights(){
   document.querySelector('.tabs').classList.add('hidden');
   document.getElementById('panel-sup-flights').classList.remove('hidden');
   sfListen();
+  flvListen();
 }
 function closeSupFlights(){
   SF_MENU = false;
