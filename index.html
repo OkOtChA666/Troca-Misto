@@ -1538,18 +1538,23 @@
   html.gostaff-grid #area-hub .area-card .ac-ic{ width:40px; height:40px; }
   /* GoStaff · BENTO layout: TROCAR as a large glowing hero tile, AS MINHAS TAREFAS tall, SUPORTE a slim bar */
   @property --bentoAngle{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
-  html.gostaff-bento #area-hub{ grid-auto-rows:78px; grid-auto-flow:dense; gap:10px; }
-  html.gostaff-bento #area-hub .area-card{ aspect-ratio:auto; border-radius:18px; }
-  html.gostaff-bento #area-hub #area-card-trocar{ grid-column:span 2; grid-row:span 2; align-items:flex-start; justify-content:flex-end; text-align:left; border-radius:22px; border-color:var(--amber); background:linear-gradient(160deg,#1b1507,#0c0905 60%); box-shadow:0 0 0 1px rgba(255,179,0,.35), 0 0 26px rgba(255,179,0,.22); padding:18px; overflow:visible; position:relative; }
-  html.gostaff-bento #area-hub #area-card-trocar::before{ content:''; position:absolute; inset:-1.5px; z-index:-1; border-radius:23px; background:conic-gradient(from var(--bentoAngle), #ffb300, #7a5200, #ffb300 60%, #7a5200 90%, #ffb300); animation:bentoSpin 7s linear infinite; }
+  html.gostaff-bento #panel-my-swaps{ padding-left:8px; padding-right:8px; }
+  html.gostaff-bento #area-hub{ grid-auto-rows:84px; grid-auto-flow:dense; gap:8px; }
+  html.gostaff-bento #area-hub .area-card{ aspect-ratio:auto; border-radius:12px; padding:13px; }
+  html.gostaff-bento #area-hub .area-card .ac-ic{ width:34px; height:34px; border-radius:8px; }
+  html.gostaff-bento #area-hub .area-card .ac-t{ font:700 14px var(--sans); letter-spacing:-.01em; color:#aab6d4; }
+  html.gostaff-bento #area-hub #area-card-trocar{ grid-column:span 2; grid-row:span 2; align-items:flex-start; justify-content:flex-end; text-align:left; border-radius:14px; border-color:var(--amber); background:linear-gradient(160deg,#1b1507,#0c0905 60%); box-shadow:0 0 0 1px rgba(255,179,0,.35), 0 0 26px rgba(255,179,0,.22); padding:18px; overflow:visible; position:relative; }
+  html.gostaff-bento #area-hub #area-card-trocar::before{ content:''; position:absolute; inset:-1.5px; z-index:-1; border-radius:15px; background:conic-gradient(from var(--bentoAngle), #ffb300, #7a5200, #ffb300 60%, #7a5200 90%, #ffb300); animation:bentoSpin 7s linear infinite; }
   @keyframes bentoSpin{ to{ --bentoAngle:360deg; } }
-  html.gostaff-bento #area-hub #area-card-trocar .ac-ic{ width:50px; height:50px; border-radius:15px; background:#2c2008; color:var(--amber); box-shadow:0 0 22px rgba(255,179,0,.35); margin-bottom:14px; }
-  html.gostaff-bento #area-hub #area-card-trocar .ac-t{ font-size:15px; }
-  html.gostaff-bento #area-hub #area-card-trocar .ac-s{ display:block !important; color:#c79a3a; font-size:11.5px; margin-top:2px; }
+  html.gostaff-bento #area-hub #area-card-trocar .ac-ic{ width:50px; height:50px; border-radius:11px; background:#2c2008; color:var(--amber); box-shadow:0 0 22px rgba(255,179,0,.35); margin-bottom:14px; }
+  html.gostaff-bento #area-hub #area-card-trocar .ac-t{ font:800 21px var(--sans); letter-spacing:-.01em; color:var(--amber-soft, #ffcf66); }
+  html.gostaff-bento #area-hub #area-card-trocar .ac-s{ display:block !important; color:#c79a3a; font-size:12.5px; margin-top:3px; }
   html.gostaff-bento #area-hub #area-card-tasks{ grid-row:span 2; border-color:#1f5566; background:linear-gradient(160deg,#0d1f28,#0a1420); }
   html.gostaff-bento #area-hub #area-card-tasks .ac-ic{ background:#0f2236; color:#4fd1f0; }
+  html.gostaff-bento #area-hub #area-card-tasks .ac-t{ font:700 15px var(--sans); color:#bfe9f7; line-height:1.15; }
   html.gostaff-bento #area-hub #area-card-support{ grid-column:span 3; flex-direction:row; align-items:center; justify-content:flex-start; height:62px; gap:12px; text-align:left; }
   html.gostaff-bento #area-hub #area-card-support .ac-ic{ margin:0; }
+  html.gostaff-bento #area-hub #area-card-support .ac-t{ font-size:13.5px; }
   .sf-row{ cursor:pointer; -webkit-tap-highlight-color:transparent; border-width:2px; }
   .sf-row.me{ border-color:#FF6A00; background:rgba(255,106,0,0.10); }
   .sf-pickbox{ padding:4px; margin:-4px; cursor:pointer; }
@@ -2174,7 +2179,7 @@
       <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="Área pessoal">
         ÁREA PESSOAL<span id="my-area-badge"></span>
       </span>
-      <span class="header-divider">|</span>
+      <span class="header-divider" id="my-swaps-div">|</span>
       <span id="sf-link" class="stat-link" style="align-items:center; gap:5px; color:var(--cyan);" title="Lista de voos">LISTA DE VOOS</span>
       <span class="header-divider" id="sf-div">|</span>
       <span id="tools-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--cyan);" title="Ferramentas">
@@ -2532,6 +2537,7 @@
     </div>
     <div id="area-hub">
       <div class="area-card fav" id="area-card-trocar" role="button" tabindex="0" style="display:none;"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4M21 7H4M7 21l-4-4 4-4M3 17h17"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">TROCAR</div><div class="ac-s">Pedir folga ou trocar turno</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+      <div class="area-card" id="area-card-ferramentas" role="button" tabindex="0" style="display:none;"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">FERRAMENTAS</div><div class="ac-s">Voos, calculadoras e atalhos</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-tasks" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TAREFAS<span class="ac-dot" id="area-tasks-dot"></span></div><div class="ac-s">Voos, balcões e portas do dia</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-swaps" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">AS MINHAS TROCAS</div><div class="ac-s">As trocas em que estás</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
       <div class="area-card" id="area-card-agenda" role="button" tabindex="0"><div class="ac-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></div><div style="flex:1; min-width:0;"><div class="ac-t">A MINHA AGENDA</div><div class="ac-s">O teu mês de turnos</div></div><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#5a6788" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
@@ -5880,6 +5886,9 @@ function applyAdminVisibility(){
   }
   document.documentElement.classList.toggle('gostaff-grid', goStaffOn());
   document.documentElement.classList.toggle('gostaff-bento', goStaffOn() && goStaffLayout() === 'bento');
+  // GoStaff: FERRAMENTAS now has its own card in the hub, so the header tab for it is redundant
+  try{ const tl = document.getElementById('tools-link'); if(tl) tl.style.display = goStaffOn() ? 'none' : ''; }catch(e){}
+  try{ const td = document.getElementById('my-swaps-div'); if(td) td.style.display = goStaffOn() ? 'none' : ''; }catch(e){}
   // GoStaff: once per page load, land on ÁREA PESSOAL instead of the swap form. Deferred so every
   // function it needs (openMySwaps, showAreaHub…) is already defined, even when this runs inline
   // during the initial script pass (the restored-session path, same reasoning as restoreLoginIfPresent above).
@@ -13661,7 +13670,7 @@ if(GROUP === 'sup'){
     const tb = document.querySelector('#area-tab-btn-tasks > span'); if(tb && tb.firstChild) tb.firstChild.textContent = 'OS MEUS VOOS';
   }catch(e){}
 }
-function areaSetTitle(v){ AREA_VIEW = v; const lw = document.getElementById('area-logout-wrap'); if(lw) lw.style.display = (v === 'hub') ? '' : 'none'; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; const home = goStaffOn() && v === 'hub'; const bb = document.getElementById('my-swaps-back-btn'); if(bb) bb.style.display = home ? 'none' : ''; if(t) t.style.display = home ? 'none' : ''; }   // GoStaff: no "back" arrow and no section title on the home screen itself
+function areaSetTitle(v){ AREA_VIEW = v; const home = goStaffOn() && v === 'hub'; const lw = document.getElementById('area-logout-wrap'); if(lw) lw.style.display = (v === 'hub' && !home) ? '' : 'none'; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; const bb = document.getElementById('my-swaps-back-btn'); if(bb) bb.style.display = home ? 'none' : ''; if(t) t.style.display = home ? 'none' : ''; }   // GoStaff: no "back" arrow, no section title, and no SAIR on the home screen itself (SAIR already lives in the name dropdown)
 function updateAreaHubDot(){
   const d = document.getElementById('area-tasks-dot'); if(!d) return;
   let n = 0; try{ const sn = mtSeen(); n = mtChanges().filter(x => x[0] > sn).length; }catch(e){}
@@ -13902,6 +13911,7 @@ function renderAreaHubOrder(){
   try{ const mc = document.getElementById('area-card-msched'); if(mc) mc.style.display = staffEditSchedEnabled ? '' : 'none'; }catch(e){}
   try{ const tc = document.getElementById('area-card-themes'); if(tc) tc.style.display = 'none'; }catch(e){}
   try{ const trc = document.getElementById('area-card-trocar'); if(trc) trc.style.display = goStaffOn() ? '' : 'none'; }catch(e){}
+  try{ const frm = document.getElementById('area-card-ferramentas'); if(frm) frm.style.display = goStaffOn() ? '' : 'none'; }catch(e){}
   const old = document.getElementById('area-hub-sep'); if(old) old.remove();
   hub.querySelectorAll('.area-favlbl').forEach(e => e.remove());
   fav.forEach(([k, id]) => { hub.appendChild(document.getElementById(id)); });
@@ -13933,6 +13943,7 @@ AREA_CARDS.forEach(([k, id]) => {
 });
 renderAreaHubOrder();
 [['area-card-trocar', () => closeMySwaps()],
+ ['area-card-ferramentas', () => openTools()],
  ['area-card-swaps', () => document.getElementById('area-tab-btn-swaps').click()],
  ['area-card-reqs', () => showAreaTab('reqs')],
  ['area-card-agenda', () => showAreaTab('agenda')],
