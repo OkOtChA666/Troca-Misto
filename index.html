@@ -10893,7 +10893,7 @@ function renderFlights(){
       '<div class="fl-al">' + escapeHtml(FL_NAMES[f.code] || f.code) + '</div>' + flvBar +
       (chips.length ? '<div class="fl-ft">' + chips.join('') + '</div>' : '') + '</div>');
   });
-  box.innerHTML = (out.length ? out.join('') : '<div class="hint" style="text-align:center; padding:24px 0;">Sem voos das nossas companhias.</div>') + (GROUP === 'disp' ? '<div class="fl-ctot-sw' + (ctotOn() ? ' on' : '') + '" onclick="ctotToggle()"><span>CTOT</span><i></i></div>' : '');
+  box.innerHTML = (out.length ? out.join('') : '<div class="hint" style="text-align:center; padding:24px 0;">Sem voos das nossas companhias.</div>') + (GROUP === 'disp' ? '<div class="fl-ctot-sw' + (ctotOn() ? ' on' : '') + '" onclick="ctotToggle()"><span>CTOT</span><i></i></div>' : '') + flvCredit();
 }
 function stopFlightsListen(){
   if(FL_UNSUB){ try{ FL_UNSUB(); }catch(e){} FL_UNSUB = null; }
