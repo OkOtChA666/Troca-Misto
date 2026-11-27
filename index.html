@@ -7632,7 +7632,7 @@ async function adsbStatusCheck(){
     const r = await fetch('https://raw.githubusercontent.com/adsblol/status/master/README.md', { cache:'no-store' });
     if(!r.ok) throw 0;
     const t = await r.text();
-    const m = /Live Status:\s*(\u{1F7E9}|\u{1F7E7}|\u{1F7E5})/u.exec(t);
+    const m = /(\u{1F7E9}|\u{1F7E7}|\u{1F7E5})/u.exec(t);   // the first colour square in the file is the summary banner at the very top
     ADSB_DOT = !m ? '#808a9e' : (m[1] === '\u{1F7E9}' ? '#2ecc71' : (m[1] === '\u{1F7E7}' ? '#f0b429' : '#ef4444'));
   }catch(e){ ADSB_DOT = '#808a9e'; }
   const dot = document.getElementById('adsb-status-dot'); if(dot) dot.style.background = ADSB_DOT;
