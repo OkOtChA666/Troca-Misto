@@ -801,6 +801,7 @@
   .flv-credit a span{ font-size:9px; letter-spacing:1px; font-weight:600; color:var(--text-dim); }
   .flv-credit a strong{ font-size:15px; font-weight:700; color:#dfe6f5; }
   .flv-credit div{ margin-top:6px; font-size:11px; color:var(--text-dim); }
+  .adsb-dot{ width:7px; height:7px; border-radius:50%; background:#808a9e; display:inline-block; margin-left:7px; }
   .mt-nova span{ display:block; transform:rotate(180deg); }
   .mt-row.has-nova .mt-main{ padding-right:26px; }
   .ai-rule{ font-family:var(--mono); font-size:11px; color:#6d7790; border:1px dashed #27344f; border-radius:8px; padding:8px 10px; margin-bottom:12px; line-height:1.5; }
@@ -2166,7 +2167,7 @@
         <span style="position:relative; display:inline-flex; flex:none;"><svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; flex:none;">
           <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
           <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg><i id="user-punch-dot" title="Entrada registada" style="display:none; position:absolute; top:-1px; right:-2px; width:5px; height:5px; border-radius:50%; background:#2ecc71; box-shadow:0 0 4px #2ecc71;"></i></span>
+        </svg><i id="user-punch-dot" title="Entrada registada" style="display:none; position:absolute; top:-1px; left:-2px; width:5px; height:5px; border-radius:50%; background:#2ecc71; box-shadow:0 0 4px #2ecc71;"></i></span>
         <span id="logged-in-clip" style="display:block; flex:0 1 auto; min-width:0; max-width:250px; overflow:hidden; white-space:nowrap;"><span id="logged-in-as-display" style="display:inline-block; white-space:nowrap;"></span></span>
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M6 9l6 6 6-6"/></svg>
       </span>
@@ -7623,6 +7624,20 @@ async function ghStatusCheck(){
   }catch(e){ el.style.display = 'none'; }
 }
 window.addEventListener('load', function(){ ghStatusCheck(); setInterval(function(){ if(!document.hidden) ghStatusCheck(); }, 300000); });
+// tiny ADSB.lol status dot (next to the flight-data credit, flvCredit()): checks on open and every 5 min; grey when unreachable/unknown
+let ADSB_DOT = '#808a9e';
+function adsbDotColor(){ return ADSB_DOT; }
+async function adsbStatusCheck(){
+  try{
+    const r = await fetch('https://raw.githubusercontent.com/adsblol/status/master/README.md', { cache:'no-store' });
+    if(!r.ok) throw 0;
+    const t = await r.text();
+    const m = /Live Status:\s*(\u{1F7E9}|\u{1F7E7}|\u{1F7E5})/u.exec(t);
+    ADSB_DOT = !m ? '#808a9e' : (m[1] === '\u{1F7E9}' ? '#2ecc71' : (m[1] === '\u{1F7E7}' ? '#f0b429' : '#ef4444'));
+  }catch(e){ ADSB_DOT = '#808a9e'; }
+  const dot = document.getElementById('adsb-status-dot'); if(dot) dot.style.background = ADSB_DOT;
+}
+window.addEventListener('load', function(){ adsbStatusCheck(); setInterval(function(){ if(!document.hidden) adsbStatusCheck(); }, 300000); });
 function freshDelBtn(id){ const o = document.getElementById(id); const n = o.cloneNode(true); n.disabled = false; o.parentNode.replaceChild(n, o); return n; }
 function swapCardHtml(nameA, hoursA, nameB, hoursB, btnId, idx){
   const wB = DATA.workers.find(w => w.name === nameB);
@@ -10827,7 +10842,7 @@ function flvInfo(reg, kind){
 function flvCredit(){
   try{
     if(!FLV || !FLV.ac || !Object.keys(FLV.ac).length || Date.now() - (FLV.at || 0) > 30 * 60000) return '';
-    return '<div class="flv-credit"><a href="https://adsb.lol/" target="_blank" rel="noopener noreferrer"><span>POWERED BY</span><strong>adsb.lol</strong></a><div>Dados de voos fornecidos por adsb.lol e adsb.fi</div></div>';
+    return '<div class="flv-credit"><a href="https://adsb.lol/" target="_blank" rel="noopener noreferrer"><span>POWERED BY</span><strong>adsb.lol</strong><span class="adsb-dot" id="adsb-status-dot" style="background:' + adsbDotColor() + ';"></span></a><div>Dados de voos fornecidos por adsb.lol e adsb.fi</div></div>';
   }catch(e){ return ''; }
 }
 function ctotOn(){ if(GROUP !== 'disp') return false; try{ return localStorage.getItem('tm_ctot') === '1'; }catch(e){ return false; } }
