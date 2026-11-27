@@ -1721,7 +1721,7 @@
   .mt-flag.amber{ color:var(--amber); background:rgba(255,179,0,0.10); border:1px solid rgba(255,179,0,0.35); }
   .mt-row{ position:relative; }
   .mt-corner{ position:absolute; right:18px; bottom:-1px; display:flex; align-items:flex-end; gap:6px; }
-  .mt-corner > span{ height:26px; box-sizing:border-box; padding:0 14px; display:flex; align-items:center; font-family:var(--mono); font-size:13px; letter-spacing:0.04em; color:#46526b; background:#e8eefc; border-radius:10px 10px 0 0; white-space:nowrap; }
+  .mt-corner > span{ height:26px; box-sizing:border-box; padding:0 18px; display:flex; align-items:center; flex:none; font-family:var(--mono); font-size:13px; letter-spacing:0.04em; color:#46526b; background:#e8eefc; border-radius:10px 10px 0 0; white-space:nowrap; }
   .mt-corner b{ color:#0b1220; font-weight:700; margin-left:6px; }
   .mt-row.mt-break{ position:relative; display:block; text-align:center; border-left-color:var(--line,#3a4a6b); background:repeating-linear-gradient(135deg,#101b30 0 14px,#13223d 14px 28px); }
   .mt-break .mt-time{ font-size:13px; color:#c8d3ea; }
@@ -2680,6 +2680,11 @@
       <div><div class="tool-name">VOOS</div><div class="tool-desc">Partidas e chegadas do dia</div></div>
       <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
     </div>
+    <div class="tool-card" id="tool-card-f4s">
+      <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l4-1 4 1v-1.2L13 19v-5.5z"/></svg></div>
+      <div><div class="tool-name">VOOS ANA</div><div class="tool-desc">Atualizar voos manualmente (Flights4Staff)</div></div>
+      <div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div>
+    </div>
     <div class="tool-card" id="tool-card-docs">
       <div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/></svg></div>
       <div><div class="tool-name">INFORMAÇÃO ÚTIL</div><div class="tool-desc">Tempos de check-in e gate</div></div>
@@ -2724,6 +2729,42 @@
     </div>
     <div class="fl-meta"><span id="fl-updated">A CARREGAR…</span><span>SÓ AS NOSSAS COMPANHIAS</span></div>
     <div id="flights-list"></div>
+  </div>
+
+  <!-- VOOS ANA PANEL -->
+  <div class="panel hidden" id="panel-f4s">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px;">
+      <div style="font-family:var(--mono); font-size:17px; font-weight:700; letter-spacing:0.12em; color:var(--amber);">VOOS ANA</div>
+      <button type="button" id="f4s-back-btn" class="round-back" aria-label="Voltar" title="Voltar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button>
+    </div>
+      <div style="font-size:11px; font-weight:800; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; margin:0 0 10px;">Todos os dias</div>
+      <a href="https://apps.ana.pt/Flights4Staff/Both.aspx" target="_blank" rel="noopener" class="btn" style="display:block; text-align:center; text-decoration:none; margin-bottom:14px;">Flights4Staff</a>
+      <ol style="font-size:13px; color:var(--text); line-height:1.9; padding-left:20px; margin:0;">
+        <li>Clica no botão acima e faz login</li>
+        <li>Clica no favorito <b>"Buscar Voos ANA"</b> (já instalado no browser)</li>
+        <li>Pronto — os voos aparecem no TROCA-MISTO para todos</li>
+      </ol>
+      <hr style="border:none; border-top:1px solid var(--border-soft); margin:20px 0;">
+      <div style="font-size:11px; font-weight:800; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; margin:0 0 10px;">Só precisas de fazer isto uma vez</div>
+      <div id="f4s-install-row" style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:transparent; border:1px dashed var(--border-soft); border-radius:8px; padding:10px 12px; cursor:pointer;">
+        <div style="font-size:12px; color:var(--text-dim); line-height:1.5;">Ainda não tens o favorito "Buscar Voos ANA" instalado, ou precisas de o atualizar?</div>
+        <div style="flex-shrink:0; font-size:12px; font-weight:700; color:#06202a; background:var(--cyan); padding:8px 12px; border-radius:8px; white-space:nowrap; font-family:var(--sans);">Instalar</div>
+      </div>
+      <div id="f4s-install-detail" class="hidden" style="margin-top:14px;">
+        <a id="f4s-bookmarklet" href="javascript:(function()%7Bvar%20s%3Ddocument.createElement('script')%3Bs.src%3D'https%3A%2F%2Ftrocamisto.pt%2Ff4s-bookmarklet.js%3Fv%3D'%2BDate.now()%3Bdocument.body.appendChild(s)%3B%7D)()%3B" draggable="true" style="display:block; text-align:center; background:var(--cyan); color:#06202a; font-family:var(--sans); font-weight:700; font-size:14px; padding:14px; border-radius:10px; text-decoration:none; margin-bottom:16px; cursor:grab;">📥 Buscar Voos ANA</a>
+        <div style="font-size:12px; font-weight:800; color:var(--amber); margin:14px 0 6px;">💻 No computador</div>
+        <ol style="font-size:13px; color:var(--text); line-height:1.8; padding-left:20px; margin:0;">
+          <li>Arrasta o botão acima para a barra de favoritos do browser</li>
+        </ol>
+        <div style="font-size:12px; font-weight:800; color:var(--amber); margin:14px 0 6px;">📱 No telemóvel</div>
+        <ol style="font-size:13px; color:var(--text); line-height:1.8; padding-left:20px; margin:0;">
+          <li>Mantém o dedo no botão acima e escolhe <b>"Copiar hiperligação"</b></li>
+          <li>Cria um favorito novo no teu browser (ou edita um que já tenhas)</li>
+          <li>Cola o texto copiado no campo do endereço (URL) do favorito</li>
+          <li>Dá-lhe o nome "Buscar Voos ANA" e guarda</li>
+        </ol>
+      </div>
+    
   </div>
 
   <!-- DOCUMENTOS PANEL -->
@@ -2831,7 +2872,6 @@
       <div class="tool-card" id="so-card-custom2"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/></svg></div><div><div class="tool-name">RULES</div><div class="tool-desc">Regras das trocas e companhias</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-stats"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M4 19l5-6 4 3 7-9M16 7h4v4"/></svg></div><div><div class="tool-name">STATS</div><div class="tool-desc">Estatísticas das trocas</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
       <div class="tool-card" id="so-card-sacc"><div class="tool-ic"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><div><div class="tool-name">ACESSO SUPORTE</div><div class="tool-desc">Utilizador e password da equipa de suporte</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
-      <div class="tool-card" id="so-card-f4s"><div class="tool-ic"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2.5 1.8V22l4-1 4 1v-1.2L13 19v-5.5z"/></svg></div><div><div class="tool-name">VOOS ANA</div><div class="tool-desc">Atualizar voos manualmente (Flights4Staff)</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
     </div>
     <div id="so-horarios-menu" class="hidden">
       <div class="tool-card" id="so-card-ah"><div class="tool-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div><div><div class="tool-name">ALTERAÇÃO DE HORÁRIOS</div><div class="tool-desc">Mudar o horário de um trabalhador</div></div><div class="tool-arrow"><svg viewBox="0 0 24 24"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></div></div>
@@ -2848,7 +2888,6 @@
       <button type="button" class="btn" id="custom2-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">RULES</button>
       <button type="button" class="btn" id="swl-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">TF</button>
       <button type="button" class="btn" id="sacc-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">AS</button>
-      <button type="button" class="btn" id="f4s-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">VOOS ANA</button>
       <button type="button" class="btn" id="pw-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">PW</button>
       <button type="button" class="btn" id="qw-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">QUEM</button>
       <button type="button" class="btn" id="stats-toggle-btn" style="width:auto; margin:0; padding:10px 16px;">STATS</button>
@@ -3128,35 +3167,7 @@
       <div id="sacc-msg" style="font-size:12px; margin-top:10px; color:var(--text-dim);"></div>
       <div id="sacc-info" style="font-size:11px; color:var(--text-dim); margin-top:6px; font-style:italic;"></div>
     </div>
-    <div id="f4s-panel" class="hidden" style="background:var(--panel-2); border:1px solid var(--border-soft); border-radius:8px; padding:14px; margin-bottom:20px; text-transform:none; letter-spacing:normal;">
-      <div style="font-size:11px; font-weight:800; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; margin:0 0 10px;">Todos os dias</div>
-      <a href="https://apps.ana.pt/Flights4Staff/Both.aspx" target="_blank" rel="noopener" class="btn" style="display:block; text-align:center; text-decoration:none; margin-bottom:14px;">Flights4Staff</a>
-      <ol style="font-size:13px; color:var(--text); line-height:1.9; padding-left:20px; margin:0;">
-        <li>Clica no botão acima e faz login</li>
-        <li>Clica no favorito <b>"Buscar Voos ANA"</b> (já instalado no browser)</li>
-        <li>Pronto — os voos aparecem no TROCA-MISTO para todos</li>
-      </ol>
-      <hr style="border:none; border-top:1px solid var(--border-soft); margin:20px 0;">
-      <div style="font-size:11px; font-weight:800; letter-spacing:0.08em; color:var(--text-dim); text-transform:uppercase; margin:0 0 10px;">Só precisas de fazer isto uma vez</div>
-      <div id="f4s-install-row" style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:transparent; border:1px dashed var(--border-soft); border-radius:8px; padding:10px 12px; cursor:pointer;">
-        <div style="font-size:12px; color:var(--text-dim); line-height:1.5;">Ainda não tens o favorito "Buscar Voos ANA" instalado, ou precisas de o atualizar?</div>
-        <div style="flex-shrink:0; font-size:12px; font-weight:700; color:#06202a; background:var(--cyan); padding:8px 12px; border-radius:8px; white-space:nowrap; font-family:var(--sans);">Instalar</div>
-      </div>
-      <div id="f4s-install-detail" class="hidden" style="margin-top:14px;">
-        <a id="f4s-bookmarklet" href="javascript:(function()%7Bvar%20s%3Ddocument.createElement('script')%3Bs.src%3D'https%3A%2F%2Ftrocamisto.pt%2Ff4s-bookmarklet.js%3Fv%3D'%2BDate.now()%3Bdocument.body.appendChild(s)%3B%7D)()%3B" draggable="true" style="display:block; text-align:center; background:var(--cyan); color:#06202a; font-family:var(--sans); font-weight:700; font-size:14px; padding:14px; border-radius:10px; text-decoration:none; margin-bottom:16px; cursor:grab;">📥 Buscar Voos ANA</a>
-        <div style="font-size:12px; font-weight:800; color:var(--amber); margin:14px 0 6px;">💻 No computador</div>
-        <ol style="font-size:13px; color:var(--text); line-height:1.8; padding-left:20px; margin:0;">
-          <li>Arrasta o botão acima para a barra de favoritos do browser</li>
-        </ol>
-        <div style="font-size:12px; font-weight:800; color:var(--amber); margin:14px 0 6px;">📱 No telemóvel</div>
-        <ol style="font-size:13px; color:var(--text); line-height:1.8; padding-left:20px; margin:0;">
-          <li>Mantém o dedo no botão acima e escolhe <b>"Copiar hiperligação"</b></li>
-          <li>Cria um favorito novo no teu browser (ou edita um que já tenhas)</li>
-          <li>Cola o texto copiado no campo do endereço (URL) do favorito</li>
-          <li>Dá-lhe o nome "Buscar Voos ANA" e guarda</li>
-        </ol>
-      </div>
-    </div>
+
     <div id="pw-panel" class="hidden" style="margin-bottom:20px; text-transform:none; letter-spacing:normal;">
       <div style="display:flex; gap:8px; margin-bottom:10px;">
         <div style="flex:1; border:1px solid var(--border-soft); border-radius:10px; text-align:center; padding:8px 0;"><div id="pw-n-ok" style="font:800 18px var(--mono); color:#2ecc71;">–</div><div style="font:700 9px var(--mono); letter-spacing:.08em; color:var(--text-dim);">JÁ ESCOLHERAM</div></div>
@@ -10499,6 +10510,14 @@ document.getElementById('tools-back-btn').addEventListener('click', closeTools);
 document.getElementById('tool-card-turnaround').addEventListener('click', openTurnaround);
 document.getElementById('tool-card-flights').addEventListener('click', openFlights);
 document.getElementById('flights-back-btn').addEventListener('click', openTools);
+function openF4s(){
+  document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+  document.querySelector('.tabs').classList.add('hidden');
+  document.getElementById('panel-f4s').classList.remove('hidden');
+}
+document.getElementById('tool-card-f4s').addEventListener('click', openF4s);
+document.getElementById('f4s-back-btn').addEventListener('click', openTools);
+document.getElementById('f4s-install-row').addEventListener('click', () => { document.getElementById('f4s-install-detail').classList.toggle('hidden'); });
 // ---------- DOCUMENTOS · TEMPOS (check-in and gate times per airline, from the board at the desk) ----------
 // [code, name, check-in opens (before departure), check-in closes, gate closes remote stand, gate closes jet bridge (minutes)]
 const DOC_TEMPOS = [
@@ -11183,10 +11202,10 @@ function renderScheduleOverrideList(){
   });
 }
 // ---------- ADMIN menu: stacked cards, one section open at a time ----------
-const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR', swl:'TROCAS FEITAS', sacc:'ACESSO SUPORTE', pw:'PASSWORDS', f4s:'VOOS ANA' };
+const SO_TITLES = { sched:'HORÁRIO MENSAL', ah:'ALTERAÇÃO DE HORÁRIOS', msg:'MSG', custom1:'MAIN', custom2:'RULES', stats:'STATS', aistaff:'PREVISÃO', qw:'QUEM ESTÁ A TRABALHAR', swl:'TROCAS FEITAS', sacc:'ACESSO SUPORTE', pw:'PASSWORDS' };
 function soApplyCards(){
   soPlaceAhCard();
-  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw','f4s','appmenu','skills','horarios'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = ((isAdminSession || k === 'ah') && k !== 'aistaff' && !(k === 'qw' && GROUP === 'disp')) ? '' : 'none'; });
+  ['ah','sched','agentes','xshift','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw','appmenu','skills','horarios'].forEach(k => { const c = document.getElementById('so-card-' + k); if(c) c.style.display = ((isAdminSession || k === 'ah') && k !== 'aistaff' && !(k === 'qw' && GROUP === 'disp')) ? '' : 'none'; });
 }
 // ---- DEPARTMENTS in DEFINIÇÕES (main admin only): first a choice of department, then that department's own cards ----
 let SO_DEPT_OPEN = false;   // true while inside a department's screen (reset when DEFINIÇÕES is closed or freshly opened)
@@ -11240,7 +11259,7 @@ function soShowMenu(){
   soApplyCards();
 }
 let SO_SUB = '';   // which sub screen (AGENTES or HORÁRIOS) is open, or is where the open section came from
-const SO_SUB_OF = { pw:'agentes', ah:'horarios', sched:'horarios', msg:'app', custom1:'app', custom2:'app', stats:'app', sacc:'app', f4s:'app' };
+const SO_SUB_OF = { pw:'agentes', ah:'horarios', sched:'horarios', msg:'app', custom1:'app', custom2:'app', stats:'app', sacc:'app' };
 const SO_SUB_TITLE = { agentes:'AGENTES', horarios:'HORÁRIOS', app:'AJUSTES' };
 function soOpenSub(name){
   if(!isAdminSession) return;
@@ -11281,7 +11300,7 @@ function soOpen(key){
   document.getElementById(key + '-toggle-btn').click();
   if(key === 'aistaff') document.getElementById('so-head').classList.add('hidden');
 }
-['ah','sched','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw','f4s'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
+['ah','sched','aistaff','msg','custom1','custom2','stats','qw','swl','sacc','pw'].forEach(k => document.getElementById('so-card-' + k).addEventListener('click', () => soOpen(k)));
 document.getElementById('so-back-btn').addEventListener('click', () => {
   if(!document.getElementById('so-depts').classList.contains('hidden')) closeScheduleOverride();
   else if(!document.getElementById('so-menu').classList.contains('hidden')){ if(soIsMainAdmin()){ SO_DEPT_OPEN = false; soShowMenu(); } else closeScheduleOverride(); }
@@ -11302,7 +11321,7 @@ function openScheduleOverride(fresh){
 // Generalized helpers for the message panels (currently just msg) — only one
 // can be open at a time, and opening any of them hides the other 3 buttons + the normal
 // PLANEAMENTO content, leaving only "← Voltar" visible until you back out of it.
-const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff', 'qw', 'swl', 'sacc', 'pw', 'f4s'];
+const ALL_MSG_PANEL_KEYS = ['msg', 'custom1', 'custom2', 'stats', 'aistaff', 'qw', 'swl', 'sacc', 'pw'];
 function closeAllMsgPanels(){
   document.getElementById('so-row').classList.remove('hidden');
   ALL_MSG_PANEL_KEYS.forEach(key => {
@@ -12542,7 +12561,6 @@ document.getElementById('sacc-save').addEventListener('click', async () => {
 });
 document.getElementById('swl-toggle-btn').addEventListener('click', () => { openMsgPanel('swl'); swlRender('swl-root'); });
 document.getElementById('sacc-toggle-btn').addEventListener('click', () => { openMsgPanel('sacc'); saccLoad(); });
-document.getElementById('f4s-toggle-btn').addEventListener('click', () => { openMsgPanel('f4s'); });
 document.getElementById('f4s-install-row').addEventListener('click', () => { document.getElementById('f4s-install-detail').classList.toggle('hidden'); });
 document.getElementById('qw-toggle-btn').addEventListener('click', () => {
   openMsgPanel('qw'); qwSel = ''; qwOpen = false;
