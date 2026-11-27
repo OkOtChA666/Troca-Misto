@@ -2137,7 +2137,7 @@
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
-      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.12.01</b></span>
+      <span id="stat-version-wrap">VERSÃO <b id="stat-rules">2026.12.02</b></span>
       <span id="schedule-override-link" class="stat-link" style="display:none; align-items:center; gap:5px; color:var(--cyan);" title="Admin">
         <svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:middle; color:var(--text-dim);">
           <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/>
@@ -2822,8 +2822,9 @@
     </div>
 
     <div id="turnaround-flight-view" class="hidden">
-      <div style="text-align:center; margin-bottom:16px;">
-        <span id="turnaround-flight-title" style="font-family: var(--mono); font-size:28px; font-weight:700; letter-spacing:0.04em;"></span>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+        <div style="min-width:0;"><span id="turnaround-flight-title" style="font-family: var(--mono); font-size:20px; font-weight:700; letter-spacing:0.04em; white-space:nowrap;"></span><div id="turnaround-flight-cd"></div></div>
+        <div id="turnaround-flight-times" style="text-align:right; flex:none;"></div>
       </div>
       <div id="turnaround-fields"></div>
       <p class="hint" style="text-align:center; margin-top:14px;">Este voo é removido automaticamente à meia-noite.</p>
@@ -10315,6 +10316,34 @@ function renderActiveFlights(){
     list.appendChild(reportWrap);
   }
 }
+// TURNAROUND header, right side: STD / ETD of the departing flight (from the day's flight list) and the same
+// gate-closing countdown as the PARTIDA cards (ETD, else STD, minus TEMPOS GATE MANGA/REMOTO; only in the last hour)
+function renderTurnaroundTimes(){
+  const box = document.getElementById('turnaround-flight-times'), cdBox = document.getElementById('turnaround-flight-cd'); if(!box) return;
+  let html = '', cd = '';
+  try{
+    if(currentFlight && FL_DOC && FL_DOC.json){
+      const pr = TURNAROUNDS[currentFlight] || {}, depKey = sfKey(pr._dep || (currentPair && currentPair.dep) || currentFlight);
+      const data = JSON.parse(FL_DOC.json) || {};
+      const dr = (data.dep || []).find(x => sfKey(x.n) === depKey && flToday(x.std));
+      if(dr){
+        const std = flTime(dr.std), etdRaw = flTime(dr.etd), late = etdRaw && etdRaw !== std, etd = etdRaw || std;
+        const row = (lab, v, c) => '<div style="font:700 11px var(--mono);letter-spacing:.1em;color:#8fa0c4;margin-top:6px;">' + lab + ' <span style="font-size:15px;color:' + c + ';margin-left:4px;">' + escapeHtml(v || '— : —') + '</span></div>';
+        html = row('STD', std, 'var(--text)') + row('ETD', etd, late ? 'var(--amber)' : 'var(--text)');
+        const al = flSplit(dr.n).code, r = MT_TEMPOS && MT_TEMPOS.find(x => x && x.c === al);
+        if(r && etd){
+          const bridge = /^[23](14|16|18|20|22|24)$/.test(String(dr.gt || '').replace(/\s/g, ''));
+          const mins = parseInt(bridge ? r.gm : r.gr, 10), dep = flMin(etd);
+          if(!isNaN(mins) && dep !== null){
+            const now = new Date(), d = dep - mins - (now.getHours() * 60 + now.getMinutes());
+            if(d >= 0 && d <= 60) cd = '<div style="margin-top:8px;"><span class="mt-cd' + (d <= 5 ? ' r' : d <= 10 ? ' a' : '') + '"><i></i><em>FECHA EM</em><b>' + d + ' min</b></span></div>';
+          }
+        }
+      }
+    }
+  }catch(e){ html = ''; cd = ''; }
+  box.innerHTML = html; if(cdBox) cdBox.innerHTML = cd;
+}
 let turnaroundLiveRefreshTimer = null;
 let currentPair = null;   // {arr, dep} chosen on the picker, saved with the record at first registration
 function openFlight(flight, pair){
@@ -10328,8 +10357,10 @@ function openFlight(flight, pair){
   const _pr = Object.assign({}, TURNAROUNDS[flight] || {}); if(!_pr._arr && currentPair){ _pr._arr = currentPair.arr; _pr._dep = currentPair.dep; }
   const _ft = k => '<span style="color:var(--amber); text-shadow: 0 0 14px var(--amber-glow);">'+escapeHtml(k.slice(0,2))+'</span> <span style="color:var(--text);">'+escapeHtml(k.slice(2))+'</span>';
   document.getElementById('turnaround-flight-title').innerHTML = (_pr._arr && _pr._dep)
-    ? _ft(_pr._arr)+' <span style="opacity:.5; font-size:20px;">→</span> '+_ft(_pr._dep)
+    ? _ft(_pr._arr)+' <span style="opacity:.5; font-size:14px;">→</span> '+_ft(_pr._dep)
     : _ft(flight);
+  try{ mtTemposLoad(); }catch(e){}
+  renderTurnaroundTimes();
   renderTurnaroundFields();
 }
 // True only when every field is both filled in AND past its lock threshold — at that
@@ -10382,7 +10413,7 @@ function taListen(){
   getDb().then(db => {
     if(!db){ TA_FL_UNSUB = null; return; }
     TA_FL_UNSUB = db.collection('data').doc('flightlist').onSnapshot(
-      snap => { FL_DOC = snap.exists ? snap.data() : false; if(!currentFlight) renderActiveFlights(); taPickerUpdate(); }, () => {});
+      snap => { FL_DOC = snap.exists ? snap.data() : false; if(!currentFlight) renderActiveFlights(); else renderTurnaroundTimes(); taPickerUpdate(); }, () => {});
   }).catch(() => { TA_FL_UNSUB = null; });
 }
 function taStopListen(){ if(typeof TA_FL_UNSUB === 'function'){ try{ TA_FL_UNSUB(); }catch(e){} } TA_FL_UNSUB = null; }
@@ -10477,7 +10508,7 @@ function openTurnaround(){
   // without this, either would only update the next time someone clicks something.
   if(turnaroundLiveRefreshTimer) clearInterval(turnaroundLiveRefreshTimer);
   turnaroundLiveRefreshTimer = setInterval(() => {
-    if(currentFlight) renderTurnaroundFields();
+    if(currentFlight){ renderTurnaroundTimes(); renderTurnaroundFields(); }
     else loadTurnarounds().then(() => { if(!currentFlight) renderActiveFlights(); }).catch(() => {});   // also picks up turnarounds the platform prepared meanwhile
   }, 60000);
 }
@@ -14004,7 +14035,7 @@ let MT_TEMPOS = null, MT_TEMPOS_AT = 0;
 function mtTemposLoad(){
   if(MT_TEMPOS_AT && Date.now() - MT_TEMPOS_AT < 600000) return;
   MT_TEMPOS_AT = Date.now();
-  try{ dbGetShared('docsData', null).then(d => { if(d && Array.isArray(d.tempos)){ MT_TEMPOS = d.tempos; if(mtOpenOverlay()) renderMyTasks(); } }).catch(() => {}); }catch(e){}
+  try{ dbGetShared('docsData', null).then(d => { if(d && Array.isArray(d.tempos)){ MT_TEMPOS = d.tempos; if(mtOpenOverlay()) renderMyTasks(); try{ if(currentFlight) renderTurnaroundTimes(); }catch(e){} } }).catch(() => {}); }catch(e){}
 }
 function mtCountHtml(t, colr){
   try{
