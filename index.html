@@ -13640,7 +13640,7 @@ if(GROUP === 'sup'){
     const tb = document.querySelector('#area-tab-btn-tasks > span'); if(tb && tb.firstChild) tb.firstChild.textContent = 'OS MEUS VOOS';
   }catch(e){}
 }
-function areaSetTitle(v){ AREA_VIEW = v; const lw = document.getElementById('area-logout-wrap'); if(lw) lw.style.display = (v === 'hub') ? '' : 'none'; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; const bb = document.getElementById('my-swaps-back-btn'); if(bb) bb.style.visibility = (goStaffOn() && v === 'hub') ? 'hidden' : ''; }   // GoStaff: no "back" from the home screen itself
+function areaSetTitle(v){ AREA_VIEW = v; const lw = document.getElementById('area-logout-wrap'); if(lw) lw.style.display = (v === 'hub') ? '' : 'none'; const t = document.getElementById('area-title'); if(t) t.textContent = AREA_TITLES[v] || AREA_TITLES.hub; const home = goStaffOn() && v === 'hub'; const bb = document.getElementById('my-swaps-back-btn'); if(bb) bb.style.display = home ? 'none' : ''; if(t) t.style.display = home ? 'none' : ''; }   // GoStaff: no "back" arrow and no section title on the home screen itself
 function updateAreaHubDot(){
   const d = document.getElementById('area-tasks-dot'); if(!d) return;
   let n = 0; try{ const sn = mtSeen(); n = mtChanges().filter(x => x[0] > sn).length; }catch(e){}
