@@ -1,0 +1,239 @@
+// Reads today's tasks from planete-online and saves them to the TROCA-MISTO database (data/tasks).
+// Prints only counts and status. If anything goes wrong it keeps the previous copy untouched.
+import { fetchTasks } from './planete-fetch.mjs';
+import { fetchFlights, buildFlightMap } from './f4s-fetch.mjs';
+import { fetchAdsb, fetchFar, updateLive, regKey, toDoc, fromDoc } from './adsb-live.mjs';
+
+
+const PROJECT = 'troca-misto';
+const API_KEY = 'AIzaSyDVJE3FwFC7mYuygtvZXPAzf6xYWgkLTMM'; // the same public web key the app itself uses
+const BASE = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents/data/';
+const URL = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents/data/tasks?key=' + API_KEY;
+
+// Firestore REST value encoding
+export const sv = (s) => ({ stringValue: String(s) });
+export const iv = (n) => ({ integerValue: String(Math.round(n)) });
+// ---- change detection: compares the new read with the previous one, per agent ----
+// COMM is a typo of COM that the coordinators sometimes write and later correct: both count as the same task, so fixing the spelling is not reported as a removed + new task
+const norm = (l) => String(l || '').replace(/^<\s*/, '').trim().replace(/^COMM\b/i, 'COM');
+const tup = (t) => ({ l: norm(t[0]), s: t[1], e: t[2], c: t[4] ? 1 : 0 });
+const key = (x) => [x.l, x.s, x.e, x.c].join('|');
+export function diffTasks(prevT, newT) {
+  const P = prevT.map(tup), N = newT.map(tup);
+  const pool = new Map();
+  P.forEach((x) => { const k = key(x); (pool.get(k) || pool.set(k, []).get(k)).push(x); });
+  const added = [];
+  N.forEach((x) => { const l = pool.get(key(x)); if (l && l.length) l.pop(); else added.push(x); });
+  const removed = []; pool.forEach((l) => l.forEach((x) => removed.push(x)));
+  const out = [];
+  removed.forEach((r) => {
+    const i = added.findIndex((a) => a.l === r.l);
+    if (i >= 0) {
+      const a = added.splice(i, 1)[0];
+      if (r.s !== a.s || r.e !== a.e) out.push(r.l + ': ' + r.s + '–' + r.e + ' → ' + a.s + '–' + a.e);
+      else out.push(r.l + (a.c ? ': alterada pelo coordenador' : ': atualizada'));
+    } else out.push('Removida: ' + r.l + ' ' + r.s + '–' + r.e);
+  });
+  added.forEach((a) => out.push('Nova: ' + a.l + ' ' + a.s + '–' + a.e));
+  return out;
+}
+// prev = { date, a:{id:jsonString}, ch:{id:jsonString} } read back from the database (or null)
+export function buildChanges(parsed, prev, now = Date.now()) {
+  const ch = {};
+  if (!prev || prev.date !== parsed.date) return ch;       // new day: start clean
+  parsed.agents.forEach((ag) => {
+    let hist = [];
+    try { hist = prev.ch && prev.ch[ag.id] ? JSON.parse(prev.ch[ag.id]) : []; } catch (e) { hist = []; }
+    const before = prev.a && prev.a[ag.id];
+    if (before) {
+      try {
+        const pt = JSON.parse(before).t || [];
+        const nt = ag.tasks.map((t) => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0]);
+        diffTasks(pt, nt).forEach((txt) => hist.push([now, txt]));
+      } catch (e) {}
+    }
+    hist = hist.slice(-8);
+    if (hist.length) ch[ag.id] = hist;
+  });
+  return ch;
+}
+export function readPrev(json) {
+  try {
+    const f = json.fields || {};
+    const mapStr = (m) => { const o = {}; const ff = (m && m.mapValue && m.mapValue.fields) || {}; Object.keys(ff).forEach((k) => { o[k] = ff[k].stringValue; }); return o; };
+    return { date: f.date && f.date.stringValue, a: mapStr(f.a), ch: mapStr(f.ch), flights: f.flights && f.flights.stringValue, flightsAt: f.flightsAt && parseInt(f.flightsAt.integerValue, 10) };
+  } catch (e) { return null; }
+}
+
+export function buildDoc(parsed, now = Date.now(), changes = {}, fl = null) {
+  const a = {};
+  parsed.agents.forEach((ag) => {
+    const rec = { n: ag.name, t: ag.tasks.map(t => [t.label, t.start, t.end, t.post, t.changed ? 1 : 0, t.fkey || '']) };
+    if (/^SWAP/i.test(ag.rmq || '')) rec.x = 'SWAP';      // planete marks this agent with a SWAP remark
+    if (ag.plan) rec.s = ag.plan;      // the service planete has for the agent today [start, end]
+    if (ag.k === 0 || ag.k === 1) rec.k = ag.k;      // 1 = check-in agent, 0 = other role (balcão, supervisão, lost…)
+    if (ag.punch && (ag.punch[0] || ag.punch[1])) rec.p = ag.punch;      // real clock-in / clock-out times (green / red dots in planete)
+    a[ag.id] = sv(JSON.stringify(rec));
+  });
+  return {
+    fields: {
+      date: sv(parsed.date || ''),
+      updatedAt: iv(now),
+      updatedAtIso: sv(new Date(now).toISOString()),
+      agentCount: iv(parsed.agents.length),
+      taskCount: iv(parsed.taskCount),
+      a: { mapValue: { fields: a } },
+      ...(fl ? { flights: sv(fl.json), flightsAt: iv(fl.at) } : {}),
+      ch: { mapValue: { fields: Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, sv(JSON.stringify(v))])) } },
+    },
+  };
+}
+
+const HDR = { Referer: 'https://trocamisto.pt/', Origin: 'https://trocamisto.pt' };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const lisbonHour = () => parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', hour12: false }).format(new Date()), 10) % 24;
+const isNight = () => { const h = lisbonHour(); return h >= 1 && h < 3; };   // nobody works 01:00-03:00
+
+// ---- live plane positions (free ADS-B data) -> data/flightlive, about once a minute. Never blocks or breaks the tasks. ----
+let LIVE_SCHED = {}, LIVE_RAW = {}, LIVE_DEP = {}, LIVE_PREV = null;
+async function liveTick() {
+  try {
+    if (LIVE_PREV === null) {   // first tick of this run: pick up where the last run stopped (landing / take-off times of today)
+      try { const g = await fetch(BASE + 'flightlive?key=' + API_KEY, { headers: HDR }); LIVE_PREV = g.ok ? fromDoc(await g.json()) : {}; } catch (e) { LIVE_PREV = {}; }
+    }
+    const ac = await fetchAdsb();
+    if (!ac) { console.log('LIVE SKIPPED: no ADS-B source answered'); return; }
+    const now = Date.now();
+    try {   // planes due soon that are still far away: ask for them one by one by registration
+      const seen = new Set(ac.map((a) => regKey(a.r)));
+      const far = await fetchFar(LIVE_SCHED, LIVE_RAW, seen, now, undefined, undefined, undefined, LIVE_DEP);
+      far.forEach((a) => { if (!seen.has(regKey(a.r))) { seen.add(regKey(a.r)); ac.push(a); } });
+      if (far.info) console.log('FAR: due=' + far.info.due + ' asked=' + far.info.asked + ' late=' + far.info.late + ' found=' + far.info.found + (far.info.missing.length ? ' not-found=' + far.info.missing.slice(0, 8).join(',') : ''));
+    } catch (e) {}
+    LIVE_PREV = updateLive(LIVE_PREV, ac, now, LIVE_SCHED);
+    const r = await fetch(BASE + 'flightlive?key=' + API_KEY, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body: JSON.stringify(toDoc(LIVE_PREV, now)) });
+    const n = Object.values(LIVE_PREV);
+    console.log('LIVE: ' + (r.ok ? 'saved' : 'HTTP ' + r.status) + ' aircraft=' + ac.length + ' tracked=' + n.length + ' inbound=' + n.filter((x) => x.i).length);
+  } catch (e) { console.log('LIVE SKIPPED: ' + String(e && e.message ? e.message : e).slice(0, 120)); }
+}
+
+// One read of the platform + one save. Returns true if saved.
+async function syncOnce(USER, PASS) {
+  let parsed;
+  try {
+    parsed = await fetchTasks({ user: USER, pass: PASS, log: () => {} });
+  } catch (e) {
+    console.log('SKIPPED: could not read the platform — ' + String(e && e.message ? e.message : e).split('\n')[0].slice(0, 200));
+    return false;   // keep the last good copy; the app shows its age
+  }
+  if (!parsed.agents || parsed.agents.length < 20 || !parsed.taskCount || !parsed.date) {
+    console.log('SKIPPED: the page looked incomplete (agents=' + (parsed.agents || []).length + ', tasks=' + parsed.taskCount + ') — keeping the previous copy');
+    return false;
+  }
+  let prev = null;
+  try {
+    const g = await fetch(URL, { headers: HDR });
+    if (g.ok) prev = readPrev(await g.json());
+  } catch (e) {}
+  const now = Date.now();
+  // gates / check-in desks / stands from Flights4Staff (if it fails, the last copy is kept)
+  let fl = prev && prev.flights ? { json: prev.flights, at: prev.flightsAt || 0 } : null;
+  const FU = process.env.F4S_USER, FP = process.env.F4S_PASS;
+  if (FU && FP) {
+    try {
+      const f = await fetchFlights({ user: FU, pass: FP });
+      try {   // which planes matter for the live line (today's registrations) and when they are due
+        const sc = {}, raw = {};
+        f.dep.forEach((r) => { const k = regKey(r.reg); if (k) { sc[k] = sc[k] || ''; raw[k] = r.reg; } });
+        f.arr.forEach((r) => { const k = regKey(r.reg); if (k) { raw[k] = r.reg; const m = /(\d{1,2}:\d{2})/.exec(r.sta || ''); sc[k] = m ? m[1].padStart(5, '0') : (sc[k] || ''); } });
+        // a departure with a registration but no matching arrival row (the arrival list often has no registration): use the arrival of the same airline with the number just before it (SN3801 in, SN3802 out)
+        const split = (n) => { const m = /^([A-Z0-9]{2})(\d{1,4})[A-Z]?$/.exec(String(n || '').toUpperCase().replace(/[^A-Z0-9]/g, '')); return m ? [m[1], parseInt(m[2], 10)] : null; };
+        const arrBy = {}; f.arr.forEach((r) => { const s = split(r.n); const m = /(\d{1,2}:\d{2})/.exec(r.sta || ''); if (s && m) arrBy[s[0] + s[1]] = m[1].padStart(5, '0'); });
+        f.dep.forEach((r) => { const k = regKey(r.reg); if (!k || sc[k]) return; const s = split(r.n); if (!s) return; const t = arrBy[s[0] + (s[1] - 1)] || arrBy[s[0] + (s[1] - 2)]; if (t) sc[k] = t; });
+        console.log('LIVE-PLAN: planes=' + Object.keys(sc).length + ' with-arrival-time=' + Object.values(sc).filter(Boolean).length);
+        const dp = {}; f.dep.forEach((r) => { const k = regKey(r.reg); const m = /(\d{1,2}:\d{2})/.exec(r.etd || r.std || ''); if (k && m) dp[k] = m[1].padStart(5, '0'); });
+        if (Object.keys(sc).length) { LIVE_SCHED = sc; LIVE_RAW = raw; LIVE_DEP = dp; }
+      } catch (e) {}
+      // full flight lists (Arrivals / Departures) for the app's VOOS screen — separate document, never blocks the tasks
+      try {
+        const slim = (x) => x.map((r) => { const o = {}; Object.keys(r).forEach((k) => { if (r[k]) o[k] = r[k]; }); return o; });
+        const air = {}; [...f.dep, ...f.arr].forEach((r) => { const m = /^([A-Z0-9]{2,3}?)(\d{1,4}[A-Z]?)$/.exec(r.n || ''); const c = m ? m[1] : (r.n || '?'); air[c] = (air[c] || 0) + 1; });
+        console.log('REGISTRATION: ' + (f.cols && f.cols.regDep ? 'column "' + f.cols.regDep + '" — ' + f.dep.filter((x) => x.reg).length + ' of ' + f.dep.length + ' departures have it' : 'no column found. Departure columns: ' + (f.cols ? f.cols.dep.join(',') : '?')));
+        console.log('CTOT: ' + (f.cols && f.cols.dep && f.cols.dep.some((h) => /ctot/i.test(h)) ? 'column found — ' + f.dep.filter((x) => x.ctot).length + ' of ' + f.dep.length + ' departures have a value' : 'no CTOT column. Departure columns: ' + (f.cols && f.cols.dep ? f.cols.dep.join(',') : '?')));
+        console.log('ARRIVAL-ETA: ' + (f.arr.some((x) => x.eta) ? f.arr.filter((x) => x.eta).length + ' of ' + f.arr.length + ' arrivals have an estimated time' : 'no ETA found. Arrival columns: ' + (f.cols && f.cols.arr ? f.cols.arr.join(',') : '?')));
+        console.log('AIRLINES: ' + Object.keys(air).sort().map((c) => c + '=' + air[c]).join(' '));
+        const fbody = JSON.stringify({ fields: { json: sv(JSON.stringify({ dep: slim(f.dep), arr: slim(f.arr) })), at: iv(now), date: sv(parsed.date) } });
+        const fr = await fetch(BASE + 'flightlist?key=' + API_KEY, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body: fbody });
+        console.log('FLIGHTLIST: ' + (fr.ok ? 'saved dep=' + f.dep.length + ' arr=' + f.arr.length : 'HTTP ' + fr.status));
+      } catch (e) { console.log('FLIGHTLIST SKIPPED: ' + String(e && e.message ? e.message : e).slice(0, 120)); }
+      const keys = []; parsed.agents.forEach((ag) => ag.tasks.forEach((t) => { if (t.fparts) keys.push({ key: t.fkey, ...t.fparts }); }));
+      const r = buildFlightMap(keys, f);
+      // keep what was already known earlier today (flights leave the Flights4Staff list after a while); new readings win
+      let old = {};
+      try { if (prev && prev.date === parsed.date && prev.flights) old = JSON.parse(prev.flights) || {}; } catch (e) { old = {}; }
+      const merged = { ...old, ...r.map };
+      fl = { json: JSON.stringify(merged), at: now };
+      console.log('FLIGHTS: dep=' + f.dep.length + ' arr=' + f.arr.length + ' wanted=' + r.wanted + ' matched=' + r.matched + ' kept=' + Object.keys(merged).length);
+      if (r.miss.length) console.log('UNMATCHED: ' + r.miss.slice(0, 40).join(', '));
+    } catch (e) {
+      console.log('FLIGHTS SKIPPED: ' + String(e && e.message ? e.message : e).split('\n')[0].slice(0, 160) + ' — keeping the previous copy');
+    }
+  }
+  const changes = buildChanges(parsed, prev, now);
+  const nChanges = Object.values(changes).reduce((n, h) => n + h.filter((x) => x[0] === now).length, 0);
+  const body = JSON.stringify(buildDoc(parsed, now, changes, fl));
+  const res = await fetch(URL, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...HDR }, body });
+  if (!res.ok) {
+    const t = (await res.text()).replace(/\s+/g, ' ').slice(0, 300);
+    console.log('SKIPPED: saving failed with HTTP ' + res.status + ' — ' + t);
+    return false;
+  }
+  console.log('SAVED: date=' + parsed.date + ' agents=' + parsed.agents.length + ' tasks=' + parsed.taskCount + ' new-changes=' + nChanges + ' size=' + Math.round(body.length / 1024) + 'KB');
+  return true;
+}
+
+// "Atualizar" button in the app writes a time to data/taskreq. Returns that time (ms) or 0.
+async function readRequest() {
+  try {
+    const r = await fetch(BASE + 'taskreq?key=' + API_KEY, { headers: HDR });
+    if (!r.ok) return 0;
+    const j = await r.json();
+    return parseInt((j.fields && j.fields.t && j.fields.t.integerValue) || '0', 10) || 0;
+  } catch (e) { return 0; }
+}
+
+async function main() {
+  const USER = process.env.PLANETE_USER;
+  const PASS = process.env.PLANETE_PASS;
+  if (!USER || !PASS) { console.log('STOP: secrets PLANETE_USER / PLANETE_PASS are missing'); process.exit(1); }
+  const RUN_MIN = parseInt(process.env.LOOP_MINUTES || '0', 10);     // 0 = one read and stop (manual test)
+  const EVERY_MS = 5 * 60 * 1000, MIN_GAP_MS = 60 * 1000, POLL_MS = 15 * 1000;
+  const deadline = Date.now() + RUN_MIN * 60 * 1000;
+  if (!RUN_MIN) { await syncOnce(USER, PASS); await liveTick(); return; }
+  let lastStart = 0, lastReq = await readRequest();
+  while (Date.now() < deadline) {
+    if (isNight()) {
+      // wait quietly (no logins, no reading, no saving) until the night is over or this run's time is up.
+      // Staying alive for ~50 min matters: a run that ends in seconds cannot start the next one, and the chain would die.
+      console.log('NIGHT PAUSE: waiting quietly until 03:00 (no reading)');
+      while (Date.now() < deadline && isNight()) await sleep(30 * 1000);
+      continue;   // night over (read again right away) or time is up (the loop ends and hands over)
+    }
+    lastStart = Date.now();
+    await syncOnce(USER, PASS);
+    await liveTick();
+    let lastLive = Date.now();
+    const lastEnd = Date.now();
+    let pending = false;
+    // wait for the next 5-minute mark, or an "Atualizar" request (at most one read per minute)
+    while (Date.now() < deadline && Date.now() - lastStart < EVERY_MS) {
+      await sleep(POLL_MS);
+      if (Date.now() - lastLive >= 60 * 1000 && !isNight()) { lastLive = Date.now(); await liveTick(); }
+      const req = await readRequest();
+      if (req > lastReq) { lastReq = req; pending = true; }
+      if (pending && Date.now() - lastEnd >= MIN_GAP_MS) { console.log('REFRESH requested from the app'); break; }
+    }
+  }
+  console.log('LOOP END: handing over to the next run');
+}
+if (process.argv[1] && /planete-sync\.mjs$/.test(process.argv[1])) main().then(() => process.exit(0));
