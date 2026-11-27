@@ -12560,7 +12560,6 @@ document.getElementById('sacc-save').addEventListener('click', async () => {
 });
 document.getElementById('swl-toggle-btn').addEventListener('click', () => { openMsgPanel('swl'); swlRender('swl-root'); });
 document.getElementById('sacc-toggle-btn').addEventListener('click', () => { openMsgPanel('sacc'); saccLoad(); });
-document.getElementById('f4s-install-row').addEventListener('click', () => { document.getElementById('f4s-install-detail').classList.toggle('hidden'); });
 document.getElementById('qw-toggle-btn').addEventListener('click', () => {
   openMsgPanel('qw'); qwSel = ''; qwOpen = false;
   try{ mtListen(); }catch(e){}
@@ -13882,6 +13881,9 @@ async function mtRequestRefresh(){
   renderMyTasks();
   try{ const db = await getDb(); if(db) await db.collection('data').doc('taskreq').set({ t: now }); } catch(e){}
 }
+document.getElementById('qw-card').addEventListener('click', ev => {
+  if(ev.target.closest && ev.target.closest('.mt-desk-toggle')){ try{ localStorage.setItem('trocaMistoShowDesks', mtShowDesks() ? '0' : '1'); }catch(e){} qwRender(); }
+});
 document.getElementById('my-tasks-body').addEventListener('click', ev => {
   if(ev.target.closest && ev.target.closest('.mt-desk-toggle')){ try{ localStorage.setItem('trocaMistoShowDesks', mtShowDesks() ? '0' : '1'); }catch(e){} renderMyTasks(); return; }
   const clk = ev.target.closest && ev.target.closest('.mt-clk'); if(clk){ const x = MT_TA_ROWS[clk.getAttribute('data-k')]; if(x) mtTaPopup(x.rec, x.title); return; }
