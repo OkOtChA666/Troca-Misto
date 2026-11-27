@@ -1536,6 +1536,20 @@
   html.gostaff-grid #area-hub .area-card > .ac-fav{ display:none; }
   html.gostaff-grid #area-hub .area-card .ac-t{ font-size:11.5px; letter-spacing:.05em; justify-content:center; padding-right:0; white-space:normal; }
   html.gostaff-grid #area-hub .area-card .ac-ic{ width:40px; height:40px; }
+  /* GoStaff · BENTO layout: TROCAR as a large glowing hero tile, AS MINHAS TAREFAS tall, SUPORTE a slim bar */
+  @property --bentoAngle{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+  html.gostaff-bento #area-hub{ grid-auto-rows:78px; grid-auto-flow:dense; gap:10px; }
+  html.gostaff-bento #area-hub .area-card{ aspect-ratio:auto; border-radius:18px; }
+  html.gostaff-bento #area-hub #area-card-trocar{ grid-column:span 2; grid-row:span 2; align-items:flex-start; justify-content:flex-end; text-align:left; border-radius:22px; border-color:var(--amber); background:linear-gradient(160deg,#1b1507,#0c0905 60%); box-shadow:0 0 0 1px rgba(255,179,0,.35), 0 0 26px rgba(255,179,0,.22); padding:18px; overflow:visible; position:relative; }
+  html.gostaff-bento #area-hub #area-card-trocar::before{ content:''; position:absolute; inset:-1.5px; z-index:-1; border-radius:23px; background:conic-gradient(from var(--bentoAngle), #ffb300, #7a5200, #ffb300 60%, #7a5200 90%, #ffb300); animation:bentoSpin 7s linear infinite; }
+  @keyframes bentoSpin{ to{ --bentoAngle:360deg; } }
+  html.gostaff-bento #area-hub #area-card-trocar .ac-ic{ width:50px; height:50px; border-radius:15px; background:#2c2008; color:var(--amber); box-shadow:0 0 22px rgba(255,179,0,.35); margin-bottom:14px; }
+  html.gostaff-bento #area-hub #area-card-trocar .ac-t{ font-size:15px; }
+  html.gostaff-bento #area-hub #area-card-trocar .ac-s{ display:block !important; color:#c79a3a; font-size:11.5px; margin-top:2px; }
+  html.gostaff-bento #area-hub #area-card-tasks{ grid-row:span 2; border-color:#1f5566; background:linear-gradient(160deg,#0d1f28,#0a1420); }
+  html.gostaff-bento #area-hub #area-card-tasks .ac-ic{ background:#0f2236; color:#4fd1f0; }
+  html.gostaff-bento #area-hub #area-card-support{ grid-column:span 3; flex-direction:row; align-items:center; justify-content:flex-start; height:62px; gap:12px; text-align:left; }
+  html.gostaff-bento #area-hub #area-card-support .ac-ic{ margin:0; }
   .sf-row{ cursor:pointer; -webkit-tap-highlight-color:transparent; border-width:2px; }
   .sf-row.me{ border-color:#FF6A00; background:rgba(255,106,0,0.10); }
   .sf-pickbox{ padding:4px; margin:-4px; cursor:pointer; }
@@ -5829,6 +5843,7 @@ function themeFlagChanged(){
 function themeProAvailable(){ return themeProEnabled || isAdminSession; }
 // GoStaff (new home screen, admin-only test): ÁREA PESSOAL becomes the landing screen instead of the swap form, with TROCAR as a card inside it
 function goStaffOn(){ try{ return isAdminSession && localStorage.getItem('trocaMistoGoStaffOn') === '1'; }catch(e){ return false; } }
+function goStaffLayout(){ try{ return localStorage.getItem('trocaMistoGoStaffLayout') === 'bento' ? 'bento' : 'grid'; }catch(e){ return 'grid'; } }
 function currentTheme(){ let t='classic'; try{ t = localStorage.getItem('trocaMistoTheme')==='pro' ? 'pro' : 'classic'; }catch(e){} return (t==='pro' && themeProAvailable()) ? 'pro' : 'classic'; }
 function applyTheme(){ const t = currentTheme(), c = document.documentElement.classList; c.toggle('themed', t !== 'classic'); c.toggle('theme-pro', t === 'pro'); }
 setTimeout(() => { loadThemeProEnabled(); getDb().then(db => { if(!db) return; try{ db.collection('data').doc('themeProEnabled').onSnapshot(sn => { themeProEnabled = sn.exists ? !!sn.data().value : false; themeFlagChanged(); }, () => {}); }catch(e){} }); }, 0);
@@ -5864,6 +5879,7 @@ function applyAdminVisibility(){
     agentesLink.style.opacity = '';   // same brightness as HORÁRIO for everyone
   }
   document.documentElement.classList.toggle('gostaff-grid', goStaffOn());
+  document.documentElement.classList.toggle('gostaff-bento', goStaffOn() && goStaffLayout() === 'bento');
   // GoStaff: once per page load, land on ÁREA PESSOAL instead of the swap form. Deferred so every
   // function it needs (openMySwaps, showAreaHub…) is already defined, even when this runs inline
   // during the initial script pass (the restored-session path, same reasoning as restoreLoginIfPresent above).
@@ -9586,7 +9602,9 @@ function renderPrefs(){
     html += box(line(head('TURNO DUPLO') + desc('Mostrar o cartão TURNO DUPLO (em teste) na ÁREA PESSOAL.'), sw('pref-dbl-toggle', !hide)));
   }
   if(isAdminSession){
-    html += box(line(head('GOSTAFF (TESTE)') + desc('A Área Pessoal passa a ser o ecrã principal, com TROCAR como um cartão lá dentro, em vez do formulário de troca. Só tu vês isto.'), sw('pref-gostaff-toggle', goStaffOn())));
+    const gsOn = goStaffOn(), gsLayout = goStaffLayout();
+    html += box(line(head('GOSTAFF (TESTE)') + desc('A Área Pessoal passa a ser o ecrã principal, com TROCAR como um cartão lá dentro, em vez do formulário de troca. Só tu vês isto.'), sw('pref-gostaff-toggle', gsOn)) +
+      (gsOn ? '<div style="border-top:1px solid var(--border-soft); margin:14px 0 0; padding-top:14px; display:flex; gap:6px;">' + chip('pref-gostaff-grid', 'GRID', gsLayout === 'grid') + chip('pref-gostaff-bento', 'BENTO', gsLayout === 'bento') + '</div>' : ''));
   }
   try{ if(themeProAvailable()){
     html += '<div id="pref-themes-row" role="button" tabindex="0" style="border:1px solid var(--border); background:var(--panel-2); border-radius:14px; padding:14px 16px; margin-bottom:12px; display:flex; align-items:center; gap:14px; cursor:pointer;">' +
@@ -9600,6 +9618,8 @@ function renderPrefs(){
   flip('pref-help-toggle', () => prefSet('pedHelp', !prefGet('pedHelp', false)));
   flip('pref-dbl-toggle', () => prefSet('hideDbl', !prefGet('hideDbl', false)));
   { const b = document.getElementById('pref-gostaff-toggle'); if(b) b.addEventListener('click', () => { try{ localStorage.setItem('trocaMistoGoStaffOn', goStaffOn() ? '0' : '1'); }catch(e){} location.reload(); }); }
+  { const g = document.getElementById('pref-gostaff-grid'); if(g) g.addEventListener('click', () => { try{ localStorage.setItem('trocaMistoGoStaffLayout', 'grid'); }catch(e){} location.reload(); }); }
+  { const bt = document.getElementById('pref-gostaff-bento'); if(bt) bt.addEventListener('click', () => { try{ localStorage.setItem('trocaMistoGoStaffLayout', 'bento'); }catch(e){} location.reload(); }); }
   ['4','6','8'].forEach(v => flip('pref-h-' + v, () => { const a = (prefGet('h', []) || []).slice(), i = a.indexOf(v); if(i >= 0) a.splice(i, 1); else a.push(v); prefSet('h', a); applySearchDefaults(); }));
   flip('pref-at', () => { prefSet('at', !prefGet('at', false)); if(prefGet('h', null) === null) prefSet('h', []); applySearchDefaults(); });
   flip('pref-ip', () => { prefSet('ip', !prefGet('ip', false)); if(prefGet('h', null) === null) prefSet('h', []); applySearchDefaults(); });
