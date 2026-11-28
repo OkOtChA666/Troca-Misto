@@ -13,7 +13,7 @@
 <title>Troca-Misto: A tua plataforma para procura de trocas e muito mais!</title>
 <script>try{if(localStorage.getItem("trocaMistoTheme")==="pro"&&(localStorage.getItem("trocaMistoLoginIsAdmin")==="true"||localStorage.getItem("trocaMistoProOn")==="1"))document.documentElement.classList.add("theme-pro","themed")}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&family=Outfit:wght@400;500;600&family=Big+Shoulders+Display:wght@700;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Share+Tech+Mono&family=Outfit:wght@400;500;600&family=Big+Shoulders+Display:wght@700;800&family=Instrument+Sans:wght@400;500;600;700&family=Orbitron:wght@700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#080B14;
@@ -1536,49 +1536,34 @@
   html.gostaff-grid #area-hub .area-card > .ac-fav{ display:none; }
   html.gostaff-grid #area-hub .area-card .ac-t{ font-size:11.5px; letter-spacing:.05em; justify-content:center; padding-right:0; white-space:normal; }
   html.gostaff-grid #area-hub .area-card .ac-ic{ width:40px; height:40px; }
-  /* GoStaff · BENTO layout: TROCAR as a large glowing hero tile, AS MINHAS TAREFAS tall, SUPORTE a slim bar */
-  @property --bentoAngle{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+  /* GoStaff · BENTO layout: solid-color tiles with a corner icon badge and a soft decorative ring, type-specimen style */
   html.gostaff-bento #panel-my-swaps{ padding:8px; }
   html.gostaff-bento #area-hub{ grid-auto-rows:104px; grid-auto-flow:dense; gap:10px; }
-  html.gostaff-bento #area-hub .area-card{ aspect-ratio:auto; border-radius:13px; padding:15px; gap:10px; justify-content:flex-end; position:relative; overflow:hidden; }
-  html.gostaff-bento #area-hub .area-card .ac-ic{ width:34px; height:34px; border-radius:13px 3px 9px 0; position:absolute; top:-1px; left:-1px; margin:0; border:1px solid var(--border); border-left:none; border-top:none; box-shadow:none; }
-  html.gostaff-bento #area-hub .area-card .ac-t{ font:700 13.5px var(--sans); letter-spacing:-.01em; color:#aab6d4; line-height:1.15; }
-  /* each bento tile gets its own hue: diagonal light bar + spinning glow ring + corner icon matching the card border, same recipe as TROCAR */
-  html.gostaff-bento #area-hub .area-card::before{ content:''; position:absolute; inset:-1.5px; z-index:-1; border-radius:15px; animation:bentoSpin 7s linear infinite; }
-  @keyframes bentoSpin{ to{ --bentoAngle:360deg; } }
-  html.gostaff-bento #area-hub #area-card-trocar{ grid-column:span 2; grid-row:span 2; align-items:flex-start; text-align:left; border-radius:14px; border-color:var(--amber); background:linear-gradient(115deg, #0c0905 0%, #0c0905 38%, #2e2308 50%, #1b1507 62%, #1b1507 100%); box-shadow:0 0 0 1px rgba(255,179,0,.35); padding:18px; overflow:visible; }
-  html.gostaff-bento #area-hub #area-card-trocar::before{ background:conic-gradient(from var(--bentoAngle), #ffb300, #7a5200, #ffb300 60%, #7a5200 90%, #ffb300); }
-  html.gostaff-bento #area-hub #area-card-trocar .ac-ic{ width:48px; height:48px; border-radius:14px 3px 10px 0; background:#2c2008; color:var(--amber); border:1px solid var(--amber); border-left:none; border-top:none; top:-1px; left:-1px; }
-  html.gostaff-bento #area-hub #area-card-trocar .ac-t{ font:800 21px var(--sans); letter-spacing:-.01em; color:var(--amber-soft, #ffcf66); }
+  html.gostaff-bento #area-hub .area-card{ aspect-ratio:auto; border-radius:13px; padding:15px; gap:10px; justify-content:flex-end; position:relative; overflow:hidden; border:0; }
+  html.gostaff-bento #area-hub .area-card .ac-ic{ width:32px; height:32px; border-radius:13px 3px 9px 0; position:absolute; top:0; left:0; margin:0; background:#eef1f8; color:#10151f; border:0; box-shadow:none; }
+  html.gostaff-bento #area-hub .area-card .ac-t{ font:700 10.5px 'Orbitron',sans-serif; letter-spacing:.01em; line-height:1.35; position:relative; z-index:1; }
+  html.gostaff-bento #area-hub .area-card .ac-s{ position:relative; z-index:1; }
+  html.gostaff-bento #area-hub .area-card::after{ content:''; position:absolute; border-radius:50%; border:1.5px solid currentColor; opacity:.3; pointer-events:none; }
+  html.gostaff-bento #area-hub #area-card-trocar{ grid-column:span 2; grid-row:span 2; background:#3a2608; color:#ffb020; padding:18px; }
+  html.gostaff-bento #area-hub #area-card-trocar::after{ width:90px; height:90px; bottom:-28px; right:-24px; }
+  html.gostaff-bento #area-hub #area-card-trocar .ac-ic{ width:46px; height:46px; border-radius:14px 3px 10px 0; }
+  html.gostaff-bento #area-hub #area-card-trocar .ac-t{ font-size:20px; }
   html.gostaff-bento #area-hub #area-card-trocar .ac-s{ display:block !important; color:#c79a3a; font-size:12.5px; margin-top:3px; }
-  html.gostaff-bento #area-hub #area-card-tasks{ grid-row:span 2; border-color:#1f5566; background:linear-gradient(115deg, #0a1420 0%, #0a1420 38%, #163244 50%, #0d1f28 62%, #0d1f28 100%); box-shadow:0 0 0 1px rgba(95,224,255,.3); }
-  html.gostaff-bento #area-hub #area-card-tasks::before{ background:conic-gradient(from var(--bentoAngle), #5FE0FF, #0a2230, #5FE0FF 60%, #0a2230 90%, #5FE0FF); }
-  html.gostaff-bento #area-hub #area-card-tasks .ac-ic{ background:#0f2236; color:#4fd1f0; border-color:#1f5566; }
-  html.gostaff-bento #area-hub #area-card-tasks .ac-t{ font:700 15px var(--sans); color:#bfe9f7; line-height:1.15; }
-  html.gostaff-bento #area-hub #area-card-ferramentas{ border-color:#fb923c; background:linear-gradient(115deg, #160b04 0%, #160b04 38%, #452612 50%, #2c1708 62%, #2c1708 100%); box-shadow:0 0 0 1px rgba(251,146,60,.3); }
-  html.gostaff-bento #area-hub #area-card-ferramentas::before{ background:conic-gradient(from var(--bentoAngle), #fb923c, #7a420f, #fb923c 60%, #7a420f 90%, #fb923c); }
-  html.gostaff-bento #area-hub #area-card-ferramentas .ac-ic{ background:#33200c; color:#fdba74; border-color:#fb923c; }
-  html.gostaff-bento #area-hub #area-card-ferramentas .ac-t{ color:#fde3c8; }
-  html.gostaff-bento #area-hub #area-card-swaps{ border-color:#8b5cf6; background:linear-gradient(115deg, #0c0a18 0%, #0c0a18 38%, #2d2048 50%, #1c1430 62%, #1c1430 100%); box-shadow:0 0 0 1px rgba(139,92,246,.3); }
-  html.gostaff-bento #area-hub #area-card-swaps::before{ background:conic-gradient(from var(--bentoAngle), #8b5cf6, #3a235f, #8b5cf6 60%, #3a235f 90%, #8b5cf6); }
-  html.gostaff-bento #area-hub #area-card-swaps .ac-ic{ background:#241a3d; color:#b794f6; border-color:#8b5cf6; }
-  html.gostaff-bento #area-hub #area-card-swaps .ac-t{ color:#dcd0fa; }
-  html.gostaff-bento #area-hub #area-card-agenda{ border-color:#2dd4bf; background:linear-gradient(115deg, #081714 0%, #081714 38%, #154038 50%, #0d2622 62%, #0d2622 100%); box-shadow:0 0 0 1px rgba(45,212,191,.3); }
-  html.gostaff-bento #area-hub #area-card-agenda::before{ background:conic-gradient(from var(--bentoAngle), #2dd4bf, #0f5349, #2dd4bf 60%, #0f5349 90%, #2dd4bf); }
-  html.gostaff-bento #area-hub #area-card-agenda .ac-ic{ background:#0f2e29; color:#5eead4; border-color:#2dd4bf; }
-  html.gostaff-bento #area-hub #area-card-agenda .ac-t{ color:#c9f7ef; }
-  html.gostaff-bento #area-hub #area-card-reqs{ border-color:#f472b6; background:linear-gradient(115deg, #160813 0%, #160813 38%, #45183a 50%, #2c0f22 62%, #2c0f22 100%); box-shadow:0 0 0 1px rgba(244,114,182,.3); }
-  html.gostaff-bento #area-hub #area-card-reqs::before{ background:conic-gradient(from var(--bentoAngle), #f472b6, #7a2a54, #f472b6 60%, #7a2a54 90%, #f472b6); }
-  html.gostaff-bento #area-hub #area-card-reqs .ac-ic{ background:#33132a; color:#f9a8d4; border-color:#f472b6; }
-  html.gostaff-bento #area-hub #area-card-reqs .ac-t{ color:#fbd3e8; }
-  html.gostaff-bento #area-hub #area-card-extra{ border-color:#a3e635; background:linear-gradient(115deg, #0e1608 0%, #0e1608 38%, #2f4514 50%, #1c2a0e 62%, #1c2a0e 100%); box-shadow:0 0 0 1px rgba(163,230,53,.3); }
-  html.gostaff-bento #area-hub #area-card-extra::before{ background:conic-gradient(from var(--bentoAngle), #a3e635, #4f6f18, #a3e635 60%, #4f6f18 90%, #a3e635); }
-  html.gostaff-bento #area-hub #area-card-extra .ac-ic{ background:#222e10; color:#bef264; border-color:#a3e635; }
-  html.gostaff-bento #area-hub #area-card-extra .ac-t{ color:#e3f6c3; }
-  html.gostaff-bento #area-hub #area-card-prefs{ border-color:#60a5fa; background:linear-gradient(115deg, #0a1220 0%, #0a1220 38%, #1a2e52 50%, #101c33 62%, #101c33 100%); box-shadow:0 0 0 1px rgba(96,165,250,.3); }
-  html.gostaff-bento #area-hub #area-card-prefs::before{ background:conic-gradient(from var(--bentoAngle), #60a5fa, #1d3a6b, #60a5fa 60%, #1d3a6b 90%, #60a5fa); }
-  html.gostaff-bento #area-hub #area-card-prefs .ac-ic{ background:#132544; color:#93c5fd; border-color:#60a5fa; }
-  html.gostaff-bento #area-hub #area-card-prefs .ac-t{ color:#d6e6fc; }
+  html.gostaff-bento #area-hub #area-card-tasks{ grid-row:span 2; background:#0e3b35; color:#2dd4bf; }
+  html.gostaff-bento #area-hub #area-card-tasks::after{ width:60px; height:60px; top:-18px; right:-14px; }
+  html.gostaff-bento #area-hub #area-card-tasks .ac-t{ font-size:12.5px; }
+  html.gostaff-bento #area-hub #area-card-ferramentas{ background:#2c1708; color:#ff8a3d; }
+  html.gostaff-bento #area-hub #area-card-ferramentas::after{ width:54px; height:54px; bottom:-18px; right:8px; }
+  html.gostaff-bento #area-hub #area-card-swaps{ background:#241233; color:#c9a6ff; }
+  html.gostaff-bento #area-hub #area-card-swaps::after{ width:44px; height:44px; top:-10px; right:14px; }
+  html.gostaff-bento #area-hub #area-card-agenda{ background:#071a12; color:#7cf29a; }
+  html.gostaff-bento #area-hub #area-card-agenda::after{ width:60px; height:60px; bottom:-20px; right:-16px; }
+  html.gostaff-bento #area-hub #area-card-reqs{ background:#241526; color:#ff9ad1; }
+  html.gostaff-bento #area-hub #area-card-reqs::after{ width:50px; height:50px; top:-14px; left:-10px; }
+  html.gostaff-bento #area-hub #area-card-extra{ background:#142a1a; color:#9ae66e; }
+  html.gostaff-bento #area-hub #area-card-extra::after{ width:48px; height:48px; top:-12px; right:-10px; }
+  html.gostaff-bento #area-hub #area-card-prefs{ background:#0a1a2e; color:#5fb8ff; }
+  html.gostaff-bento #area-hub #area-card-prefs::after{ width:56px; height:56px; bottom:-18px; right:-16px; }
   html.gostaff-bento #area-hub #area-card-support{ grid-column:span 3; flex-direction:row; align-items:center; justify-content:flex-start; height:62px; gap:12px; text-align:left; }
   html.gostaff-bento #area-hub #area-card-support .ac-ic{ margin:0; }
   html.gostaff-bento #area-hub #area-card-support .ac-t{ font-size:13.5px; }
