@@ -2193,7 +2193,11 @@
       <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="Área pessoal">
         ÁREA PESSOAL<span id="my-area-badge"></span>
       </span>
-      <span id="bento-greeting" style="display:none; align-items:center; gap:5px; color:var(--amber); font-family:var(--mono); letter-spacing:.04em;"></span>
+      <span id="bento-greeting" style="display:none; flex:1; align-items:center; justify-content:space-between; color:var(--amber); font-family:var(--mono); letter-spacing:.04em; text-transform:uppercase;">
+        <span id="bento-greet-text"></span>
+        <span id="bento-greet-weather"></span>
+        <span id="bento-greet-clock"></span>
+      </span>
       <span class="header-divider" id="my-swaps-div">|</span>
       <span id="sf-link" class="stat-link" style="align-items:center; gap:5px; color:var(--cyan);" title="Lista de voos">LISTA DE VOOS</span>
       <span class="header-divider" id="sf-div">|</span>
@@ -5908,17 +5912,20 @@ function applyAdminVisibility(){
   try{
     const isBento = goStaffOn() && goStaffLayout() === 'bento';
     const msl = document.getElementById('my-swaps-link'); if(msl) msl.style.display = isBento ? 'none' : '';
-    const bg = document.getElementById('bento-greeting'); if(bg) bg.style.display = isBento ? 'inline-flex' : 'none';
+    const bg = document.getElementById('bento-greeting'); if(bg) bg.style.display = isBento ? 'flex' : 'none';
     if(isBento && !window._bentoGreetingStarted){
       window._bentoGreetingStarted = true;
       const wIcon = (c) => [1].includes(c) ? '☀️' : [2,3,25].includes(c) ? '⛅' : [4,5,24,27].includes(c) ? '☁️' : [16,17,26].includes(c) ? '🌫️' : [18,28].includes(c) ? '❄️' : [19,20,23].includes(c) ? '⛈️' : [21,29,30].includes(c) ? '🌨️' : [6,7,8,9,10,11,12,13,14,15].includes(c) ? '🌧️' : '';
-      const paint = () => { const el = document.getElementById('bento-greeting'); if(!el) return;
+      const paint = () => {
+        const tEl = document.getElementById('bento-greet-text'); const wEl = document.getElementById('bento-greet-weather'); const cEl = document.getElementById('bento-greet-clock');
+        if(!tEl) return;
         const d = new Date(), h = d.getHours();
-        const greet = h < 6 ? 'Boa noite' : h < 13 ? 'Bom dia' : h < 20 ? 'Boa tarde' : 'Boa noite';
+        const greet = h < 6 ? 'BOA NOITE' : h < 13 ? 'BOM DIA' : h < 20 ? 'BOA TARDE' : 'BOA NOITE';
         const hh = String(h).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
         const w = window._bentoWeather;
-        const wTxt = w ? (' · ' + wIcon(w.code) + ' ' + w.tMin + '°–' + w.tMax + '°') : '';
-        el.textContent = 'Olá, ' + greet + '! · ' + hh + ':' + mm + wTxt; };
+        tEl.textContent = 'OLÁ, ' + greet;
+        wEl.textContent = w ? (wIcon(w.code) + ' ' + w.tMin + '°–' + w.tMax + '°') : '';
+        cEl.textContent = hh + ':' + mm; };
       paint(); setInterval(paint, 15000);
       // IPMA (free, official PT weather, no key) for Faro: first resolve Faro's globalIdLocal from the
       // district/island list (cached indefinitely — it never changes), then pull today's daily forecast
