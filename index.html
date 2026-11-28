@@ -1575,6 +1575,16 @@
   html.gostaff-grid #area-hub .area-card > .ac-fav{ display:none; }
   html.gostaff-grid #area-hub .area-card .ac-t{ font-size:11.5px; letter-spacing:.05em; justify-content:center; padding-right:0; white-space:normal; }
   html.gostaff-grid #area-hub .area-card .ac-ic{ width:40px; height:40px; }
+  /* GoStaff header title: big italic gradient wordmark + tagline (only while GoStaff is on) */
+  #board-gostaff-tagline.hidden{ display:none; }
+  html.gostaff-grid #board-main-title{
+    font:900 54px/.95 'Arial Black', system-ui, sans-serif; letter-spacing:-.02em; font-style:italic;
+    background:linear-gradient(100deg,#ffb300 0%, #ff5fa6 45%, #5fe0ff 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 2px 10px rgba(95,224,255,.25));
+  }
+  html.gostaff-grid #board-gostaff-tagline.hidden{ display:block; }
+  html.gostaff-grid #board-gostaff-tagline{ margin:10px 0 0; font:600 13.5px/1.5 var(--sans); color:#d7dce6; letter-spacing:.01em; }
   /* short vs long card labels: long shows everywhere by default, short only replaces it in BENTO layout */
   #area-hub .area-card .ac-t-short{ display:none; }
   html.gostaff-bento #area-hub .area-card .ac-t-long{ display:none; }
@@ -2222,6 +2232,7 @@
     </div>
     <div style="display:flex; align-items:center; justify-content:flex-start; gap:16px; margin:0 0 6px;"><p class="eyebrow" style="margin:0; white-space:nowrap;">TTAE GRUPO · FAO · PAX</p></div>
     <h1 id="board-main-title">TROCA-MISTO</h1>
+    <p id="board-gostaff-tagline" class="hidden">Tudo ligado. Tudo mais simples. Tudo num só lugar.</p>
     <div class="board-stats board-stats-top">
       <span id="stat-workers-link" class="stat-link"><span id="stat-workers-label">AGENTES</span> <b id="stat-workers">—</b><span id="stat-workers-delta" class="stat-delta"></span></span>
       <span>HORÁRIO <b id="stat-range">—</b></span>
