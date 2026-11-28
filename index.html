@@ -2193,6 +2193,7 @@
       <span id="my-swaps-link" class="stat-link" style="display:inline-flex; align-items:center; gap:5px; color:var(--amber);" title="Área pessoal">
         ÁREA PESSOAL<span id="my-area-badge"></span>
       </span>
+      <span id="bento-greeting" style="display:none; align-items:center; gap:5px; color:var(--amber); font-family:var(--mono); letter-spacing:.04em;"></span>
       <span class="header-divider" id="my-swaps-div">|</span>
       <span id="sf-link" class="stat-link" style="align-items:center; gap:5px; color:var(--cyan);" title="Lista de voos">LISTA DE VOOS</span>
       <span class="header-divider" id="sf-div">|</span>
@@ -5903,6 +5904,21 @@ function applyAdminVisibility(){
   // GoStaff: FERRAMENTAS now has its own card in the hub, so the header tab for it is redundant
   try{ const tl = document.getElementById('tools-link'); if(tl) tl.style.display = goStaffOn() ? 'none' : ''; }catch(e){}
   try{ const td = document.getElementById('my-swaps-div'); if(td) td.style.display = goStaffOn() ? 'none' : ''; }catch(e){}
+  // BENTO: the lone "ÁREA PESSOAL" tab is redundant too (nothing left beside it), so swap it for a greeting + clock
+  try{
+    const isBento = goStaffOn() && goStaffLayout() === 'bento';
+    const msl = document.getElementById('my-swaps-link'); if(msl) msl.style.display = isBento ? 'none' : '';
+    const bg = document.getElementById('bento-greeting'); if(bg) bg.style.display = isBento ? 'inline-flex' : 'none';
+    if(isBento && !window._bentoGreetingStarted){
+      window._bentoGreetingStarted = true;
+      const paint = () => { const el = document.getElementById('bento-greeting'); if(!el) return;
+        const d = new Date(), h = d.getHours();
+        const greet = h < 6 ? 'Boa noite' : h < 13 ? 'Bom dia' : h < 20 ? 'Boa tarde' : 'Boa noite';
+        const hh = String(h).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+        el.textContent = 'Olá, ' + greet + '! · ' + hh + ':' + mm; };
+      paint(); setInterval(paint, 15000);
+    }
+  }catch(e){}
   // GoStaff: once per page load, land on ÁREA PESSOAL instead of the swap form. Deferred so every
   // function it needs (openMySwaps, showAreaHub…) is already defined, even when this runs inline
   // during the initial script pass (the restored-session path, same reasoning as restoreLoginIfPresent above).
