@@ -5911,12 +5911,44 @@ function applyAdminVisibility(){
     const bg = document.getElementById('bento-greeting'); if(bg) bg.style.display = isBento ? 'inline-flex' : 'none';
     if(isBento && !window._bentoGreetingStarted){
       window._bentoGreetingStarted = true;
+      const wIcon = (c) => [1].includes(c) ? '☀️' : [2,3,25].includes(c) ? '⛅' : [4,5,24,27].includes(c) ? '☁️' : [16,17,26].includes(c) ? '🌫️' : [18,28].includes(c) ? '❄️' : [19,20,23].includes(c) ? '⛈️' : [21,29,30].includes(c) ? '🌨️' : [6,7,8,9,10,11,12,13,14,15].includes(c) ? '🌧️' : '';
       const paint = () => { const el = document.getElementById('bento-greeting'); if(!el) return;
         const d = new Date(), h = d.getHours();
         const greet = h < 6 ? 'Boa noite' : h < 13 ? 'Bom dia' : h < 20 ? 'Boa tarde' : 'Boa noite';
         const hh = String(h).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
-        el.textContent = 'Olá, ' + greet + '! · ' + hh + ':' + mm; };
+        const w = window._bentoWeather;
+        const wTxt = w ? (' · ' + wIcon(w.code) + ' ' + w.tMin + '°–' + w.tMax + '°') : '';
+        el.textContent = 'Olá, ' + greet + '! · ' + hh + ':' + mm + wTxt; };
       paint(); setInterval(paint, 15000);
+      // IPMA (free, official PT weather, no key) for Faro: first resolve Faro's globalIdLocal from the
+      // district/island list (cached indefinitely — it never changes), then pull today's daily forecast
+      // (cached 60min — IPMA's daily file only updates a few times a day anyway).
+      const fetchWeather = () => { try{
+        const cached = JSON.parse(localStorage.getItem('trocaMistoWeatherCache') || 'null');
+        const now = Date.now();
+        if(cached && (now - cached.t) < 60*60*1000){ window._bentoWeather = cached.v; paint(); return; }
+        const withFaroId = (id) => {
+          fetch('https://api.ipma.pt/open-data/forecast/meteorology/cities/daily/' + id + '.json')
+            .then(r => r.json())
+            .then(j => { const d0 = j && j.data && j.data[0]; if(!d0) return;
+              const v = { tMin: Math.round(parseFloat(d0.tMin)), tMax: Math.round(parseFloat(d0.tMax)), code: parseInt(d0.idWeatherType, 10) };
+              try{ localStorage.setItem('trocaMistoWeatherCache', JSON.stringify({ t: now, v })); }catch(e){}
+              window._bentoWeather = v; paint(); })
+            .catch(() => {});
+        };
+        let faroId; try{ faroId = localStorage.getItem('trocaMistoFaroIpmaId'); }catch(e){}
+        if(faroId){ withFaroId(faroId); return; }
+        fetch('https://api.ipma.pt/open-data/distrits-islands.json')
+          .then(r => r.json())
+          .then(j => { const list = (j && j.data) || j || [];
+            const faro = list.find(x => (x.local || x.Local || '').toString().toLowerCase() === 'faro');
+            if(!faro) return;
+            const id = faro.globalIdLocal || faro.idLocal || faro.id;
+            try{ localStorage.setItem('trocaMistoFaroIpmaId', String(id)); }catch(e){}
+            withFaroId(id); })
+          .catch(() => {});
+      }catch(e){} };
+      fetchWeather(); setInterval(fetchWeather, 60*60*1000);
     }
   }catch(e){}
   // GoStaff: once per page load, land on ÁREA PESSOAL instead of the swap form. Deferred so every
